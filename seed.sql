@@ -1,15 +1,15 @@
 -- Insert admin user (password: admin123)
 -- Password hash generated with bcrypt
 INSERT OR REPLACE INTO users (id, email, password_hash, username, role, language) VALUES 
-  (1, 'admin@review.com', '$2b$10$20fkTuFUrH/cGirfsmkI0uA1lXCGfnQ16bBvMCeijADs2I0ve/5Wy', 'Admin', 'admin', 'zh');
+  (1, 'admin@review.com', '$2b$10$BNkq1u956qI.m0fikNy5POeMN8qAvdxFkEx8qGuNbT/6Dk8SMHoge', 'Admin', 'admin', 'zh');
 
 -- Insert premium user (password: premium123)
 INSERT OR REPLACE INTO users (id, email, password_hash, username, role, language) VALUES 
-  (2, 'premium@review.com', '$2b$10$20fkTuFUrH/cGirfsmkI0uA1lXCGfnQ16bBvMCeijADs2I0ve/5Wy', 'Premium User', 'premium', 'en');
+  (2, 'premium@review.com', '$2b$10$meHOcVR4loG7cge9HFKbZumSANqsS7LuA75FkOy5GwzWmG1Jbrgse', 'Premium User', 'premium', 'en');
 
 -- Insert normal user (password: user123)
 INSERT OR REPLACE INTO users (id, email, password_hash, username, role, language) VALUES 
-  (3, 'user@review.com', '$2b$10$20fkTuFUrH/cGirfsmkI0uA1lXCGfnQ16bBvMCeijADs2I0ve/5Wy', 'Normal User', 'user', 'zh');
+  (3, 'user@review.com', '$2b$10$txWTFkEfImnlbpt683gNeeaVwaWdU5RV9/GO2IY23/NKVz8BtBYm2', 'Normal User', 'user', 'zh');
 
 -- Insert a test team
 INSERT OR IGNORE INTO teams (id, name, description, owner_id) VALUES 
