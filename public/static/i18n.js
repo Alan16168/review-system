@@ -52,6 +52,16 @@ const translations = {
     'teamReviewNote': '选择团队后，团队成员可以协作编辑',
     'teamCannotChange': '团队归属不可更改',
     
+    // Review Types
+    'groupType': '群体类型',
+    'groupTypePersonal': '个人',
+    'groupTypeProject': '项目',
+    'groupTypeTeam': '团队',
+    'timeType': '时间类型',
+    'timeTypeWeekly': '周复盘',
+    'timeTypeMonthly': '月复盘',
+    'timeTypeYearly': '年复盘',
+    
     // Team Management
     'teamList': '团队列表',
     'createTeam': '创建团队',
@@ -92,6 +102,11 @@ const translations = {
     'selectUsersNote': '请先在用户管理标签页选择要发送通知的用户',
     'usersByRole': '用户角色分布',
     'members': '成员',
+    'recipientEmails': '接收者邮箱',
+    'recipientEmailsPlaceholder': '多个邮箱用逗号分隔，例如：user1@example.com, user2@example.com',
+    'sendByEmail': '按邮箱发送',
+    'sendBySelection': '按选择发送',
+    'noUsersSelected': '未选择任何用户',
     
     // Nine Questions
     'nineQuestions': '复盘灵魂9问',
@@ -198,6 +213,16 @@ const translations = {
     'teamReviewNote': 'Team members can collaborate on editing after selecting a team',
     'teamCannotChange': 'Team affiliation cannot be changed',
     
+    // Review Types
+    'groupType': 'Group Type',
+    'groupTypePersonal': 'Personal',
+    'groupTypeProject': 'Project',
+    'groupTypeTeam': 'Team',
+    'timeType': 'Time Type',
+    'timeTypeWeekly': 'Weekly Review',
+    'timeTypeMonthly': 'Monthly Review',
+    'timeTypeYearly': 'Yearly Review',
+    
     // Team Management
     'teamList': 'Team List',
     'createTeam': 'Create Team',
@@ -238,6 +263,11 @@ const translations = {
     'selectUsersNote': 'Please select users in the User Management tab first',
     'usersByRole': 'Users by Role',
     'members': 'Members',
+    'recipientEmails': 'Recipient Emails',
+    'recipientEmailsPlaceholder': 'Separate multiple emails with commas, e.g.: user1@example.com, user2@example.com',
+    'sendByEmail': 'Send by Email',
+    'sendBySelection': 'Send by Selection',
+    'noUsersSelected': 'No users selected',
     
     // Nine Questions
     'nineQuestions': 'Nine Key Review Questions',

@@ -41,6 +41,10 @@ try {
   db.exec(schema2);
   console.log('✓ Notifications table created');
   
+  const schema3 = fs.readFileSync('./migrations/0003_add_review_types.sql', 'utf8');
+  db.exec(schema3);
+  console.log('✓ Review types columns added');
+  
   // Execute seed data
   const seed = fs.readFileSync('./seed.sql', 'utf8');
   db.exec(seed);

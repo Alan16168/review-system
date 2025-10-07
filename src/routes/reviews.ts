@@ -86,7 +86,7 @@ reviews.post('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const body = await c.req.json();
-    const { title, team_id, ...questions } = body;
+    const { title, team_id, group_type, time_type, ...questions } = body;
 
     if (!title) {
       return c.json({ error: 'Title is required' }, 400);
@@ -105,12 +105,14 @@ reviews.post('/', async (c) => {
 
     const result = await c.env.DB.prepare(`
       INSERT INTO reviews (
-        title, user_id, team_id,
+        title, user_id, team_id, group_type, time_type,
         question1, question2, question3, question4, question5,
         question6, question7, question8, question9, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       title, user.id, team_id || null,
+      group_type || 'personal',
+      time_type || 'weekly',
       questions.question1 || null,
       questions.question2 || null,
       questions.question3 || null,
@@ -164,11 +166,13 @@ reviews.put('/:id', async (c) => {
       return c.json({ error: 'Access denied' }, 403);
     }
 
-    const { title, ...questions } = body;
+    const { title, group_type, time_type, ...questions } = body;
     
     await c.env.DB.prepare(`
       UPDATE reviews SET
         title = COALESCE(?, title),
+        group_type = COALESCE(?, group_type),
+        time_type = COALESCE(?, time_type),
         question1 = COALESCE(?, question1),
         question2 = COALESCE(?, question2),
         question3 = COALESCE(?, question3),
@@ -183,6 +187,8 @@ reviews.put('/:id', async (c) => {
       WHERE id = ?
     `).bind(
       title || null,
+      group_type || null,
+      time_type || null,
       questions.question1 || null,
       questions.question2 || null,
       questions.question3 || null,

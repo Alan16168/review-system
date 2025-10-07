@@ -617,6 +617,32 @@ async function showCreateReview() {
           </div>
           ` : ''}
 
+          <!-- Group Type -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('groupType')} <span class="text-red-500">*</span>
+            </label>
+            <select id="review-group-type" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="personal">${i18n.t('groupTypePersonal')}</option>
+              <option value="project">${i18n.t('groupTypeProject')}</option>
+              <option value="team">${i18n.t('groupTypeTeam')}</option>
+            </select>
+          </div>
+
+          <!-- Time Type -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('timeType')} <span class="text-red-500">*</span>
+            </label>
+            <select id="review-time-type" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="weekly">${i18n.t('timeTypeWeekly')}</option>
+              <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
+              <option value="yearly">${i18n.t('timeTypeYearly')}</option>
+            </select>
+          </div>
+
           <!-- Nine Questions -->
           <div class="border-t pt-6">
             <h2 class="text-xl font-bold text-gray-800 mb-4">
@@ -682,11 +708,15 @@ async function handleCreateReview(e) {
   
   const title = document.getElementById('review-title').value;
   const teamId = document.getElementById('review-team')?.value || null;
+  const groupType = document.getElementById('review-group-type').value;
+  const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
   const data = {
     title,
     team_id: teamId || null,
+    group_type: groupType,
+    time_type: timeType,
     status,
     question1: document.getElementById('question1').value,
     question2: document.getElementById('question2').value,
@@ -731,7 +761,7 @@ async function showReviewDetail(id) {
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">
                   ${escapeHtml(review.title)}
                 </h1>
-                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                <div class="flex items-center flex-wrap gap-2 text-sm text-gray-600">
                   <span>
                     <i class="fas fa-user mr-1"></i>${escapeHtml(review.creator_name)}
                   </span>
@@ -748,6 +778,16 @@ async function showReviewDetail(id) {
                   ${review.team_name ? `
                     <span class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                       <i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}
+                    </span>
+                  ` : ''}
+                  ${review.group_type ? `
+                    <span class="px-3 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
+                      <i class="fas fa-layer-group mr-1"></i>${i18n.t('groupType' + review.group_type.charAt(0).toUpperCase() + review.group_type.slice(1))}
+                    </span>
+                  ` : ''}
+                  ${review.time_type ? `
+                    <span class="px-3 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
+                      <i class="fas fa-calendar-alt mr-1"></i>${i18n.t('timeType' + review.time_type.charAt(0).toUpperCase() + review.time_type.slice(1))}
                     </span>
                   ` : ''}
                 </div>
@@ -878,6 +918,32 @@ async function showEditReview(id) {
             </div>
             ` : ''}
 
+            <!-- Group Type -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('groupType')} <span class="text-red-500">*</span>
+              </label>
+              <select id="review-group-type" required
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="personal" ${review.group_type === 'personal' ? 'selected' : ''}>${i18n.t('groupTypePersonal')}</option>
+                <option value="project" ${review.group_type === 'project' ? 'selected' : ''}>${i18n.t('groupTypeProject')}</option>
+                <option value="team" ${review.group_type === 'team' ? 'selected' : ''}>${i18n.t('groupTypeTeam')}</option>
+              </select>
+            </div>
+
+            <!-- Time Type -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('timeType')} <span class="text-red-500">*</span>
+              </label>
+              <select id="review-time-type" required
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="weekly" ${review.time_type === 'weekly' ? 'selected' : ''}>${i18n.t('timeTypeWeekly')}</option>
+                <option value="monthly" ${review.time_type === 'monthly' ? 'selected' : ''}>${i18n.t('timeTypeMonthly')}</option>
+                <option value="yearly" ${review.time_type === 'yearly' ? 'selected' : ''}>${i18n.t('timeTypeYearly')}</option>
+              </select>
+            </div>
+
             <!-- Nine Questions -->
             <div class="border-t pt-6">
               <h2 class="text-xl font-bold text-gray-800 mb-4">
@@ -947,10 +1013,14 @@ async function handleEditReview(e) {
   
   const id = document.getElementById('review-id').value;
   const title = document.getElementById('review-title').value;
+  const groupType = document.getElementById('review-group-type').value;
+  const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
   const data = {
     title,
+    group_type: groupType,
+    time_type: timeType,
     status,
     question1: document.getElementById('question1').value,
     question2: document.getElementById('question2').value,
@@ -1683,6 +1753,19 @@ function showNotificationsPanel(container) {
         <h2 class="text-xl font-bold text-gray-800 mb-4">
           <i class="fas fa-envelope mr-2"></i>${i18n.t('sendToSelected')}
         </h2>
+        
+        <!-- Tabs for selection methods -->
+        <div class="flex border-b mb-4">
+          <button onclick="switchNotificationTab('email')" id="tab-email"
+                  class="px-4 py-2 text-sm font-medium border-b-2 border-indigo-600 text-indigo-600">
+            <i class="fas fa-at mr-1"></i>${i18n.t('sendByEmail')}
+          </button>
+          <button onclick="switchNotificationTab('selection')" id="tab-selection"
+                  class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">
+            <i class="fas fa-check-square mr-1"></i>${i18n.t('sendBySelection')}
+          </button>
+        </div>
+        
         <form id="selected-form" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -1700,10 +1783,28 @@ function showNotificationsPanel(container) {
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
                       placeholder="${i18n.t('notificationMessage')}"></textarea>
           </div>
-          <p class="text-sm text-gray-500">
-            <i class="fas fa-info-circle mr-1"></i>
-            ${i18n.t('selectUsersNote') || '请先在用户管理标签页选择要发送通知的用户'}
-          </p>
+          
+          <!-- Email Input (shown by default) -->
+          <div id="email-input-section">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('recipientEmails')} <span class="text-red-500">*</span>
+            </label>
+            <textarea id="recipient-emails" rows="3"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                      placeholder="${i18n.t('recipientEmailsPlaceholder')}"></textarea>
+            <p class="mt-1 text-xs text-gray-500">
+              <i class="fas fa-info-circle mr-1"></i>${i18n.t('recipientEmailsPlaceholder')}
+            </p>
+          </div>
+          
+          <!-- Selection Note (hidden by default) -->
+          <div id="selection-note-section" style="display: none;">
+            <p class="text-sm text-gray-500 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <i class="fas fa-info-circle mr-1"></i>
+              ${i18n.t('selectUsersNote') || '请先在用户管理标签页选择要发送通知的用户'}
+            </p>
+          </div>
+          
           <button type="submit" 
                   class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 shadow-lg">
             <i class="fas fa-paper-plane mr-2"></i>${i18n.t('sendToSelected')}
@@ -1715,6 +1816,29 @@ function showNotificationsPanel(container) {
 
   document.getElementById('broadcast-form').addEventListener('submit', handleBroadcast);
   document.getElementById('selected-form').addEventListener('submit', handleSendToSelected);
+}
+
+function switchNotificationTab(tab) {
+  const emailTab = document.getElementById('tab-email');
+  const selectionTab = document.getElementById('tab-selection');
+  const emailSection = document.getElementById('email-input-section');
+  const selectionSection = document.getElementById('selection-note-section');
+  
+  if (tab === 'email') {
+    emailTab.classList.add('border-b-2', 'border-indigo-600', 'text-indigo-600');
+    emailTab.classList.remove('text-gray-600');
+    selectionTab.classList.remove('border-b-2', 'border-indigo-600', 'text-indigo-600');
+    selectionTab.classList.add('text-gray-600');
+    emailSection.style.display = 'block';
+    selectionSection.style.display = 'none';
+  } else {
+    selectionTab.classList.add('border-b-2', 'border-indigo-600', 'text-indigo-600');
+    selectionTab.classList.remove('text-gray-600');
+    emailTab.classList.remove('border-b-2', 'border-indigo-600', 'text-indigo-600');
+    emailTab.classList.add('text-gray-600');
+    emailSection.style.display = 'none';
+    selectionSection.style.display = 'block';
+  }
 }
 
 async function handleBroadcast(e) {
@@ -1738,24 +1862,85 @@ async function handleSendToSelected(e) {
   const title = document.getElementById('selected-title').value;
   const message = document.getElementById('selected-message').value;
   
-  const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked'))
-    .map(cb => parseInt(cb.value));
+  // Check which tab is active
+  const emailSection = document.getElementById('email-input-section');
+  const isEmailMode = emailSection.style.display !== 'none';
+  
+  if (isEmailMode) {
+    // Send by email addresses
+    const emailsText = document.getElementById('recipient-emails').value.trim();
+    if (!emailsText) {
+      showNotification(i18n.t('recipientEmails') + ' ' + (i18n.t('required') || '不能为空'), 'error');
+      return;
+    }
+    
+    // Parse emails (split by comma or newline)
+    const emails = emailsText.split(/[,\n]/).map(e => e.trim()).filter(e => e);
+    if (emails.length === 0) {
+      showNotification(i18n.t('recipientEmails') + ' ' + (i18n.t('invalid') || '格式无效'), 'error');
+      return;
+    }
+    
+    try {
+      // First, find user IDs by emails
+      const usersResponse = await axios.get('/api/admin/users');
+      const allUsers = usersResponse.data.users;
+      
+      const userIds = [];
+      const notFoundEmails = [];
+      
+      for (const email of emails) {
+        const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (user) {
+          userIds.push(user.id);
+        } else {
+          notFoundEmails.push(email);
+        }
+      }
+      
+      if (userIds.length === 0) {
+        showNotification(i18n.t('userNotFound') + ': ' + emails.join(', '), 'error');
+        return;
+      }
+      
+      // Send notification to found users
+      const response = await axios.post('/api/notifications/send', {
+        user_ids: userIds,
+        title,
+        message
+      });
+      
+      let successMsg = `${i18n.t('notificationSent')}: ${response.data.recipient_count} ${i18n.t('users') || '用户'}`;
+      if (notFoundEmails.length > 0) {
+        successMsg += ` (${i18n.t('userNotFound')}: ${notFoundEmails.join(', ')})`;
+      }
+      
+      showNotification(successMsg, notFoundEmails.length > 0 ? 'warning' : 'success');
+      document.getElementById('selected-form').reset();
+    } catch (error) {
+      showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    }
+  } else {
+    // Send by user selection
+    const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked'))
+      .map(cb => parseInt(cb.value));
 
-  if (selectedUsers.length === 0) {
-    showNotification(i18n.t('selectUsers'), 'error');
-    return;
-  }
+    if (selectedUsers.length === 0) {
+      showNotification(i18n.t('noUsersSelected') || i18n.t('selectUsers'), 'error');
+      return;
+    }
 
-  try {
-    const response = await axios.post('/api/notifications/send', {
-      user_ids: selectedUsers,
-      title,
-      message
-    });
-    showNotification(`${i18n.t('notificationSent')}: ${response.data.recipient_count} ${i18n.t('users') || '用户'}`, 'success');
-    document.getElementById('selected-form').reset();
-  } catch (error) {
-    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    try {
+      const response = await axios.post('/api/notifications/send', {
+        user_ids: selectedUsers,
+        title,
+        message
+      });
+      showNotification(`${i18n.t('notificationSent')}: ${response.data.recipient_count} ${i18n.t('users') || '用户'}`, 'success');
+      document.getElementById('selected-form').reset();
+    } catch (error) {
+      showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    }
   }
 }
 
