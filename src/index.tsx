@@ -5,6 +5,7 @@ import auth from './routes/auth';
 import reviews from './routes/reviews';
 import teams from './routes/teams';
 import admin from './routes/admin';
+import notifications from './routes/notifications';
 
 type Bindings = {
   DB: D1Database;
@@ -23,6 +24,7 @@ app.route('/api/auth', auth);
 app.route('/api/reviews', reviews);
 app.route('/api/teams', teams);
 app.route('/api/admin', admin);
+app.route('/api/notifications', notifications);
 
 // Main page - Login/Dashboard
 app.get('/', (c) => {

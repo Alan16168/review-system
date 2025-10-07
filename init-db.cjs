@@ -32,10 +32,14 @@ console.log('Initializing schema...');
 try {
   const db = new Database(dbPath);
   
-  // Execute schema
-  const schema = fs.readFileSync('./migrations/0001_initial_schema.sql', 'utf8');
-  db.exec(schema);
-  console.log('✓ Schema created');
+  // Execute schema migrations
+  const schema1 = fs.readFileSync('./migrations/0001_initial_schema.sql', 'utf8');
+  db.exec(schema1);
+  console.log('✓ Initial schema created');
+  
+  const schema2 = fs.readFileSync('./migrations/0002_add_notifications.sql', 'utf8');
+  db.exec(schema2);
+  console.log('✓ Notifications table created');
   
   // Execute seed data
   const seed = fs.readFileSync('./seed.sql', 'utf8');
