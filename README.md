@@ -22,6 +22,9 @@
 2. ✅ **复盘记录管理**
    - 创建、编辑、删除复盘记录
    - 复盘灵魂9问框架
+   - **复盘分类系统（新增）**：
+     - 群体类型：个人/项目/团队
+     - 时间类型：周复盘/月复盘/年复盘
    - 个人复盘和团队复盘
    - 复盘状态管理（草稿/已完成）
    - 复盘列表展示（带筛选和搜索）
@@ -30,13 +33,18 @@
 
 3. ✅ **团队协作功能**（高级用户专属）
    - 创建和管理团队
+   - **通过邮箱邀请成员（新增）**
    - 团队成员管理
    - 共享复盘记录
    - 协作编辑权限控制
 
 4. ✅ **管理后台**（管理员专属）
-   - 用户管理
+   - 用户管理（增删查改）
    - 角色权限调整
+   - **增强通知系统（新增）**：
+     - 群发通知给所有用户
+     - 通过邮箱地址发送通知
+     - 通过复选框选择用户发送
    - 系统统计数据
 
 5. ✅ **国际化支持**
@@ -77,6 +85,8 @@
 - title: 复盘主题
 - user_id: 创建者ID
 - team_id: 团队ID（可选）
+- group_type: 群体类型（personal/project/team）【新增】
+- time_type: 时间类型（weekly/monthly/yearly）【新增】
 - question1-9: 复盘灵魂9问的答案
 - status: 状态（draft/completed）
 - created_at: 创建时间
@@ -108,6 +118,16 @@
 - user_id: 用户ID
 - can_edit: 编辑权限（1/0）
 - added_at: 添加时间
+```
+
+#### 6. Notifications（通知表）【新增】
+```sql
+- id: 通知ID
+- user_id: 接收用户ID
+- title: 通知标题
+- message: 通知内容
+- is_read: 已读状态（0/1）
+- created_at: 创建时间
 ```
 
 ### 存储服务
@@ -169,7 +189,9 @@ webapp/
 │   ├── app.js                # 前端应用逻辑
 │   └── i18n.js               # 国际化配置
 ├── migrations/                # 数据库迁移
-│   └── 0001_initial_schema.sql
+│   ├── 0001_initial_schema.sql
+│   ├── 0002_add_notifications.sql
+│   └── 0003_add_review_types.sql  # 【新增】复盘分类字段
 ├── seed.sql                   # 种子数据
 ├── init-db.cjs               # 数据库初始化脚本
 ├── ecosystem.config.cjs      # PM2 配置
@@ -237,6 +259,8 @@ Headers: Authorization: Bearer {token}
 Request: {
   "title": "复盘主题",
   "team_id": 1,  // 可选，团队复盘时提供
+  "group_type": "project",  // 【新增】群体类型：personal/project/team
+  "time_type": "monthly",   // 【新增】时间类型：weekly/monthly/yearly
   "question1": "目标是...",
   "question2": "达成情况...",
   // ... question3-9
@@ -254,6 +278,8 @@ Response: {
 Headers: Authorization: Bearer {token}
 Request: {
   "title": "新标题",
+  "group_type": "team",     // 【新增】可修改群体类型
+  "time_type": "yearly",    // 【新增】可修改时间类型
   "question1": "更新的答案",
   "status": "completed"
 }
@@ -406,6 +432,35 @@ Response: {
 }
 ```
 
+#### POST /api/notifications/broadcast 【新增】
+向所有用户群发通知
+```json
+Headers: Authorization: Bearer {token}
+Request: {
+  "title": "通知标题",
+  "message": "通知内容"
+}
+Response: {
+  "message": "Notification sent successfully",
+  "recipient_count": 25
+}
+```
+
+#### POST /api/notifications/send 【新增】
+向指定用户发送通知（支持邮箱查找）
+```json
+Headers: Authorization: Bearer {token}
+Request: {
+  "user_ids": [2, 3, 5],  // 用户ID数组
+  "title": "通知标题",
+  "message": "通知内容"
+}
+Response: {
+  "message": "Notification sent successfully",
+  "recipient_count": 3
+}
+```
+
 ## 💻 本地开发
 
 ### 安装依赖
@@ -452,21 +507,33 @@ curl -X GET http://localhost:3000/api/reviews \
 ### 2. 创建个人复盘
 - 登录后点击"创建复盘"
 - 填写复盘主题
-- 选择"个人复盘"
+- **选择群体类型**（个人/项目/团队）【新增】
+- **选择时间类型**（周/月/年复盘）【新增】
+- 选择团队（可选，仅限高级用户）
 - 回答9个核心问题
 - 保存为草稿或标记为完成
 
 ### 3. 团队复盘（高级用户）
 - 创建或加入团队
+- **通过邮箱邀请新成员**【新增】
 - 在团队中创建复盘记录
 - 团队成员可以共同编辑
 - 添加协作者并设置编辑权限
 
 ### 4. 管理后台（管理员）
 - 访问管理后台
-- 查看所有用户和统计数据
-- 调整用户角色权限
-- 管理系统资源
+- **用户管理标签页**：
+  - 查看所有用户列表
+  - 搜索和筛选用户
+  - 调整用户角色权限
+  - 删除用户账号
+- **通知标签页【新增】**：
+  - 群发通知给所有用户
+  - 通过邮箱地址发送通知（逗号分隔多个邮箱）
+  - 通过复选框选择用户发送通知
+- **系统统计标签页**：
+  - 查看用户数、复盘数、团队数
+  - 用户角色分布统计
 
 ## 🚀 部署
 
@@ -517,6 +584,9 @@ npx wrangler pages secret put JWT_SECRET --project-name review-system
 ✅ 团队复盘协作
 ✅ 复盘协作者管理
 ✅ 管理后台（用户管理、统计数据）
+✅ **复盘分类系统（群体类型 + 时间类型）** 【V2 新增】
+✅ **增强通知系统（邮箱发送 + 选择发送）** 【V2 新增】
+✅ **团队邮箱邀请功能** 【V2 新增】
 ✅ 中英双语支持
 ✅ 响应式前端界面
 ✅ API 接口完整实现
@@ -583,6 +653,7 @@ npx wrangler pages secret put JWT_SECRET --project-name review-system
 - **状态**: ✅ 开发环境运行中
 - **技术栈**: Hono + TypeScript + Cloudflare D1
 - **最后更新**: 2025-10-07
+- **当前版本**: V2.0 🎉
 
 ## 📝 许可证
 
@@ -590,6 +661,12 @@ MIT License
 
 ---
 
-**开发者**: Claude AI Assistant
-**创建日期**: 2025-10-07
-**版本**: 1.0.0
+**开发者**: Claude AI Assistant  
+**创建日期**: 2025-10-07  
+**当前版本**: V2.0  
+**V2 更新内容**: 
+- ✨ 复盘分类系统（群体类型 + 时间类型）
+- ✨ 增强通知系统（邮箱发送 + 选择发送）
+- ✨ 团队邮箱邀请功能
+
+详细更新说明请查看 [FEATURE_UPDATE_V2.md](./FEATURE_UPDATE_V2.md)
