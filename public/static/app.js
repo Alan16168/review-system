@@ -350,29 +350,716 @@ function renderRecentReviews(reviews) {
   `;
 }
 
-function showReviews() {
-  // Will be implemented - shows full review list
-  alert('Reviews page - coming soon');
+// ============ Reviews Page ============
+
+async function showReviews() {
+  currentView = 'reviews';
+  const app = document.getElementById('app');
+  
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-50">
+      ${renderNavigation()}
+      
+      <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="mb-6 flex justify-between items-center">
+          <h1 class="text-3xl font-bold text-gray-800">
+            <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('myReviews')}
+          </h1>
+          <button onclick="showCreateReview()" 
+                  class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition shadow-lg">
+            <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-filter mr-1"></i>${i18n.t('status')}
+              </label>
+              <select id="filter-status" onchange="filterReviews()" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="all">${i18n.t('all') || '全部'}</option>
+                <option value="draft">${i18n.t('draft')}</option>
+                <option value="completed">${i18n.t('completed')}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-search mr-1"></i>${i18n.t('search')}
+              </label>
+              <input type="text" id="search-input" oninput="filterReviews()" 
+                     placeholder="${i18n.t('reviewTitle')}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-users mr-1"></i>${i18n.t('team')}
+              </label>
+              <select id="filter-team" onchange="filterReviews()" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="all">${i18n.t('all') || '全部'}</option>
+                <option value="personal">${i18n.t('personalReview')}</option>
+                <option value="team">${i18n.t('teamReview')}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reviews List -->
+        <div id="reviews-container" class="bg-white rounded-lg shadow-md">
+          <div class="p-8 text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+            <p class="text-gray-600">${i18n.t('loading')}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await loadAllReviews();
+}
+
+let allReviews = [];
+
+async function loadAllReviews() {
+  try {
+    const response = await axios.get('/api/reviews');
+    allReviews = response.data.reviews;
+    renderReviewsList(allReviews);
+  } catch (error) {
+    console.error('Load reviews error:', error);
+    document.getElementById('reviews-container').innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+        <p class="text-red-600">${i18n.t('operationFailed')}</p>
+      </div>
+    `;
+  }
+}
+
+function filterReviews() {
+  const statusFilter = document.getElementById('filter-status').value;
+  const searchText = document.getElementById('search-input').value.toLowerCase();
+  const teamFilter = document.getElementById('filter-team').value;
+
+  let filtered = allReviews.filter(review => {
+    // Status filter
+    if (statusFilter !== 'all' && review.status !== statusFilter) return false;
+    
+    // Search filter
+    if (searchText && !review.title.toLowerCase().includes(searchText)) return false;
+    
+    // Team filter
+    if (teamFilter === 'personal' && review.team_id) return false;
+    if (teamFilter === 'team' && !review.team_id) return false;
+    
+    return true;
+  });
+
+  renderReviewsList(filtered);
+}
+
+function renderReviewsList(reviews) {
+  const container = document.getElementById('reviews-container');
+  
+  if (reviews.length === 0) {
+    container.innerHTML = `
+      <div class="p-12 text-center">
+        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-lg">${i18n.t('noData')}</p>
+        <button onclick="showCreateReview()" 
+                class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
+          <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('reviewTitle')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('status')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('creator')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('updatedAt')}
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('actions')}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${reviews.map(review => `
+            <tr class="hover:bg-gray-50 transition">
+              <td class="px-6 py-4">
+                <div class="flex items-center">
+                  <div>
+                    <div class="text-sm font-medium text-gray-900">${escapeHtml(review.title)}</div>
+                    ${review.team_name ? `
+                      <div class="text-xs text-gray-500 mt-1">
+                        <i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}
+                      </div>
+                    ` : `
+                      <div class="text-xs text-gray-500 mt-1">
+                        <i class="fas fa-user mr-1"></i>${i18n.t('personalReview')}
+                      </div>
+                    `}
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-3 py-1 text-xs font-semibold rounded-full ${
+                  review.status === 'completed' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }">
+                  <i class="fas ${review.status === 'completed' ? 'fa-check-circle' : 'fa-clock'} mr-1"></i>
+                  ${i18n.t(review.status)}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${escapeHtml(review.creator_name || 'Unknown')}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-500">
+                  ${new Date(review.updated_at).toLocaleDateString()}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button onclick="showReviewDetail(${review.id})" 
+                        class="text-indigo-600 hover:text-indigo-900 mr-3" title="${i18n.t('view')}">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button onclick="showEditReview(${review.id})" 
+                        class="text-blue-600 hover:text-blue-900 mr-3" title="${i18n.t('edit')}">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteReview(${review.id})" 
+                        class="text-red-600 hover:text-red-900" title="${i18n.t('delete')}">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ============ Create/Edit Review ============
+
+async function showCreateReview() {
+  currentView = 'create-review';
+  const app = document.getElementById('app');
+  
+  // Load teams if premium user
+  let teams = [];
+  if (currentUser.role === 'premium' || currentUser.role === 'admin') {
+    try {
+      const response = await axios.get('/api/teams');
+      teams = response.data.teams;
+    } catch (error) {
+      console.error('Load teams error:', error);
+    }
+  }
+  
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-50">
+      ${renderNavigation()}
+      
+      <div class="max-w-4xl mx-auto px-4 py-8">
+        <div class="mb-6">
+          <button onclick="showReviews()" class="text-indigo-600 hover:text-indigo-800 mb-4">
+            <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
+          </button>
+          <h1 class="text-3xl font-bold text-gray-800">
+            <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createReview')}
+          </h1>
+        </div>
+
+        <form id="review-form" class="bg-white rounded-lg shadow-md p-6 space-y-6">
+          <!-- Basic Info -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('reviewTitle')} <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="review-title" required
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                   placeholder="${i18n.t('reviewTitle')}">
+          </div>
+
+          ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams.length > 0 ? `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('team')}
+            </label>
+            <select id="review-team" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="">${i18n.t('personalReview')}</option>
+              ${teams.map(team => `<option value="${team.id}">${escapeHtml(team.name)}</option>`).join('')}
+            </select>
+            <p class="mt-1 text-xs text-gray-500">
+              <i class="fas fa-info-circle mr-1"></i>${i18n.t('teamReviewNote') || '选择团队后，团队成员可以协作编辑'}
+            </p>
+          </div>
+          ` : ''}
+
+          <!-- Nine Questions -->
+          <div class="border-t pt-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+              <i class="fas fa-question-circle mr-2"></i>${i18n.t('nineQuestions')}
+            </h2>
+            
+            ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `
+              <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('question' + num)}
+                </label>
+                <textarea id="question${num}" rows="3"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                          placeholder="${i18n.t('question' + num)}"></textarea>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Status -->
+          <div class="border-t pt-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('status')}
+            </label>
+            <div class="flex space-x-4">
+              <label class="flex items-center cursor-pointer">
+                <input type="radio" name="status" value="draft" checked
+                       class="mr-2 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm text-gray-700">
+                  <i class="fas fa-clock text-yellow-600 mr-1"></i>${i18n.t('draft')}
+                </span>
+              </label>
+              <label class="flex items-center cursor-pointer">
+                <input type="radio" name="status" value="completed"
+                       class="mr-2 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm text-gray-700">
+                  <i class="fas fa-check-circle text-green-600 mr-1"></i>${i18n.t('completed')}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex justify-end space-x-4 pt-6 border-t">
+            <button type="button" onclick="showReviews()" 
+                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+              ${i18n.t('cancel')}
+            </button>
+            <button type="submit" 
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
+              <i class="fas fa-save mr-2"></i>${i18n.t('save')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('review-form').addEventListener('submit', handleCreateReview);
+}
+
+async function handleCreateReview(e) {
+  e.preventDefault();
+  
+  const title = document.getElementById('review-title').value;
+  const teamId = document.getElementById('review-team')?.value || null;
+  const status = document.querySelector('input[name="status"]:checked').value;
+  
+  const data = {
+    title,
+    team_id: teamId || null,
+    status,
+    question1: document.getElementById('question1').value,
+    question2: document.getElementById('question2').value,
+    question3: document.getElementById('question3').value,
+    question4: document.getElementById('question4').value,
+    question5: document.getElementById('question5').value,
+    question6: document.getElementById('question6').value,
+    question7: document.getElementById('question7').value,
+    question8: document.getElementById('question8').value,
+    question9: document.getElementById('question9').value,
+  };
+
+  try {
+    await axios.post('/api/reviews', data);
+    showNotification(i18n.t('createSuccess'), 'success');
+    showReviews();
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// ============ Review Detail & Edit ============
+
+async function showReviewDetail(id) {
+  try {
+    const response = await axios.get(`/api/reviews/${id}`);
+    const review = response.data.review;
+    const collaborators = response.data.collaborators || [];
+    
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="min-h-screen bg-gray-50">
+        ${renderNavigation()}
+        
+        <div class="max-w-4xl mx-auto px-4 py-8">
+          <div class="mb-6">
+            <button onclick="showReviews()" class="text-indigo-600 hover:text-indigo-800 mb-4">
+              <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
+            </button>
+            <div class="flex justify-between items-start">
+              <div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                  ${escapeHtml(review.title)}
+                </h1>
+                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                  <span>
+                    <i class="fas fa-user mr-1"></i>${escapeHtml(review.creator_name)}
+                  </span>
+                  <span>
+                    <i class="fas fa-clock mr-1"></i>${new Date(review.created_at).toLocaleString()}
+                  </span>
+                  <span class="px-3 py-1 text-xs font-semibold rounded-full ${
+                    review.status === 'completed' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }">
+                    ${i18n.t(review.status)}
+                  </span>
+                  ${review.team_name ? `
+                    <span class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                      <i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+              <div class="flex space-x-2">
+                <button onclick="showEditReview(${review.id})" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  <i class="fas fa-edit mr-2"></i>${i18n.t('edit')}
+                </button>
+                <button onclick="deleteReview(${review.id})" 
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                  <i class="fas fa-trash mr-2"></i>${i18n.t('delete')}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Nine Questions Display -->
+          <div class="bg-white rounded-lg shadow-md p-6 space-y-6">
+            <h2 class="text-xl font-bold text-gray-800 border-b pb-3">
+              <i class="fas fa-question-circle mr-2"></i>${i18n.t('nineQuestions')}
+            </h2>
+            
+            ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `
+              <div class="border-l-4 border-indigo-500 pl-4 py-2">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">
+                  ${i18n.t('question' + num)}
+                </h3>
+                <p class="text-gray-800 whitespace-pre-wrap">
+                  ${escapeHtml(review['question' + num] || (i18n.t('noAnswer') || '未填写'))}
+                </p>
+              </div>
+            `).join('')}
+          </div>
+
+          ${collaborators.length > 0 ? `
+          <div class="mt-6 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+              <i class="fas fa-users mr-2"></i>${i18n.t('collaborators') || '协作者'}
+            </h2>
+            <div class="space-y-2">
+              ${collaborators.map(collab => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div class="flex items-center">
+                    <i class="fas fa-user-circle text-2xl text-gray-400 mr-3"></i>
+                    <div>
+                      <div class="text-sm font-medium text-gray-900">${escapeHtml(collab.username)}</div>
+                      <div class="text-xs text-gray-500">${escapeHtml(collab.email)}</div>
+                    </div>
+                  </div>
+                  <span class="text-xs px-2 py-1 ${collab.can_edit ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} rounded">
+                    ${collab.can_edit ? i18n.t('canEdit') || '可编辑' : i18n.t('readOnly') || '只读'}
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    showReviews();
+  }
+}
+
+async function showEditReview(id) {
+  try {
+    const response = await axios.get(`/api/reviews/${id}`);
+    const review = response.data.review;
+    
+    // Load teams if premium user
+    let teams = [];
+    if (currentUser.role === 'premium' || currentUser.role === 'admin') {
+      try {
+        const teamsResponse = await axios.get('/api/teams');
+        teams = teamsResponse.data.teams;
+      } catch (error) {
+        console.error('Load teams error:', error);
+      }
+    }
+    
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="min-h-screen bg-gray-50">
+        ${renderNavigation()}
+        
+        <div class="max-w-4xl mx-auto px-4 py-8">
+          <div class="mb-6">
+            <button onclick="showReviewDetail(${id})" class="text-indigo-600 hover:text-indigo-800 mb-4">
+              <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
+            </button>
+            <h1 class="text-3xl font-bold text-gray-800">
+              <i class="fas fa-edit mr-2"></i>${i18n.t('edit')} ${i18n.t('review') || '复盘'}
+            </h1>
+          </div>
+
+          <form id="edit-review-form" class="bg-white rounded-lg shadow-md p-6 space-y-6">
+            <input type="hidden" id="review-id" value="${id}">
+            
+            <!-- Basic Info -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('reviewTitle')} <span class="text-red-500">*</span>
+              </label>
+              <input type="text" id="review-title" required value="${escapeHtml(review.title)}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams.length > 0 ? `
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('team')}
+              </label>
+              <select id="review-team" disabled
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100">
+                <option value="">${i18n.t('personalReview')}</option>
+                ${teams.map(team => `
+                  <option value="${team.id}" ${review.team_id == team.id ? 'selected' : ''}>
+                    ${escapeHtml(team.name)}
+                  </option>
+                `).join('')}
+              </select>
+              <p class="mt-1 text-xs text-gray-500">
+                <i class="fas fa-info-circle mr-1"></i>${i18n.t('teamCannotChange') || '团队归属不可更改'}
+              </p>
+            </div>
+            ` : ''}
+
+            <!-- Nine Questions -->
+            <div class="border-t pt-6">
+              <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-question-circle mr-2"></i>${i18n.t('nineQuestions')}
+              </h2>
+              
+              ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `
+                <div class="mb-6">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    ${i18n.t('question' + num)}
+                  </label>
+                  <textarea id="question${num}" rows="3"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                            placeholder="${i18n.t('question' + num)}">${escapeHtml(review['question' + num] || '')}</textarea>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Status -->
+            <div class="border-t pt-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('status')}
+              </label>
+              <div class="flex space-x-4">
+                <label class="flex items-center cursor-pointer">
+                  <input type="radio" name="status" value="draft" ${review.status === 'draft' ? 'checked' : ''}
+                         class="mr-2 text-indigo-600 focus:ring-indigo-500">
+                  <span class="text-sm text-gray-700">
+                    <i class="fas fa-clock text-yellow-600 mr-1"></i>${i18n.t('draft')}
+                  </span>
+                </label>
+                <label class="flex items-center cursor-pointer">
+                  <input type="radio" name="status" value="completed" ${review.status === 'completed' ? 'checked' : ''}
+                         class="mr-2 text-indigo-600 focus:ring-indigo-500">
+                  <span class="text-sm text-gray-700">
+                    <i class="fas fa-check-circle text-green-600 mr-1"></i>${i18n.t('completed')}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-end space-x-4 pt-6 border-t">
+              <button type="button" onclick="showReviewDetail(${id})" 
+                      class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                ${i18n.t('cancel')}
+              </button>
+              <button type="submit" 
+                      class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
+                <i class="fas fa-save mr-2"></i>${i18n.t('save')}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('edit-review-form').addEventListener('submit', handleEditReview);
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    showReviews();
+  }
+}
+
+async function handleEditReview(e) {
+  e.preventDefault();
+  
+  const id = document.getElementById('review-id').value;
+  const title = document.getElementById('review-title').value;
+  const status = document.querySelector('input[name="status"]:checked').value;
+  
+  const data = {
+    title,
+    status,
+    question1: document.getElementById('question1').value,
+    question2: document.getElementById('question2').value,
+    question3: document.getElementById('question3').value,
+    question4: document.getElementById('question4').value,
+    question5: document.getElementById('question5').value,
+    question6: document.getElementById('question6').value,
+    question7: document.getElementById('question7').value,
+    question8: document.getElementById('question8').value,
+    question9: document.getElementById('question9').value,
+  };
+
+  try {
+    await axios.put(`/api/reviews/${id}`, data);
+    showNotification(i18n.t('updateSuccess'), 'success');
+    showReviewDetail(id);
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// ============ Helper Functions ============
+
+function renderNavigation() {
+  return `
+    <nav class="bg-white shadow-lg">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+          <div class="flex items-center space-x-8">
+            <h1 class="text-2xl font-bold text-indigo-600 cursor-pointer" onclick="showDashboard()">
+              <i class="fas fa-brain mr-2"></i>${i18n.t('systemTitle')}
+            </h1>
+            <div class="hidden md:flex space-x-4">
+              <button onclick="showDashboard()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                <i class="fas fa-home mr-1"></i>${i18n.t('dashboard')}
+              </button>
+              <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
+              </button>
+              ${(currentUser.role === 'premium' || currentUser.role === 'admin') ? `
+                <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                  <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
+                </button>
+              ` : ''}
+              ${currentUser.role === 'admin' ? `
+                <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                  <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
+                </button>
+              ` : ''}
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <button onclick="i18n.setLanguage(i18n.getCurrentLanguage() === 'zh' ? 'en' : 'zh')" 
+                    class="text-gray-700 hover:text-indigo-600">
+              <i class="fas fa-language mr-1"></i>
+              ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
+            </button>
+            <span class="text-gray-700">
+              <i class="fas fa-user mr-1"></i>${currentUser.username}
+              <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
+            </span>
+            <button onclick="logout()" class="text-red-600 hover:text-red-800">
+              <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  `;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showNotification(message, type = 'info') {
+  const colors = {
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    info: 'bg-blue-500'
+  };
+  
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in`;
+  notification.innerHTML = `
+    <div class="flex items-center">
+      <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>
+      <span>${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
 }
 
 function showTeams() {
   // Will be implemented - shows teams management
-  alert('Teams page - coming soon');
+  showNotification('Teams page - coming soon', 'info');
 }
 
 function showAdmin() {
   // Will be implemented - shows admin panel
-  alert('Admin page - coming soon');
-}
-
-function showCreateReview() {
-  // Will be implemented - shows create review form
-  alert('Create review form - coming soon');
-}
-
-function showReviewDetail(id) {
-  // Will be implemented - shows review detail and edit
-  alert('Review detail page - coming soon for ID: ' + id);
+  showNotification('Admin page - coming soon', 'info');
 }
 
 async function deleteReview(id) {

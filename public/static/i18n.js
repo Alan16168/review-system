@@ -42,6 +42,15 @@ const translations = {
     'save': '保存',
     'cancel': '取消',
     'search': '搜索',
+    'back': '返回',
+    'all': '全部',
+    'review': '复盘',
+    'noAnswer': '未填写',
+    'collaborators': '协作者',
+    'canEdit': '可编辑',
+    'readOnly': '只读',
+    'teamReviewNote': '选择团队后，团队成员可以协作编辑',
+    'teamCannotChange': '团队归属不可更改',
     
     // Nine Questions
     'nineQuestions': '复盘灵魂9问',
@@ -138,6 +147,15 @@ const translations = {
     'save': 'Save',
     'cancel': 'Cancel',
     'search': 'Search',
+    'back': 'Back',
+    'all': 'All',
+    'review': 'Review',
+    'noAnswer': 'Not answered',
+    'collaborators': 'Collaborators',
+    'canEdit': 'Can Edit',
+    'readOnly': 'Read Only',
+    'teamReviewNote': 'Team members can collaborate on editing after selecting a team',
+    'teamCannotChange': 'Team affiliation cannot be changed',
     
     // Nine Questions
     'nineQuestions': 'Nine Key Review Questions',
