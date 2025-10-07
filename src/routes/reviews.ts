@@ -112,7 +112,7 @@ reviews.post('/', async (c) => {
     `).bind(
       title, user.id, team_id || null,
       group_type || 'personal',
-      time_type || 'weekly',
+      time_type || 'daily',
       questions.question1 || null,
       questions.question2 || null,
       questions.question3 || null,

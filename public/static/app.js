@@ -373,7 +373,7 @@ async function showReviews() {
 
         <!-- Filters -->
         <div class="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-filter mr-1"></i>${i18n.t('status')}
@@ -395,13 +395,27 @@ async function showReviews() {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-users mr-1"></i>${i18n.t('team')}
+                <i class="fas fa-layer-group mr-1"></i>${i18n.t('groupType')}
               </label>
-              <select id="filter-team" onchange="filterReviews()" 
+              <select id="filter-group-type" onchange="filterReviews()" 
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 <option value="all">${i18n.t('all') || '全部'}</option>
-                <option value="personal">${i18n.t('personalReview')}</option>
-                <option value="team">${i18n.t('teamReview')}</option>
+                <option value="personal">${i18n.t('groupTypePersonal')}</option>
+                <option value="project">${i18n.t('groupTypeProject')}</option>
+                <option value="team">${i18n.t('groupTypeTeam')}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-calendar-alt mr-1"></i>${i18n.t('timeType')}
+              </label>
+              <select id="filter-time-type" onchange="filterReviews()" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="all">${i18n.t('all') || '全部'}</option>
+                <option value="daily">${i18n.t('timeTypeDaily')}</option>
+                <option value="weekly">${i18n.t('timeTypeWeekly')}</option>
+                <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
+                <option value="yearly">${i18n.t('timeTypeYearly')}</option>
               </select>
             </div>
           </div>
@@ -442,7 +456,8 @@ async function loadAllReviews() {
 function filterReviews() {
   const statusFilter = document.getElementById('filter-status').value;
   const searchText = document.getElementById('search-input').value.toLowerCase();
-  const teamFilter = document.getElementById('filter-team').value;
+  const groupTypeFilter = document.getElementById('filter-group-type').value;
+  const timeTypeFilter = document.getElementById('filter-time-type').value;
 
   let filtered = allReviews.filter(review => {
     // Status filter
@@ -451,9 +466,11 @@ function filterReviews() {
     // Search filter
     if (searchText && !review.title.toLowerCase().includes(searchText)) return false;
     
-    // Team filter
-    if (teamFilter === 'personal' && review.team_id) return false;
-    if (teamFilter === 'team' && !review.team_id) return false;
+    // Group type filter
+    if (groupTypeFilter !== 'all' && review.group_type !== groupTypeFilter) return false;
+    
+    // Time type filter
+    if (timeTypeFilter !== 'all' && review.time_type !== timeTypeFilter) return false;
     
     return true;
   });
@@ -637,6 +654,7 @@ async function showCreateReview() {
             </label>
             <select id="review-time-type" required
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="daily">${i18n.t('timeTypeDaily')}</option>
               <option value="weekly">${i18n.t('timeTypeWeekly')}</option>
               <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
               <option value="yearly">${i18n.t('timeTypeYearly')}</option>
@@ -938,6 +956,7 @@ async function showEditReview(id) {
               </label>
               <select id="review-time-type" required
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="daily" ${review.time_type === 'daily' ? 'selected' : ''}>${i18n.t('timeTypeDaily')}</option>
                 <option value="weekly" ${review.time_type === 'weekly' ? 'selected' : ''}>${i18n.t('timeTypeWeekly')}</option>
                 <option value="monthly" ${review.time_type === 'monthly' ? 'selected' : ''}>${i18n.t('timeTypeMonthly')}</option>
                 <option value="yearly" ${review.time_type === 'yearly' ? 'selected' : ''}>${i18n.t('timeTypeYearly')}</option>
