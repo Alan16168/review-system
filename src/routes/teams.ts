@@ -61,9 +61,9 @@ teams.get('/:id', async (c) => {
       return c.json({ error: 'Team not found' }, 404);
     }
 
-    // Get members
+    // Get members with team roles
     const membersQuery = `
-      SELECT u.id, u.email, u.username, u.role, tm.joined_at
+      SELECT u.id, u.email, u.username, u.role as user_role, tm.role as team_role, tm.joined_at
       FROM team_members tm
       JOIN users u ON tm.user_id = u.id
       WHERE tm.team_id = ?
@@ -97,10 +97,10 @@ teams.post('/', async (c) => {
 
     const teamId = result.meta.last_row_id;
 
-    // Add creator as member
+    // Add creator as member with 'creator' role
     await c.env.DB.prepare(
-      'INSERT INTO team_members (team_id, user_id) VALUES (?, ?)'
-    ).bind(teamId, user.id).run();
+      'INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)'
+    ).bind(teamId, user.id, 'creator').run();
 
     return c.json({
       id: teamId,
@@ -188,13 +188,54 @@ teams.post('/:id/members', async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
 
+    // Default role is 'viewer' for new members
+    const { role = 'viewer' } = await c.req.json();
+    
     await c.env.DB.prepare(
-      'INSERT OR IGNORE INTO team_members (team_id, user_id) VALUES (?, ?)'
-    ).bind(teamId, user_id).run();
+      'INSERT OR IGNORE INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)'
+    ).bind(teamId, user_id, role).run();
 
     return c.json({ message: 'Member added successfully' });
   } catch (error) {
     console.error('Add member error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Update member role in team
+teams.put('/:id/members/:userId/role', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const teamId = c.req.param('id');
+    const targetUserId = c.req.param('userId');
+    const { role } = await c.req.json();
+
+    // Validate role
+    if (!['creator', 'viewer', 'operator'].includes(role)) {
+      return c.json({ error: 'Invalid role. Must be creator, viewer, or operator' }, 400);
+    }
+
+    // Check if current user is the owner (only owner can change roles)
+    const team = await c.env.DB.prepare(
+      'SELECT * FROM teams WHERE id = ? AND owner_id = ?'
+    ).bind(teamId, user.id).first();
+
+    if (!team) {
+      return c.json({ error: 'Only owner can change member roles' }, 403);
+    }
+
+    // Don't allow changing owner's own role
+    if (targetUserId === user.id.toString()) {
+      return c.json({ error: 'Cannot change your own role' }, 400);
+    }
+
+    await c.env.DB.prepare(
+      'UPDATE team_members SET role = ? WHERE team_id = ? AND user_id = ?'
+    ).bind(role, teamId, targetUserId).run();
+
+    return c.json({ message: 'Member role updated successfully' });
+  } catch (error) {
+    console.error('Update member role error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

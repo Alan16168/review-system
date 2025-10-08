@@ -152,18 +152,24 @@ reviews.put('/:id', async (c) => {
     const body = await c.req.json();
 
     // Check if user has edit permission
+    // Creator can always edit
+    // Collaborators with can_edit=1 can edit
+    // Team members with 'creator' or 'operator' role can edit
     const checkQuery = `
       SELECT 1 FROM reviews r
       LEFT JOIN review_collaborators rc ON r.id = rc.review_id
+      LEFT JOIN team_members tm ON r.team_id = tm.team_id AND tm.user_id = ?
       WHERE r.id = ? AND (
         r.user_id = ?
         OR (rc.user_id = ? AND rc.can_edit = 1)
+        OR (tm.user_id = ? AND tm.role IN ('creator', 'operator'))
       )
     `;
-    const hasPermission = await c.env.DB.prepare(checkQuery).bind(reviewId, user.id, user.id).first();
+    const hasPermission = await c.env.DB.prepare(checkQuery)
+      .bind(user.id, reviewId, user.id, user.id, user.id).first();
 
     if (!hasPermission) {
-      return c.json({ error: 'Access denied' }, 403);
+      return c.json({ error: 'Access denied. You need creator or operator role to edit.' }, 403);
     }
 
     const { title, group_type, time_type, ...questions } = body;
@@ -215,13 +221,20 @@ reviews.delete('/:id', async (c) => {
     const user = c.get('user') as UserPayload;
     const reviewId = c.req.param('id');
 
-    // Only creator can delete
-    const review = await c.env.DB.prepare(
-      'SELECT * FROM reviews WHERE id = ? AND user_id = ?'
-    ).bind(reviewId, user.id).first();
+    // Only review creator or team creator can delete
+    const checkQuery = `
+      SELECT r.* FROM reviews r
+      LEFT JOIN team_members tm ON r.team_id = tm.team_id AND tm.user_id = ?
+      WHERE r.id = ? AND (
+        r.user_id = ?
+        OR (tm.user_id = ? AND tm.role = 'creator')
+      )
+    `;
+    const review = await c.env.DB.prepare(checkQuery)
+      .bind(user.id, reviewId, user.id, user.id).first();
 
     if (!review) {
-      return c.json({ error: 'Review not found or access denied' }, 404);
+      return c.json({ error: 'Access denied. Only review creator or team creator can delete.' }, 404);
     }
 
     await c.env.DB.prepare('DELETE FROM reviews WHERE id = ?').bind(reviewId).run();

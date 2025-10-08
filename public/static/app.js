@@ -415,6 +415,7 @@ async function showReviews() {
                 <option value="daily">${i18n.t('timeTypeDaily')}</option>
                 <option value="weekly">${i18n.t('timeTypeWeekly')}</option>
                 <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
+                <option value="quarterly">${i18n.t('timeTypeQuarterly')}</option>
                 <option value="yearly">${i18n.t('timeTypeYearly')}</option>
               </select>
             </div>
@@ -657,6 +658,7 @@ async function showCreateReview() {
               <option value="daily">${i18n.t('timeTypeDaily')}</option>
               <option value="weekly">${i18n.t('timeTypeWeekly')}</option>
               <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
+              <option value="quarterly">${i18n.t('timeTypeQuarterly')}</option>
               <option value="yearly">${i18n.t('timeTypeYearly')}</option>
             </select>
           </div>
@@ -959,6 +961,7 @@ async function showEditReview(id) {
                 <option value="daily" ${review.time_type === 'daily' ? 'selected' : ''}>${i18n.t('timeTypeDaily')}</option>
                 <option value="weekly" ${review.time_type === 'weekly' ? 'selected' : ''}>${i18n.t('timeTypeWeekly')}</option>
                 <option value="monthly" ${review.time_type === 'monthly' ? 'selected' : ''}>${i18n.t('timeTypeMonthly')}</option>
+                <option value="quarterly" ${review.time_type === 'quarterly' ? 'selected' : ''}>${i18n.t('timeTypeQuarterly')}</option>
                 <option value="yearly" ${review.time_type === 'yearly' ? 'selected' : ''}>${i18n.t('timeTypeYearly')}</option>
               </select>
             </div>
@@ -1405,19 +1408,56 @@ async function showTeamDetail(teamId) {
                     <div>
                       <div class="font-medium text-gray-900">${escapeHtml(member.username)}</div>
                       <div class="text-sm text-gray-500">${escapeHtml(member.email)}</div>
+                      <div class="text-xs text-gray-400 mt-1">
+                        ${i18n.t('joinedAt')}: ${new Date(member.joined_at).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
                   <div class="flex items-center space-x-3">
+                    <!-- User System Role -->
                     <span class="text-xs px-2 py-1 ${
-                      member.role === 'admin' ? 'bg-red-100 text-red-800' :
-                      member.role === 'premium' ? 'bg-purple-100 text-purple-800' :
+                      member.user_role === 'admin' ? 'bg-red-100 text-red-800' :
+                      member.user_role === 'premium' ? 'bg-purple-100 text-purple-800' :
                       'bg-gray-100 text-gray-800'
                     } rounded-full">
-                      ${i18n.t(member.role + 'Role')}
+                      ${i18n.t(member.user_role + 'Role')}
                     </span>
+                    
+                    <!-- Team Role -->
+                    ${isOwner && member.id !== team.owner_id ? `
+                      <select onchange="changeMemberRole(${teamId}, ${member.id}, this.value)"
+                              class="text-xs px-2 py-1 border rounded ${
+                                member.team_role === 'creator' ? 'bg-blue-50 text-blue-800 border-blue-300' :
+                                member.team_role === 'operator' ? 'bg-green-50 text-green-800 border-green-300' :
+                                'bg-gray-50 text-gray-800 border-gray-300'
+                              }">
+                        <option value="viewer" ${member.team_role === 'viewer' ? 'selected' : ''}>
+                          ${i18n.t('roleViewer')}
+                        </option>
+                        <option value="operator" ${member.team_role === 'operator' ? 'selected' : ''}>
+                          ${i18n.t('roleOperator')}
+                        </option>
+                        <option value="creator" ${member.team_role === 'creator' ? 'selected' : ''}>
+                          ${i18n.t('roleCreator')}
+                        </option>
+                      </select>
+                    ` : `
+                      <span class="text-xs px-2 py-1 ${
+                        member.team_role === 'creator' ? 'bg-blue-100 text-blue-800' :
+                        member.team_role === 'operator' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      } rounded-full" title="${
+                        member.team_role === 'creator' ? i18n.t('creatorPermissions') :
+                        member.team_role === 'operator' ? i18n.t('operatorPermissions') :
+                        i18n.t('viewerPermissions')
+                      }">
+                        ${i18n.t('role' + member.team_role.charAt(0).toUpperCase() + member.team_role.slice(1))}
+                      </span>
+                    `}
+                    
                     ${member.id === team.owner_id ? `
                       <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">
-                        ${i18n.t('teamOwner')}
+                        <i class="fas fa-crown mr-1"></i>${i18n.t('teamOwner')}
                       </span>
                     ` : isOwner ? `
                       <button onclick="removeMember(${teamId}, ${member.id})" 
@@ -1467,6 +1507,17 @@ async function inviteMember(teamId, email) {
     } else {
       showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     }
+  }
+}
+
+async function changeMemberRole(teamId, userId, newRole) {
+  try {
+    await axios.put(`/api/teams/${teamId}/members/${userId}/role`, { role: newRole });
+    showNotification(i18n.t('roleUpdated'), 'success');
+    showTeamDetail(teamId);
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    showTeamDetail(teamId); // Refresh to revert select value
   }
 }
 

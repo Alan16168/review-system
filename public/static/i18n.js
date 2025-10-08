@@ -61,6 +61,7 @@ const translations = {
     'timeTypeDaily': '日复盘',
     'timeTypeWeekly': '周复盘',
     'timeTypeMonthly': '月复盘',
+    'timeTypeQuarterly': '季复盘',
     'timeTypeYearly': '年复盘',
     
     // Team Management
@@ -79,6 +80,17 @@ const translations = {
     'inviteSuccess': '邀请成功',
     'userNotFound': '用户不存在',
     'alreadyMember': '该用户已是团队成员',
+    
+    // Team Roles
+    'memberRole': '成员角色',
+    'roleCreator': '创造者',
+    'roleViewer': '观察者',
+    'roleOperator': '操作者',
+    'changeRole': '更改角色',
+    'roleUpdated': '角色已更新',
+    'creatorPermissions': '所有权限（查看/修改/删除）',
+    'viewerPermissions': '仅查看权限',
+    'operatorPermissions': '查看和修改权限',
     
     // Admin Panel
     'adminPanel': '管理面板',
@@ -223,6 +235,7 @@ const translations = {
     'timeTypeDaily': 'Daily Review',
     'timeTypeWeekly': 'Weekly Review',
     'timeTypeMonthly': 'Monthly Review',
+    'timeTypeQuarterly': 'Quarterly Review',
     'timeTypeYearly': 'Yearly Review',
     
     // Team Management
@@ -241,6 +254,17 @@ const translations = {
     'inviteSuccess': 'Invitation sent successfully',
     'userNotFound': 'User not found',
     'alreadyMember': 'User is already a team member',
+    
+    // Team Roles
+    'memberRole': 'Member Role',
+    'roleCreator': 'Creator',
+    'roleViewer': 'Viewer',
+    'roleOperator': 'Operator',
+    'changeRole': 'Change Role',
+    'roleUpdated': 'Role updated',
+    'creatorPermissions': 'All permissions (view/edit/delete)',
+    'viewerPermissions': 'View only',
+    'operatorPermissions': 'View and edit permissions',
     
     // Admin Panel
     'adminPanel': 'Admin Panel',

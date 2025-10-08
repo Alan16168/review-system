@@ -45,6 +45,14 @@ try {
   db.exec(schema3);
   console.log('✓ Review types columns added');
   
+  const schema4 = fs.readFileSync('./migrations/0004_add_team_member_roles.sql', 'utf8');
+  db.exec(schema4);
+  console.log('✓ Team member roles added');
+  
+  const schema5 = fs.readFileSync('./migrations/0005_add_quarterly_time_type.sql', 'utf8');
+  db.exec(schema5);
+  console.log('✓ Quarterly time type option added');
+  
   // Execute seed data
   const seed = fs.readFileSync('./seed.sql', 'utf8');
   db.exec(seed);
