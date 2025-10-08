@@ -6,9 +6,13 @@ import reviews from './routes/reviews';
 import teams from './routes/teams';
 import admin from './routes/admin';
 import notifications from './routes/notifications';
+import resources from './routes/resources';
 
 type Bindings = {
   DB: D1Database;
+  GOOGLE_API_KEY?: string;
+  GOOGLE_SEARCH_ENGINE_ID?: string;
+  YOUTUBE_API_KEY?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -25,6 +29,7 @@ app.route('/api/reviews', reviews);
 app.route('/api/teams', teams);
 app.route('/api/admin', admin);
 app.route('/api/notifications', notifications);
+app.route('/api/resources', resources);
 
 // Main page - Login/Dashboard
 app.get('/', (c) => {

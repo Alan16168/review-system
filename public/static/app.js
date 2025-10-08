@@ -82,31 +82,85 @@ function showHomePage() {
         </div>
       </nav>
 
-      <!-- Hero Section -->
+      <!-- Hero Section with Carousel -->
       <section class="bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            ${i18n.t('heroTitle')}
-          </h1>
-          <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            ${i18n.t('heroSubtitle')}
-          </p>
-          <div class="flex justify-center space-x-4">
-            ${!currentUser ? `
-              <button onclick="showRegister()" 
-                      class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-lg">
-                <i class="fas fa-rocket mr-2"></i>${i18n.t('getStarted')}
-              </button>
-              <button onclick="showLogin()" 
-                      class="bg-white text-indigo-600 px-8 py-3 rounded-lg border-2 border-indigo-600 hover:bg-indigo-50 transition text-lg">
-                ${i18n.t('login')}
-              </button>
-            ` : `
-              <button onclick="showDashboard()" 
-                      class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-lg">
-                <i class="fas fa-tachometer-alt mr-2"></i>${i18n.t('goToDashboard')}
-              </button>
-            `}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <!-- Left: Text Content -->
+            <div>
+              <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+                ${i18n.t('heroTitle')}
+              </h1>
+              <p class="text-xl text-gray-600 mb-8">
+                ${i18n.t('heroSubtitle')}
+              </p>
+              <div class="flex space-x-4">
+                ${!currentUser ? `
+                  <button onclick="showRegister()" 
+                          class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-lg">
+                    <i class="fas fa-rocket mr-2"></i>${i18n.t('getStarted')}
+                  </button>
+                  <button onclick="showLogin()" 
+                          class="bg-white text-indigo-600 px-8 py-3 rounded-lg border-2 border-indigo-600 hover:bg-indigo-50 transition text-lg">
+                    ${i18n.t('login')}
+                  </button>
+                ` : `
+                  <button onclick="showDashboard()" 
+                          class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-lg">
+                    <i class="fas fa-tachometer-alt mr-2"></i>${i18n.t('goToDashboard')}
+                  </button>
+                `}
+              </div>
+            </div>
+            
+            <!-- Right: Image Carousel -->
+            <div class="relative">
+              <div id="carousel" class="relative h-96 bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <!-- Carousel slides -->
+                <div class="carousel-slide active">
+                  <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop" 
+                       alt="Team collaboration" 
+                       class="w-full h-full object-cover">
+                  <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
+                    <h3 class="text-xl font-bold mb-2">${i18n.t('carousel1Title')}</h3>
+                    <p class="text-sm">${i18n.t('carousel1Desc')}</p>
+                  </div>
+                </div>
+                <div class="carousel-slide">
+                  <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=600&fit=crop" 
+                       alt="Personal growth" 
+                       class="w-full h-full object-cover">
+                  <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
+                    <h3 class="text-xl font-bold mb-2">${i18n.t('carousel2Title')}</h3>
+                    <p class="text-sm">${i18n.t('carousel2Desc')}</p>
+                  </div>
+                </div>
+                <div class="carousel-slide">
+                  <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop" 
+                       alt="Strategy planning" 
+                       class="w-full h-full object-cover">
+                  <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
+                    <h3 class="text-xl font-bold mb-2">${i18n.t('carousel3Title')}</h3>
+                    <p class="text-sm">${i18n.t('carousel3Desc')}</p>
+                  </div>
+                </div>
+                
+                <!-- Navigation arrows -->
+                <button onclick="changeSlide(-1)" class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 w-10 h-10 rounded-full flex items-center justify-center transition">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button onclick="changeSlide(1)" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 w-10 h-10 rounded-full flex items-center justify-center transition">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+                
+                <!-- Dots indicator -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                  <button onclick="goToSlide(0)" class="carousel-dot active w-3 h-3 rounded-full bg-white"></button>
+                  <button onclick="goToSlide(1)" class="carousel-dot w-3 h-3 rounded-full bg-white/50"></button>
+                  <button onclick="goToSlide(2)" class="carousel-dot w-3 h-3 rounded-full bg-white/50"></button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -365,6 +419,76 @@ function showHomePage() {
 
   // Load resources after page render
   loadArticles();
+  
+  // Initialize carousel
+  initCarousel();
+}
+
+// Carousel functionality
+let currentSlide = 0;
+let carouselInterval;
+
+function initCarousel() {
+  // Auto-advance slides every 5 seconds
+  carouselInterval = setInterval(() => {
+    changeSlide(1);
+  }, 5000);
+}
+
+function changeSlide(direction) {
+  const slides = document.querySelectorAll('.carousel-slide');
+  const dots = document.querySelectorAll('.carousel-dot');
+  
+  if (!slides.length) return;
+  
+  // Remove active class from current slide
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.add('bg-white/50');
+  dots[currentSlide].classList.remove('bg-white');
+  
+  // Calculate new slide index
+  currentSlide = (currentSlide + direction + slides.length) % slides.length;
+  
+  // Add active class to new slide
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide].classList.add('active');
+  dots[currentSlide].classList.remove('bg-white/50');
+  dots[currentSlide].classList.add('bg-white');
+  
+  // Reset auto-advance timer
+  clearInterval(carouselInterval);
+  carouselInterval = setInterval(() => {
+    changeSlide(1);
+  }, 5000);
+}
+
+function goToSlide(index) {
+  const slides = document.querySelectorAll('.carousel-slide');
+  const dots = document.querySelectorAll('.carousel-dot');
+  
+  if (!slides.length) return;
+  
+  // Remove active class from current slide
+  slides[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.remove('active');
+  dots[currentSlide].classList.add('bg-white/50');
+  dots[currentSlide].classList.remove('bg-white');
+  
+  // Set new slide index
+  currentSlide = index;
+  
+  // Add active class to new slide
+  slides[currentSlide].classList.add('active');
+  dots[currentSlide].classList.add('active');
+  dots[currentSlide].classList.remove('bg-white/50');
+  dots[currentSlide].classList.add('bg-white');
+  
+  // Reset auto-advance timer
+  clearInterval(carouselInterval);
+  carouselInterval = setInterval(() => {
+    changeSlide(1);
+  }, 5000);
 }
 
 // Resource Tab Switching
@@ -390,185 +514,79 @@ function showResourceTab(tab) {
   }
 }
 
-// Load Articles (Mock data - in production would use Google Custom Search API)
-function loadArticles() {
+// Load Articles using API
+async function loadArticles() {
   const articlesContent = document.getElementById('articles-content');
   
-  const articles = [
-    {
-      title: i18n.t('article1Title'),
-      description: i18n.t('article1Desc'),
-      url: 'https://hbr.org/2016/01/learning-to-learn',
-      image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=HBR'
-    },
-    {
-      title: i18n.t('article2Title'),
-      description: i18n.t('article2Desc'),
-      url: 'https://www.mindtools.com/pages/article/reflective-practice.htm',
-      image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=Reflection'
-    },
-    {
-      title: i18n.t('article3Title'),
-      description: i18n.t('article3Desc'),
-      url: 'https://review.firstround.com/',
-      image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=Startup'
-    },
-    {
-      title: i18n.t('article4Title'),
-      description: i18n.t('article4Desc'),
-      url: 'https://retrospectivewiki.org/',
-      image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=Agile'
-    },
-    {
-      title: i18n.t('article5Title'),
-      description: i18n.t('article5Desc'),
-      url: 'https://www.atlassian.com/team-playbook/plays/retrospective',
-      image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=Team'
-    },
-    {
-      title: i18n.t('article6Title'),
-      description: i18n.t('article6Desc'),
-      url: 'https://www.projectmanagement.com/',
-      image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=PM'
-    },
-    {
-      title: i18n.t('article7Title'),
-      description: i18n.t('article7Desc'),
-      url: 'https://www.forbes.com/sites/forbescoachescouncil/',
-      image: 'https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=Growth'
-    },
-    {
-      title: i18n.t('article8Title'),
-      description: i18n.t('article8Desc'),
-      url: 'https://hbr.org/topic/leadership',
-      image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=Leadership'
-    },
-    {
-      title: i18n.t('article9Title'),
-      description: i18n.t('article9Desc'),
-      url: 'https://www.inc.com/productivity',
-      image: 'https://via.placeholder.com/400x250/06B6D4/FFFFFF?text=Productivity'
-    },
-    {
-      title: i18n.t('article10Title'),
-      description: i18n.t('article10Desc'),
-      url: 'https://www.mckinsey.com/business-functions/organization',
-      image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=Strategy'
-    }
-  ];
-
-  articlesContent.innerHTML = articles.map(article => `
-    <a href="${article.url}" target="_blank" class="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1">
-      <img src="${article.image}" alt="${article.title}" class="w-full h-48 object-cover">
-      <div class="p-6">
-        <h3 class="font-bold text-lg text-gray-900 mb-2 line-clamp-2">${article.title}</h3>
-        <p class="text-gray-600 text-sm line-clamp-3">${article.description}</p>
-        <div class="mt-4 text-indigo-600 font-medium text-sm">
-          ${i18n.t('readMore')} <i class="fas fa-arrow-right ml-1"></i>
+  try {
+    const response = await axios.get('/api/resources/articles');
+    const { articles, source } = response.data;
+    
+    console.log(`Articles loaded from: ${source}`);
+    
+    articlesContent.innerHTML = articles.map(article => `
+      <a href="${article.url}" target="_blank" class="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1">
+        <img src="${article.image}" alt="${escapeHtml(article.title)}" class="w-full h-48 object-cover" onerror="this.src='https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=Article'">
+        <div class="p-6">
+          <h3 class="font-bold text-lg text-gray-900 mb-2 line-clamp-2">${escapeHtml(article.title)}</h3>
+          <p class="text-gray-600 text-sm line-clamp-3">${escapeHtml(article.description)}</p>
+          <div class="mt-4 text-indigo-600 font-medium text-sm">
+            ${i18n.t('readMore')} <i class="fas fa-arrow-right ml-1"></i>
+          </div>
         </div>
+      </a>
+    `).join('');
+    
+    articlesContent.dataset.loaded = 'true';
+  } catch (error) {
+    console.error('Failed to load articles:', error);
+    articlesContent.innerHTML = `
+      <div class="col-span-full text-center py-12">
+        <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+        <p class="text-gray-600">${i18n.t('loadError')}</p>
       </div>
-    </a>
-  `).join('');
-  
-  articlesContent.dataset.loaded = 'true';
+    `;
+  }
 }
 
-// Load Videos (Mock data - in production would use YouTube Data API)
-function loadVideos() {
+// Load Videos using API
+async function loadVideos() {
   const videosContent = document.getElementById('videos-content');
   
-  const videos = [
-    {
-      title: i18n.t('video1Title'),
-      channel: 'TED',
-      views: '2M',
-      thumbnail: 'https://via.placeholder.com/400x225/DC2626/FFFFFF?text=TED',
-      url: 'https://www.youtube.com/results?search_query=reflection+learning'
-    },
-    {
-      title: i18n.t('video2Title'),
-      channel: 'Harvard Business Review',
-      views: '500K',
-      thumbnail: 'https://via.placeholder.com/400x225/7C3AED/FFFFFF?text=HBR',
-      url: 'https://www.youtube.com/c/HarvardBusinessReview'
-    },
-    {
-      title: i18n.t('video3Title'),
-      channel: 'Agile Academy',
-      views: '1.2M',
-      thumbnail: 'https://via.placeholder.com/400x225/059669/FFFFFF?text=Agile',
-      url: 'https://www.youtube.com/results?search_query=agile+retrospective'
-    },
-    {
-      title: i18n.t('video4Title'),
-      channel: 'Simon Sinek',
-      views: '3M',
-      thumbnail: 'https://via.placeholder.com/400x225/F59E0B/FFFFFF?text=Leadership',
-      url: 'https://www.youtube.com/user/SimonSinek'
-    },
-    {
-      title: i18n.t('video5Title'),
-      channel: 'Stanford Graduate School',
-      views: '800K',
-      thumbnail: 'https://via.placeholder.com/400x225/EC4899/FFFFFF?text=Stanford',
-      url: 'https://www.youtube.com/results?search_query=team+dynamics'
-    },
-    {
-      title: i18n.t('video6Title'),
-      channel: 'McKinsey & Company',
-      views: '650K',
-      thumbnail: 'https://via.placeholder.com/400x225/3B82F6/FFFFFF?text=McKinsey',
-      url: 'https://www.youtube.com/c/mckinsey'
-    },
-    {
-      title: i18n.t('video7Title'),
-      channel: 'Productivity Game',
-      views: '1.5M',
-      thumbnail: 'https://via.placeholder.com/400x225/8B5CF6/FFFFFF?text=Productivity',
-      url: 'https://www.youtube.com/results?search_query=productivity+tips'
-    },
-    {
-      title: i18n.t('video8Title'),
-      channel: 'The Futur',
-      views: '2.1M',
-      thumbnail: 'https://via.placeholder.com/400x225/06B6D4/FFFFFF?text=Growth',
-      url: 'https://www.youtube.com/c/thefuturishere'
-    },
-    {
-      title: i18n.t('video9Title'),
-      channel: 'MIT OpenCourseWare',
-      views: '450K',
-      thumbnail: 'https://via.placeholder.com/400x225/14B8A6/FFFFFF?text=MIT',
-      url: 'https://www.youtube.com/c/mitocw'
-    },
-    {
-      title: i18n.t('video10Title'),
-      channel: 'Google for Startups',
-      views: '900K',
-      thumbnail: 'https://via.placeholder.com/400x225/EF4444/FFFFFF?text=Innovation',
-      url: 'https://www.youtube.com/c/GoogleforStartups'
-    }
-  ];
-
-  videosContent.innerHTML = videos.map(video => `
-    <a href="${video.url}" target="_blank" class="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1">
-      <div class="relative">
-        <img src="${video.thumbnail}" alt="${video.title}" class="w-full h-48 object-cover">
-        <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-50 transition">
-          <i class="fas fa-play-circle text-white text-6xl"></i>
+  try {
+    const response = await axios.get('/api/resources/videos');
+    const { videos, source } = response.data;
+    
+    console.log(`Videos loaded from: ${source}`);
+    
+    videosContent.innerHTML = videos.map(video => `
+      <a href="${video.url}" target="_blank" class="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1">
+        <div class="relative">
+          <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" class="w-full h-48 object-cover" onerror="this.src='https://via.placeholder.com/400x225/DC2626/FFFFFF?text=Video'">
+          <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-50 transition">
+            <i class="fas fa-play-circle text-white text-6xl"></i>
+          </div>
         </div>
-      </div>
-      <div class="p-6">
-        <h3 class="font-bold text-lg text-gray-900 mb-2 line-clamp-2">${video.title}</h3>
-        <div class="flex items-center justify-between text-sm text-gray-600">
-          <span><i class="fas fa-user-circle mr-1"></i>${video.channel}</span>
-          <span><i class="fas fa-eye mr-1"></i>${video.views}</span>
+        <div class="p-6">
+          <h3 class="font-bold text-lg text-gray-900 mb-2 line-clamp-2">${escapeHtml(video.title)}</h3>
+          <div class="flex items-center justify-between text-sm text-gray-600">
+            <span><i class="fas fa-user-circle mr-1"></i>${escapeHtml(video.channel)}</span>
+            <span><i class="fas fa-eye mr-1"></i>${video.views}</span>
+          </div>
         </div>
+      </a>
+    `).join('');
+    
+    videosContent.dataset.loaded = 'true';
+  } catch (error) {
+    console.error('Failed to load videos:', error);
+    videosContent.innerHTML = `
+      <div class="col-span-full text-center py-12">
+        <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+        <p class="text-gray-600">${i18n.t('loadError')}</p>
       </div>
-    </a>
-  `).join('');
-  
-  videosContent.dataset.loaded = 'true';
+    `;
+  }
 }
 
 // Show Terms of Service
