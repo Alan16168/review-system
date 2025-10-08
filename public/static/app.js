@@ -1,7 +1,7 @@
 // Global state
 let currentUser = null;
 let authToken = null;
-let currentView = 'login';
+let currentView = 'home';
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,9 +16,15 @@ function checkAuth() {
     authToken = token;
     currentUser = JSON.parse(user);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    showDashboard();
+    // If on home page, stay on home; otherwise show dashboard
+    if (currentView === 'home') {
+      showHomePage();
+    } else {
+      showDashboard();
+    }
   } else {
-    showLogin();
+    // Show home page by default for unauthenticated users
+    showHomePage();
   }
 }
 
@@ -28,17 +34,605 @@ function logout() {
   currentUser = null;
   authToken = null;
   delete axios.defaults.headers.common['Authorization'];
-  showLogin();
+  showHomePage();
 }
 
 // ============ View Rendering ============
+
+// Home Page (Landing Page)
+function showHomePage() {
+  currentView = 'home';
+  const app = document.getElementById('app');
+  
+  app.innerHTML = `
+    <div class="min-h-screen bg-white">
+      <!-- Navigation -->
+      <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
+              <i class="fas fa-brain text-indigo-600 text-2xl mr-2"></i>
+              <span class="text-xl font-bold text-gray-800">${i18n.t('systemTitle')}</span>
+            </div>
+            <div class="hidden md:flex space-x-8">
+              <a href="#resources" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('resources')}</a>
+              <a href="#about" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('aboutUs')}</a>
+              <a href="#testimonials" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('testimonials')}</a>
+              <a href="#contact" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('contact')}</a>
+            </div>
+            <div class="flex items-center space-x-4">
+              <button onclick="i18n.setLanguage(i18n.getCurrentLanguage() === 'zh' ? 'en' : 'zh')" 
+                      class="text-sm text-gray-600 hover:text-indigo-600">
+                <i class="fas fa-language mr-1"></i>
+                ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
+              </button>
+              ${currentUser ? `
+                <button onclick="showDashboard()" 
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                  <i class="fas fa-tachometer-alt mr-2"></i>${i18n.t('dashboard')}
+                </button>
+              ` : `
+                <button onclick="showLogin()" 
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                  <i class="fas fa-sign-in-alt mr-2"></i>${i18n.t('login')}
+                </button>
+              `}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Hero Section -->
+      <section class="bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+            ${i18n.t('heroTitle')}
+          </h1>
+          <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            ${i18n.t('heroSubtitle')}
+          </p>
+          <div class="flex justify-center space-x-4">
+            ${!currentUser ? `
+              <button onclick="showRegister()" 
+                      class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-lg">
+                <i class="fas fa-rocket mr-2"></i>${i18n.t('getStarted')}
+              </button>
+              <button onclick="showLogin()" 
+                      class="bg-white text-indigo-600 px-8 py-3 rounded-lg border-2 border-indigo-600 hover:bg-indigo-50 transition text-lg">
+                ${i18n.t('login')}
+              </button>
+            ` : `
+              <button onclick="showDashboard()" 
+                      class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-lg">
+                <i class="fas fa-tachometer-alt mr-2"></i>${i18n.t('goToDashboard')}
+              </button>
+            `}
+          </div>
+        </div>
+      </section>
+
+      <!-- Resources Section -->
+      <section id="resources" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">
+            ${i18n.t('learningResources')}
+          </h2>
+          
+          <!-- Tabs -->
+          <div class="flex justify-center mb-8 space-x-4">
+            <button onclick="showResourceTab('articles')" id="tab-articles"
+                    class="px-6 py-3 rounded-lg font-medium transition active-tab">
+              <i class="fas fa-book mr-2"></i>${i18n.t('articles')}
+            </button>
+            <button onclick="showResourceTab('videos')" id="tab-videos"
+                    class="px-6 py-3 rounded-lg font-medium transition inactive-tab">
+              <i class="fas fa-video mr-2"></i>${i18n.t('videos')}
+            </button>
+          </div>
+
+          <!-- Articles Tab -->
+          <div id="articles-content" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div class="text-center py-12 col-span-full">
+                <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+                <p class="text-gray-600">${i18n.t('loadingArticles')}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Videos Tab -->
+          <div id="videos-content" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div class="text-center py-12 col-span-full">
+                <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+                <p class="text-gray-600">${i18n.t('loadingVideos')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- About Section -->
+      <section id="about" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 class="text-4xl font-bold text-gray-900 mb-6">${i18n.t('aboutCompany')}</h2>
+              <p class="text-lg text-gray-600 mb-4">${i18n.t('aboutCompanyText1')}</p>
+              <p class="text-lg text-gray-600 mb-6">${i18n.t('aboutCompanyText2')}</p>
+              <div class="flex space-x-6">
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-indigo-600">10K+</div>
+                  <div class="text-sm text-gray-600">${i18n.t('activeUsers')}</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-indigo-600">50K+</div>
+                  <div class="text-sm text-gray-600">${i18n.t('reviewsCreated')}</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-indigo-600">500+</div>
+                  <div class="text-sm text-gray-600">${i18n.t('teamsActive')}</div>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl p-8 h-96 flex items-center justify-center">
+              <i class="fas fa-users text-indigo-600 text-9xl opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Team Section -->
+      <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">${i18n.t('ourTeam')}</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-white rounded-xl p-6 text-center shadow-lg">
+              <div class="w-24 h-24 bg-indigo-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <i class="fas fa-user-tie text-indigo-600 text-4xl"></i>
+              </div>
+              <h3 class="text-xl font-bold text-gray-900 mb-2">${i18n.t('founderName')}</h3>
+              <p class="text-indigo-600 mb-3">${i18n.t('founderTitle')}</p>
+              <p class="text-gray-600 text-sm">${i18n.t('founderBio')}</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 text-center shadow-lg">
+              <div class="w-24 h-24 bg-purple-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <i class="fas fa-code text-purple-600 text-4xl"></i>
+              </div>
+              <h3 class="text-xl font-bold text-gray-900 mb-2">${i18n.t('techLeadName')}</h3>
+              <p class="text-purple-600 mb-3">${i18n.t('techLeadTitle')}</p>
+              <p class="text-gray-600 text-sm">${i18n.t('techLeadBio')}</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 text-center shadow-lg">
+              <div class="w-24 h-24 bg-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <i class="fas fa-paint-brush text-pink-600 text-4xl"></i>
+              </div>
+              <h3 class="text-xl font-bold text-gray-900 mb-2">${i18n.t('designLeadName')}</h3>
+              <p class="text-pink-600 mb-3">${i18n.t('designLeadTitle')}</p>
+              <p class="text-gray-600 text-sm">${i18n.t('designLeadBio')}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Testimonials Section -->
+      <section id="testimonials" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">${i18n.t('userTestimonials')}</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
+              <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                  <i class="fas fa-user text-indigo-600"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-gray-900">${i18n.t('testimonial1Name')}</div>
+                  <div class="text-sm text-gray-600">${i18n.t('testimonial1Role')}</div>
+                </div>
+              </div>
+              <div class="text-yellow-400 mb-2">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <p class="text-gray-600">${i18n.t('testimonial1Text')}</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
+              <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                  <i class="fas fa-user text-purple-600"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-gray-900">${i18n.t('testimonial2Name')}</div>
+                  <div class="text-sm text-gray-600">${i18n.t('testimonial2Role')}</div>
+                </div>
+              </div>
+              <div class="text-yellow-400 mb-2">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <p class="text-gray-600">${i18n.t('testimonial2Text')}</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
+              <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                  <i class="fas fa-user text-pink-600"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-gray-900">${i18n.t('testimonial3Name')}</div>
+                  <div class="text-sm text-gray-600">${i18n.t('testimonial3Role')}</div>
+                </div>
+              </div>
+              <div class="text-yellow-400 mb-2">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <p class="text-gray-600">${i18n.t('testimonial3Text')}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contact Section -->
+      <section id="contact" class="py-16 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">${i18n.t('contactUs')}</h2>
+          <div class="bg-white rounded-xl shadow-lg p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              <div>
+                <div class="flex items-center mb-4">
+                  <i class="fas fa-envelope text-indigo-600 text-2xl mr-4"></i>
+                  <div>
+                    <div class="font-bold text-gray-900">${i18n.t('email')}</div>
+                    <div class="text-gray-600">contact@reviewsystem.com</div>
+                  </div>
+                </div>
+                <div class="flex items-center mb-4">
+                  <i class="fas fa-phone text-indigo-600 text-2xl mr-4"></i>
+                  <div>
+                    <div class="font-bold text-gray-900">${i18n.t('phone')}</div>
+                    <div class="text-gray-600">+1 (555) 123-4567</div>
+                  </div>
+                </div>
+                <div class="flex items-center">
+                  <i class="fas fa-map-marker-alt text-indigo-600 text-2xl mr-4"></i>
+                  <div>
+                    <div class="font-bold text-gray-900">${i18n.t('address')}</div>
+                    <div class="text-gray-600">${i18n.t('addressText')}</div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 class="font-bold text-gray-900 mb-4">${i18n.t('followUs')}</h3>
+                <div class="flex space-x-4">
+                  <a href="#" class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition">
+                    <i class="fab fa-facebook-f"></i>
+                  </a>
+                  <a href="#" class="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center text-white hover:bg-sky-600 transition">
+                    <i class="fab fa-twitter"></i>
+                  </a>
+                  <a href="#" class="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white hover:opacity-90 transition">
+                    <i class="fab fa-instagram"></i>
+                  </a>
+                  <a href="#" class="w-12 h-12 bg-blue-700 rounded-full flex items-center justify-center text-white hover:bg-blue-800 transition">
+                    <i class="fab fa-linkedin-in"></i>
+                  </a>
+                  <a href="#" class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white hover:bg-red-700 transition">
+                    <i class="fab fa-youtube"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <h3 class="font-bold text-lg mb-4">${i18n.t('systemTitle')}</h3>
+              <p class="text-gray-400 text-sm">${i18n.t('footerDescription')}</p>
+            </div>
+            <div>
+              <h3 class="font-bold text-lg mb-4">${i18n.t('product')}</h3>
+              <ul class="space-y-2 text-gray-400 text-sm">
+                <li><a href="#" class="hover:text-white transition">${i18n.t('features')}</a></li>
+                <li><a href="#" class="hover:text-white transition">${i18n.t('pricing')}</a></li>
+                <li><a href="#resources" class="hover:text-white transition">${i18n.t('resources')}</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 class="font-bold text-lg mb-4">${i18n.t('company')}</h3>
+              <ul class="space-y-2 text-gray-400 text-sm">
+                <li><a href="#about" class="hover:text-white transition">${i18n.t('aboutUs')}</a></li>
+                <li><a href="#testimonials" class="hover:text-white transition">${i18n.t('testimonials')}</a></li>
+                <li><a href="#contact" class="hover:text-white transition">${i18n.t('contact')}</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 class="font-bold text-lg mb-4">${i18n.t('legal')}</h3>
+              <ul class="space-y-2 text-gray-400 text-sm">
+                <li><a href="#" onclick="showTerms(); return false;" class="hover:text-white transition">${i18n.t('termsOfService')}</a></li>
+                <li><a href="#" onclick="showPrivacy(); return false;" class="hover:text-white transition">${i18n.t('privacyPolicy')}</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
+            <p>&copy; 2024 ${i18n.t('systemTitle')}. ${i18n.t('allRightsReserved')}</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  `;
+
+  // Load resources after page render
+  loadArticles();
+}
+
+// Resource Tab Switching
+function showResourceTab(tab) {
+  const articlesTab = document.getElementById('tab-articles');
+  const videosTab = document.getElementById('tab-videos');
+  const articlesContent = document.getElementById('articles-content');
+  const videosContent = document.getElementById('videos-content');
+
+  if (tab === 'articles') {
+    articlesTab.className = 'px-6 py-3 rounded-lg font-medium transition active-tab';
+    videosTab.className = 'px-6 py-3 rounded-lg font-medium transition inactive-tab';
+    articlesContent.classList.remove('hidden');
+    videosContent.classList.add('hidden');
+  } else {
+    articlesTab.className = 'px-6 py-3 rounded-lg font-medium transition inactive-tab';
+    videosTab.className = 'px-6 py-3 rounded-lg font-medium transition active-tab';
+    articlesContent.classList.add('hidden');
+    videosContent.classList.remove('hidden');
+    if (!videosContent.dataset.loaded) {
+      loadVideos();
+    }
+  }
+}
+
+// Load Articles (Mock data - in production would use Google Custom Search API)
+function loadArticles() {
+  const articlesContent = document.getElementById('articles-content');
+  
+  const articles = [
+    {
+      title: i18n.t('article1Title'),
+      description: i18n.t('article1Desc'),
+      url: 'https://hbr.org/2016/01/learning-to-learn',
+      image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=HBR'
+    },
+    {
+      title: i18n.t('article2Title'),
+      description: i18n.t('article2Desc'),
+      url: 'https://www.mindtools.com/pages/article/reflective-practice.htm',
+      image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=Reflection'
+    },
+    {
+      title: i18n.t('article3Title'),
+      description: i18n.t('article3Desc'),
+      url: 'https://review.firstround.com/',
+      image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=Startup'
+    },
+    {
+      title: i18n.t('article4Title'),
+      description: i18n.t('article4Desc'),
+      url: 'https://retrospectivewiki.org/',
+      image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=Agile'
+    },
+    {
+      title: i18n.t('article5Title'),
+      description: i18n.t('article5Desc'),
+      url: 'https://www.atlassian.com/team-playbook/plays/retrospective',
+      image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=Team'
+    },
+    {
+      title: i18n.t('article6Title'),
+      description: i18n.t('article6Desc'),
+      url: 'https://www.projectmanagement.com/',
+      image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=PM'
+    },
+    {
+      title: i18n.t('article7Title'),
+      description: i18n.t('article7Desc'),
+      url: 'https://www.forbes.com/sites/forbescoachescouncil/',
+      image: 'https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=Growth'
+    },
+    {
+      title: i18n.t('article8Title'),
+      description: i18n.t('article8Desc'),
+      url: 'https://hbr.org/topic/leadership',
+      image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=Leadership'
+    },
+    {
+      title: i18n.t('article9Title'),
+      description: i18n.t('article9Desc'),
+      url: 'https://www.inc.com/productivity',
+      image: 'https://via.placeholder.com/400x250/06B6D4/FFFFFF?text=Productivity'
+    },
+    {
+      title: i18n.t('article10Title'),
+      description: i18n.t('article10Desc'),
+      url: 'https://www.mckinsey.com/business-functions/organization',
+      image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=Strategy'
+    }
+  ];
+
+  articlesContent.innerHTML = articles.map(article => `
+    <a href="${article.url}" target="_blank" class="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1">
+      <img src="${article.image}" alt="${article.title}" class="w-full h-48 object-cover">
+      <div class="p-6">
+        <h3 class="font-bold text-lg text-gray-900 mb-2 line-clamp-2">${article.title}</h3>
+        <p class="text-gray-600 text-sm line-clamp-3">${article.description}</p>
+        <div class="mt-4 text-indigo-600 font-medium text-sm">
+          ${i18n.t('readMore')} <i class="fas fa-arrow-right ml-1"></i>
+        </div>
+      </div>
+    </a>
+  `).join('');
+  
+  articlesContent.dataset.loaded = 'true';
+}
+
+// Load Videos (Mock data - in production would use YouTube Data API)
+function loadVideos() {
+  const videosContent = document.getElementById('videos-content');
+  
+  const videos = [
+    {
+      title: i18n.t('video1Title'),
+      channel: 'TED',
+      views: '2M',
+      thumbnail: 'https://via.placeholder.com/400x225/DC2626/FFFFFF?text=TED',
+      url: 'https://www.youtube.com/results?search_query=reflection+learning'
+    },
+    {
+      title: i18n.t('video2Title'),
+      channel: 'Harvard Business Review',
+      views: '500K',
+      thumbnail: 'https://via.placeholder.com/400x225/7C3AED/FFFFFF?text=HBR',
+      url: 'https://www.youtube.com/c/HarvardBusinessReview'
+    },
+    {
+      title: i18n.t('video3Title'),
+      channel: 'Agile Academy',
+      views: '1.2M',
+      thumbnail: 'https://via.placeholder.com/400x225/059669/FFFFFF?text=Agile',
+      url: 'https://www.youtube.com/results?search_query=agile+retrospective'
+    },
+    {
+      title: i18n.t('video4Title'),
+      channel: 'Simon Sinek',
+      views: '3M',
+      thumbnail: 'https://via.placeholder.com/400x225/F59E0B/FFFFFF?text=Leadership',
+      url: 'https://www.youtube.com/user/SimonSinek'
+    },
+    {
+      title: i18n.t('video5Title'),
+      channel: 'Stanford Graduate School',
+      views: '800K',
+      thumbnail: 'https://via.placeholder.com/400x225/EC4899/FFFFFF?text=Stanford',
+      url: 'https://www.youtube.com/results?search_query=team+dynamics'
+    },
+    {
+      title: i18n.t('video6Title'),
+      channel: 'McKinsey & Company',
+      views: '650K',
+      thumbnail: 'https://via.placeholder.com/400x225/3B82F6/FFFFFF?text=McKinsey',
+      url: 'https://www.youtube.com/c/mckinsey'
+    },
+    {
+      title: i18n.t('video7Title'),
+      channel: 'Productivity Game',
+      views: '1.5M',
+      thumbnail: 'https://via.placeholder.com/400x225/8B5CF6/FFFFFF?text=Productivity',
+      url: 'https://www.youtube.com/results?search_query=productivity+tips'
+    },
+    {
+      title: i18n.t('video8Title'),
+      channel: 'The Futur',
+      views: '2.1M',
+      thumbnail: 'https://via.placeholder.com/400x225/06B6D4/FFFFFF?text=Growth',
+      url: 'https://www.youtube.com/c/thefuturishere'
+    },
+    {
+      title: i18n.t('video9Title'),
+      channel: 'MIT OpenCourseWare',
+      views: '450K',
+      thumbnail: 'https://via.placeholder.com/400x225/14B8A6/FFFFFF?text=MIT',
+      url: 'https://www.youtube.com/c/mitocw'
+    },
+    {
+      title: i18n.t('video10Title'),
+      channel: 'Google for Startups',
+      views: '900K',
+      thumbnail: 'https://via.placeholder.com/400x225/EF4444/FFFFFF?text=Innovation',
+      url: 'https://www.youtube.com/c/GoogleforStartups'
+    }
+  ];
+
+  videosContent.innerHTML = videos.map(video => `
+    <a href="${video.url}" target="_blank" class="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1">
+      <div class="relative">
+        <img src="${video.thumbnail}" alt="${video.title}" class="w-full h-48 object-cover">
+        <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-50 transition">
+          <i class="fas fa-play-circle text-white text-6xl"></i>
+        </div>
+      </div>
+      <div class="p-6">
+        <h3 class="font-bold text-lg text-gray-900 mb-2 line-clamp-2">${video.title}</h3>
+        <div class="flex items-center justify-between text-sm text-gray-600">
+          <span><i class="fas fa-user-circle mr-1"></i>${video.channel}</span>
+          <span><i class="fas fa-eye mr-1"></i>${video.views}</span>
+        </div>
+      </div>
+    </a>
+  `).join('');
+  
+  videosContent.dataset.loaded = 'true';
+}
+
+// Show Terms of Service
+function showTerms() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+          <button onclick="showHomePage()" class="mb-6 text-indigo-600 hover:text-indigo-800">
+            <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
+          </button>
+          <h1 class="text-4xl font-bold text-gray-900 mb-8">${i18n.t('termsOfService')}</h1>
+          <div class="prose prose-lg max-w-none">
+            <p class="text-gray-600 mb-4">${i18n.t('lastUpdated')}: 2024-10-08</p>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('terms1Title')}</h2>
+            <p class="text-gray-600 mb-6">${i18n.t('terms1Text')}</p>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('terms2Title')}</h2>
+            <p class="text-gray-600 mb-6">${i18n.t('terms2Text')}</p>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('terms3Title')}</h2>
+            <p class="text-gray-600 mb-6">${i18n.t('terms3Text')}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Show Privacy Policy
+function showPrivacy() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+          <button onclick="showHomePage()" class="mb-6 text-indigo-600 hover:text-indigo-800">
+            <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
+          </button>
+          <h1 class="text-4xl font-bold text-gray-900 mb-8">${i18n.t('privacyPolicy')}</h1>
+          <div class="prose prose-lg max-w-none">
+            <p class="text-gray-600 mb-4">${i18n.t('lastUpdated')}: 2024-10-08</p>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('privacy1Title')}</h2>
+            <p class="text-gray-600 mb-6">${i18n.t('privacy1Text')}</p>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('privacy2Title')}</h2>
+            <p class="text-gray-600 mb-6">${i18n.t('privacy2Text')}</p>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('privacy3Title')}</h2>
+            <p class="text-gray-600 mb-6">${i18n.t('privacy3Text')}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 function showLogin() {
   currentView = 'login';
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
       <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <button onclick="showHomePage()" class="mb-4 text-indigo-600 hover:text-indigo-800 text-sm">
+          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
+        </button>
+        
         <div class="text-center mb-8">
           <h1 class="text-3xl font-bold text-gray-800 mb-2">
             <i class="fas fa-brain text-indigo-600 mr-2"></i>
@@ -89,8 +683,12 @@ function showLogin() {
 function showRegister() {
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
       <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <button onclick="showHomePage()" class="mb-4 text-indigo-600 hover:text-indigo-800 text-sm">
+          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
+        </button>
+        
         <div class="text-center mb-8">
           <h1 class="text-3xl font-bold text-gray-800 mb-2">
             <i class="fas fa-user-plus text-indigo-600 mr-2"></i>

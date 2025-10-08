@@ -200,3 +200,51 @@ textarea:valid {
 .success-pulse {
   animation: successPulse 1.5s ease-in-out;
 }
+
+/* Home Page Styles */
+.active-tab {
+  background-color: #4f46e5;
+  color: white;
+}
+
+.inactive-tab {
+  background-color: white;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+.inactive-tab:hover {
+  background-color: #f9fafb;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Hero section gradient animation */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Smooth scroll offset for fixed nav */
+html {
+  scroll-padding-top: 80px;
+}
