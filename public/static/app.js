@@ -1150,6 +1150,9 @@ async function showTeams() {
   currentView = 'teams';
   const app = document.getElementById('app');
   
+  // Check if user can create teams (premium or admin only)
+  const canCreateTeam = currentUser && (currentUser.role === 'premium' || currentUser.role === 'admin');
+  
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
       ${renderNavigation()}
@@ -1159,10 +1162,16 @@ async function showTeams() {
           <h1 class="text-3xl font-bold text-gray-800">
             <i class="fas fa-users mr-2"></i>${i18n.t('teamList')}
           </h1>
-          <button onclick="showCreateTeam()" 
-                  class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition shadow-lg">
-            <i class="fas fa-plus mr-2"></i>${i18n.t('createTeam')}
-          </button>
+          ${canCreateTeam ? `
+            <button onclick="showCreateTeam()" 
+                    class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition shadow-lg">
+              <i class="fas fa-plus mr-2"></i>${i18n.t('createTeam')}
+            </button>
+          ` : `
+            <div class="text-sm text-gray-500 bg-gray-100 px-4 py-2 rounded-lg">
+              <i class="fas fa-info-circle mr-2"></i>${i18n.t('premiumFeature')}
+            </div>
+          `}
         </div>
 
         <div id="teams-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

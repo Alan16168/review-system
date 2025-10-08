@@ -142,6 +142,7 @@ const translations = {
     'addMember': '添加成员',
     'removeMember': '移除成员',
     'memberCount': '成员数量',
+    'premiumFeature': '仅高级用户和管理员可创建团队',
     
     // Admin
     'userManagement': '用户管理',
@@ -316,6 +317,7 @@ const translations = {
     'addMember': 'Add Member',
     'removeMember': 'Remove Member',
     'memberCount': 'Member Count',
+    'premiumFeature': 'Premium & Admin only',
     
     // Admin
     'userManagement': 'User Management',

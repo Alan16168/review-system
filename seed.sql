@@ -9,7 +9,7 @@ INSERT OR REPLACE INTO users (id, email, password_hash, username, role, language
 
 -- Insert normal user (password: user123)
 INSERT OR REPLACE INTO users (id, email, password_hash, username, role, language) VALUES 
-  (3, 'user@review.com', '$2b$10$txWTFkEfImnlbpt683gNeeaVwaWdU5RV9/GO2IY23/NKVz8BtBYm2', 'Normal User', 'user', 'zh');
+  (3, 'user@review.com', '$2b$10$txWTFkEfImnlbpt683gNeeaVwaWdU5RV9/GO2IY23/NKVz8BtBYm2', 'User', 'user', 'zh');
 
 -- Insert a test team
 INSERT OR IGNORE INTO teams (id, name, description, owner_id) VALUES 
