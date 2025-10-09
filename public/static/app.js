@@ -3,6 +3,12 @@ let currentUser = null;
 let authToken = null;
 let currentView = 'home';
 
+// Global cache for learning resources
+let cachedArticles = [];
+let displayedArticles = [];
+let cachedVideos = [];
+let displayedVideos = [];
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
@@ -517,35 +523,63 @@ function showResourceTab(tab) {
   }
 }
 
-// Load Articles using API - Show one random article
-async function loadArticles() {
+// Load Articles using API - Show 6 random articles, update 1 on refresh
+async function loadArticles(refresh = false) {
   const articlesContent = document.getElementById('articles-content');
   
   try {
-    const response = await axios.get('/api/resources/articles');
-    const { articles, source } = response.data;
+    // Fetch articles if not cached
+    if (cachedArticles.length === 0) {
+      const response = await axios.get('/api/resources/articles');
+      const { articles, source } = response.data;
+      cachedArticles = articles;
+      console.log(`Articles loaded from: ${source}`);
+    }
     
-    console.log(`Articles loaded from: ${source}`);
+    // Initialize: Select 6 random articles
+    if (!refresh || displayedArticles.length === 0) {
+      // Shuffle and pick 6
+      const shuffled = [...cachedArticles].sort(() => 0.5 - Math.random());
+      displayedArticles = shuffled.slice(0, 6);
+    } else {
+      // Refresh: Replace 1 random article
+      const randomIndex = Math.floor(Math.random() * displayedArticles.length);
+      
+      // Find an article not currently displayed
+      const availableArticles = cachedArticles.filter(
+        article => !displayedArticles.some(displayed => displayed.url === article.url)
+      );
+      
+      if (availableArticles.length > 0) {
+        const newArticle = availableArticles[Math.floor(Math.random() * availableArticles.length)];
+        displayedArticles[randomIndex] = newArticle;
+      } else {
+        // If all articles are shown, pick any random one
+        displayedArticles[randomIndex] = cachedArticles[Math.floor(Math.random() * cachedArticles.length)];
+      }
+    }
     
-    // Select one random article
-    const randomArticle = articles[Math.floor(Math.random() * articles.length)];
-    
+    // Render all 6 articles
     articlesContent.innerHTML = `
-      <a href="${randomArticle.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
-        <div class="flex-shrink-0">
-          <i class="fas fa-file-alt text-2xl text-indigo-600 group-hover:text-indigo-700"></i>
-        </div>
-        <div class="flex-1 min-w-0">
-          <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-indigo-600 transition">${escapeHtml(randomArticle.title)}</h3>
-          <p class="text-xs text-gray-500 truncate">${escapeHtml(randomArticle.description)}</p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-external-link-alt text-gray-400 group-hover:text-indigo-600 transition"></i>
-        </div>
-      </a>
-      <div class="text-center mt-3">
-        <button onclick="loadArticles()" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition">
-          <i class="fas fa-sync-alt mr-1"></i>Load Another Article
+      <div class="grid grid-cols-1 gap-3">
+        ${displayedArticles.map(article => `
+          <a href="${article.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
+            <div class="flex-shrink-0">
+              <i class="fas fa-file-alt text-2xl text-indigo-600 group-hover:text-indigo-700"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-indigo-600 transition">${escapeHtml(article.title)}</h3>
+              <p class="text-xs text-gray-500 truncate">${escapeHtml(article.description)}</p>
+            </div>
+            <div class="flex-shrink-0">
+              <i class="fas fa-external-link-alt text-gray-400 group-hover:text-indigo-600 transition"></i>
+            </div>
+          </a>
+        `).join('')}
+      </div>
+      <div class="text-center mt-4">
+        <button onclick="loadArticles(true)" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition">
+          <i class="fas fa-sync-alt mr-1"></i>Update One Article
         </button>
       </div>
     `;
@@ -562,38 +596,66 @@ async function loadArticles() {
   }
 }
 
-// Load Videos using API - Show one random video
-async function loadVideos() {
+// Load Videos using API - Show 6 random videos, update 1 on refresh
+async function loadVideos(refresh = false) {
   const videosContent = document.getElementById('videos-content');
   
   try {
-    const response = await axios.get('/api/resources/videos');
-    const { videos, source } = response.data;
+    // Fetch videos if not cached
+    if (cachedVideos.length === 0) {
+      const response = await axios.get('/api/resources/videos');
+      const { videos, source } = response.data;
+      cachedVideos = videos;
+      console.log(`Videos loaded from: ${source}`);
+    }
     
-    console.log(`Videos loaded from: ${source}`);
+    // Initialize: Select 6 random videos
+    if (!refresh || displayedVideos.length === 0) {
+      // Shuffle and pick 6
+      const shuffled = [...cachedVideos].sort(() => 0.5 - Math.random());
+      displayedVideos = shuffled.slice(0, 6);
+    } else {
+      // Refresh: Replace 1 random video
+      const randomIndex = Math.floor(Math.random() * displayedVideos.length);
+      
+      // Find a video not currently displayed
+      const availableVideos = cachedVideos.filter(
+        video => !displayedVideos.some(displayed => displayed.url === video.url)
+      );
+      
+      if (availableVideos.length > 0) {
+        const newVideo = availableVideos[Math.floor(Math.random() * availableVideos.length)];
+        displayedVideos[randomIndex] = newVideo;
+      } else {
+        // If all videos are shown, pick any random one
+        displayedVideos[randomIndex] = cachedVideos[Math.floor(Math.random() * cachedVideos.length)];
+      }
+    }
     
-    // Select one random video
-    const randomVideo = videos[Math.floor(Math.random() * videos.length)];
-    
+    // Render all 6 videos
     videosContent.innerHTML = `
-      <a href="${randomVideo.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
-        <div class="flex-shrink-0">
-          <i class="fas fa-play-circle text-2xl text-red-600 group-hover:text-red-700"></i>
-        </div>
-        <div class="flex-1 min-w-0">
-          <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-red-600 transition">${escapeHtml(randomVideo.title)}</h3>
-          <div class="flex items-center gap-3 text-xs text-gray-500">
-            <span class="truncate"><i class="fas fa-user-circle mr-1"></i>${escapeHtml(randomVideo.channel)}</span>
-            <span class="flex-shrink-0"><i class="fas fa-eye mr-1"></i>${randomVideo.views}</span>
-          </div>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-external-link-alt text-gray-400 group-hover:text-red-600 transition"></i>
-        </div>
-      </a>
-      <div class="text-center mt-3">
-        <button onclick="loadVideos()" class="text-red-600 hover:text-red-800 text-sm font-medium transition">
-          <i class="fas fa-sync-alt mr-1"></i>Load Another Video
+      <div class="grid grid-cols-1 gap-3">
+        ${displayedVideos.map(video => `
+          <a href="${video.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
+            <div class="flex-shrink-0">
+              <i class="fas fa-play-circle text-2xl text-red-600 group-hover:text-red-700"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-red-600 transition">${escapeHtml(video.title)}</h3>
+              <div class="flex items-center gap-3 text-xs text-gray-500">
+                <span class="truncate"><i class="fas fa-user-circle mr-1"></i>${escapeHtml(video.channel)}</span>
+                <span class="flex-shrink-0"><i class="fas fa-eye mr-1"></i>${video.views}</span>
+              </div>
+            </div>
+            <div class="flex-shrink-0">
+              <i class="fas fa-external-link-alt text-gray-400 group-hover:text-red-600 transition"></i>
+            </div>
+          </a>
+        `).join('')}
+      </div>
+      <div class="text-center mt-4">
+        <button onclick="loadVideos(true)" class="text-red-600 hover:text-red-800 text-sm font-medium transition">
+          <i class="fas fa-sync-alt mr-1"></i>Update One Video
         </button>
       </div>
     `;
