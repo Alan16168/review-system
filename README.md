@@ -62,6 +62,12 @@
 
 ## 🔗 访问链接
 
+### 生产环境 ✅
+- **应用 URL**: https://review-system.pages.dev
+- **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
+- **状态**: ✅ 已部署并运行中
+- **部署日期**: 2025-10-09
+
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
 - **资源 API - 文章**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev/api/resources/articles
@@ -560,39 +566,53 @@ curl -X GET http://localhost:3000/api/reviews \
 
 ## 🚀 部署
 
-### Cloudflare Pages 部署
+### Cloudflare Pages 生产环境 ✅
 
-1. 设置 Cloudflare API Token
-```bash
-# 调用 setup_cloudflare_api_key 工具
-```
+**当前状态**: 已成功部署到生产环境
 
-2. 创建生产数据库
-```bash
-npx wrangler d1 create review-system-production
-# 将返回的 database_id 更新到 wrangler.json
-```
+- **生产 URL**: https://review-system.pages.dev
+- **项目名称**: review-system
+- **数据库**: review-system-production (D1)
+- **环境变量**: 已配置 4 个（Google OAuth + API Key）
 
-3. 应用数据库迁移
-```bash
-npm run db:migrate:prod
-```
+### 快速部署命令
 
-4. 创建 Pages 项目
-```bash
-npx wrangler pages project create review-system \
-  --production-branch main
-```
+如需重新部署或更新：
 
-5. 部署到生产环境
 ```bash
+# 1. 构建项目
+npm run build
+
+# 2. 部署到生产环境
 npm run deploy:prod
+
+# 3. 查看部署状态
+npx wrangler pages deployment list --project-name review-system
 ```
 
-6. 设置环境变量（如需要）
+### 详细部署文档
+
+- **部署成功记录**: [DEPLOYMENT_SUCCESS.md](DEPLOYMENT_SUCCESS.md)
+- **完整部署指南**: [PRODUCTION_DEPLOYMENT_GUIDE.md](PRODUCTION_DEPLOYMENT_GUIDE.md)
+- **自定义域名设置**: [CUSTOM_DOMAIN_SETUP.md](CUSTOM_DOMAIN_SETUP.md)
+
+### 自定义域名绑定
+
+如果您有自己的域名，可以绑定到 Cloudflare Pages：
+
 ```bash
-npx wrangler pages secret put JWT_SECRET --project-name review-system
+# 绑定您的域名
+npx wrangler pages domain add yourdomain.com --project-name review-system
+
+# 详细步骤请查看: CUSTOM_DOMAIN_SETUP.md
 ```
+
+**优势**:
+- ✅ 完全免费（包括 SSL 证书）
+- ✅ 自动 HTTPS
+- ✅ 全球 CDN 加速
+- ✅ 无限带宽和请求
+- ✅ 支持多个域名
 
 ## 🔄 当前完成功能
 
@@ -678,11 +698,15 @@ npx wrangler pages secret put JWT_SECRET --project-name review-system
 
 ## 📄 部署状态
 
-- **平台**: Cloudflare Pages (待部署)
-- **状态**: ✅ 开发环境运行中
+- **平台**: Cloudflare Pages
+- **生产环境**: ✅ 已部署 (https://review-system.pages.dev)
+- **开发环境**: ✅ 运行中
 - **技术栈**: Hono + TypeScript + Cloudflare D1
+- **数据库**: ✅ review-system-production (D1)
 - **Google OAuth**: ✅ 已配置并启用
 - **Google API**: ✅ 已配置（YouTube + Custom Search）
+- **环境变量**: ✅ 已配置 4 个生产环境变量
+- **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-09
 - **当前版本**: V3.4 🎉
 
