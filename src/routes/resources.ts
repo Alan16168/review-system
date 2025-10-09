@@ -172,61 +172,61 @@ function getMockArticles() {
     {
       title: 'Harvard Business Review: Learning to Learn',
       description: 'Deep dive into how systematic reflection and review accelerate personal growth',
-      url: 'https://hbr.org/2016/01/learning-to-learn',
+      url: 'https://hbr.org/2016/03/learning-to-learn',
       image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=HBR'
     },
     {
       title: 'Reflective Practice: Key to Professional Development',
       description: 'Learn how structured reflection enhances professional skills and decision-making',
-      url: 'https://www.mindtools.com/pages/article/reflective-practice.htm',
+      url: 'https://www.mindtools.com/a6i8qh4/reflective-practice',
       image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=Reflection'
     },
     {
       title: 'Startup Review Practice Guide',
       description: 'How Silicon Valley startup teams achieve rapid iteration through regular reviews',
-      url: 'https://review.firstround.com/',
+      url: 'https://firstround.com/review/',
       image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=Startup'
     },
     {
       title: 'Agile Retrospective Best Practices',
       description: 'How agile teams continuously improve through effective retrospective meetings',
-      url: 'https://retrospectivewiki.org/',
+      url: 'https://www.atlassian.com/team-playbook/plays/retrospective',
       image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=Agile'
     },
     {
       title: 'Atlassian Team Collaboration Guide',
       description: 'How world-class teams conduct efficient team reviews and collaboration',
-      url: 'https://www.atlassian.com/team-playbook/plays/retrospective',
+      url: 'https://www.atlassian.com/agile/retrospectives',
       image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=Team'
     },
     {
       title: 'Lessons Learned Management in Project Management',
       description: 'How to systematically collect, analyze, and apply project experience',
-      url: 'https://www.projectmanagement.com/',
+      url: 'https://www.pmi.org/learning/library/lessons-learned-next-level-communicating-7991',
       image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=PM'
     },
     {
       title: 'Forbes: 7 Habits of Personal Growth',
       description: 'How successful people achieve continuous growth through regular reflection',
-      url: 'https://www.forbes.com/sites/forbescoachescouncil/',
+      url: 'https://www.forbes.com/sites/forbescoachescouncil/2019/08/19/15-habits-of-highly-effective-people-who-know-how-to-manage-their-time/',
       image: 'https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=Growth'
     },
     {
       title: 'Leadership Development: Learning from Experience',
       description: 'How great leaders extract wisdom from every experience',
-      url: 'https://hbr.org/topic/leadership',
+      url: 'https://hbr.org/2016/03/leaders-can-make-themselves-more-learning-oriented',
       image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=Leadership'
     },
     {
       title: 'Reflection Techniques for Productivity',
       description: 'Make work more efficient through scientific review methods',
-      url: 'https://www.inc.com/productivity',
+      url: 'https://www.inc.com/jessica-stillman/science-says-this-simple-habit-can-make-you-22-percent-more-productive.html',
       image: 'https://via.placeholder.com/400x250/06B6D4/FFFFFF?text=Productivity'
     },
     {
       title: 'McKinsey: Organizational Learning & Knowledge Management',
       description: 'How top consulting firms build learning organizations',
-      url: 'https://www.mckinsey.com/business-functions/organization',
+      url: 'https://www.mckinsey.com/capabilities/people-and-organizational-performance/our-insights',
       image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=Strategy'
     }
   ];
@@ -235,74 +235,74 @@ function getMockArticles() {
 function getMockVideos() {
   return [
     {
-      title: 'TED Talk: The Power of Reflection',
+      title: 'TED Talk: The Power of Vulnerability',
       channel: 'TED',
       views: '2M',
       thumbnail: 'https://via.placeholder.com/400x225/DC2626/FFFFFF?text=TED',
-      url: 'https://www.youtube.com/results?search_query=reflection+learning'
+      url: 'https://www.youtube.com/watch?v=iCvmsMzlF7o'
     },
     {
-      title: 'HBR: High-Performance Team Review Practices',
+      title: 'How to Build a High-Performance Team',
       channel: 'Harvard Business Review',
       views: '500K',
       thumbnail: 'https://via.placeholder.com/400x225/7C3AED/FFFFFF?text=HBR',
-      url: 'https://www.youtube.com/c/HarvardBusinessReview'
+      url: 'https://www.youtube.com/watch?v=3SWRwkJIkWQ'
     },
     {
-      title: 'Complete Guide to Agile Retrospectives',
+      title: 'Agile Retrospectives: Making Good Teams Great',
       channel: 'Agile Academy',
       views: '1.2M',
       thumbnail: 'https://via.placeholder.com/400x225/059669/FFFFFF?text=Agile',
-      url: 'https://www.youtube.com/results?search_query=agile+retrospective'
+      url: 'https://www.youtube.com/watch?v=p4m1oM15RXY'
     },
     {
-      title: 'Simon Sinek: How Great Leaders Learn',
+      title: 'Simon Sinek: Start With Why',
       channel: 'Simon Sinek',
       views: '3M',
       thumbnail: 'https://via.placeholder.com/400x225/F59E0B/FFFFFF?text=Leadership',
-      url: 'https://www.youtube.com/user/SimonSinek'
+      url: 'https://www.youtube.com/watch?v=u4ZoJKF_VuA'
     },
     {
-      title: 'Stanford: Building High-Performance Teams',
+      title: 'Building a Psychologically Safe Workplace',
       channel: 'Stanford Graduate School',
       views: '800K',
       thumbnail: 'https://via.placeholder.com/400x225/EC4899/FFFFFF?text=Stanford',
-      url: 'https://www.youtube.com/results?search_query=team+dynamics'
+      url: 'https://www.youtube.com/watch?v=LhoLuui9gX8'
     },
     {
-      title: 'McKinsey: Organizational Learning Best Practices',
+      title: 'The McKinsey Way: Problem Solving',
       channel: 'McKinsey & Company',
       views: '650K',
       thumbnail: 'https://via.placeholder.com/400x225/3B82F6/FFFFFF?text=McKinsey',
-      url: 'https://www.youtube.com/c/mckinsey'
+      url: 'https://www.youtube.com/watch?v=lBKi5sDxqSM'
     },
     {
-      title: '10 Review Techniques to Boost Productivity',
+      title: '10 Proven Productivity Tips',
       channel: 'Productivity Game',
       views: '1.5M',
       thumbnail: 'https://via.placeholder.com/400x225/8B5CF6/FFFFFF?text=Productivity',
-      url: 'https://www.youtube.com/results?search_query=productivity+tips'
+      url: 'https://www.youtube.com/watch?v=JZKzoUbk2Kg'
     },
     {
-      title: 'Personal Growth: From Experience to Wisdom',
+      title: 'The Futur: Personal Growth and Learning',
       channel: 'The Futur',
       views: '2.1M',
       thumbnail: 'https://via.placeholder.com/400x225/06B6D4/FFFFFF?text=Growth',
-      url: 'https://www.youtube.com/c/thefuturishere'
+      url: 'https://www.youtube.com/watch?v=S6ImeaxCHJg'
     },
     {
-      title: 'MIT: Systems Thinking and Reflection',
+      title: 'MIT: Introduction to Systems Thinking',
       channel: 'MIT OpenCourseWare',
       views: '450K',
       thumbnail: 'https://via.placeholder.com/400x225/14B8A6/FFFFFF?text=MIT',
-      url: 'https://www.youtube.com/c/mitocw'
+      url: 'https://www.youtube.com/watch?v=_vS4b4qHGbI'
     },
     {
-      title: 'Google: Secrets of Innovative Teams',
+      title: 'What Makes a Team Innovative? Google Research',
       channel: 'Google for Startups',
       views: '900K',
       thumbnail: 'https://via.placeholder.com/400x225/EF4444/FFFFFF?text=Innovation',
-      url: 'https://www.youtube.com/c/GoogleforStartups'
+      url: 'https://www.youtube.com/watch?v=v2PaZ8Nl2T4'
     }
   ];
 }

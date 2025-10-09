@@ -50,7 +50,7 @@ function showHomePage() {
       <nav class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between items-center h-16">
-            <div class="flex items-center">
+            <div class="flex items-center cursor-pointer" onclick="showHomePage()">
               <i class="fas fa-brain text-indigo-600 text-2xl mr-2"></i>
               <span class="text-xl font-bold text-gray-800">${i18n.t('systemTitle')}</span>
             </div>
@@ -67,6 +67,9 @@ function showHomePage() {
                 ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
               </button>
               ${currentUser ? `
+                <span class="text-gray-700 font-medium">
+                  <i class="fas fa-user-circle mr-1"></i>${escapeHtml(currentUser.username)}
+                </span>
                 <button onclick="showDashboard()" 
                         class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
                   <i class="fas fa-tachometer-alt mr-2"></i>${i18n.t('dashboard')}
@@ -185,9 +188,9 @@ function showHomePage() {
           </div>
 
           <!-- Articles Tab -->
-          <div id="articles-content" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div class="text-center py-12 col-span-full">
+          <div id="articles-content" class="tab-content max-w-4xl mx-auto">
+            <div class="space-y-2">
+              <div class="text-center py-12">
                 <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
                 <p class="text-gray-600">${i18n.t('loadingArticles')}</p>
               </div>
@@ -195,9 +198,9 @@ function showHomePage() {
           </div>
 
           <!-- Videos Tab -->
-          <div id="videos-content" class="tab-content hidden">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div class="text-center py-12 col-span-full">
+          <div id="videos-content" class="tab-content hidden max-w-4xl mx-auto">
+            <div class="space-y-2">
+              <div class="text-center py-12">
                 <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
                 <p class="text-gray-600">${i18n.t('loadingVideos')}</p>
               </div>
@@ -525,14 +528,16 @@ async function loadArticles() {
     console.log(`Articles loaded from: ${source}`);
     
     articlesContent.innerHTML = articles.map(article => `
-      <a href="${article.url}" target="_blank" class="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1">
-        <img src="${article.image}" alt="${escapeHtml(article.title)}" class="w-full h-48 object-cover" onerror="this.src='https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=Article'">
-        <div class="p-6">
-          <h3 class="font-bold text-lg text-gray-900 mb-2 line-clamp-2">${escapeHtml(article.title)}</h3>
-          <p class="text-gray-600 text-sm line-clamp-3">${escapeHtml(article.description)}</p>
-          <div class="mt-4 text-indigo-600 font-medium text-sm">
-            ${i18n.t('readMore')} <i class="fas fa-arrow-right ml-1"></i>
-          </div>
+      <a href="${article.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
+        <div class="flex-shrink-0">
+          <i class="fas fa-file-alt text-2xl text-indigo-600 group-hover:text-indigo-700"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-indigo-600 transition">${escapeHtml(article.title)}</h3>
+          <p class="text-xs text-gray-500 truncate">${escapeHtml(article.description)}</p>
+        </div>
+        <div class="flex-shrink-0">
+          <i class="fas fa-external-link-alt text-gray-400 group-hover:text-indigo-600 transition"></i>
         </div>
       </a>
     `).join('');
@@ -541,7 +546,7 @@ async function loadArticles() {
   } catch (error) {
     console.error('Failed to load articles:', error);
     articlesContent.innerHTML = `
-      <div class="col-span-full text-center py-12">
+      <div class="text-center py-12">
         <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
         <p class="text-gray-600">${i18n.t('loadError')}</p>
       </div>
@@ -560,19 +565,19 @@ async function loadVideos() {
     console.log(`Videos loaded from: ${source}`);
     
     videosContent.innerHTML = videos.map(video => `
-      <a href="${video.url}" target="_blank" class="block bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition transform hover:-translate-y-1">
-        <div class="relative">
-          <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" class="w-full h-48 object-cover" onerror="this.src='https://via.placeholder.com/400x225/DC2626/FFFFFF?text=Video'">
-          <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 hover:bg-opacity-50 transition">
-            <i class="fas fa-play-circle text-white text-6xl"></i>
+      <a href="${video.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
+        <div class="flex-shrink-0">
+          <i class="fas fa-play-circle text-2xl text-red-600 group-hover:text-red-700"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-red-600 transition">${escapeHtml(video.title)}</h3>
+          <div class="flex items-center gap-3 text-xs text-gray-500">
+            <span class="truncate"><i class="fas fa-user-circle mr-1"></i>${escapeHtml(video.channel)}</span>
+            <span class="flex-shrink-0"><i class="fas fa-eye mr-1"></i>${video.views}</span>
           </div>
         </div>
-        <div class="p-6">
-          <h3 class="font-bold text-lg text-gray-900 mb-2 line-clamp-2">${escapeHtml(video.title)}</h3>
-          <div class="flex items-center justify-between text-sm text-gray-600">
-            <span><i class="fas fa-user-circle mr-1"></i>${escapeHtml(video.channel)}</span>
-            <span><i class="fas fa-eye mr-1"></i>${video.views}</span>
-          </div>
+        <div class="flex-shrink-0">
+          <i class="fas fa-external-link-alt text-gray-400 group-hover:text-red-600 transition"></i>
         </div>
       </a>
     `).join('');
@@ -581,7 +586,7 @@ async function loadVideos() {
   } catch (error) {
     console.error('Failed to load videos:', error);
     videosContent.innerHTML = `
-      <div class="col-span-full text-center py-12">
+      <div class="text-center py-12">
         <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
         <p class="text-gray-600">${i18n.t('loadError')}</p>
       </div>
@@ -668,6 +673,22 @@ function showLogin() {
         </div>
 
         <div id="auth-form">
+          <!-- Google Sign-In Button -->
+          <div class="mb-6">
+            <div id="google-signin-button"></div>
+          </div>
+          
+          <!-- Divider -->
+          <div class="relative mb-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white text-gray-500">${i18n.t('orDivider')}</span>
+            </div>
+          </div>
+          
+          <!-- Email/Password Login -->
           <div class="mb-4">
             <label class="block text-gray-700 mb-2">${i18n.t('email')}</label>
             <input type="email" id="login-email" 
@@ -696,6 +717,25 @@ function showLogin() {
       </div>
     </div>
   `;
+  
+  // Initialize Google Sign-In button after DOM is ready
+  setTimeout(() => {
+    if (typeof google !== 'undefined' && google.accounts) {
+      google.accounts.id.initialize({
+        client_id: '78785931273-pse627aasv4h50mcc1cschj5cvtqr88f.apps.googleusercontent.com',
+        callback: handleGoogleLogin
+      });
+      google.accounts.id.renderButton(
+        document.getElementById('google-signin-button'),
+        { 
+          theme: 'outline', 
+          size: 'large',
+          width: 400,
+          text: 'continue_with'
+        }
+      );
+    }
+  }, 100);
 }
 
 function showRegister() {
@@ -715,6 +755,22 @@ function showRegister() {
         </div>
 
         <div id="register-form">
+          <!-- Google Sign-In Button -->
+          <div class="mb-6">
+            <div id="google-register-button"></div>
+          </div>
+          
+          <!-- Divider -->
+          <div class="relative mb-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white text-gray-500">${i18n.t('orDivider')}</span>
+            </div>
+          </div>
+          
+          <!-- Email/Password Registration -->
           <div class="mb-4">
             <label class="block text-gray-700 mb-2">${i18n.t('username')}</label>
             <input type="text" id="register-username" 
@@ -750,6 +806,25 @@ function showRegister() {
       </div>
     </div>
   `;
+  
+  // Initialize Google Sign-In button after DOM is ready
+  setTimeout(() => {
+    if (typeof google !== 'undefined' && google.accounts) {
+      google.accounts.id.initialize({
+        client_id: '78785931273-pse627aasv4h50mcc1cschj5cvtqr88f.apps.googleusercontent.com',
+        callback: handleGoogleLogin
+      });
+      google.accounts.id.renderButton(
+        document.getElementById('google-register-button'),
+        { 
+          theme: 'outline', 
+          size: 'large',
+          width: 400,
+          text: 'signup_with'
+        }
+      );
+    }
+  }, 100);
 }
 
 function showDashboard() {
@@ -762,7 +837,7 @@ function showDashboard() {
         <div class="max-w-7xl mx-auto px-4">
           <div class="flex justify-between items-center py-4">
             <div class="flex items-center space-x-8">
-              <h1 class="text-2xl font-bold text-indigo-600">
+              <h1 class="text-2xl font-bold text-indigo-600 cursor-pointer" onclick="showHomePage()">
                 <i class="fas fa-brain mr-2"></i>${i18n.t('systemTitle')}
               </h1>
               <div class="hidden md:flex space-x-4">
@@ -1688,7 +1763,7 @@ function renderNavigation() {
       <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between items-center py-4">
           <div class="flex items-center space-x-8">
-            <h1 class="text-2xl font-bold text-indigo-600 cursor-pointer" onclick="showDashboard()">
+            <h1 class="text-2xl font-bold text-indigo-600 cursor-pointer" onclick="showHomePage()">
               <i class="fas fa-brain mr-2"></i>${i18n.t('systemTitle')}
             </h1>
             <div class="hidden md:flex space-x-4">
@@ -2724,5 +2799,33 @@ async function deleteReview(id) {
     loadDashboardData();
   } catch (error) {
     alert(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message));
+  }
+}
+
+// Google Login Handler
+async function handleGoogleLogin(response) {
+  try {
+    console.log('Google login response received');
+    
+    // Send Google credential to backend
+    const result = await axios.post('/api/auth/google', {
+      credential: response.credential
+    });
+
+    // Store token and user info (consistent with email login)
+    authToken = result.data.token;
+    currentUser = result.data.user;
+    
+    localStorage.setItem('authToken', authToken);
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+
+    console.log('Google login successful:', currentUser);
+    
+    // Redirect to dashboard
+    showDashboard();
+  } catch (error) {
+    console.error('Google login error:', error);
+    alert(i18n.t('loginFailed') + ': ' + (error.response?.data?.error || error.message));
   }
 }

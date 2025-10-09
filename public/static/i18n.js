@@ -14,6 +14,8 @@ const translations = {
     'haveAccount': '已有账号？',
     'clickRegister': '点击注册',
     'clickLogin': '点击登录',
+    'continueWithGoogle': '使用 Google 账号继续',
+    'orDivider': '或',
     
     // Navigation
     'dashboard': '仪表板',
@@ -314,6 +316,8 @@ const translations = {
     'haveAccount': 'Already have an account?',
     'clickRegister': 'Click to Register',
     'clickLogin': 'Click to Login',
+    'continueWithGoogle': 'Continue with Google',
+    'orDivider': 'OR',
     
     // Navigation
     'dashboard': 'Dashboard',

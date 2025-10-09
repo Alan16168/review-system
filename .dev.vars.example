@@ -1,0 +1,18 @@
+# 本地开发环境变量配置示例
+# 复制此文件为 .dev.vars 并填入实际的值
+# ⚠️ 不要将 .dev.vars 提交到Git仓库
+
+# Google OAuth 配置
+# 获取方式：https://console.cloud.google.com/ -> APIs & Services -> Credentials
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+
+# Google Custom Search API（可选 - 用于文章搜索）
+GOOGLE_API_KEY=your-google-api-key
+GOOGLE_SEARCH_ENGINE_ID=your-search-engine-id
+
+# YouTube Data API（可选 - 用于视频信息）
+YOUTUBE_API_KEY=your-youtube-api-key
+
+# JWT Secret（可选 - 默认使用固定值）
+# JWT_SECRET=your-custom-jwt-secret

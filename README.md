@@ -23,7 +23,8 @@
    - 完整的SEO优化结构
 
 2. ✅ **用户认证系统**
-   - 用户注册和登录
+   - **Google账号一键登录/注册（V3.3 完成配置 - V3.4）**
+   - 传统邮箱密码注册和登录（V3.4 数据库修复）
    - 基于 JWT 的身份认证
    - 角色权限管理（管理员/高级用户/普通用户）
 
@@ -63,6 +64,8 @@
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
+- **资源 API - 文章**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev/api/resources/articles
+- **资源 API - 视频**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev/api/resources/videos
 
 ### 测试账号
 | 角色 | 邮箱 | 密码 | 权限 |
@@ -232,6 +235,18 @@ Response: {
 Request: {
   "email": "user@example.com",
   "password": "password123"
+}
+Response: {
+  "token": "jwt_token",
+  "user": { "id", "email", "username", "role", "language" }
+}
+```
+
+#### POST /api/auth/google
+Google OAuth 登录/注册
+```json
+Request: {
+  "credential": "google_id_token"
 }
 Response: {
   "token": "jwt_token",
@@ -596,6 +611,11 @@ npx wrangler pages secret put JWT_SECRET --project-name review-system
 ✅ **增强通知系统（邮箱发送 + 选择发送）** 【V2 新增】
 ✅ **团队邀请和权限系统（创造者/操作者/观察者）** 【V2 新增】
 ✅ **营销主页和资源库** 【V3 新增】
+✅ **资源链接修复（文章和视频直接可访问）** 【V3.1 修复】
+✅ **Logo点击返回首页功能** 【V3.1 新增】
+✅ **紧凑的资源列表样式** 【V3.2 优化】
+✅ **首页显示登录用户名** 【V3.2 新增】
+✅ **Google账号一键登录/注册** 【V3.3 新增】
 ✅ 中英双语支持
 ✅ 响应式前端界面
 ✅ API 接口完整实现
@@ -661,8 +681,10 @@ npx wrangler pages secret put JWT_SECRET --project-name review-system
 - **平台**: Cloudflare Pages (待部署)
 - **状态**: ✅ 开发环境运行中
 - **技术栈**: Hono + TypeScript + Cloudflare D1
-- **最后更新**: 2025-10-08
-- **当前版本**: V3.0 🎉
+- **Google OAuth**: ✅ 已配置并启用
+- **Google API**: ✅ 已配置（YouTube + Custom Search）
+- **最后更新**: 2025-10-09
+- **当前版本**: V3.4 🎉
 
 ## 📝 许可证
 
@@ -672,16 +694,59 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V3.0  
-**V3 更新内容**: 
+**当前版本**: V3.4  
+
+**V3.4 更新内容** (2025-10-09):
+- 🐛 **修复数据库配置问题**：
+  - 修复 wrangler.json 数据库配置（database_name 不匹配）
+  - 成功应用所有数据库迁移（5个迁移文件）
+  - 导入种子数据，创建测试账号
+  - 邮箱登录功能恢复正常 ✅
+- 🔧 **修复Google登录按钮显示**：
+  - 改用手动初始化 Google Sign-In 按钮
+  - 修复前端页面渲染后按钮不显示的问题
+  - 统一 authToken 存储方式（与邮箱登录一致）
+- 🔑 **配置Google API Key**：
+  - 配置 GOOGLE_API_KEY: AIzaSyAsXAObY7qWBlnO0aXZYXbInYXfUnbiHKs
+  - 配置 YOUTUBE_API_KEY（同一密钥）
+  - 启用真实 YouTube 视频数据获取
+- 📄 **更新文档**：
+  - 添加 POST /api/auth/google API 文档
+  - 更新部署状态和版本信息
+
+**V3.3 更新内容** (2025-10-08):
+- 🔐 **Google账号登录**：
+  - 集成Google OAuth 2.0认证
+  - 支持Google账号一键登录和注册
+  - 自动创建用户账号（首次登录）
+  - 通过邮箱关联现有账号（已注册用户）
+  - 在登录和注册页面添加Google按钮
+  - 完整的配置文档（GOOGLE_OAUTH_SETUP.md）
+  - 环境变量示例文件（.dev.vars.example）
+
+**V3.2 更新内容** (2025-10-08):
+- 🎨 **优化资源展示**：
+  - 将"精选文章"改为紧凑的列表样式，每条占用更少空间
+  - 将"视频教程"改为紧凑的列表样式，移除大图预览
+  - 调整为单列布局，最大宽度限制，提升阅读体验
+- ✨ **首页用户名显示**：登录后返回首页时，在"仪表板"按钮旁显示用户名
+
+**V3.1 更新内容** (2025-10-08):
+- 🐛 **修复资源链接问题**：
+  - 修复"精选文章"所有文章链接，确保可直接访问
+  - 修复"视频教程"链接，使用直接的YouTube视频watch链接而非搜索链接
+- ✨ **Logo点击功能**：点击系统标题或logo可返回首页（适用于登录前后所有界面）
+
+**V3.0 更新内容** (2025-10-08):
 - ✨ 完整的营销主页（Hero + 资源 + 关于 + 团队 + 评价 + 联系）
 - ✨ 学习资源库（10篇文章 + 10个视频）
 - ✨ 团队成员三级权限系统（创造者/操作者/观察者）
 - ✨ 季复盘时间类型
 - ✨ 权限限制：只有Premium和Admin可创建团队
 - ✨ 完整的法律页面（服务条款 + 隐私政策）
+- ✨ 首页英雄区3张图片轮播功能
 
-**V2 更新内容**: 
+**V2.0 更新内容** (2025-10-07):
 - ✨ 复盘分类系统（群体类型 + 时间类型）
 - ✨ 增强通知系统（邮箱发送 + 选择发送）
 - ✨ 团队邮箱邀请功能
