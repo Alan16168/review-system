@@ -70,3 +70,8 @@ export async function updateUserRole(db: D1Database, userId: number, role: strin
 export async function deleteUser(db: D1Database, userId: number): Promise<void> {
   await db.prepare('DELETE FROM users WHERE id = ?').bind(userId).run();
 }
+
+export async function updateUserPassword(db: D1Database, userId: number, passwordHash: string): Promise<void> {
+  await db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    .bind(passwordHash, userId).run();
+}

@@ -786,10 +786,17 @@ function showLogin() {
             ${i18n.t('login')}
           </button>
           
-          <div class="text-center">
-            <a href="#" onclick="showRegister(); return false;" class="text-indigo-600 hover:text-indigo-800">
-              ${i18n.t('noAccount')} ${i18n.t('clickRegister')}
-            </a>
+          <div class="text-center space-y-2">
+            <div>
+              <a href="#" onclick="showForgotPassword(); return false;" class="text-sm text-gray-600 hover:text-indigo-600">
+                ${i18n.t('forgotPassword')}
+              </a>
+            </div>
+            <div>
+              <a href="#" onclick="showRegister(); return false;" class="text-indigo-600 hover:text-indigo-800">
+                ${i18n.t('noAccount')} ${i18n.t('clickRegister')}
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -947,6 +954,9 @@ function showDashboard() {
                 <i class="fas fa-user mr-1"></i>${currentUser.username}
                 <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
               </span>
+              <button onclick="showChangePassword()" class="text-gray-700 hover:text-indigo-600" title="${i18n.t('changePassword')}">
+                <i class="fas fa-key"></i>
+              </button>
               <button onclick="logout()" class="text-red-600 hover:text-red-800">
                 <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
               </button>
@@ -2430,6 +2440,10 @@ async function showUsersManagement(container) {
           <i class="fas fa-users mr-2"></i>${i18n.t('userList')}
         </h2>
         <div class="flex space-x-2">
+          <button onclick="showCreateUserModal()" 
+                  class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+            <i class="fas fa-plus mr-2"></i>${i18n.t('createUser')}
+          </button>
           <input type="text" id="search-users" placeholder="${i18n.t('search')}"
                  class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                  oninput="filterUsers()">
@@ -2905,5 +2919,262 @@ async function handleGoogleLogin(response) {
   } catch (error) {
     console.error('Google login error:', error);
     alert(i18n.t('loginFailed') + ': ' + (error.response?.data?.error || error.message));
+  }
+}
+
+// ============ Change Password ============
+function showChangePassword() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <button onclick="showDashboard()" class="mb-4 text-indigo-600 hover:text-indigo-800 text-sm">
+          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back')}
+        </button>
+        
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">
+          <i class="fas fa-key text-indigo-600 mr-2"></i>${i18n.t('changePassword')}
+        </h2>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 mb-2">${i18n.t('currentPassword')}</label>
+          <input type="password" id="current-password" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('currentPassword')}">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 mb-2">${i18n.t('newPassword')}</label>
+          <input type="password" id="new-password" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('newPassword')}">
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-gray-700 mb-2">${i18n.t('confirmNewPassword')}</label>
+          <input type="password" id="confirm-new-password" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('confirmNewPassword')}">
+        </div>
+        
+        <button onclick="handleChangePassword()" 
+                class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition">
+          ${i18n.t('changePassword')}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+async function handleChangePassword() {
+  const currentPassword = document.getElementById('current-password').value;
+  const newPassword = document.getElementById('new-password').value;
+  const confirmPassword = document.getElementById('confirm-new-password').value;
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    alert(i18n.t('operationFailed') + ': All fields are required');
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    alert(i18n.t('operationFailed') + ': Password must be at least 6 characters');
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    alert(i18n.t('operationFailed') + ': New passwords do not match');
+    return;
+  }
+
+  try {
+    await axios.post('/api/auth/change-password', {
+      currentPassword,
+      newPassword
+    });
+    
+    alert(i18n.t('passwordChanged'));
+    showDashboard();
+  } catch (error) {
+    console.error('Change password error:', error);
+    alert(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message));
+  }
+}
+
+// ============ Forgot Password ============
+function showForgotPassword() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <button onclick="showLogin()" class="mb-4 text-indigo-600 hover:text-indigo-800 text-sm">
+          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back')}
+        </button>
+        
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-lock text-indigo-600 mr-2"></i>${i18n.t('resetPassword')}
+        </h2>
+        <p class="text-gray-600 text-sm mb-6">
+          Enter your email and new password to reset your password.
+        </p>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 mb-2">${i18n.t('email')}</label>
+          <input type="email" id="reset-email" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('email')}">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 mb-2">${i18n.t('newPassword')}</label>
+          <input type="password" id="reset-new-password" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('newPassword')}">
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-gray-700 mb-2">${i18n.t('confirmNewPassword')}</label>
+          <input type="password" id="reset-confirm-password" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('confirmNewPassword')}">
+        </div>
+        
+        <button onclick="handleResetPassword()" 
+                class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition">
+          ${i18n.t('resetPassword')}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+async function handleResetPassword() {
+  const email = document.getElementById('reset-email').value;
+  const newPassword = document.getElementById('reset-new-password').value;
+  const confirmPassword = document.getElementById('reset-confirm-password').value;
+
+  if (!email || !newPassword || !confirmPassword) {
+    alert(i18n.t('operationFailed') + ': All fields are required');
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    alert(i18n.t('operationFailed') + ': Password must be at least 6 characters');
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    alert(i18n.t('operationFailed') + ': Passwords do not match');
+    return;
+  }
+
+  try {
+    await axios.post('/api/auth/reset-password', {
+      email,
+      newPassword
+    });
+    
+    alert(i18n.t('passwordReset') + ' You can now login with your new password.');
+    showLogin();
+  } catch (error) {
+    console.error('Reset password error:', error);
+    alert(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message));
+  }
+}
+
+// ============ Create User (Admin) ============
+function showCreateUserModal() {
+  const modalHtml = `
+    <div id="create-user-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         onclick="if(event.target === this) closeCreateUserModal()">
+      <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">
+          <i class="fas fa-user-plus text-indigo-600 mr-2"></i>${i18n.t('createUser')}
+        </h3>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 mb-2">${i18n.t('email')}</label>
+          <input type="email" id="new-user-email" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('email')}">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 mb-2">${i18n.t('username')}</label>
+          <input type="text" id="new-user-username" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('username')}">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 mb-2">${i18n.t('password')}</label>
+          <input type="password" id="new-user-password" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('password')}">
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-gray-700 mb-2">${i18n.t('role')}</label>
+          <select id="new-user-role" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="user">${i18n.t('userRole')}</option>
+            <option value="premium">${i18n.t('premiumRole')}</option>
+            <option value="admin">${i18n.t('adminRole')}</option>
+          </select>
+        </div>
+        
+        <div class="flex space-x-4">
+          <button onclick="handleCreateUser()" 
+                  class="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition">
+            ${i18n.t('createUser')}
+          </button>
+          <button onclick="closeCreateUserModal()" 
+                  class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 transition">
+            ${i18n.t('cancel')}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeCreateUserModal() {
+  const modal = document.getElementById('create-user-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+async function handleCreateUser() {
+  const email = document.getElementById('new-user-email').value;
+  const username = document.getElementById('new-user-username').value;
+  const password = document.getElementById('new-user-password').value;
+  const role = document.getElementById('new-user-role').value;
+
+  if (!email || !username || !password) {
+    alert(i18n.t('operationFailed') + ': All fields are required');
+    return;
+  }
+
+  if (password.length < 6) {
+    alert(i18n.t('operationFailed') + ': Password must be at least 6 characters');
+    return;
+  }
+
+  try {
+    await axios.post('/api/admin/users', {
+      email,
+      username,
+      password,
+      role
+    });
+    
+    alert(i18n.t('createSuccess'));
+    closeCreateUserModal();
+    await loadUsersTable();
+  } catch (error) {
+    console.error('Create user error:', error);
+    alert(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message));
   }
 }

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { authMiddleware, adminOnly } from '../middleware/auth';
-import { getAllUsers, updateUserRole, deleteUser } from '../utils/db';
+import { getAllUsers, updateUserRole, deleteUser, getUserByEmail, createUser, getUserById } from '../utils/db';
+import { hashPassword } from '../utils/auth';
 
 type Bindings = {
   DB: D1Database;
@@ -10,6 +11,52 @@ const admin = new Hono<{ Bindings: Bindings }>();
 
 // All routes require admin authentication
 admin.use('/*', authMiddleware, adminOnly);
+
+// Create new user (Admin only)
+admin.post('/users', async (c) => {
+  try {
+    const { email, password, username, role } = await c.req.json();
+
+    if (!email || !password || !username) {
+      return c.json({ error: 'Email, password and username are required' }, 400);
+    }
+
+    if (password.length < 6) {
+      return c.json({ error: 'Password must be at least 6 characters' }, 400);
+    }
+
+    // Check if email already exists
+    const existingUser = await getUserByEmail(c.env.DB, email);
+    if (existingUser) {
+      return c.json({ error: 'Email already registered' }, 400);
+    }
+
+    // Validate role
+    const userRole = role && ['user', 'premium', 'admin'].includes(role) ? role : 'user';
+
+    // Hash password and create user
+    const passwordHash = await hashPassword(password);
+    const userId = await createUser(c.env.DB, email, passwordHash, username, userRole);
+
+    const newUser = await getUserById(c.env.DB, userId);
+    if (!newUser) {
+      return c.json({ error: 'Failed to create user' }, 500);
+    }
+
+    return c.json({
+      message: 'User created successfully',
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        username: newUser.username,
+        role: newUser.role
+      }
+    });
+  } catch (error) {
+    console.error('Create user error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
 
 // Get all users
 admin.get('/users', async (c) => {

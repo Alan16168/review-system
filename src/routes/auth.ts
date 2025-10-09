@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { hashPassword, verifyPassword, generateToken } from '../utils/auth';
-import { getUserByEmail, createUser, getUserById } from '../utils/db';
+import { getUserByEmail, createUser, getUserById, updateUserPassword } from '../utils/db';
+import { authMiddleware } from '../middleware/auth';
 
 type Bindings = {
   DB: D1Database;
@@ -162,6 +163,73 @@ auth.post('/google', async (c) => {
     });
   } catch (error) {
     console.error('Google OAuth error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Change Password (authenticated users)
+auth.post('/change-password', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const { currentPassword, newPassword } = await c.req.json();
+
+    if (!currentPassword || !newPassword) {
+      return c.json({ error: 'Current password and new password are required' }, 400);
+    }
+
+    if (newPassword.length < 6) {
+      return c.json({ error: 'New password must be at least 6 characters' }, 400);
+    }
+
+    // Get user from database
+    const dbUser = await getUserById(c.env.DB, user.id);
+    if (!dbUser) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Verify current password
+    const isValidPassword = await verifyPassword(currentPassword, dbUser.password_hash);
+    if (!isValidPassword) {
+      return c.json({ error: 'Current password is incorrect' }, 401);
+    }
+
+    // Hash new password and update
+    const newPasswordHash = await hashPassword(newPassword);
+    await updateUserPassword(c.env.DB, user.id, newPasswordHash);
+
+    return c.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Reset Password (for forgot password - simplified version without email)
+auth.post('/reset-password', async (c) => {
+  try {
+    const { email, newPassword } = await c.req.json();
+
+    if (!email || !newPassword) {
+      return c.json({ error: 'Email and new password are required' }, 400);
+    }
+
+    if (newPassword.length < 6) {
+      return c.json({ error: 'New password must be at least 6 characters' }, 400);
+    }
+
+    // Get user by email
+    const user = await getUserByEmail(c.env.DB, email);
+    if (!user) {
+      return c.json({ error: 'Email not found' }, 404);
+    }
+
+    // Hash new password and update
+    const newPasswordHash = await hashPassword(newPassword);
+    await updateUserPassword(c.env.DB, user.id, newPasswordHash);
+
+    return c.json({ message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
