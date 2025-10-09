@@ -608,7 +608,7 @@ const translations = {
 
 class I18n {
   constructor() {
-    this.currentLang = localStorage.getItem('language') || 'zh';
+    this.currentLang = localStorage.getItem('language') || 'en';
   }
 
   t(key) {

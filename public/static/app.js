@@ -517,7 +517,7 @@ function showResourceTab(tab) {
   }
 }
 
-// Load Articles using API
+// Load Articles using API - Show one random article
 async function loadArticles() {
   const articlesContent = document.getElementById('articles-content');
   
@@ -527,20 +527,28 @@ async function loadArticles() {
     
     console.log(`Articles loaded from: ${source}`);
     
-    articlesContent.innerHTML = articles.map(article => `
-      <a href="${article.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
+    // Select one random article
+    const randomArticle = articles[Math.floor(Math.random() * articles.length)];
+    
+    articlesContent.innerHTML = `
+      <a href="${randomArticle.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
         <div class="flex-shrink-0">
           <i class="fas fa-file-alt text-2xl text-indigo-600 group-hover:text-indigo-700"></i>
         </div>
         <div class="flex-1 min-w-0">
-          <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-indigo-600 transition">${escapeHtml(article.title)}</h3>
-          <p class="text-xs text-gray-500 truncate">${escapeHtml(article.description)}</p>
+          <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-indigo-600 transition">${escapeHtml(randomArticle.title)}</h3>
+          <p class="text-xs text-gray-500 truncate">${escapeHtml(randomArticle.description)}</p>
         </div>
         <div class="flex-shrink-0">
           <i class="fas fa-external-link-alt text-gray-400 group-hover:text-indigo-600 transition"></i>
         </div>
       </a>
-    `).join('');
+      <div class="text-center mt-3">
+        <button onclick="loadArticles()" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition">
+          <i class="fas fa-sync-alt mr-1"></i>Load Another Article
+        </button>
+      </div>
+    `;
     
     articlesContent.dataset.loaded = 'true';
   } catch (error) {
@@ -554,7 +562,7 @@ async function loadArticles() {
   }
 }
 
-// Load Videos using API
+// Load Videos using API - Show one random video
 async function loadVideos() {
   const videosContent = document.getElementById('videos-content');
   
@@ -564,23 +572,31 @@ async function loadVideos() {
     
     console.log(`Videos loaded from: ${source}`);
     
-    videosContent.innerHTML = videos.map(video => `
-      <a href="${video.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
+    // Select one random video
+    const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+    
+    videosContent.innerHTML = `
+      <a href="${randomVideo.url}" target="_blank" class="flex items-center gap-3 bg-white rounded-lg shadow hover:shadow-lg transition p-3 group">
         <div class="flex-shrink-0">
           <i class="fas fa-play-circle text-2xl text-red-600 group-hover:text-red-700"></i>
         </div>
         <div class="flex-1 min-w-0">
-          <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-red-600 transition">${escapeHtml(video.title)}</h3>
+          <h3 class="font-semibold text-sm text-gray-900 truncate group-hover:text-red-600 transition">${escapeHtml(randomVideo.title)}</h3>
           <div class="flex items-center gap-3 text-xs text-gray-500">
-            <span class="truncate"><i class="fas fa-user-circle mr-1"></i>${escapeHtml(video.channel)}</span>
-            <span class="flex-shrink-0"><i class="fas fa-eye mr-1"></i>${video.views}</span>
+            <span class="truncate"><i class="fas fa-user-circle mr-1"></i>${escapeHtml(randomVideo.channel)}</span>
+            <span class="flex-shrink-0"><i class="fas fa-eye mr-1"></i>${randomVideo.views}</span>
           </div>
         </div>
         <div class="flex-shrink-0">
           <i class="fas fa-external-link-alt text-gray-400 group-hover:text-red-600 transition"></i>
         </div>
       </a>
-    `).join('');
+      <div class="text-center mt-3">
+        <button onclick="loadVideos()" class="text-red-600 hover:text-red-800 text-sm font-medium transition">
+          <i class="fas fa-sync-alt mr-1"></i>Load Another Video
+        </button>
+      </div>
+    `;
     
     videosContent.dataset.loaded = 'true';
   } catch (error) {
