@@ -75,3 +75,61 @@ export async function updateUserPassword(db: D1Database, userId: number, passwor
   await db.prepare('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
     .bind(passwordHash, userId).run();
 }
+
+// Password reset token functions
+export interface PasswordResetToken {
+  id: number;
+  user_id: number;
+  token: string;
+  expires_at: string;
+  used: number;
+  created_at: string;
+}
+
+/**
+ * Create a password reset token
+ */
+export async function createPasswordResetToken(
+  db: D1Database,
+  userId: number,
+  token: string,
+  expiresAt: string
+): Promise<number> {
+  const result = await db.prepare(
+    'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)'
+  ).bind(userId, token, expiresAt).run();
+  
+  return result.meta.last_row_id as number;
+}
+
+/**
+ * Get password reset token by token string
+ */
+export async function getPasswordResetToken(
+  db: D1Database,
+  token: string
+): Promise<PasswordResetToken | null> {
+  const result = await db.prepare(
+    'SELECT * FROM password_reset_tokens WHERE token = ?'
+  ).bind(token).first<PasswordResetToken>();
+  
+  return result || null;
+}
+
+/**
+ * Mark password reset token as used
+ */
+export async function markTokenAsUsed(db: D1Database, tokenId: number): Promise<void> {
+  await db.prepare(
+    'UPDATE password_reset_tokens SET used = 1 WHERE id = ?'
+  ).bind(tokenId).run();
+}
+
+/**
+ * Delete expired or used tokens for a user (cleanup)
+ */
+export async function cleanupUserTokens(db: D1Database, userId: number): Promise<void> {
+  await db.prepare(
+    'DELETE FROM password_reset_tokens WHERE user_id = ? AND (used = 1 OR expires_at < datetime("now"))'
+  ).bind(userId).run();
+}

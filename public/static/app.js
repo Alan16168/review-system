@@ -15,6 +15,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkAuth() {
+  // Check if URL contains password reset token
+  const urlParams = new URLSearchParams(window.location.search);
+  const resetToken = urlParams.get('token');
+  
+  if (resetToken) {
+    // Show password reset page with token
+    showResetPasswordWithToken();
+    return;
+  }
+  
   const token = localStorage.getItem('authToken');
   const user = localStorage.getItem('user');
   
@@ -3001,28 +3011,87 @@ async function handleChangePassword() {
 }
 
 // ============ Forgot Password ============
+// Step 1: Request Password Reset (Send Email)
 function showForgotPassword() {
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
       <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <button onclick="showLogin()" class="mb-4 text-indigo-600 hover:text-indigo-800 text-sm">
-          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back')}
+          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToLogin')}
         </button>
         
         <h2 class="text-2xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-lock text-indigo-600 mr-2"></i>${i18n.t('resetPassword')}
+          <i class="fas fa-envelope text-indigo-600 mr-2"></i>${i18n.t('requestPasswordReset')}
         </h2>
         <p class="text-gray-600 text-sm mb-6">
-          Enter your email and new password to reset your password.
+          ${i18n.t('enterEmail')}. ${i18n.t('checkEmailForReset')}.
         </p>
         
-        <div class="mb-4">
+        <div class="mb-6">
           <label class="block text-gray-700 mb-2">${i18n.t('email')}</label>
           <input type="email" id="reset-email" 
                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                 placeholder="${i18n.t('email')}">
+                 placeholder="${i18n.t('email')}"
+                 onkeypress="if(event.key === 'Enter') handleRequestPasswordReset()">
         </div>
+        
+        <button onclick="handleRequestPasswordReset()" 
+                class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition mb-4">
+          <i class="fas fa-paper-plane mr-2"></i>${i18n.t('sendResetLink')}
+        </button>
+        
+        <div class="text-center">
+          <button onclick="showLogin()" class="text-sm text-gray-600 hover:text-indigo-600">
+            ${i18n.t('backToLogin')}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function handleRequestPasswordReset() {
+  const email = document.getElementById('reset-email').value;
+
+  if (!email) {
+    alert(i18n.t('operationFailed') + ': Email is required');
+    return;
+  }
+
+  try {
+    await axios.post('/api/auth/request-password-reset', { email });
+    
+    alert(i18n.t('resetLinkSent') + '\n\n' + i18n.t('checkEmailForReset'));
+    showLogin();
+  } catch (error) {
+    console.error('Request password reset error:', error);
+    alert(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message));
+  }
+}
+
+// Step 2: Reset Password with Token (From Email Link)
+function showResetPasswordWithToken() {
+  // Get token from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+  
+  if (!token) {
+    alert(i18n.t('resetTokenInvalid'));
+    showLogin();
+    return;
+  }
+  
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-key text-indigo-600 mr-2"></i>${i18n.t('setNewPassword')}
+        </h2>
+        <p class="text-gray-600 text-sm mb-6">
+          Please enter your new password.
+        </p>
         
         <div class="mb-4">
           <label class="block text-gray-700 mb-2">${i18n.t('newPassword')}</label>
@@ -3035,24 +3104,30 @@ function showForgotPassword() {
           <label class="block text-gray-700 mb-2">${i18n.t('confirmNewPassword')}</label>
           <input type="password" id="reset-confirm-password" 
                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                 placeholder="${i18n.t('confirmNewPassword')}">
+                 placeholder="${i18n.t('confirmNewPassword')}"
+                 onkeypress="if(event.key === 'Enter') handleResetPassword('${token}')">
         </div>
         
-        <button onclick="handleResetPassword()" 
-                class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition">
+        <button onclick="handleResetPassword('${token}')" 
+                class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition mb-4">
           ${i18n.t('resetPassword')}
         </button>
+        
+        <div class="text-center">
+          <button onclick="showLogin()" class="text-sm text-gray-600 hover:text-indigo-600">
+            ${i18n.t('backToLogin')}
+          </button>
+        </div>
       </div>
     </div>
   `;
 }
 
-async function handleResetPassword() {
-  const email = document.getElementById('reset-email').value;
+async function handleResetPassword(token) {
   const newPassword = document.getElementById('reset-new-password').value;
   const confirmPassword = document.getElementById('reset-confirm-password').value;
 
-  if (!email || !newPassword || !confirmPassword) {
+  if (!newPassword || !confirmPassword) {
     alert(i18n.t('operationFailed') + ': All fields are required');
     return;
   }
@@ -3069,15 +3144,21 @@ async function handleResetPassword() {
 
   try {
     await axios.post('/api/auth/reset-password', {
-      email,
+      token,
       newPassword
     });
     
-    alert(i18n.t('passwordReset') + ' You can now login with your new password.');
+    alert(i18n.t('passwordReset') + '\n\nYou can now login with your new password.');
     showLogin();
   } catch (error) {
     console.error('Reset password error:', error);
-    alert(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message));
+    const errorMsg = error.response?.data?.error || error.message;
+    alert(i18n.t('operationFailed') + ': ' + errorMsg);
+    
+    // If token is invalid/expired, redirect to forgot password page
+    if (errorMsg.includes('expired') || errorMsg.includes('invalid')) {
+      showForgotPassword();
+    }
   }
 }
 

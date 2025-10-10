@@ -1,12 +1,15 @@
 import { Hono } from 'hono';
 import { hashPassword, verifyPassword, generateToken } from '../utils/auth';
-import { getUserByEmail, createUser, getUserById, updateUserPassword } from '../utils/db';
+import { getUserByEmail, createUser, getUserById, updateUserPassword, createPasswordResetToken, getPasswordResetToken, markTokenAsUsed, cleanupUserTokens } from '../utils/db';
 import { authMiddleware } from '../middleware/auth';
+import { sendPasswordResetEmail } from '../utils/email';
 
 type Bindings = {
   DB: D1Database;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  RESEND_API_KEY?: string;
+  APP_URL?: string;
 };
 
 const auth = new Hono<{ Bindings: Bindings }>();
@@ -204,28 +207,148 @@ auth.post('/change-password', authMiddleware, async (c) => {
   }
 });
 
-// Reset Password (for forgot password - simplified version without email)
+// Request Password Reset (Step 1: Send email with reset link)
+auth.post('/request-password-reset', async (c) => {
+  try {
+    const { email } = await c.req.json();
+
+    if (!email) {
+      return c.json({ error: 'Email is required' }, 400);
+    }
+
+    // Get user by email
+    const user = await getUserByEmail(c.env.DB, email);
+    
+    // Always return success message to prevent email enumeration
+    // Don't reveal whether email exists or not
+    if (!user) {
+      return c.json({ 
+        message: 'If your email is registered, you will receive a password reset link shortly.' 
+      });
+    }
+
+    // Generate secure random token
+    const token = crypto.randomUUID();
+    
+    // Token expires in 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    
+    // Clean up old tokens for this user
+    await cleanupUserTokens(c.env.DB, user.id);
+    
+    // Create password reset token
+    await createPasswordResetToken(c.env.DB, user.id, token, expiresAt);
+
+    // Get app URL from environment or use default
+    const appUrl = c.env.APP_URL || 'https://review-system.pages.dev';
+    const resetUrl = `${appUrl}/reset-password?token=${token}`;
+
+    // Send email with Resend
+    if (c.env.RESEND_API_KEY) {
+      const emailSent = await sendPasswordResetEmail(
+        c.env.RESEND_API_KEY,
+        user.email,
+        resetUrl,
+        user.username
+      );
+
+      if (!emailSent) {
+        console.error('Failed to send password reset email');
+        // Don't return error to user, just log it
+      }
+    } else {
+      console.error('RESEND_API_KEY not configured');
+      // In development, log the reset URL
+      console.log('Password reset URL:', resetUrl);
+    }
+
+    return c.json({ 
+      message: 'If your email is registered, you will receive a password reset link shortly.' 
+    });
+  } catch (error) {
+    console.error('Request password reset error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Verify Reset Token (Optional: Check if token is valid before showing form)
+auth.get('/verify-reset-token/:token', async (c) => {
+  try {
+    const token = c.req.param('token');
+
+    if (!token) {
+      return c.json({ valid: false, error: 'Token is required' }, 400);
+    }
+
+    const resetToken = await getPasswordResetToken(c.env.DB, token);
+
+    if (!resetToken) {
+      return c.json({ valid: false, error: 'Invalid token' }, 404);
+    }
+
+    if (resetToken.used === 1) {
+      return c.json({ valid: false, error: 'Token already used' }, 400);
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(resetToken.expires_at);
+
+    if (now > expiresAt) {
+      return c.json({ valid: false, error: 'Token expired' }, 400);
+    }
+
+    return c.json({ valid: true });
+  } catch (error) {
+    console.error('Verify reset token error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Reset Password (Step 2: Set new password with token)
 auth.post('/reset-password', async (c) => {
   try {
-    const { email, newPassword } = await c.req.json();
+    const { token, newPassword } = await c.req.json();
 
-    if (!email || !newPassword) {
-      return c.json({ error: 'Email and new password are required' }, 400);
+    if (!token || !newPassword) {
+      return c.json({ error: 'Token and new password are required' }, 400);
     }
 
     if (newPassword.length < 6) {
       return c.json({ error: 'New password must be at least 6 characters' }, 400);
     }
 
-    // Get user by email
-    const user = await getUserByEmail(c.env.DB, email);
+    // Get reset token from database
+    const resetToken = await getPasswordResetToken(c.env.DB, token);
+
+    if (!resetToken) {
+      return c.json({ error: 'Invalid or expired reset token' }, 400);
+    }
+
+    // Check if token is already used
+    if (resetToken.used === 1) {
+      return c.json({ error: 'This reset link has already been used' }, 400);
+    }
+
+    // Check if token is expired
+    const now = new Date();
+    const expiresAt = new Date(resetToken.expires_at);
+
+    if (now > expiresAt) {
+      return c.json({ error: 'This reset link has expired. Please request a new one.' }, 400);
+    }
+
+    // Get user
+    const user = await getUserById(c.env.DB, resetToken.user_id);
     if (!user) {
-      return c.json({ error: 'Email not found' }, 404);
+      return c.json({ error: 'User not found' }, 404);
     }
 
     // Hash new password and update
     const newPasswordHash = await hashPassword(newPassword);
     await updateUserPassword(c.env.DB, user.id, newPasswordHash);
+
+    // Mark token as used
+    await markTokenAsUsed(c.env.DB, resetToken.id);
 
     return c.json({ message: 'Password reset successfully' });
   } catch (error) {
