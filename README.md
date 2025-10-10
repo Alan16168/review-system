@@ -64,9 +64,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
+- **最新部署**: https://a43eb15e.review-system.pages.dev (V3.7)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-09
+- **部署日期**: 2025-10-10 (V3.7)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -220,6 +221,31 @@ webapp/
 ## 🛠️ API 接口
 
 ### 认证相关
+
+#### POST /api/auth/change-password【V3.7 新增】
+修改密码（需要认证）
+```json
+Headers: Authorization: Bearer {token}
+Request: {
+  "currentPassword": "old_password",
+  "newPassword": "new_password"
+}
+Response: {
+  "message": "Password changed successfully"
+}
+```
+
+#### POST /api/auth/reset-password【V3.7 新增】
+重置密码（忘记密码）
+```json
+Request: {
+  "email": "user@example.com",
+  "newPassword": "new_password"
+}
+Response: {
+  "message": "Password reset successfully"
+}
+```
 
 #### POST /api/auth/register
 注册新用户
@@ -418,6 +444,27 @@ Response: {
 ```
 
 ### 管理后台相关（需要 Admin 权限）
+
+#### POST /api/admin/users【V3.7 新增】
+创建新用户（Admin 手动创建）
+```json
+Headers: Authorization: Bearer {token}
+Request: {
+  "email": "newuser@example.com",
+  "password": "password123",
+  "username": "用户名",
+  "role": "user"  // user/premium/admin，可选，默认为 user
+}
+Response: {
+  "message": "User created successfully",
+  "user": {
+    "id": 10,
+    "email": "newuser@example.com",
+    "username": "用户名",
+    "role": "user"
+  }
+}
+```
 
 #### GET /api/admin/users
 获取所有用户列表
@@ -708,7 +755,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-09
-- **当前版本**: V3.6 🎉
+- **当前版本**: V3.7 🎉
 
 ## 📝 许可证
 
@@ -718,7 +765,17 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V3.6  
+**当前版本**: V3.7  
+
+**V3.7 更新内容** (2025-10-09):
+- 🔐 **用户密码管理**：
+  - 登录后用户可修改密码（需验证当前密码）
+  - 登录界面增加"忘记密码"功能（通过邮箱重置密码）
+  - 密码强度验证（至少6个字符）
+- 👥 **Admin 新增用户功能**：
+  - Admin 可在管理界面手动创建用户
+  - 支持设置用户邮箱、用户名、密码和角色
+  - 创建后立即可用
 
 **V3.6 更新内容** (2025-10-09):
 - 📚 **学习资源展示优化**：
