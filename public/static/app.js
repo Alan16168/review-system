@@ -1767,16 +1767,15 @@ async function showTeamReviewCollaboration(id) {
                     ${otherAnswers.length > 0 ? `
                       <!-- Other Members' Answers (Readonly) -->
                       <div class="space-y-3 pt-2">
-                        <h3 class="text-sm font-semibold text-gray-700">
-                          <i class="fas fa-users mr-1"></i>${i18n.t('memberAnswers')} (${otherAnswers.length})
-                        </h3>
                         ${otherAnswers.map(answer => `
                           <div class="border-l-4 border-green-500 pl-4 bg-gray-50 p-3 rounded-r">
                             <div class="flex justify-between items-start mb-2">
                               <div class="flex items-center">
                                 <i class="fas fa-user-circle text-lg text-gray-400 mr-2"></i>
                                 <div>
-                                  <span class="text-sm font-medium text-gray-900">${escapeHtml(answer.username)}</span>
+                                  <span class="text-sm font-semibold text-gray-700">
+                                    <i class="fas fa-users mr-1"></i>${i18n.t('memberAnswers')} - ${escapeHtml(answer.username)}
+                                  </span>
                                   <span class="text-xs text-gray-500 ml-2">
                                     <i class="fas fa-clock mr-1"></i>${new Date(answer.updated_at).toLocaleString()}
                                   </span>
