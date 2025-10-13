@@ -101,6 +101,24 @@ const translations = {
     'userNotFound': '用户不存在',
     'alreadyMember': '该用户已是团队成员',
     
+    // Team Collaboration
+    'teamAnswers': '团队答案',
+    'myAnswer': '我的答案',
+    'memberAnswers': '成员答案',
+    'completionStatus': '完成状态',
+    'completed': '已完成',
+    'completedQuestions': '已完成 {count}/9 题',
+    'notStarted': '未开始',
+    'answerPlaceholder': '在此输入您的答案...',
+    'autoSaved': '自动保存',
+    'deleteAnswer': '删除答案',
+    'confirmDeleteAnswer': '确定要删除这个答案吗？',
+    'viewTeamAnswers': '查看团队答案',
+    'refreshToSeeUpdates': '刷新页面查看最新答案',
+    'noMemberAnswers': '暂无成员答案',
+    'answerSaved': '答案已保存',
+    'answerDeleted': '答案已删除',
+    
     // Team Roles
     'memberRole': '成员角色',
     'roleCreator': '创造者',
@@ -420,6 +438,24 @@ const translations = {
     'inviteSuccess': 'Invitation sent successfully',
     'userNotFound': 'User not found',
     'alreadyMember': 'User is already a team member',
+    
+    // Team Collaboration
+    'teamAnswers': 'Team Answers',
+    'myAnswer': 'My Answer',
+    'memberAnswers': 'Member Answers',
+    'completionStatus': 'Completion Status',
+    'completed': 'Completed',
+    'completedQuestions': 'Completed {count}/9 questions',
+    'notStarted': 'Not started',
+    'answerPlaceholder': 'Enter your answer here...',
+    'autoSaved': 'Auto-saved',
+    'deleteAnswer': 'Delete Answer',
+    'confirmDeleteAnswer': 'Are you sure you want to delete this answer?',
+    'viewTeamAnswers': 'View Team Answers',
+    'refreshToSeeUpdates': 'Refresh page to see latest answers',
+    'noMemberAnswers': 'No member answers yet',
+    'answerSaved': 'Answer saved',
+    'answerDeleted': 'Answer deleted',
     
     // Team Roles
     'memberRole': 'Member Role',

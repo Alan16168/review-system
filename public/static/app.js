@@ -1602,6 +1602,12 @@ async function showReviewDetail(id) {
                 </div>
               </div>
               <div class="flex space-x-2">
+                ${review.team_id ? `
+                  <button onclick="showTeamReviewCollaboration(${review.id})" 
+                          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-users mr-2"></i>${i18n.t('viewTeamAnswers')}
+                  </button>
+                ` : ''}
                 <button onclick="showEditReview(${review.id})" 
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                   <i class="fas fa-edit mr-2"></i>${i18n.t('edit')}
@@ -1661,6 +1667,197 @@ async function showReviewDetail(id) {
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     showReviews();
+  }
+}
+
+// Team Review Collaboration View
+async function showTeamReviewCollaboration(id) {
+  try {
+    const [reviewResponse, teamAnswersResponse] = await Promise.all([
+      axios.get(`/api/reviews/${id}`),
+      axios.get(`/api/reviews/${id}/team-answers`)
+    ]);
+    
+    const review = reviewResponse.data.review;
+    const { answersByQuestion, completionStatus, currentUserId } = teamAnswersResponse.data;
+    const isOwner = review.user_id === currentUserId;
+    
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="min-h-screen bg-gray-50">
+        ${renderNavigation()}
+        
+        <div class="max-w-7xl mx-auto px-4 py-8">
+          <div class="mb-6">
+            <button onclick="showReviewDetail(${id})" class="text-indigo-600 hover:text-indigo-800 mb-4">
+              <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back')}
+            </button>
+            
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-users mr-2 text-green-600"></i>${escapeHtml(review.title)}
+                  </h1>
+                  <p class="text-sm text-gray-600">
+                    <i class="fas fa-info-circle mr-1"></i>${i18n.t('refreshToSeeUpdates')}
+                  </p>
+                </div>
+                <button onclick="location.reload()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                  <i class="fas fa-sync-alt mr-2"></i>${i18n.t('refresh') || '刷新'}
+                </button>
+              </div>
+              
+              <!-- Completion Status -->
+              <div class="border-t pt-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                  <i class="fas fa-check-circle mr-2 text-green-600"></i>${i18n.t('completionStatus')}
+                </h3>
+                <div class="flex flex-wrap gap-3">
+                  ${completionStatus.map(member => `
+                    <div class="flex items-center px-4 py-2 bg-gray-50 rounded-lg border ${
+                      member.user_id === currentUserId ? 'border-indigo-500' : 'border-gray-200'
+                    }">
+                      <i class="fas fa-user-circle text-2xl text-gray-400 mr-2"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">
+                          ${escapeHtml(member.username)}${member.user_id === currentUserId ? ' (${i18n.t("myAnswer") || "我"})' : ''}
+                        </div>
+                        <div class="text-xs ${member.completed_count === 9 ? 'text-green-600' : 'text-gray-500'}">
+                          <i class="fas ${member.completed_count === 9 ? 'fa-check-circle' : 'fa-clock'} mr-1"></i>
+                          ${member.completed_count}/9 ${i18n.t('completed')}
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Team Answers for Each Question -->
+          <div class="space-y-6">
+            ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => {
+              const memberAnswers = answersByQuestion[num] || [];
+              const myAnswer = memberAnswers.find(a => a.user_id === currentUserId);
+              const otherAnswers = memberAnswers.filter(a => a.user_id !== currentUserId);
+              
+              return `
+                <div class="bg-white rounded-lg shadow-md p-6">
+                  <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">
+                    <i class="fas fa-question-circle mr-2 text-indigo-600"></i>${i18n.t('question' + num)}
+                  </h2>
+                  
+                  <div class="space-y-4">
+                    <!-- My Answer (Editable) -->
+                    <div class="border-l-4 border-indigo-500 pl-4">
+                      <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-semibold text-indigo-700">
+                          <i class="fas fa-user-edit mr-1"></i>${i18n.t('myAnswer')}
+                        </h3>
+                        <span class="text-xs text-gray-500" id="save-status-${num}">
+                          ${myAnswer ? '<i class="fas fa-check text-green-600 mr-1"></i>' + i18n.t('autoSaved') : ''}
+                        </span>
+                      </div>
+                      <textarea 
+                        id="my-answer-${num}"
+                        rows="4"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                        placeholder="${i18n.t('answerPlaceholder')}"
+                        onchange="handleSaveTeamAnswer(${id}, ${num})"
+                      >${myAnswer ? escapeHtml(myAnswer.answer) : ''}</textarea>
+                    </div>
+                    
+                    ${otherAnswers.length > 0 ? `
+                      <!-- Other Members' Answers (Readonly) -->
+                      <div class="space-y-3 pt-2">
+                        <h3 class="text-sm font-semibold text-gray-700">
+                          <i class="fas fa-users mr-1"></i>${i18n.t('memberAnswers')} (${otherAnswers.length})
+                        </h3>
+                        ${otherAnswers.map(answer => `
+                          <div class="border-l-4 border-green-500 pl-4 bg-gray-50 p-3 rounded-r">
+                            <div class="flex justify-between items-start mb-2">
+                              <div class="flex items-center">
+                                <i class="fas fa-user-circle text-lg text-gray-400 mr-2"></i>
+                                <div>
+                                  <span class="text-sm font-medium text-gray-900">${escapeHtml(answer.username)}</span>
+                                  <span class="text-xs text-gray-500 ml-2">
+                                    <i class="fas fa-clock mr-1"></i>${new Date(answer.updated_at).toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                              ${isOwner ? `
+                                <button 
+                                  onclick="handleDeleteTeamAnswer(${id}, ${answer.user_id}, ${num})"
+                                  class="text-red-600 hover:text-red-800 text-xs px-2 py-1 hover:bg-red-50 rounded"
+                                  title="${i18n.t('deleteAnswer')}"
+                                >
+                                  <i class="fas fa-trash mr-1"></i>${i18n.t('delete')}
+                                </button>
+                              ` : ''}
+                            </div>
+                            <p class="text-gray-800 whitespace-pre-wrap">${escapeHtml(answer.answer)}</p>
+                          </div>
+                        `).join('')}
+                      </div>
+                    ` : `
+                      <div class="text-center py-6 text-gray-400 bg-gray-50 rounded-lg">
+                        <i class="fas fa-inbox text-3xl mb-2"></i>
+                        <p class="text-sm">${i18n.t('noMemberAnswers')}</p>
+                      </div>
+                    `}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    showReviewDetail(id);
+  }
+}
+
+// Save team answer
+async function handleSaveTeamAnswer(reviewId, questionNumber) {
+  try {
+    const answer = document.getElementById(`my-answer-${questionNumber}`).value;
+    
+    if (!answer || answer.trim() === '') {
+      showNotification(i18n.t('operationFailed') + ': Answer cannot be empty', 'error');
+      return;
+    }
+    
+    await axios.put(`/api/reviews/${reviewId}/my-answer/${questionNumber}`, { answer });
+    
+    // Show save status
+    const statusEl = document.getElementById(`save-status-${questionNumber}`);
+    if (statusEl) {
+      statusEl.innerHTML = '<i class="fas fa-check text-green-600 mr-1"></i>' + i18n.t('autoSaved');
+    }
+    
+    showNotification(i18n.t('answerSaved'), 'success');
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Delete team answer (owner only)
+async function handleDeleteTeamAnswer(reviewId, userId, questionNumber) {
+  if (!confirm(i18n.t('confirmDeleteAnswer'))) {
+    return;
+  }
+  
+  try {
+    await axios.delete(`/api/reviews/${reviewId}/answer/${userId}/${questionNumber}`);
+    showNotification(i18n.t('answerDeleted'), 'success');
+    
+    // Reload the page to show updated data
+    setTimeout(() => location.reload(), 1000);
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
 

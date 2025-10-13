@@ -133,3 +133,126 @@ export async function cleanupUserTokens(db: D1Database, userId: number): Promise
     'DELETE FROM password_reset_tokens WHERE user_id = ? AND (used = 1 OR expires_at < datetime("now"))'
   ).bind(userId).run();
 }
+
+// Team review answer functions
+export interface TeamReviewAnswer {
+  id: number;
+  review_id: number;
+  user_id: number;
+  question_number: number;
+  answer: string;
+  created_at: string;
+  updated_at: string;
+  username?: string; // Joined from users table
+  email?: string; // Joined from users table
+}
+
+export interface TeamAnswersByQuestion {
+  question_number: number;
+  answers: {
+    user_id: number;
+    username: string;
+    email: string;
+    answer: string;
+    updated_at: string;
+  }[];
+}
+
+/**
+ * Get all team members' answers for a review, grouped by question
+ */
+export async function getTeamReviewAnswers(
+  db: D1Database,
+  reviewId: number
+): Promise<TeamReviewAnswer[]> {
+  const result = await db.prepare(`
+    SELECT tra.*, u.username, u.email
+    FROM team_review_answers tra
+    JOIN users u ON tra.user_id = u.id
+    WHERE tra.review_id = ?
+    ORDER BY tra.question_number, u.username
+  `).bind(reviewId).all<TeamReviewAnswer>();
+  
+  return result.results || [];
+}
+
+/**
+ * Get a specific user's answer for a question
+ */
+export async function getMyTeamAnswer(
+  db: D1Database,
+  reviewId: number,
+  userId: number,
+  questionNumber: number
+): Promise<TeamReviewAnswer | null> {
+  const result = await db.prepare(`
+    SELECT tra.*, u.username, u.email
+    FROM team_review_answers tra
+    JOIN users u ON tra.user_id = u.id
+    WHERE tra.review_id = ? AND tra.user_id = ? AND tra.question_number = ?
+  `).bind(reviewId, userId, questionNumber).first<TeamReviewAnswer>();
+  
+  return result || null;
+}
+
+/**
+ * Save or update user's answer for a question
+ */
+export async function saveMyTeamAnswer(
+  db: D1Database,
+  reviewId: number,
+  userId: number,
+  questionNumber: number,
+  answer: string
+): Promise<void> {
+  await db.prepare(`
+    INSERT INTO team_review_answers (review_id, user_id, question_number, answer, updated_at)
+    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(review_id, user_id, question_number) 
+    DO UPDATE SET answer = ?, updated_at = CURRENT_TIMESTAMP
+  `).bind(reviewId, userId, questionNumber, answer, answer).run();
+}
+
+/**
+ * Delete a user's answer (owner only)
+ */
+export async function deleteTeamAnswer(
+  db: D1Database,
+  reviewId: number,
+  userId: number,
+  questionNumber: number
+): Promise<void> {
+  await db.prepare(`
+    DELETE FROM team_review_answers 
+    WHERE review_id = ? AND user_id = ? AND question_number = ?
+  `).bind(reviewId, userId, questionNumber).run();
+}
+
+/**
+ * Get completion status for all team members
+ */
+export async function getTeamAnswerCompletionStatus(
+  db: D1Database,
+  reviewId: number
+): Promise<{user_id: number, username: string, email: string, completed_count: number}[]> {
+  const result = await db.prepare(`
+    SELECT 
+      u.id as user_id,
+      u.username,
+      u.email,
+      COUNT(tra.id) as completed_count
+    FROM users u
+    LEFT JOIN team_review_answers tra ON u.id = tra.user_id AND tra.review_id = ?
+    WHERE u.id IN (
+      SELECT DISTINCT user_id FROM team_review_answers WHERE review_id = ?
+      UNION
+      SELECT user_id FROM review_collaborators WHERE review_id = ?
+      UNION
+      SELECT user_id FROM reviews WHERE id = ?
+    )
+    GROUP BY u.id, u.username, u.email
+    ORDER BY u.username
+  `).bind(reviewId, reviewId, reviewId, reviewId).all();
+  
+  return result.results || [];
+}

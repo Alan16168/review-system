@@ -1,6 +1,12 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth';
 import { UserPayload } from '../utils/auth';
+import { 
+  getTeamReviewAnswers, 
+  saveMyTeamAnswer, 
+  deleteTeamAnswer,
+  getTeamAnswerCompletionStatus 
+} from '../utils/db';
 
 type Bindings = {
   DB: D1Database;
@@ -269,6 +275,145 @@ reviews.post('/:id/collaborators', async (c) => {
     return c.json({ message: 'Collaborator added successfully' });
   } catch (error) {
     console.error('Add collaborator error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// ==================== Team Review Collaboration Endpoints ====================
+
+/**
+ * GET /api/reviews/:id/team-answers
+ * Get all team members' answers for a review
+ */
+reviews.get('/:id/team-answers', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const reviewId = parseInt(c.req.param('id'));
+
+    // Check if user has access to this review
+    const accessQuery = `
+      SELECT 1 FROM reviews r
+      WHERE r.id = ? AND (
+        r.user_id = ? 
+        OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
+        OR EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?)
+      )
+    `;
+    const hasAccess = await c.env.DB.prepare(accessQuery)
+      .bind(reviewId, user.id, user.id, user.id).first();
+
+    if (!hasAccess) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Get all team answers
+    const answers = await getTeamReviewAnswers(c.env.DB, reviewId);
+    
+    // Get completion status
+    const completionStatus = await getTeamAnswerCompletionStatus(c.env.DB, reviewId);
+
+    // Group answers by question
+    const answersByQuestion: {[key: number]: any[]} = {};
+    for (let i = 1; i <= 9; i++) {
+      answersByQuestion[i] = [];
+    }
+
+    answers.forEach(answer => {
+      answersByQuestion[answer.question_number].push({
+        user_id: answer.user_id,
+        username: answer.username,
+        email: answer.email,
+        answer: answer.answer,
+        updated_at: answer.updated_at
+      });
+    });
+
+    return c.json({ 
+      answersByQuestion,
+      completionStatus,
+      currentUserId: user.id
+    });
+  } catch (error) {
+    console.error('Get team answers error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * PUT /api/reviews/:id/my-answer/:questionNumber
+ * Save or update current user's answer for a specific question
+ */
+reviews.put('/:id/my-answer/:questionNumber', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const reviewId = parseInt(c.req.param('id'));
+    const questionNumber = parseInt(c.req.param('questionNumber'));
+    const { answer } = await c.req.json();
+
+    if (!answer || answer.trim() === '') {
+      return c.json({ error: 'Answer cannot be empty' }, 400);
+    }
+
+    if (questionNumber < 1 || questionNumber > 9) {
+      return c.json({ error: 'Invalid question number' }, 400);
+    }
+
+    // Check if user has access to this review
+    const accessQuery = `
+      SELECT 1 FROM reviews r
+      WHERE r.id = ? AND (
+        r.user_id = ? 
+        OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
+        OR EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?)
+      )
+    `;
+    const hasAccess = await c.env.DB.prepare(accessQuery)
+      .bind(reviewId, user.id, user.id, user.id).first();
+
+    if (!hasAccess) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Save the answer
+    await saveMyTeamAnswer(c.env.DB, reviewId, user.id, questionNumber, answer);
+
+    return c.json({ message: 'Answer saved successfully' });
+  } catch (error) {
+    console.error('Save team answer error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * DELETE /api/reviews/:id/answer/:userId/:questionNumber
+ * Delete a user's answer (owner only)
+ */
+reviews.delete('/:id/answer/:userId/:questionNumber', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const reviewId = parseInt(c.req.param('id'));
+    const targetUserId = parseInt(c.req.param('userId'));
+    const questionNumber = parseInt(c.req.param('questionNumber'));
+
+    // Check if current user is the review owner
+    const review = await c.env.DB.prepare(
+      'SELECT user_id FROM reviews WHERE id = ?'
+    ).bind(reviewId).first<{user_id: number}>();
+
+    if (!review) {
+      return c.json({ error: 'Review not found' }, 404);
+    }
+
+    if (review.user_id !== user.id) {
+      return c.json({ error: 'Only the review owner can delete others\' answers' }, 403);
+    }
+
+    // Delete the answer
+    await deleteTeamAnswer(c.env.DB, reviewId, targetUserId, questionNumber);
+
+    return c.json({ message: 'Answer deleted successfully' });
+  } catch (error) {
+    console.error('Delete team answer error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
