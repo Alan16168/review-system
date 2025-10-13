@@ -1372,6 +1372,15 @@ async function showCreateReview() {
   currentView = 'create-review';
   const app = document.getElementById('app');
   
+  // Load templates
+  let templates = [];
+  try {
+    const response = await axios.get('/api/templates');
+    templates = response.data.templates;
+  } catch (error) {
+    console.error('Load templates error:', error);
+  }
+  
   // Load teams if premium user
   let teams = [];
   if (currentUser.role === 'premium' || currentUser.role === 'admin') {
@@ -1415,6 +1424,27 @@ async function showCreateReview() {
             <textarea id="review-description" rows="3"
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
                       placeholder="${i18n.t('reviewDescriptionPlaceholder')}"></textarea>
+          </div>
+
+          <!-- Template Selection -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('template')} <span class="text-red-500">*</span>
+            </label>
+            <select id="review-template" required onchange="handleTemplateChange()"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              ${templates.map(template => `
+                <option value="${template.id}" ${template.is_default ? 'selected' : ''}>
+                  ${escapeHtml(template.name)}${template.is_default ? ` (${i18n.t('defaultTemplate')})` : ''}
+                </option>
+              `).join('')}
+            </select>
+            <p class="mt-1 text-xs text-gray-500">
+              <i class="fas fa-info-circle mr-1"></i>${i18n.t('templateCannotChange')}
+            </p>
+            <div id="template-info" class="mt-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+              <p class="text-sm text-gray-700"></p>
+            </div>
           </div>
 
           ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams.length > 0 ? `
@@ -1461,22 +1491,9 @@ async function showCreateReview() {
             </select>
           </div>
 
-          <!-- Nine Questions -->
-          <div class="border-t pt-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">
-              <i class="fas fa-question-circle mr-2"></i>${i18n.t('nineQuestions')}
-            </h2>
-            
-            ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `
-              <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('question' + num)}
-                </label>
-                <textarea id="question${num}" rows="3"
-                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                          placeholder="${i18n.t('question' + num)}"></textarea>
-              </div>
-            `).join('')}
+          <!-- Dynamic Questions -->
+          <div id="questions-container" class="border-t pt-6">
+            <!-- Questions will be loaded dynamically based on template -->
           </div>
 
           <!-- Status -->
@@ -1519,6 +1536,48 @@ async function showCreateReview() {
   `;
 
   document.getElementById('review-form').addEventListener('submit', handleCreateReview);
+  
+  // Store templates in global variable for access
+  window.currentTemplates = templates;
+  
+  // Initialize with default template
+  handleTemplateChange();
+}
+
+// Handle template selection change
+async function handleTemplateChange() {
+  const templateSelect = document.getElementById('review-template');
+  const templateId = parseInt(templateSelect.value);
+  const template = window.currentTemplates.find(t => t.id === templateId);
+  
+  if (!template) return;
+  
+  // Update template info
+  const templateInfo = document.getElementById('template-info');
+  if (template.description) {
+    templateInfo.querySelector('p').textContent = template.description;
+    templateInfo.style.display = 'block';
+  } else {
+    templateInfo.style.display = 'none';
+  }
+  
+  // Render questions
+  const questionsContainer = document.getElementById('questions-container');
+  questionsContainer.innerHTML = `
+    <h2 class="text-xl font-bold text-gray-800 mb-4">
+      <i class="fas fa-question-circle mr-2"></i>${escapeHtml(template.name)}
+    </h2>
+    ${template.questions.map(q => `
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          ${q.question_number}. ${escapeHtml(q.question_text)}
+        </label>
+        <textarea id="question${q.question_number}" rows="3"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                  placeholder="${escapeHtml(q.question_text)}"></textarea>
+      </div>
+    `).join('')}
+  `;
 }
 
 async function handleCreateReview(e) {
@@ -1526,27 +1585,33 @@ async function handleCreateReview(e) {
   
   const title = document.getElementById('review-title').value;
   const description = document.getElementById('review-description').value;
+  const templateId = document.getElementById('review-template').value;
   const teamId = document.getElementById('review-team')?.value || null;
   const groupType = document.getElementById('review-group-type').value;
   const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
+  // Collect answers dynamically
+  const template = window.currentTemplates.find(t => t.id == templateId);
+  const answers = {};
+  if (template && template.questions) {
+    template.questions.forEach(q => {
+      const answerElem = document.getElementById(`question${q.question_number}`);
+      if (answerElem && answerElem.value.trim()) {
+        answers[q.question_number] = answerElem.value.trim();
+      }
+    });
+  }
+  
   const data = {
     title,
     description: description || null,
+    template_id: parseInt(templateId),
     team_id: teamId || null,
     group_type: groupType,
     time_type: timeType,
     status,
-    question1: document.getElementById('question1').value,
-    question2: document.getElementById('question2').value,
-    question3: document.getElementById('question3').value,
-    question4: document.getElementById('question4').value,
-    question5: document.getElementById('question5').value,
-    question6: document.getElementById('question6').value,
-    question7: document.getElementById('question7').value,
-    question8: document.getElementById('question8').value,
-    question9: document.getElementById('question9').value,
+    answers
   };
 
   try {

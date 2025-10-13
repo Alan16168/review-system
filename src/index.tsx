@@ -7,6 +7,7 @@ import teams from './routes/teams';
 import admin from './routes/admin';
 import notifications from './routes/notifications';
 import resources from './routes/resources';
+import templates from './routes/templates';
 
 type Bindings = {
   DB: D1Database;
@@ -32,6 +33,7 @@ app.route('/api/teams', teams);
 app.route('/api/admin', admin);
 app.route('/api/notifications', notifications);
 app.route('/api/resources', resources);
+app.route('/api/templates', templates);
 
 // Main page - Login/Dashboard
 app.get('/', (c) => {

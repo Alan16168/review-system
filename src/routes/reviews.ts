@@ -51,10 +51,12 @@ reviews.get('/:id', async (c) => {
     const reviewId = c.req.param('id');
 
     const query = `
-      SELECT r.*, u.username as creator_name, t.name as team_name
+      SELECT r.*, u.username as creator_name, t.name as team_name, 
+             tp.name as template_name, tp.description as template_description
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
       LEFT JOIN teams t ON r.team_id = t.id
+      LEFT JOIN templates tp ON r.template_id = tp.id
       WHERE r.id = ? AND (
         r.user_id = ? 
         OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
@@ -62,11 +64,33 @@ reviews.get('/:id', async (c) => {
       )
     `;
 
-    const review = await c.env.DB.prepare(query).bind(reviewId, user.id, user.id, user.id).first();
+    const review: any = await c.env.DB.prepare(query).bind(reviewId, user.id, user.id, user.id).first();
 
     if (!review) {
       return c.json({ error: 'Review not found or access denied' }, 404);
     }
+
+    // Get template questions
+    const questionsResult = await c.env.DB.prepare(`
+      SELECT question_number, question_text
+      FROM template_questions
+      WHERE template_id = ?
+      ORDER BY question_number ASC
+    `).bind(review.template_id).all();
+
+    // Get review answers
+    const answersResult = await c.env.DB.prepare(`
+      SELECT question_number, answer
+      FROM review_answers
+      WHERE review_id = ?
+      ORDER BY question_number ASC
+    `).bind(reviewId).all();
+
+    // Map answers by question number
+    const answersMap: Record<number, string> = {};
+    (answersResult.results || []).forEach((ans: any) => {
+      answersMap[ans.question_number] = ans.answer;
+    });
 
     // Get collaborators
     const collabQuery = `
@@ -79,6 +103,8 @@ reviews.get('/:id', async (c) => {
 
     return c.json({ 
       review,
+      questions: questionsResult.results || [],
+      answers: answersMap,
       collaborators: collaborators.results || []
     });
   } catch (error) {
@@ -92,10 +118,20 @@ reviews.post('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const body = await c.req.json();
-    const { title, description, team_id, group_type, time_type, ...questions } = body;
+    const { title, description, team_id, group_type, time_type, template_id, answers, status } = body;
 
     if (!title) {
       return c.json({ error: 'Title is required' }, 400);
+    }
+
+    // Validate template_id - default to 1 if not provided
+    const templateIdToUse = template_id || 1;
+    const template = await c.env.DB.prepare(
+      'SELECT id FROM templates WHERE id = ? AND is_active = 1'
+    ).bind(templateIdToUse).first();
+
+    if (!template) {
+      return c.json({ error: 'Invalid template' }, 400);
     }
 
     // If team_id provided, check if user is a member
@@ -109,29 +145,33 @@ reviews.post('/', async (c) => {
       }
     }
 
+    // Create review with template_id
     const result = await c.env.DB.prepare(`
       INSERT INTO reviews (
         title, description, user_id, team_id, group_type, time_type,
-        question1, question2, question3, question4, question5,
-        question6, question7, question8, question9, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        template_id, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       title, description || null, user.id, team_id || null,
       group_type || 'personal',
       time_type || 'daily',
-      questions.question1 || null,
-      questions.question2 || null,
-      questions.question3 || null,
-      questions.question4 || null,
-      questions.question5 || null,
-      questions.question6 || null,
-      questions.question7 || null,
-      questions.question8 || null,
-      questions.question9 || null,
-      questions.status || 'draft'
+      templateIdToUse,
+      status || 'draft'
     ).run();
 
     const reviewId = result.meta.last_row_id;
+
+    // Save answers if provided
+    if (answers && typeof answers === 'object') {
+      for (const [questionNumber, answer] of Object.entries(answers)) {
+        if (answer && String(answer).trim()) {
+          await c.env.DB.prepare(`
+            INSERT INTO review_answers (review_id, question_number, answer)
+            VALUES (?, ?, ?)
+          `).bind(reviewId, parseInt(questionNumber), String(answer)).run();
+        }
+      }
+    }
 
     // If it's a team review, add creator as collaborator
     if (team_id) {
@@ -178,23 +218,15 @@ reviews.put('/:id', async (c) => {
       return c.json({ error: 'Access denied. You need creator or operator role to edit.' }, 403);
     }
 
-    const { title, description, group_type, time_type, ...questions } = body;
+    const { title, description, group_type, time_type, answers, status } = body;
     
+    // Update review basic info (template_id cannot be changed)
     await c.env.DB.prepare(`
       UPDATE reviews SET
         title = COALESCE(?, title),
         description = COALESCE(?, description),
         group_type = COALESCE(?, group_type),
         time_type = COALESCE(?, time_type),
-        question1 = COALESCE(?, question1),
-        question2 = COALESCE(?, question2),
-        question3 = COALESCE(?, question3),
-        question4 = COALESCE(?, question4),
-        question5 = COALESCE(?, question5),
-        question6 = COALESCE(?, question6),
-        question7 = COALESCE(?, question7),
-        question8 = COALESCE(?, question8),
-        question9 = COALESCE(?, question9),
         status = COALESCE(?, status),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
@@ -203,18 +235,32 @@ reviews.put('/:id', async (c) => {
       description || null,
       group_type || null,
       time_type || null,
-      questions.question1 || null,
-      questions.question2 || null,
-      questions.question3 || null,
-      questions.question4 || null,
-      questions.question5 || null,
-      questions.question6 || null,
-      questions.question7 || null,
-      questions.question8 || null,
-      questions.question9 || null,
-      questions.status || null,
+      status || null,
       reviewId
     ).run();
+
+    // Update answers if provided
+    if (answers && typeof answers === 'object') {
+      for (const [questionNumber, answer] of Object.entries(answers)) {
+        const answerText = answer ? String(answer).trim() : '';
+        
+        if (answerText) {
+          // Insert or update answer
+          await c.env.DB.prepare(`
+            INSERT INTO review_answers (review_id, question_number, answer, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(review_id, question_number) 
+            DO UPDATE SET answer = excluded.answer, updated_at = CURRENT_TIMESTAMP
+          `).bind(reviewId, parseInt(questionNumber), answerText).run();
+        } else {
+          // Delete answer if empty
+          await c.env.DB.prepare(`
+            DELETE FROM review_answers 
+            WHERE review_id = ? AND question_number = ?
+          `).bind(reviewId, parseInt(questionNumber)).run();
+        }
+      }
+    }
 
     return c.json({ message: 'Review updated successfully' });
   } catch (error) {
