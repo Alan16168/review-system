@@ -1629,6 +1629,8 @@ async function showReviewDetail(id) {
   try {
     const response = await axios.get(`/api/reviews/${id}`);
     const review = response.data.review;
+    const questions = response.data.questions || [];
+    const answers = response.data.answers || {};
     const collaborators = response.data.collaborators || [];
     
     // If it's a team review, redirect to team collaboration view
@@ -1677,6 +1679,11 @@ async function showReviewDetail(id) {
                       <i class="fas fa-calendar-alt mr-1"></i>${i18n.t('timeType' + review.time_type.charAt(0).toUpperCase() + review.time_type.slice(1))}
                     </span>
                   ` : ''}
+                  ${review.template_name ? `
+                    <span class="px-3 py-1 text-xs bg-indigo-100 text-indigo-800 rounded-full">
+                      <i class="fas fa-file-alt mr-1"></i>${escapeHtml(review.template_name)}
+                    </span>
+                  ` : ''}
                 </div>
               </div>
               <div class="flex space-x-2">
@@ -1701,22 +1708,22 @@ async function showReviewDetail(id) {
           </div>
           ` : ''}
 
-          <!-- Nine Questions Display -->
+          <!-- Dynamic Questions Display -->
           <div class="bg-white rounded-lg shadow-md p-6 space-y-6">
             <h2 class="text-xl font-bold text-gray-800 border-b pb-3">
-              <i class="fas fa-question-circle mr-2"></i>${i18n.t('nineQuestions')}
+              <i class="fas fa-question-circle mr-2"></i>${review.template_name ? escapeHtml(review.template_name) : i18n.t('nineQuestions')}
             </h2>
             
-            ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `
+            ${questions.length > 0 ? questions.map(q => `
               <div class="border-l-4 border-indigo-500 pl-4 py-2">
                 <h3 class="text-sm font-semibold text-gray-700 mb-2">
-                  ${i18n.t('question' + num)}
+                  ${q.question_number}. ${escapeHtml(q.question_text)}
                 </h3>
                 <p class="text-gray-800 whitespace-pre-wrap">
-                  ${escapeHtml(review['question' + num] || (i18n.t('noAnswer') || '未填写'))}
+                  ${escapeHtml(answers[q.question_number] || (i18n.t('noAnswer') || '未填写'))}
                 </p>
               </div>
-            `).join('')}
+            `).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
           </div>
 
           ${collaborators.length > 0 ? `
@@ -1760,8 +1767,10 @@ async function showTeamReviewCollaboration(id) {
     ]);
     
     const review = reviewResponse.data.review;
+    const questions = reviewResponse.data.questions || [];
     const { answersByQuestion, completionStatus, currentUserId } = teamAnswersResponse.data;
     const isOwner = review.user_id === currentUserId;
+    const totalQuestions = questions.length;
     
     const app = document.getElementById('app');
     app.innerHTML = `
@@ -1816,9 +1825,9 @@ async function showTeamReviewCollaboration(id) {
                         <div class="text-sm font-medium text-gray-900">
                           ${escapeHtml(member.username)}${member.user_id === currentUserId ? ` (${i18n.t("myAnswer") || "我"})` : ''}
                         </div>
-                        <div class="text-xs ${member.completed_count === 9 ? 'text-green-600' : 'text-gray-500'}">
-                          <i class="fas ${member.completed_count === 9 ? 'fa-check-circle' : 'fa-clock'} mr-1"></i>
-                          ${member.completed_count}/9 ${i18n.t('completed')}
+                        <div class="text-xs ${member.completed_count === totalQuestions ? 'text-green-600' : 'text-gray-500'}">
+                          <i class="fas ${member.completed_count === totalQuestions ? 'fa-check-circle' : 'fa-clock'} mr-1"></i>
+                          ${member.completed_count}/${totalQuestions} ${i18n.t('completed')}
                         </div>
                       </div>
                     </div>
@@ -1830,7 +1839,8 @@ async function showTeamReviewCollaboration(id) {
 
           <!-- Team Answers for Each Question -->
           <div class="space-y-6">
-            ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => {
+            ${questions.map(q => {
+              const num = q.question_number;
               const memberAnswers = answersByQuestion[num] || [];
               const myAnswer = memberAnswers.find(a => a.user_id === currentUserId);
               const otherAnswers = memberAnswers.filter(a => a.user_id !== currentUserId);
@@ -1838,7 +1848,7 @@ async function showTeamReviewCollaboration(id) {
               return `
                 <div class="bg-white rounded-lg shadow-md p-6">
                   <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">
-                    <i class="fas fa-question-circle mr-2 text-indigo-600"></i>${i18n.t('question' + num)}
+                    <i class="fas fa-question-circle mr-2 text-indigo-600"></i>${num}. ${escapeHtml(q.question_text)}
                   </h2>
                   
                   <div class="space-y-4">
@@ -1957,6 +1967,8 @@ async function showEditReview(id) {
   try {
     const response = await axios.get(`/api/reviews/${id}`);
     const review = response.data.review;
+    const questions = response.data.questions || [];
+    const answers = response.data.answers || {};
     
     // Load teams if premium user
     let teams = [];
@@ -2025,6 +2037,27 @@ async function showEditReview(id) {
             </div>
             ` : ''}
 
+            <!-- Template Info (Read-only) -->
+            ${review.template_name ? `
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('template')}
+              </label>
+              <div class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                <div class="flex items-center">
+                  <i class="fas fa-file-alt text-indigo-600 mr-2"></i>
+                  <span class="text-gray-800 font-medium">${escapeHtml(review.template_name)}</span>
+                </div>
+                ${review.template_description ? `
+                  <p class="text-xs text-gray-600 mt-1 ml-6">${escapeHtml(review.template_description)}</p>
+                ` : ''}
+              </div>
+              <p class="mt-1 text-xs text-gray-500">
+                <i class="fas fa-info-circle mr-1"></i>${i18n.t('templateCannotChange')}
+              </p>
+            </div>
+            ` : ''}
+
             <!-- Group Type -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -2053,22 +2086,22 @@ async function showEditReview(id) {
               </select>
             </div>
 
-            <!-- Nine Questions -->
+            <!-- Dynamic Questions -->
             <div class="border-t pt-6">
               <h2 class="text-xl font-bold text-gray-800 mb-4">
-                <i class="fas fa-question-circle mr-2"></i>${i18n.t('nineQuestions')}
+                <i class="fas fa-question-circle mr-2"></i>${review.template_name ? escapeHtml(review.template_name) : i18n.t('nineQuestions')}
               </h2>
               
-              ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => `
+              ${questions.length > 0 ? questions.map(q => `
                 <div class="mb-6">
                   <label class="block text-sm font-medium text-gray-700 mb-2">
-                    ${i18n.t('question' + num)}
+                    ${q.question_number}. ${escapeHtml(q.question_text)}
                   </label>
-                  <textarea id="question${num}" rows="3"
+                  <textarea id="question${q.question_number}" rows="3"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                            placeholder="${i18n.t('question' + num)}">${escapeHtml(review['question' + num] || '')}</textarea>
+                            placeholder="${escapeHtml(q.question_text)}">${escapeHtml(answers[q.question_number] || '')}</textarea>
                 </div>
-              `).join('')}
+              `).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
             </div>
 
             <!-- Status -->
@@ -2111,6 +2144,9 @@ async function showEditReview(id) {
     `;
 
     document.getElementById('edit-review-form').addEventListener('submit', handleEditReview);
+    
+    // Store questions in global variable for access
+    window.currentEditQuestions = questions;
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     showReviews();
@@ -2127,21 +2163,25 @@ async function handleEditReview(e) {
   const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
+  // Collect answers dynamically
+  const answers = {};
+  if (window.currentEditQuestions && window.currentEditQuestions.length > 0) {
+    window.currentEditQuestions.forEach(q => {
+      const answerElem = document.getElementById(`question${q.question_number}`);
+      if (answerElem) {
+        const value = answerElem.value.trim();
+        answers[q.question_number] = value || null;
+      }
+    });
+  }
+  
   const data = {
     title,
     description: description || null,
     group_type: groupType,
     time_type: timeType,
     status,
-    question1: document.getElementById('question1').value,
-    question2: document.getElementById('question2').value,
-    question3: document.getElementById('question3').value,
-    question4: document.getElementById('question4').value,
-    question5: document.getElementById('question5').value,
-    question6: document.getElementById('question6').value,
-    question7: document.getElementById('question7').value,
-    question8: document.getElementById('question8').value,
-    question9: document.getElementById('question9').value,
+    answers
   };
 
   try {
