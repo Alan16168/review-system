@@ -45,6 +45,8 @@ const translations = {
     // Review
     'createReview': '创建复盘',
     'reviewTitle': '复盘主题',
+    'reviewDescription': '复盘说明',
+    'reviewDescriptionPlaceholder': '请简要描述本次复盘的背景、目的或注意事项...',
     'personalReview': '个人复盘',
     'teamReview': '团队复盘',
     'selectTeam': '选择团队',
@@ -383,6 +385,8 @@ const translations = {
     // Review
     'createReview': 'Create Review',
     'reviewTitle': 'Review Title',
+    'reviewDescription': 'Review Description',
+    'reviewDescriptionPlaceholder': 'Please briefly describe the background, purpose or notes for this review...',
     'personalReview': 'Personal Review',
     'teamReview': 'Team Review',
     'selectTeam': 'Select Team',

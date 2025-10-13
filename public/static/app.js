@@ -1408,6 +1408,15 @@ async function showCreateReview() {
                    placeholder="${i18n.t('reviewTitle')}">
           </div>
 
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('reviewDescription')}
+            </label>
+            <textarea id="review-description" rows="3"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                      placeholder="${i18n.t('reviewDescriptionPlaceholder')}"></textarea>
+          </div>
+
           ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams.length > 0 ? `
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -1516,6 +1525,7 @@ async function handleCreateReview(e) {
   e.preventDefault();
   
   const title = document.getElementById('review-title').value;
+  const description = document.getElementById('review-description').value;
   const teamId = document.getElementById('review-team')?.value || null;
   const groupType = document.getElementById('review-group-type').value;
   const timeType = document.getElementById('review-time-type').value;
@@ -1523,6 +1533,7 @@ async function handleCreateReview(e) {
   
   const data = {
     title,
+    description: description || null,
     team_id: teamId || null,
     group_type: groupType,
     time_type: timeType,
@@ -1616,6 +1627,15 @@ async function showReviewDetail(id) {
             </div>
           </div>
 
+          ${review.description ? `
+          <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 mb-6">
+            <h3 class="text-sm font-semibold text-blue-800 mb-2">
+              <i class="fas fa-info-circle mr-2"></i>${i18n.t('reviewDescription')}
+            </h3>
+            <p class="text-gray-700 whitespace-pre-wrap">${escapeHtml(review.description)}</p>
+          </div>
+          ` : ''}
+
           <!-- Nine Questions Display -->
           <div class="bg-white rounded-lg shadow-md p-6 space-y-6">
             <h2 class="text-xl font-bold text-gray-800 border-b pb-3">
@@ -1703,6 +1723,18 @@ async function showTeamReviewCollaboration(id) {
                   <i class="fas fa-sync-alt mr-2"></i>${i18n.t('refresh') || '刷新'}
                 </button>
               </div>
+              
+              ${review.description ? `
+              <!-- Review Description -->
+              <div class="border-t pt-4 mb-4">
+                <div class="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-4">
+                  <h3 class="text-sm font-semibold text-blue-800 mb-2">
+                    <i class="fas fa-info-circle mr-2"></i>${i18n.t('reviewDescription')}
+                  </h3>
+                  <p class="text-gray-700 whitespace-pre-wrap">${escapeHtml(review.description)}</p>
+                </div>
+              </div>
+              ` : ''}
               
               <!-- Completion Status -->
               <div class="border-t pt-4">
@@ -1899,6 +1931,15 @@ async function showEditReview(id) {
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
             </div>
 
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('reviewDescription')}
+              </label>
+              <textarea id="review-description" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                        placeholder="${i18n.t('reviewDescriptionPlaceholder')}">${escapeHtml(review.description || '')}</textarea>
+            </div>
+
             ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams.length > 0 ? `
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -2016,12 +2057,14 @@ async function handleEditReview(e) {
   
   const id = document.getElementById('review-id').value;
   const title = document.getElementById('review-title').value;
+  const description = document.getElementById('review-description').value;
   const groupType = document.getElementById('review-group-type').value;
   const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
   const data = {
     title,
+    description: description || null,
     group_type: groupType,
     time_type: timeType,
     status,
