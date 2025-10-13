@@ -1555,6 +1555,13 @@ async function showReviewDetail(id) {
     const review = response.data.review;
     const collaborators = response.data.collaborators || [];
     
+    // If it's a team review, redirect to team collaboration view
+    if (review.team_id) {
+      showTeamReviewCollaboration(id);
+      return;
+    }
+    
+    // Otherwise, show regular review detail (for personal reviews)
     const app = document.getElementById('app');
     app.innerHTML = `
       <div class="min-h-screen bg-gray-50">
@@ -1584,11 +1591,6 @@ async function showReviewDetail(id) {
                   }">
                     ${i18n.t(review.status)}
                   </span>
-                  ${review.team_name ? `
-                    <span class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                      <i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}
-                    </span>
-                  ` : ''}
                   ${review.group_type ? `
                     <span class="px-3 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
                       <i class="fas fa-layer-group mr-1"></i>${i18n.t('groupType' + review.group_type.charAt(0).toUpperCase() + review.group_type.slice(1))}
@@ -1602,12 +1604,6 @@ async function showReviewDetail(id) {
                 </div>
               </div>
               <div class="flex space-x-2">
-                ${review.team_id ? `
-                  <button onclick="showTeamReviewCollaboration(${review.id})" 
-                          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                    <i class="fas fa-users mr-2"></i>${i18n.t('viewTeamAnswers')}
-                  </button>
-                ` : ''}
                 <button onclick="showEditReview(${review.id})" 
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                   <i class="fas fa-edit mr-2"></i>${i18n.t('edit')}
@@ -1721,7 +1717,7 @@ async function showTeamReviewCollaboration(id) {
                       <i class="fas fa-user-circle text-2xl text-gray-400 mr-2"></i>
                       <div>
                         <div class="text-sm font-medium text-gray-900">
-                          ${escapeHtml(member.username)}${member.user_id === currentUserId ? ' (${i18n.t("myAnswer") || "我"})' : ''}
+                          ${escapeHtml(member.username)}${member.user_id === currentUserId ? ` (${i18n.t("myAnswer") || "我"})` : ''}
                         </div>
                         <div class="text-xs ${member.completed_count === 9 ? 'text-green-600' : 'text-gray-500'}">
                           <i class="fas ${member.completed_count === 9 ? 'fa-check-circle' : 'fa-clock'} mr-1"></i>
