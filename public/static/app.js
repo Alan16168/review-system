@@ -1389,11 +1389,14 @@ async function showReviews() {
 }
 
 let allReviews = [];
+let currentPage = 1;
+const itemsPerPage = 5;
 
 async function loadAllReviews() {
   try {
     const response = await axios.get('/api/reviews');
     allReviews = response.data.reviews;
+    currentPage = 1; // Reset to first page
     renderReviewsList(allReviews);
   } catch (error) {
     console.error('Load reviews error:', error);
@@ -1428,7 +1431,13 @@ function filterReviews() {
     return true;
   });
 
+  currentPage = 1; // Reset to first page when filtering
   renderReviewsList(filtered);
+}
+
+function changePage(newPage, reviews) {
+  currentPage = newPage;
+  renderReviewsList(reviews);
 }
 
 function renderReviewsList(reviews) {
@@ -1447,6 +1456,15 @@ function renderReviewsList(reviews) {
     `;
     return;
   }
+
+  // Calculate pagination
+  const totalPages = Math.ceil(reviews.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedReviews = reviews.slice(startIndex, endIndex);
+
+  // Store reviews for pagination
+  window.currentReviews = reviews;
 
   container.innerHTML = `
     <div class="overflow-x-auto">
@@ -1471,7 +1489,7 @@ function renderReviewsList(reviews) {
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          ${reviews.map(review => `
+          ${paginatedReviews.map(review => `
             <tr class="hover:bg-gray-50 transition">
               <td class="px-6 py-4">
                 <div class="flex items-center">
@@ -1526,6 +1544,61 @@ function renderReviewsList(reviews) {
         </tbody>
       </table>
     </div>
+    
+    <!-- Pagination -->
+    ${totalPages > 1 ? `
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <button onclick="changePage(${currentPage - 1}, window.currentReviews)" 
+                  ${currentPage === 1 ? 'disabled' : ''}
+                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+            ${i18n.t('previousPage') || '上一页'}
+          </button>
+          <button onclick="changePage(${currentPage + 1}, window.currentReviews)" 
+                  ${currentPage === totalPages ? 'disabled' : ''}
+                  class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">
+            ${i18n.t('nextPage') || '下一页'}
+          </button>
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              ${i18n.t('showing') || '显示'} 
+              <span class="font-medium">${startIndex + 1}</span>
+              ${i18n.t('to') || '到'}
+              <span class="font-medium">${Math.min(endIndex, reviews.length)}</span>
+              ${i18n.t('of') || '共'}
+              <span class="font-medium">${reviews.length}</span>
+              ${i18n.t('results') || '条结果'}
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button onclick="changePage(${currentPage - 1}, window.currentReviews)" 
+                      ${currentPage === 1 ? 'disabled' : ''}
+                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
+                <button onclick="changePage(${page}, window.currentReviews)"
+                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
+                          page === currentPage 
+                            ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' 
+                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                        }">
+                  ${page}
+                </button>
+              `).join('')}
+              <button onclick="changePage(${currentPage + 1}, window.currentReviews)" 
+                      ${currentPage === totalPages ? 'disabled' : ''}
+                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    ` : ''}
   `;
 }
 

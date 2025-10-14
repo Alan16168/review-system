@@ -218,6 +218,14 @@ const translations = {
     'loading': '加载中...',
     'noData': '暂无数据',
     
+    // Pagination
+    'previousPage': '上一页',
+    'nextPage': '下一页',
+    'showing': '显示',
+    'to': '到',
+    'of': '共',
+    'results': '条结果',
+    
     // System
     'systemTitle': '系统复盘平台',
     'systemSubtitle': '帮助个人和团队进行深度复盘，持续改进',
@@ -570,6 +578,14 @@ const translations = {
     'confirmDelete': 'Confirm delete?',
     'loading': 'Loading...',
     'noData': 'No data',
+    
+    // Pagination
+    'previousPage': 'Previous',
+    'nextPage': 'Next',
+    'showing': 'Showing',
+    'to': 'to',
+    'of': 'of',
+    'results': 'results',
     
     // System
     'systemTitle': 'Review System Platform',
