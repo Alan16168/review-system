@@ -1723,21 +1723,30 @@ async function showCreateReview() {
           </div>
 
           <!-- Team Selection (shown when group type is 'team') -->
-          ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams.length > 0 ? `
           <div id="group-team-selector" style="display: none;">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               ${i18n.t('selectTeam')} <span class="text-red-500">*</span>
             </label>
-            <select id="review-group-team"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="">${i18n.t('selectTeam')}</option>
-              ${teams.map(team => `<option value="${team.id}">${escapeHtml(team.name)}</option>`).join('')}
-            </select>
-            <p class="mt-1 text-xs text-gray-500">
-              <i class="fas fa-info-circle mr-1"></i>${i18n.t('teamReviewNote') || '选择团队后，团队成员可以协作编辑'}
-            </p>
+            ${teams.length > 0 ? `
+              <select id="review-group-team"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="">${i18n.t('selectTeam')}</option>
+                ${teams.map(team => `<option value="${team.id}">${escapeHtml(team.name)}</option>`).join('')}
+              </select>
+              <p class="mt-1 text-xs text-gray-500">
+                <i class="fas fa-info-circle mr-1"></i>${i18n.t('teamReviewNote') || '选择团队后，团队成员可以协作编辑'}
+              </p>
+            ` : `
+              <div class="w-full px-4 py-3 border border-amber-300 bg-amber-50 rounded-lg">
+                <p class="text-sm text-amber-800">
+                  <i class="fas fa-exclamation-triangle mr-2"></i>你还没有加入任何团队
+                </p>
+                <p class="text-xs text-amber-600 mt-2">
+                  请先前往 <button onclick="showTeams()" class="text-indigo-600 hover:underline font-medium">团队页面</button> 申请加入公开团队或创建新团队。
+                </p>
+              </div>
+            `}
           </div>
-          ` : ''}
 
           <!-- Time Type -->
           <div>
@@ -2583,11 +2592,9 @@ function renderNavigation() {
               <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                 <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
               </button>
-              ${(currentUser.role === 'premium' || currentUser.role === 'admin') ? `
-                <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
-                  <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
-                </button>
-              ` : ''}
+              <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
+              </button>
               ${currentUser.role === 'admin' ? `
                 <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                   <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
