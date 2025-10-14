@@ -75,10 +75,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://441ea0aa.review-system.pages.dev (V4.1.2 Bug修复 #2)
+- **最新部署**: https://4c46f11e.review-system.pages.dev (V4.1.2 + 分页功能)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-14 (V4.1.2 完整版 - 导航自动保存)
+- **部署日期**: 2025-10-14 (V4.1.2 完整版 + 分页功能)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -737,7 +737,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ✅ 用户认证系统（注册、登录、JWT）
 ✅ 角色权限管理（管理员/高级用户/普通用户）
 ✅ 个人复盘记录 CRUD
-✅ 复盘列表页面（带筛选、搜索、分类）
+✅ 复盘列表页面（带筛选、搜索、分类、分页）
 ✅ 复盘创建表单（支持个人和团队复盘）
 ✅ 复盘编辑功能（完整的9问编辑）
 ✅ 复盘详情页面（展示9问回答和协作者）
@@ -755,6 +755,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ✅ **首页显示登录用户名** 【V3.2 新增】
 ✅ **Google账号一键登录/注册** 【V3.3 新增】
 ✅ **团队协作复盘功能** 【V3.9 新增】
+✅ **复盘列表分页功能（每页5条，支持上一页/下一页）** 【V4.1.2 新增】
 ✅ 中英双语支持
 ✅ 响应式前端界面
 ✅ API 接口完整实现
@@ -827,7 +828,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-14
-- **当前版本**: V4.1.2 完整版（包含Bug修复 #1 和 #2）🎉
+- **当前版本**: V4.1.2 完整版（数据保护 + 分页功能）🎉
 
 ## 📝 许可证
 
@@ -855,12 +856,20 @@ MIT License
     - 防止重复创建草稿（多次切换语言时更新同一草稿）
     - 开始新复盘时重置 currentDraftId
     - 完成复盘提交后清除 currentDraftId
-- 🌐 **新增国际化键**：confirmLanguageSwitch, savingDraft, draftSaved, switchingLanguage
 - 🚀 **导航自动保存**（新增功能）：
   - 所有导航按钮（主页、仪表板、我的复盘、团队、管理后台）在离开创建复盘页面前自动保存草稿
   - 新增 autoSaveDraftBeforeNavigation() 辅助函数统一处理自动保存
   - 修改 5 个导航函数：showHomePage(), showDashboard(), showReviews(), showTeams(), showAdmin()
   - 防止用户在创建复盘时因点击导航按钮而丢失数据
+- 📄 **复盘列表分页功能**（新增功能）：
+  - 每页显示 5 条复盘记录
+  - 超过 5 条时自动显示分页控件
+  - 支持"上一页"/"下一页"按钮导航
+  - 显示当前页码和总页数
+  - 显示当前显示范围（显示 X 到 Y 共 Z 条结果）
+  - 响应式设计：移动端显示简化版分页，桌面端显示完整页码
+  - 筛选和搜索后自动重置到第一页
+- 🌐 **新增国际化键**：confirmLanguageSwitch, savingDraft, draftSaved, switchingLanguage, previousPage, nextPage, showing, to, of, results
 - ✅ **修复问题**：
   - V4.1.2初始版本：切换语言时未保存的复盘内容丢失
   - **V4.1.2 Bug修复 #1**：
