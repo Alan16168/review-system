@@ -1614,9 +1614,12 @@ function renderReviewsList(reviews) {
 // ============ Create/Edit Review ============
 
 // Step 1: Basic info and template selection
-async function showCreateReview() {
+async function showCreateReview(preservedData = null) {
   try {
-    currentDraftId = null; // Reset draft ID when starting new review
+    // Only reset draft ID when starting completely new review (not when coming back from step 2)
+    if (!preservedData) {
+      currentDraftId = null;
+    }
     const app = document.getElementById('app');
     
     // Load templates
@@ -1802,6 +1805,40 @@ async function showCreateReview() {
   // Initialize with default template
   handleTemplateChangeStep1();
   
+  // Restore preserved data if coming back from step 2
+  if (preservedData) {
+    // Restore form values
+    if (preservedData.title) {
+      document.getElementById('review-title').value = preservedData.title;
+    }
+    if (preservedData.description) {
+      document.getElementById('review-description').value = preservedData.description;
+    }
+    if (preservedData.template_id) {
+      document.getElementById('review-template').value = preservedData.template_id;
+      handleTemplateChangeStep1(); // Update template info
+    }
+    if (preservedData.group_type) {
+      document.getElementById('review-group-type').value = preservedData.group_type;
+      handleGroupTypeChange(); // Show/hide team selector
+    }
+    if (preservedData.team_id && preservedData.group_type === 'team') {
+      const teamSelect = document.getElementById('review-group-team');
+      if (teamSelect) {
+        teamSelect.value = preservedData.team_id;
+      }
+    }
+    if (preservedData.time_type) {
+      document.getElementById('review-time-type').value = preservedData.time_type;
+    }
+    if (preservedData.status) {
+      const statusRadio = document.querySelector(`input[name="status"][value="${preservedData.status}"]`);
+      if (statusRadio) {
+        statusRadio.checked = true;
+      }
+    }
+  }
+  
   // Set currentView only after everything is successfully rendered and initialized
   currentView = 'create-review-step1';
   
@@ -1921,7 +1958,7 @@ async function showCreateReviewStep2(template) {
       
       <div class="max-w-4xl mx-auto px-4 py-8">
         <div class="mb-6">
-          <button onclick="showCreateReview()" class="text-indigo-600 hover:text-indigo-800 mb-4">
+          <button onclick="showCreateReview(window.createReviewData)" class="text-indigo-600 hover:text-indigo-800 mb-4">
             <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
           </button>
           <h1 class="text-3xl font-bold text-gray-800">
@@ -1957,7 +1994,7 @@ async function showCreateReviewStep2(template) {
 
           <!-- Actions -->
           <div class="flex justify-between space-x-4 pt-6 border-t bg-white rounded-lg shadow-md p-6 sticky bottom-0">
-            <button type="button" onclick="showCreateReview()" 
+            <button type="button" onclick="showCreateReview(window.createReviewData)" 
                     class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
               <i class="fas fa-arrow-left mr-2"></i>${i18n.t('previous') || '上一步'}
             </button>
