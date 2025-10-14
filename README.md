@@ -81,10 +81,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://449e4bb0.review-system.pages.dev (V4.2.2 修复普通用户访问团队)
+- **最新部署**: https://f4fc906f.review-system.pages.dev (V4.2.3 修复i18n)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-14 (V4.2.2 修复普通用户访问)
+- **部署日期**: 2025-10-14 (V4.2.3 i18n修复)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -849,7 +849,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-14
-- **当前版本**: V4.1.2 完整版（数据保护 + 分页功能）🎉
+- **当前版本**: V4.2.3 完整版（i18n修复）🎉
 
 ## 📝 许可证
 
@@ -859,7 +859,43 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V4.1.2  
+**当前版本**: V4.2.3  
+
+**V4.2.3 更新内容** (2025-10-14):
+- 🌍 **国际化修复**（核心修复）：
+  - 修复英文环境下显示中文提示的bug
+  - 新增4个翻译键：noTeamsYet, pleaseGoToTeamsPage, teamsPage, applyOrCreateTeam
+  - 替换团队选择器中的硬编码中文文本为i18n函数调用
+  - 中文提示："你还没有加入任何团队" → 英文："You haven't joined any teams yet"
+  - 中文提示："请先前往 团队页面 申请加入公开团队或创建新团队" → 英文："Please go to Teams page to apply for public teams or create new teams"
+- ✅ **修复问题**：英文用户在创建团队复盘时看到中文提示语的问题
+
+**V4.2.2 更新内容** (2025-10-14):
+- 🔓 **普通用户团队访问修复**（核心修复）：
+  - 移除团队路由的全局premiumOrAdmin中间件
+  - 普通用户现在可以正常访问团队页面
+  - 仅在创建团队时检查premium/admin权限
+  - 修复"操作失败"错误提示
+- 🎯 **导航按钮可见性**：
+  - 仪表板页面的"团队"按钮现在对所有用户可见
+  - 确保所有角色都能方便访问团队功能
+- 🐛 **修复邮箱邀请功能**：
+  - 修改后端支持通过email参数查找用户
+  - 简化前端邀请逻辑，直接发送email
+  - 移除对admin API的依赖
+- 🚫 **修复"Draft saved"假阳性**：
+  - 将currentView赋值移到showCreateReview函数末尾
+  - 仅在所有初始化成功后设置currentView
+  - 防止验证失败时触发自动保存
+- 🛠️ **创建复盘页面加载修复**：
+  - 为handleTemplateChangeStep1添加全面错误处理
+  - 添加所有DOM元素的null检查
+  - 防止未捕获异常导致页面无法打开
+- ✅ **修复问题**：
+  - 普通用户无法访问团队页面
+  - 高级用户无法邀请团队成员
+  - admin/premium用户点击"创建复盘"无响应
+  - 导航离开时显示虚假"Draft saved"通知
 
 **V4.1.2 更新内容** (2025-10-14):
 - 🔄 **智能语言切换**（核心功能）：
