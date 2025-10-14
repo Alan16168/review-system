@@ -50,7 +50,13 @@
    - 团队成员管理
    - 共享复盘记录
    - 协作编辑权限控制
-   - **团队协作复盘（V3.9 新增）**：
+   - **团队申请系统（V4.2 新增）**：
+     - 公开/私有团队设置
+     - 用户可申请加入公开团队
+     - 团队创建者审批申请（确认/拒绝）
+     - 三个Tab界面：我的团队、公开团队、待审批
+     - 实时显示待审批申请数量
+   - **团队协作复盘（V3.9）**：
      - 每个问题显示所有成员的答案（并列显示）
      - 成员独立编辑自己的答案
      - 创建者可删除其他成员的答案
@@ -82,8 +88,9 @@
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
-- **Git Commit**: 1cd8b7d (导航自动保存功能)
+- **Git Commit**: eecb88e (团队申请系统 V4.2)
 - **本地端口**: 3000 (PM2 管理)
+- **新功能**: 团队申请系统（公开团队、申请审批）
 
 ### 测试账号
 | 角色 | 邮箱 | 密码 | 权限 |
@@ -128,8 +135,21 @@
 - name: 团队名称
 - description: 团队描述
 - owner_id: 拥有者ID
+- is_public: 是否公开（1/0）【V4.2 新增】
 - created_at: 创建时间
 - updated_at: 更新时间
+```
+
+#### 3a. Team Applications（团队申请表）【V4.2 新增】
+```sql
+- id: 申请ID
+- team_id: 团队ID
+- user_id: 申请用户ID
+- status: 状态（pending/approved/rejected）
+- message: 申请理由
+- applied_at: 申请时间
+- reviewed_at: 审批时间
+- reviewed_by: 审批人ID
 ```
 
 #### 4. Team Members（团队成员表）
