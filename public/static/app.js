@@ -1644,9 +1644,6 @@ async function showCreateReview() {
       console.error('Load teams error:', error);
       teams = [];
     }
-    
-    // Set currentView only after all data is loaded successfully
-    currentView = 'create-review-step1';
   
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
@@ -1805,6 +1802,9 @@ async function showCreateReview() {
   // Initialize with default template
   handleTemplateChangeStep1();
   
+  // Set currentView only after everything is successfully rendered and initialized
+  currentView = 'create-review-step1';
+  
   } catch (error) {
     console.error('Show create review error:', error);
     showNotification(i18n.t('operationFailed') + ': ' + error.message, 'error');
@@ -1838,24 +1838,32 @@ function handleGroupTypeChange() {
 }
 
 async function handleTemplateChangeStep1() {
-  const templateSelect = document.getElementById('review-template');
-  const templateId = parseInt(templateSelect.value);
-  const template = window.currentTemplates.find(t => t.id === templateId);
-  
-  if (!template) return;
-  
-  // Update template info
-  const templateInfo = document.getElementById('template-info');
-  if (template.description) {
-    templateInfo.querySelector('p').textContent = template.description;
-    templateInfo.style.display = 'block';
-  } else {
-    templateInfo.style.display = 'none';
+  try {
+    const templateSelect = document.getElementById('review-template');
+    if (!templateSelect) return;
+    
+    const templateId = parseInt(templateSelect.value);
+    const template = window.currentTemplates.find(t => t.id === templateId);
+    
+    if (!template) return;
+    
+    // Update template info
+    const templateInfo = document.getElementById('template-info');
+    if (!templateInfo) return;
+    
+    const templateInfoPara = templateInfo.querySelector('p');
+    if (!templateInfoPara) return;
+    
+    if (template.description) {
+      const questionCount = template.questions ? template.questions.length : 0;
+      templateInfoPara.textContent = template.description + `\n\n${i18n.t('questionCount') || '共'}${questionCount}${i18n.t('questions') || '个问题'}`;
+      templateInfo.style.display = 'block';
+    } else {
+      templateInfo.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Handle template change error:', error);
   }
-  
-  // Show question count
-  const questionCount = template.questions ? template.questions.length : 0;
-  templateInfo.querySelector('p').textContent = template.description + `\n\n共${questionCount}个问题`;
 }
 
 // Handle step 1 form submission
