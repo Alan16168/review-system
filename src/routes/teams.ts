@@ -11,23 +11,40 @@ const teams = new Hono<{ Bindings: Bindings }>();
 // All routes require authentication and premium/admin access
 teams.use('/*', authMiddleware, premiumOrAdmin);
 
-// Get all teams user is member of
+// Get all teams user is member of + public teams
 teams.get('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
 
-    const query = `
+    // Get teams user is member of
+    const myTeamsQuery = `
       SELECT t.*, u.username as owner_name,
-        (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count
+        (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count,
+        tm.role as my_role
       FROM teams t
       JOIN users u ON t.owner_id = u.id
-      WHERE t.id IN (SELECT team_id FROM team_members WHERE user_id = ?)
+      JOIN team_members tm ON t.id = tm.team_id AND tm.user_id = ?
       ORDER BY t.created_at DESC
     `;
+    const myTeamsResult = await c.env.DB.prepare(myTeamsQuery).bind(user.id).all();
 
-    const result = await c.env.DB.prepare(query).bind(user.id).all();
+    // Get public teams (excluding teams user is already in)
+    const publicTeamsQuery = `
+      SELECT t.*, u.username as owner_name,
+        (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count,
+        (SELECT status FROM team_applications WHERE team_id = t.id AND user_id = ? AND status = 'pending') as application_status
+      FROM teams t
+      JOIN users u ON t.owner_id = u.id
+      WHERE t.is_public = 1 
+      AND t.id NOT IN (SELECT team_id FROM team_members WHERE user_id = ?)
+      ORDER BY t.created_at DESC
+    `;
+    const publicTeamsResult = await c.env.DB.prepare(publicTeamsQuery).bind(user.id, user.id).all();
 
-    return c.json({ teams: result.results || [] });
+    return c.json({ 
+      myTeams: myTeamsResult.results || [],
+      publicTeams: publicTeamsResult.results || []
+    });
   } catch (error) {
     console.error('Get teams error:', error);
     return c.json({ error: 'Internal server error' }, 500);
@@ -85,15 +102,15 @@ teams.get('/:id', async (c) => {
 teams.post('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
-    const { name, description } = await c.req.json();
+    const { name, description, isPublic } = await c.req.json();
 
     if (!name) {
       return c.json({ error: 'Team name is required' }, 400);
     }
 
     const result = await c.env.DB.prepare(
-      'INSERT INTO teams (name, description, owner_id) VALUES (?, ?, ?)'
-    ).bind(name, description || null, user.id).run();
+      'INSERT INTO teams (name, description, owner_id, is_public) VALUES (?, ?, ?, ?)'
+    ).bind(name, description || null, user.id, isPublic ? 1 : 0).run();
 
     const teamId = result.meta.last_row_id;
 
@@ -117,7 +134,7 @@ teams.put('/:id', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const teamId = c.req.param('id');
-    const { name, description } = await c.req.json();
+    const { name, description, isPublic } = await c.req.json();
 
     // Check if user is the owner
     const team = await c.env.DB.prepare(
@@ -129,8 +146,8 @@ teams.put('/:id', async (c) => {
     }
 
     await c.env.DB.prepare(
-      'UPDATE teams SET name = COALESCE(?, name), description = COALESCE(?, description), updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(name || null, description || null, teamId).run();
+      'UPDATE teams SET name = COALESCE(?, name), description = COALESCE(?, description), is_public = COALESCE(?, is_public), updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(name || null, description || null, isPublic !== undefined ? (isPublic ? 1 : 0) : null, teamId).run();
 
     return c.json({ message: 'Team updated successfully' });
   } catch (error) {
@@ -263,6 +280,127 @@ teams.delete('/:id/members/:userId', async (c) => {
     return c.json({ message: 'Member removed successfully' });
   } catch (error) {
     console.error('Remove member error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Apply to join a public team
+teams.post('/:id/apply', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const teamId = c.req.param('id');
+    const { message } = await c.req.json();
+
+    // Check if team exists and is public
+    const team = await c.env.DB.prepare(
+      'SELECT * FROM teams WHERE id = ? AND is_public = 1'
+    ).bind(teamId).first();
+
+    if (!team) {
+      return c.json({ error: 'Team not found or not public' }, 404);
+    }
+
+    // Check if already a member
+    const isMember = await c.env.DB.prepare(
+      'SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ?'
+    ).bind(teamId, user.id).first();
+
+    if (isMember) {
+      return c.json({ error: 'You are already a member of this team' }, 400);
+    }
+
+    // Check if there's a pending application
+    const pendingApp = await c.env.DB.prepare(
+      'SELECT 1 FROM team_applications WHERE team_id = ? AND user_id = ? AND status = ?'
+    ).bind(teamId, user.id, 'pending').first();
+
+    if (pendingApp) {
+      return c.json({ error: 'You already have a pending application' }, 400);
+    }
+
+    // Create application
+    await c.env.DB.prepare(
+      'INSERT INTO team_applications (team_id, user_id, message, status) VALUES (?, ?, ?, ?)'
+    ).bind(teamId, user.id, message || '', 'pending').run();
+
+    return c.json({ message: 'Application submitted successfully' }, 201);
+  } catch (error) {
+    console.error('Apply to team error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Get pending applications for teams owned by user
+teams.get('/applications/pending', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+
+    const query = `
+      SELECT ta.*, u.username, u.email, t.name as team_name
+      FROM team_applications ta
+      JOIN users u ON ta.user_id = u.id
+      JOIN teams t ON ta.team_id = t.id
+      WHERE t.owner_id = ? AND ta.status = 'pending'
+      ORDER BY ta.applied_at DESC
+    `;
+
+    const result = await c.env.DB.prepare(query).bind(user.id).all();
+
+    return c.json({ applications: result.results || [] });
+  } catch (error) {
+    console.error('Get applications error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Review application (approve or reject)
+teams.post('/:id/applications/:applicationId/review', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const teamId = c.req.param('id');
+    const applicationId = c.req.param('applicationId');
+    const { action } = await c.req.json();
+
+    if (!['approve', 'reject'].includes(action)) {
+      return c.json({ error: 'Invalid action' }, 400);
+    }
+
+    // Check if user is the owner
+    const team = await c.env.DB.prepare(
+      'SELECT * FROM teams WHERE id = ? AND owner_id = ?'
+    ).bind(teamId, user.id).first();
+
+    if (!team) {
+      return c.json({ error: 'Only owner can review applications' }, 403);
+    }
+
+    // Get application
+    const application = await c.env.DB.prepare(
+      'SELECT * FROM team_applications WHERE id = ? AND team_id = ? AND status = ?'
+    ).bind(applicationId, teamId, 'pending').first();
+
+    if (!application) {
+      return c.json({ error: 'Application not found or already reviewed' }, 404);
+    }
+
+    // Update application status
+    const newStatus = action === 'approve' ? 'approved' : 'rejected';
+    await c.env.DB.prepare(
+      'UPDATE team_applications SET status = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(newStatus, user.id, applicationId).run();
+
+    // If approved, add user to team
+    if (action === 'approve') {
+      await c.env.DB.prepare(
+        'INSERT OR IGNORE INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)'
+      ).bind(teamId, application.user_id, 'viewer').run();
+    }
+
+    return c.json({ 
+      message: action === 'approve' ? 'Application approved' : 'Application rejected' 
+    });
+  } catch (error) {
+    console.error('Review application error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

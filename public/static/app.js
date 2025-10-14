@@ -2715,10 +2715,51 @@ async function showTeams() {
           `}
         </div>
 
-        <div id="teams-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div class="text-center py-12">
-            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
-            <p class="text-gray-600">${i18n.t('loading')}</p>
+        <!-- Tab Navigation -->
+        <div class="mb-6 border-b border-gray-200">
+          <nav class="flex space-x-8">
+            <button onclick="switchTeamsTab('my')" id="tab-my" 
+                    class="teams-tab py-4 px-1 border-b-2 border-indigo-600 font-medium text-indigo-600">
+              我的团队
+            </button>
+            <button onclick="switchTeamsTab('public')" id="tab-public" 
+                    class="teams-tab py-4 px-1 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700">
+              公开团队
+            </button>
+            <button onclick="switchTeamsTab('applications')" id="tab-applications" 
+                    class="teams-tab py-4 px-1 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700">
+              待审批 <span id="pending-count" class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1"></span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- My Teams Tab -->
+        <div id="teams-my" class="teams-tab-content">
+          <div id="my-teams-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="text-center py-12">
+              <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+              <p class="text-gray-600">${i18n.t('loading')}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Public Teams Tab -->
+        <div id="teams-public" class="teams-tab-content hidden">
+          <div id="public-teams-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="text-center py-12">
+              <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+              <p class="text-gray-600">${i18n.t('loading')}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Applications Tab -->
+        <div id="teams-applications" class="teams-tab-content hidden">
+          <div id="applications-container" class="space-y-4">
+            <div class="text-center py-12">
+              <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+              <p class="text-gray-600">${i18n.t('loading')}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -2730,12 +2771,28 @@ async function showTeams() {
 
 async function loadTeams() {
   try {
-    const response = await axios.get('/api/teams');
-    const teams = response.data.teams;
-    renderTeamsList(teams);
+    const [teamsResponse, applicationsResponse] = await Promise.all([
+      axios.get('/api/teams'),
+      axios.get('/api/teams/applications/pending').catch(() => ({ data: { applications: [] } }))
+    ]);
+    
+    const myTeams = teamsResponse.data.myTeams || [];
+    const publicTeams = teamsResponse.data.publicTeams || [];
+    const applications = applicationsResponse.data.applications || [];
+    
+    renderMyTeamsList(myTeams);
+    renderPublicTeamsList(publicTeams);
+    renderApplicationsList(applications);
+    
+    // Update pending count badge
+    const pendingCount = document.getElementById('pending-count');
+    if (pendingCount) {
+      pendingCount.textContent = applications.length || '';
+      pendingCount.style.display = applications.length > 0 ? 'inline-block' : 'none';
+    }
   } catch (error) {
     console.error('Load teams error:', error);
-    document.getElementById('teams-container').innerHTML = `
+    document.getElementById('my-teams-container').innerHTML = `
       <div class="col-span-full text-center py-12">
         <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
         <p class="text-red-600">${i18n.t('operationFailed')}</p>
@@ -2744,14 +2801,14 @@ async function loadTeams() {
   }
 }
 
-function renderTeamsList(teams) {
-  const container = document.getElementById('teams-container');
+function renderMyTeamsList(teams) {
+  const container = document.getElementById('my-teams-container');
   
   if (teams.length === 0) {
     container.innerHTML = `
       <div class="col-span-full text-center py-12">
         <i class="fas fa-users text-6xl text-gray-300 mb-4"></i>
-        <p class="text-gray-500 text-lg mb-4">${i18n.t('noData')}</p>
+        <p class="text-gray-500 text-lg mb-4">你还没有加入任何团队</p>
         <button onclick="showCreateTeam()" 
                 class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
           <i class="fas fa-plus mr-2"></i>${i18n.t('createTeam')}
@@ -2773,11 +2830,22 @@ function renderTeamsList(teams) {
             <p class="text-sm text-gray-600 mb-3">${escapeHtml(team.description)}</p>
           ` : ''}
         </div>
-        ${team.owner_id === currentUser.id ? `
-          <span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
-            ${i18n.t('teamOwner')}
-          </span>
-        ` : ''}
+        <div class="flex flex-col space-y-1">
+          ${team.is_public ? `
+            <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full text-center">
+              公开
+            </span>
+          ` : `
+            <span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded-full text-center">
+              私有
+            </span>
+          `}
+          ${team.my_role === 'creator' ? `
+            <span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full text-center">
+              ${i18n.t('teamOwner')}
+            </span>
+          ` : ''}
+        </div>
       </div>
       
       <div class="flex items-center justify-between text-sm text-gray-500 border-t pt-3">
@@ -2802,6 +2870,96 @@ function renderTeamsList(teams) {
             <i class="fas fa-trash"></i>
           </button>
         ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPublicTeamsList(teams) {
+  const container = document.getElementById('public-teams-container');
+  
+  if (teams.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-12">
+        <i class="fas fa-users text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-lg">暂无公开团队</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = teams.map(team => `
+    <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition p-6">
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex-1">
+          <h3 class="text-xl font-bold text-gray-800 mb-2">
+            ${escapeHtml(team.name)}
+          </h3>
+          ${team.description ? `
+            <p class="text-sm text-gray-600 mb-3">${escapeHtml(team.description)}</p>
+          ` : ''}
+        </div>
+      </div>
+      
+      <div class="flex items-center justify-between text-sm text-gray-500 border-t pt-3 mb-4">
+        <div>
+          <i class="fas fa-user mr-1"></i>
+          <span>${escapeHtml(team.owner_name)}</span>
+        </div>
+        <div>
+          <i class="fas fa-users mr-1"></i>
+          <span>${team.member_count} ${i18n.t('members')}</span>
+        </div>
+      </div>
+      
+      ${team.application_status === 'pending' ? `
+        <button disabled class="w-full bg-gray-400 text-white px-4 py-2 rounded text-sm cursor-not-allowed">
+          <i class="fas fa-clock mr-1"></i>申请审批中
+        </button>
+      ` : `
+        <button onclick="applyToTeam(${team.id})" 
+                class="w-full bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm">
+          <i class="fas fa-paper-plane mr-1"></i>申请加入
+        </button>
+      `}
+    </div>
+  `).join('');
+}
+
+function renderApplicationsList(applications) {
+  const container = document.getElementById('applications-container');
+  
+  if (applications.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-12">
+        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-lg">暂无待审批申请</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = applications.map(app => `
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-start">
+        <div class="flex-1">
+          <h3 class="font-semibold text-lg text-gray-800">${escapeHtml(app.username)}</h3>
+          <p class="text-sm text-gray-600 mt-1">申请加入: ${escapeHtml(app.team_name)}</p>
+          <p class="text-sm text-gray-500 mt-2">${app.message ? escapeHtml(app.message) : '无申请理由'}</p>
+          <p class="text-xs text-gray-400 mt-2">
+            <i class="fas fa-clock mr-1"></i>${new Date(app.applied_at).toLocaleString('zh-CN')}
+          </p>
+        </div>
+        <div class="flex space-x-2 ml-4">
+          <button onclick="reviewApplication(${app.team_id}, ${app.id}, 'approve')" 
+                  class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
+            <i class="fas fa-check mr-1"></i>确认
+          </button>
+          <button onclick="reviewApplication(${app.team_id}, ${app.id}, 'reject')" 
+                  class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm">
+            <i class="fas fa-times mr-1"></i>拒绝
+          </button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -2843,6 +3001,13 @@ async function showCreateTeam() {
                       placeholder="${i18n.t('teamDescription')}"></textarea>
           </div>
 
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="team-is-public" class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+              <span class="text-sm font-medium text-gray-700">公开团队（其他用户可申请加入）</span>
+            </label>
+          </div>
+
           <div class="flex justify-end space-x-4 pt-6 border-t">
             <button type="button" onclick="showTeams()" 
                     class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
@@ -2866,9 +3031,10 @@ async function handleCreateTeam(e) {
   
   const name = document.getElementById('team-name').value;
   const description = document.getElementById('team-description').value;
+  const isPublic = document.getElementById('team-is-public').checked;
 
   try {
-    await axios.post('/api/teams', { name, description });
+    await axios.post('/api/teams', { name, description, isPublic });
     showNotification(i18n.t('createSuccess'), 'success');
     showTeams();
   } catch (error) {
@@ -4026,5 +4192,50 @@ async function handleCreateUser() {
   } catch (error) {
     console.error('Create user error:', error);
     alert(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message));
+  }
+}
+
+// Switch between team tabs
+function switchTeamsTab(tab) {
+  // Update tab buttons
+  document.querySelectorAll('.teams-tab').forEach(btn => {
+    btn.classList.remove('border-indigo-600', 'text-indigo-600');
+    btn.classList.add('border-transparent', 'text-gray-500');
+  });
+  document.getElementById(`tab-${tab}`).classList.remove('border-transparent', 'text-gray-500');
+  document.getElementById(`tab-${tab}`).classList.add('border-indigo-600', 'text-indigo-600');
+  
+  // Update content visibility
+  document.querySelectorAll('.teams-tab-content').forEach(content => {
+    content.classList.add('hidden');
+  });
+  document.getElementById(`teams-${tab}`).classList.remove('hidden');
+}
+
+// Apply to join a public team
+async function applyToTeam(teamId) {
+  const message = prompt('请输入申请理由（可选）:');
+  if (message === null) return; // User cancelled
+  
+  try {
+    await axios.post(`/api/teams/${teamId}/apply`, { message });
+    showNotification('申请已提交，请等待团队管理员审批', 'success');
+    await loadTeams(); // Refresh to update button state
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Review team application (approve or reject)
+async function reviewApplication(teamId, applicationId, action) {
+  const actionText = action === 'approve' ? '确认' : '拒绝';
+  if (!confirm(`确定要${actionText}此申请吗？`)) return;
+  
+  try {
+    await axios.post(`/api/teams/${teamId}/applications/${applicationId}/review`, { action });
+    showNotification(action === 'approve' ? '已批准申请' : '已拒绝申请', 'success');
+    await loadTeams(); // Refresh applications list
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
