@@ -1730,10 +1730,10 @@ async function showCreateReview() {
             ` : `
               <div class="w-full px-4 py-3 border border-amber-300 bg-amber-50 rounded-lg">
                 <p class="text-sm text-amber-800">
-                  <i class="fas fa-exclamation-triangle mr-2"></i>你还没有加入任何团队
+                  <i class="fas fa-exclamation-triangle mr-2"></i>${i18n.t('noTeamsYet')}
                 </p>
                 <p class="text-xs text-amber-600 mt-2">
-                  请先前往 <button onclick="showTeams()" class="text-indigo-600 hover:underline font-medium">团队页面</button> 申请加入公开团队或创建新团队。
+                  ${i18n.t('pleaseGoToTeamsPage')} <button onclick="showTeams()" class="text-indigo-600 hover:underline font-medium">${i18n.t('teamsPage')}</button> ${i18n.t('applyOrCreateTeam')}
                 </p>
               </div>
             `}

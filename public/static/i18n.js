@@ -112,6 +112,10 @@ const translations = {
     'inviteSuccess': '邀请成功',
     'userNotFound': '用户不存在',
     'alreadyMember': '该用户已是团队成员',
+    'noTeamsYet': '你还没有加入任何团队',
+    'pleaseGoToTeamsPage': '请先前往',
+    'teamsPage': '团队页面',
+    'applyOrCreateTeam': '申请加入公开团队或创建新团队',
     
     // Team Collaboration
     'teamAnswers': '团队答案',
@@ -474,6 +478,10 @@ const translations = {
     'inviteSuccess': 'Invitation sent successfully',
     'userNotFound': 'User not found',
     'alreadyMember': 'User is already a team member',
+    'noTeamsYet': 'You haven\'t joined any teams yet',
+    'pleaseGoToTeamsPage': 'Please go to',
+    'teamsPage': 'Teams page',
+    'applyOrCreateTeam': 'to apply for public teams or create new teams',
     
     // Team Collaboration
     'teamAnswers': 'Team Answers',
