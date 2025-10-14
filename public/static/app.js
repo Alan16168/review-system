@@ -3014,6 +3014,11 @@ async function showTeamDetail(teamId) {
                               class="text-red-600 hover:text-red-800 text-sm">
                         <i class="fas fa-user-minus"></i>
                       </button>
+                    ` : member.id === currentUser.id ? `
+                      <button onclick="leaveTeam(${teamId})" 
+                              class="text-xs px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700">
+                        <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('leaveTeam')}
+                      </button>
                     ` : ''}
                   </div>
                 </div>
