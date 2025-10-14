@@ -27,7 +27,6 @@ window.saveCurrentReviewDraft = async function() {
     const titleElem = document.getElementById('review-title');
     const descriptionElem = document.getElementById('review-description');
     const templateElem = document.getElementById('review-template');
-    const teamElem = document.getElementById('review-team');
     const groupTypeElem = document.getElementById('review-group-type');
     const timeTypeElem = document.getElementById('review-time-type');
     const statusElems = document.querySelectorAll('input[name="status"]');
@@ -41,8 +40,17 @@ window.saveCurrentReviewDraft = async function() {
     const title = titleElem.value.trim();
     const description = descriptionElem ? descriptionElem.value.trim() : '';
     const template_id = templateElem ? parseInt(templateElem.value) : 1;
-    const team_id = teamElem && teamElem.value ? parseInt(teamElem.value) : null;
     const group_type = groupTypeElem ? groupTypeElem.value : 'personal';
+    
+    // Get team ID based on group type
+    let team_id = null;
+    if (group_type === 'team') {
+      const groupTeamElem = document.getElementById('review-group-team');
+      team_id = groupTeamElem && groupTeamElem.value ? parseInt(groupTeamElem.value) : null;
+    } else {
+      const teamElem = document.getElementById('review-team');
+      team_id = teamElem && teamElem.value ? parseInt(teamElem.value) : null;
+    }
     const time_type = timeTypeElem ? timeTypeElem.value : 'daily';
     
     let status = 'draft';
@@ -1706,13 +1714,30 @@ async function showCreateReview() {
             <label class="block text-sm font-medium text-gray-700 mb-2">
               ${i18n.t('groupType')} <span class="text-red-500">*</span>
             </label>
-            <select id="review-group-type" required
+            <select id="review-group-type" required onchange="handleGroupTypeChange()"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               <option value="personal">${i18n.t('groupTypePersonal')}</option>
               <option value="project">${i18n.t('groupTypeProject')}</option>
               <option value="team">${i18n.t('groupTypeTeam')}</option>
             </select>
           </div>
+
+          <!-- Team Selection (shown when group type is 'team') -->
+          ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams.length > 0 ? `
+          <div id="group-team-selector" style="display: none;">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('selectTeam')} <span class="text-red-500">*</span>
+            </label>
+            <select id="review-group-team"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="">${i18n.t('selectTeam')}</option>
+              ${teams.map(team => `<option value="${team.id}">${escapeHtml(team.name)}</option>`).join('')}
+            </select>
+            <p class="mt-1 text-xs text-gray-500">
+              <i class="fas fa-info-circle mr-1"></i>${i18n.t('teamReviewNote') || '选择团队后，团队成员可以协作编辑'}
+            </p>
+          </div>
+          ` : ''}
 
           <!-- Time Type -->
           <div>
@@ -1779,6 +1804,30 @@ async function showCreateReview() {
 }
 
 // Handle template selection change in step 1
+function handleGroupTypeChange() {
+  const groupType = document.getElementById('review-group-type').value;
+  const teamSelector = document.getElementById('group-team-selector');
+  
+  if (teamSelector) {
+    if (groupType === 'team') {
+      teamSelector.style.display = 'block';
+      // Make team selection required
+      const teamSelect = document.getElementById('review-group-team');
+      if (teamSelect) {
+        teamSelect.setAttribute('required', 'required');
+      }
+    } else {
+      teamSelector.style.display = 'none';
+      // Remove required attribute
+      const teamSelect = document.getElementById('review-group-team');
+      if (teamSelect) {
+        teamSelect.removeAttribute('required');
+        teamSelect.value = ''; // Clear selection
+      }
+    }
+  }
+}
+
 async function handleTemplateChangeStep1() {
   const templateSelect = document.getElementById('review-template');
   const templateId = parseInt(templateSelect.value);
@@ -1807,8 +1856,20 @@ async function handleStep1Submit(e) {
   const title = document.getElementById('review-title').value;
   const description = document.getElementById('review-description').value;
   const templateId = parseInt(document.getElementById('review-template').value);
-  const teamId = document.getElementById('review-team')?.value || null;
   const groupType = document.getElementById('review-group-type').value;
+  
+  // Get team ID based on group type
+  let teamId = null;
+  if (groupType === 'team') {
+    teamId = document.getElementById('review-group-team')?.value || null;
+    if (!teamId) {
+      showNotification(i18n.t('pleaseSelectTeam') || '请选择团队', 'error');
+      return;
+    }
+  } else {
+    teamId = document.getElementById('review-team')?.value || null;
+  }
+  
   const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
