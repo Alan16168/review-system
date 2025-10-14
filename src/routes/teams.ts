@@ -8,8 +8,8 @@ type Bindings = {
 
 const teams = new Hono<{ Bindings: Bindings }>();
 
-// All routes require authentication and premium/admin access
-teams.use('/*', authMiddleware, premiumOrAdmin);
+// All routes require authentication
+teams.use('/*', authMiddleware);
 
 // Get all teams user is member of + public teams
 teams.get('/', async (c) => {
@@ -98,10 +98,16 @@ teams.get('/:id', async (c) => {
   }
 });
 
-// Create team
+// Create team (premium/admin only)
 teams.post('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
+    
+    // Check if user has premium or admin role
+    if (user.role !== 'premium' && user.role !== 'admin') {
+      return c.json({ error: 'Only premium users and admins can create teams' }, 403);
+    }
+    
     const { name, description, isPublic } = await c.req.json();
 
     if (!name) {

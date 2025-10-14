@@ -1110,11 +1110,9 @@ async function showDashboard() {
                 <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                   <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
                 </button>
-                ${(currentUser.role === 'premium' || currentUser.role === 'admin') ? `
-                  <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
-                    <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
-                  </button>
-                ` : ''}
+                <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                  <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
+                </button>
                 ${currentUser.role === 'admin' ? `
                   <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                     <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
@@ -1147,7 +1145,7 @@ async function showDashboard() {
       <div class="max-w-7xl mx-auto px-4 py-8">
         <div id="dashboard-content">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition" onclick="showReviews()">
               <div class="flex items-center justify-between">
                 <div>
                   <p class="text-gray-500 mb-1">${i18n.t('myReviews')}</p>
@@ -1157,17 +1155,15 @@ async function showDashboard() {
               </div>
             </div>
             
-            ${(currentUser.role === 'premium' || currentUser.role === 'admin') ? `
-              <div class="bg-white rounded-lg shadow-lg p-6">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-gray-500 mb-1">${i18n.t('teams')}</p>
-                    <p class="text-3xl font-bold text-green-600" id="team-count">-</p>
-                  </div>
-                  <i class="fas fa-users text-4xl text-green-200"></i>
+            <div class="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition" onclick="showTeams()">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 mb-1">${i18n.t('teams')}</p>
+                  <p class="text-3xl font-bold text-green-600" id="team-count">-</p>
                 </div>
+                <i class="fas fa-users text-4xl text-green-200"></i>
               </div>
-            ` : ''}
+            </div>
             
             <div class="bg-white rounded-lg shadow-lg p-6">
               <div class="flex items-center justify-between">
@@ -1248,9 +1244,14 @@ async function loadDashboardData() {
     
     renderRecentReviews(reviews.slice(0, 5));
     
-    if (currentUser.role === 'premium' || currentUser.role === 'admin') {
+    // Load teams data for all users
+    try {
       const teamsRes = await axios.get('/api/teams');
-      document.getElementById('team-count').textContent = teamsRes.data.teams.length;
+      const myTeamsCount = teamsRes.data.myTeams ? teamsRes.data.myTeams.length : 0;
+      document.getElementById('team-count').textContent = myTeamsCount;
+    } catch (error) {
+      console.error('Load teams error:', error);
+      document.getElementById('team-count').textContent = '0';
     }
   } catch (error) {
     console.error('Load dashboard error:', error);
