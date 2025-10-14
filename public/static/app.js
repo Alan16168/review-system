@@ -4,6 +4,21 @@ let authToken = null;
 let currentView = 'home';
 let currentDraftId = null; // Track the draft ID to avoid creating duplicates
 
+// Helper function to auto-save draft before navigation
+async function autoSaveDraftBeforeNavigation() {
+  if (currentView === 'create-review-step1' || currentView === 'create-review-step2') {
+    try {
+      await window.saveCurrentReviewDraft();
+      showNotification(i18n.t('draftSaved'), 'success');
+      return true; // Draft saved
+    } catch (error) {
+      console.error('Auto-save draft error:', error);
+      return false; // Save failed, but continue
+    }
+  }
+  return false; // No draft to save
+}
+
 // Global function to save current review draft before language switch
 window.saveCurrentReviewDraft = async function() {
   // Check if user is in create-review-step1 or create-review-step2
@@ -195,7 +210,10 @@ function logout() {
 // ============ View Rendering ============
 
 // Home Page (Landing Page)
-function showHomePage() {
+async function showHomePage() {
+  // Auto-save draft before leaving create review page
+  await autoSaveDraftBeforeNavigation();
+  
   currentView = 'home';
   const app = document.getElementById('app');
   
@@ -1061,7 +1079,10 @@ function showRegister() {
   }, 100);
 }
 
-function showDashboard() {
+async function showDashboard() {
+  // Auto-save draft before leaving create review page
+  await autoSaveDraftBeforeNavigation();
+  
   currentView = 'dashboard';
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -1281,6 +1302,9 @@ function renderRecentReviews(reviews) {
 // ============ Reviews Page ============
 
 async function showReviews() {
+  // Auto-save draft before leaving create review page
+  await autoSaveDraftBeforeNavigation();
+  
   currentView = 'reviews';
   const app = document.getElementById('app');
   
@@ -2527,6 +2551,9 @@ async function handleLanguageSwitch() {
 // ============ Teams Management ============
 
 async function showTeams() {
+  // Auto-save draft before leaving create review page
+  await autoSaveDraftBeforeNavigation();
+  
   currentView = 'teams';
   const app = document.getElementById('app');
   
@@ -2949,6 +2976,9 @@ async function leaveTeam(teamId) {
 // ============ Admin Panel ============
 
 async function showAdmin() {
+  // Auto-save draft before leaving create review page
+  await autoSaveDraftBeforeNavigation();
+  
   currentView = 'admin';
   const app = document.getElementById('app');
   
