@@ -3591,10 +3591,19 @@ async function deleteReview(id) {
   
   try {
     await axios.delete(`/api/reviews/${id}`);
-    alert(i18n.t('deleteSuccess'));
-    loadDashboardData();
+    showNotification(i18n.t('deleteSuccess'), 'success');
+    
+    // Refresh the current view
+    if (currentView === 'reviews') {
+      await loadAllReviews();
+    } else if (currentView === 'dashboard') {
+      await loadDashboardData();
+    } else {
+      // For other views like review detail, go back to reviews list
+      await showReviews();
+    }
   } catch (error) {
-    alert(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message));
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
 
