@@ -75,7 +75,7 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://e054287b.review-system.pages.dev (V4.1.2 + 团队选择器)
+- **最新部署**: https://21e36b1f.review-system.pages.dev (V4.1.2 + 成员退出团队)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
 - **部署日期**: 2025-10-14 (V4.1.2 完整版)
@@ -756,6 +756,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ✅ **Google账号一键登录/注册** 【V3.3 新增】
 ✅ **团队协作复盘功能** 【V3.9 新增】
 ✅ **复盘列表分页功能（每页5条，支持上一页/下一页）** 【V4.1.2 新增】
+✅ **团队成员退出权限（成员可主动退出团队）** 【V4.1.2 新增】
 ✅ 中英双语支持
 ✅ 响应式前端界面
 ✅ API 接口完整实现
@@ -875,6 +876,12 @@ MIT License
   - 选择"个人"或"项目"时自动隐藏团队选择器
   - 选择"团队"时团队选择变为必填项
   - 防止忘记选择团队导致的创建失败
+- 🚪 **成员退出团队功能**（新增功能）：
+  - 团队成员可以在团队详情页面主动退出团队
+  - 在成员列表中，每个成员（除拥有者外）都有"退出团队"按钮
+  - 点击后需要确认操作，防止误操作
+  - 退出后自动返回团队列表页面
+  - 团队拥有者无法退出，只能解散团队
 - 🌐 **新增国际化键**：confirmLanguageSwitch, savingDraft, draftSaved, switchingLanguage, previousPage, nextPage, showing, to, of, results, pleaseSelectTeam
 - ✅ **修复问题**：
   - V4.1.2初始版本：切换语言时未保存的复盘内容丢失
