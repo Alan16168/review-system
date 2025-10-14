@@ -2,9 +2,11 @@ import { Hono } from 'hono';
 import { authMiddleware, adminOnly } from '../middleware/auth';
 import { getAllUsers, updateUserRole, deleteUser, getUserByEmail, createUser, getUserById } from '../utils/db';
 import { hashPassword } from '../utils/auth';
+import { sendEmail } from '../utils/email';
 
 type Bindings = {
   DB: D1Database;
+  RESEND_API_KEY?: string;
 };
 
 const admin = new Hono<{ Bindings: Bindings }>();
@@ -136,6 +138,68 @@ admin.get('/stats', async (c) => {
   } catch (error) {
     console.error('Get stats error:', error);
     return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Test email sending (Admin only - for debugging)
+admin.post('/test-email', async (c) => {
+  try {
+    const { email } = await c.req.json();
+
+    if (!email) {
+      return c.json({ error: 'Email is required' }, 400);
+    }
+
+    if (!c.env.RESEND_API_KEY) {
+      return c.json({ 
+        error: 'RESEND_API_KEY not configured',
+        debug: {
+          hasApiKey: false
+        }
+      }, 500);
+    }
+
+    // Test Resend API directly
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'Review System <onboarding@resend.dev>',
+        to: email,
+        subject: 'Test Email - Review System',
+        html: '<h1>Test Email</h1><p>This is a test email from Review System admin panel.</p>',
+      }),
+    });
+
+    const responseText = await response.text();
+    let responseJson;
+    try {
+      responseJson = JSON.parse(responseText);
+    } catch {
+      responseJson = { raw: responseText };
+    }
+
+    return c.json({
+      success: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      response: responseJson,
+      debug: {
+        to: email,
+        from: 'Review System <onboarding@resend.dev>',
+        hasApiKey: true,
+        apiKeyPrefix: c.env.RESEND_API_KEY.substring(0, 10) + '...'
+      }
+    });
+  } catch (error) {
+    console.error('Test email error:', error);
+    return c.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 });
 
