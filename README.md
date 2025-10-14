@@ -81,10 +81,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://f4fc906f.review-system.pages.dev (V4.2.3 修复i18n)
+- **最新部署**: https://19611759.review-system.pages.dev (V4.2.4 Previous按钮保留数据)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-14 (V4.2.3 i18n修复)
+- **部署日期**: 2025-10-14 (V4.2.4 Previous按钮修复)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -849,7 +849,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-14
-- **当前版本**: V4.2.3 完整版（i18n修复）🎉
+- **当前版本**: V4.2.4 完整版（Previous按钮保留数据）🎉
 
 ## 📝 许可证
 
@@ -859,7 +859,20 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V4.2.3  
+**当前版本**: V4.2.4  
+
+**V4.2.4 更新内容** (2025-10-14):
+- 🔄 **Previous按钮数据保留**（核心修复）：
+  - 修改showCreateReview()函数，添加可选参数preservedData
+  - 从Step 2点击Previous返回Step 1时自动恢复所有表单数据
+  - 保留用户输入的标题、说明、模板选择、群体类型、团队选择、时间类型、状态
+  - 自动恢复UI状态（团队选择器的显示/隐藏）
+  - 自动更新模板描述信息
+- 🎯 **用户体验改进**：
+  - 用户可以自由在Step 1和Step 2之间切换而不丢失数据
+  - 支持修改Step 1的信息后继续填写Step 2
+  - 防止因误操作返回导致的数据丢失
+- ✅ **修复问题**：从Step 2点击Previous返回Step 1时表单数据被清空的问题
 
 **V4.2.3 更新内容** (2025-10-14):
 - 🌍 **国际化修复**（核心修复）：
