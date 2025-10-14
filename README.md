@@ -81,10 +81,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://21e36b1f.review-system.pages.dev (V4.1.2 + 成员退出团队)
+- **最新部署**: https://2739b456.review-system.pages.dev (V4.2.0 团队申请系统)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-14 (V4.1.2 完整版)
+- **部署日期**: 2025-10-14 (V4.2.0 团队申请系统)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
