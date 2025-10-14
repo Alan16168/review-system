@@ -19,7 +19,7 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Review System <noreply@resend.dev>', // Will be replaced with your domain
+        from: 'Review System <onboarding@resend.dev>', // Using Resend's onboarding domain for testing
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -29,10 +29,20 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Failed to send email:', error);
+      console.error('Failed to send email via Resend:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: error,
+        to: options.to
+      });
       return false;
     }
 
+    const result = await response.json();
+    console.log('Email sent successfully via Resend:', {
+      id: result.id,
+      to: options.to
+    });
     return true;
   } catch (error) {
     console.error('Email send error:', error);
