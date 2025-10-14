@@ -81,10 +81,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://19611759.review-system.pages.dev (V4.2.4 Previous按钮保留数据)
+- **最新部署**: https://72e56111.review-system.pages.dev (V4.2.5 邮件发送修复)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-14 (V4.2.4 Previous按钮修复)
+- **部署日期**: 2025-10-15 (V4.2.5 邮件发送修复)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -848,8 +848,8 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **Google API**: ✅ 已配置（YouTube + Custom Search）
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
-- **最后更新**: 2025-10-14
-- **当前版本**: V4.2.4 完整版（Previous按钮保留数据）🎉
+- **最后更新**: 2025-10-15
+- **当前版本**: V4.2.5 完整版（邮件发送修复）🎉
 
 ## 📝 许可证
 
@@ -859,7 +859,19 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V4.2.4  
+**当前版本**: V4.2.5  
+
+**V4.2.5 更新内容** (2025-10-15):
+- 📧 **密码重置邮件修复**（核心修复）：
+  - 修改发件地址从 `noreply@resend.dev` 到 `onboarding@resend.dev`
+  - 使用 Resend 官方测试域名确保邮件能够发送
+  - 增强邮件发送错误日志，记录详细的失败信息
+  - 邮件发送成功时记录邮件ID便于追踪
+- 📝 **新增排查文档**：
+  - 创建 `PASSWORD_RESET_TROUBLESHOOTING.md` 详细排查指南
+  - 包含常见问题、解决方案、测试方法
+  - 提供自定义域名配置指引
+- ✅ **修复问题**：用户请求密码重置后收不到邮件的问题
 
 **V4.2.4 更新内容** (2025-10-14):
 - 🔄 **Previous按钮数据保留**（核心修复）：
