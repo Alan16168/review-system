@@ -17,6 +17,24 @@ const reviews = new Hono<{ Bindings: Bindings }>();
 // All routes require authentication
 reviews.use('/*', authMiddleware);
 
+// Helper function to get language from request
+function getLanguage(c: any): string {
+  // Try X-Language header first
+  const xLanguage = c.req.header('X-Language');
+  if (xLanguage && (xLanguage === 'en' || xLanguage === 'zh')) {
+    return xLanguage;
+  }
+  
+  // Try Accept-Language header
+  const acceptLanguage = c.req.header('Accept-Language') || '';
+  if (acceptLanguage.includes('zh')) {
+    return 'zh';
+  }
+  
+  // Default to English
+  return 'en';
+}
+
 // Get all reviews (personal and team reviews the user has access to)
 reviews.get('/', async (c) => {
   try {
@@ -49,10 +67,12 @@ reviews.get('/:id', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const reviewId = c.req.param('id');
+    const lang = getLanguage(c);
 
     const query = `
       SELECT r.*, u.username as creator_name, t.name as team_name, 
-             tp.name as template_name, tp.description as template_description
+             CASE WHEN ? = 'en' AND tp.name_en IS NOT NULL THEN tp.name_en ELSE tp.name END as template_name,
+             CASE WHEN ? = 'en' AND tp.description_en IS NOT NULL THEN tp.description_en ELSE tp.description END as template_description
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
       LEFT JOIN teams t ON r.team_id = t.id
@@ -64,19 +84,21 @@ reviews.get('/:id', async (c) => {
       )
     `;
 
-    const review: any = await c.env.DB.prepare(query).bind(reviewId, user.id, user.id, user.id).first();
+    const review: any = await c.env.DB.prepare(query).bind(lang, lang, reviewId, user.id, user.id, user.id).first();
 
     if (!review) {
       return c.json({ error: 'Review not found or access denied' }, 404);
     }
 
-    // Get template questions
+    // Get template questions with language-specific text
     const questionsResult = await c.env.DB.prepare(`
-      SELECT question_number, question_text
+      SELECT 
+        question_number,
+        CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
-    `).bind(review.template_id).all();
+    `).bind(lang, review.template_id).all();
 
     // Get review answers
     const answersResult = await c.env.DB.prepare(`

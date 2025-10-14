@@ -28,6 +28,9 @@ function checkAuth() {
   const token = localStorage.getItem('authToken');
   const user = localStorage.getItem('user');
   
+  // Always set language header based on current i18n language
+  axios.defaults.headers.common['X-Language'] = i18n.getCurrentLanguage();
+  
   if (token && user) {
     authToken = token;
     currentUser = JSON.parse(user);

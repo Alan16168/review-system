@@ -713,6 +713,10 @@ class I18n {
     if (translations[lang]) {
       this.currentLang = lang;
       localStorage.setItem('language', lang);
+      // Update axios header before reload
+      if (typeof axios !== 'undefined') {
+        axios.defaults.headers.common['X-Language'] = lang;
+      }
       window.location.reload();
     }
   }
