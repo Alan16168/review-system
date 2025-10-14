@@ -1615,29 +1615,36 @@ function renderReviewsList(reviews) {
 
 // Step 1: Basic info and template selection
 async function showCreateReview() {
-  currentView = 'create-review-step1';
-  currentDraftId = null; // Reset draft ID when starting new review
-  const app = document.getElementById('app');
-  
-  // Load templates
-  let templates = [];
   try {
-    const response = await axios.get('/api/templates');
-    templates = response.data.templates;
-  } catch (error) {
-    console.error('Load templates error:', error);
-  }
-  
-  // Load teams for all users (needed for team review creation)
-  let teams = [];
-  try {
-    const response = await axios.get('/api/teams');
-    // Get user's teams (teams where user is a member)
-    teams = response.data.myTeams || [];
-  } catch (error) {
-    console.error('Load teams error:', error);
-    teams = [];
-  }
+    currentView = 'create-review-step1';
+    currentDraftId = null; // Reset draft ID when starting new review
+    const app = document.getElementById('app');
+    
+    // Load templates
+    let templates = [];
+    try {
+      const response = await axios.get('/api/templates');
+      templates = response.data.templates;
+      if (!templates || templates.length === 0) {
+        showNotification('No templates available. Please contact administrator.', 'error');
+        return;
+      }
+    } catch (error) {
+      console.error('Load templates error:', error);
+      showNotification(i18n.t('operationFailed') + ': Cannot load templates', 'error');
+      return;
+    }
+    
+    // Load teams for all users (needed for team review creation)
+    let teams = [];
+    try {
+      const response = await axios.get('/api/teams');
+      // Get user's teams (teams where user is a member)
+      teams = response.data.myTeams || [];
+    } catch (error) {
+      console.error('Load teams error:', error);
+      teams = [];
+    }
   
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
@@ -1795,6 +1802,12 @@ async function showCreateReview() {
   
   // Initialize with default template
   handleTemplateChangeStep1();
+  
+  } catch (error) {
+    console.error('Show create review error:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + error.message, 'error');
+    showReviews(); // Fall back to reviews list
+  }
 }
 
 // Handle template selection change in step 1
