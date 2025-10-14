@@ -75,15 +75,15 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://357cd272.review-system.pages.dev (V4.1.2)
+- **最新部署**: https://441ea0aa.review-system.pages.dev (V4.1.2 Bug修复 #2)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-14 (V4.1.2)
+- **部署日期**: 2025-10-14 (V4.1.2 完整版 - 导航自动保存)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
-- **资源 API - 文章**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev/api/resources/articles
-- **资源 API - 视频**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev/api/resources/videos
+- **Git Commit**: 1cd8b7d (导航自动保存功能)
+- **本地端口**: 3000 (PM2 管理)
 
 ### 测试账号
 | 角色 | 邮箱 | 密码 | 权限 |
@@ -827,7 +827,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-14
-- **当前版本**: V4.1.2 🎉
+- **当前版本**: V4.1.2 完整版（包含Bug修复 #1 和 #2）🎉
 
 ## 📝 许可证
 
