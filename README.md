@@ -81,10 +81,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://85c0bc35.review-system.pages.dev (V4.2.6 更新Resend API Key)
+- **最新部署**: https://0963977c.review-system.pages.dev (V4.2.7 修复404错误)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-15 (V4.2.6 API Key更新)
+- **部署日期**: 2025-10-15 (V4.2.7 重置链接修复)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -849,7 +849,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-15
-- **当前版本**: V4.2.6 完整版（Resend API Key已更新）🎉
+- **当前版本**: V4.2.7 完整版（密码重置链接404修复）🎉
 
 ## 📝 许可证
 
@@ -859,7 +859,20 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V4.2.6  
+**当前版本**: V4.2.7  
+
+**V4.2.7 更新内容** (2025-10-15):
+- 🔗 **修复密码重置链接404错误**（关键修复）：
+  - 问题：邮件中的 `/reset-password?token=xxx` 路径在 SPA 中返回404
+  - 解决：修改为根路径 `/?token=xxx`，通过 URL 参数传递 token
+  - 前端正确检测 token 参数并显示重置密码表单
+- 📧 **邮箱注册验证**：
+  - 解释未注册邮箱无法收到重置邮件的原因（安全设计）
+  - 提供清晰的用户指引和解决方案
+- 📝 **新增问题解决文档**：
+  - 创建 `PASSWORD_RESET_ISSUES_RESOLVED.md` 详细说明
+  - 包含问题分析、解决方案、测试验证、用户指南
+- ✅ **修复问题**：用户点击邮件中的密码重置链接显示404错误
 
 **V4.2.6 更新内容** (2025-10-15):
 - 🔑 **更新 Resend API Key**（关键修复）：
