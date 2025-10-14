@@ -2,14 +2,80 @@
 let currentUser = null;
 let authToken = null;
 let currentView = 'home';
+let currentDraftId = null; // Track the draft ID to avoid creating duplicates
 
 // Global function to save current review draft before language switch
 window.saveCurrentReviewDraft = async function() {
   // Check if user is in create-review-step1 or create-review-step2
   if (currentView === 'create-review-step1') {
-    // Step 1: Just collect data, no need to save to server
-    // The data will be preserved in window.createReviewData when switching language
-    return Promise.resolve();
+    // Step 1: Collect form data and save to server
+    const titleElem = document.getElementById('review-title');
+    const descriptionElem = document.getElementById('review-description');
+    const templateElem = document.getElementById('review-template');
+    const teamElem = document.getElementById('review-team');
+    const groupTypeElem = document.getElementById('review-group-type');
+    const timeTypeElem = document.getElementById('review-time-type');
+    const statusElems = document.querySelectorAll('input[name="status"]');
+    
+    // Check if title is filled
+    if (!titleElem || !titleElem.value.trim()) {
+      // No title, can't save draft
+      return Promise.resolve();
+    }
+    
+    const title = titleElem.value.trim();
+    const description = descriptionElem ? descriptionElem.value.trim() : '';
+    const template_id = templateElem ? parseInt(templateElem.value) : 1;
+    const team_id = teamElem && teamElem.value ? parseInt(teamElem.value) : null;
+    const group_type = groupTypeElem ? groupTypeElem.value : 'personal';
+    const time_type = timeTypeElem ? timeTypeElem.value : 'daily';
+    
+    let status = 'draft';
+    statusElems.forEach(elem => {
+      if (elem.checked) status = elem.value;
+    });
+    
+    // Check if we already saved a draft for this session
+    if (currentDraftId) {
+      // Update existing draft instead of creating new one
+      const data = {
+        title,
+        description: description || null,
+        group_type,
+        time_type,
+        status: 'draft',
+        answers: {}
+      };
+      
+      try {
+        await axios.put(`/api/reviews/${currentDraftId}`, data);
+        return Promise.resolve();
+      } catch (error) {
+        console.error('Failed to update draft from step 1:', error);
+        return Promise.reject(error);
+      }
+    } else {
+      // Create new draft
+      const data = {
+        title,
+        description: description || null,
+        template_id,
+        team_id,
+        group_type,
+        time_type,
+        status: 'draft',
+        answers: {}
+      };
+      
+      try {
+        const response = await axios.post('/api/reviews', data);
+        currentDraftId = response.data.id; // Store draft ID
+        return Promise.resolve();
+      } catch (error) {
+        console.error('Failed to save draft from step 1:', error);
+        return Promise.reject(error);
+      }
+    }
   }
   
   if (currentView === 'create-review-step2') {
@@ -32,19 +98,41 @@ window.saveCurrentReviewDraft = async function() {
       });
     }
     
-    // Save as draft
-    const data = {
-      ...reviewData,
-      answers,
-      status: 'draft'  // Force draft status
-    };
-    
-    try {
-      await axios.post('/api/reviews', data);
-      return Promise.resolve();
-    } catch (error) {
-      console.error('Failed to save draft:', error);
-      return Promise.reject(error);
+    // Check if we already saved a draft for this session
+    if (currentDraftId) {
+      // Update existing draft
+      const data = {
+        title: reviewData.title,
+        description: reviewData.description || null,
+        group_type: reviewData.group_type,
+        time_type: reviewData.time_type,
+        status: 'draft',
+        answers
+      };
+      
+      try {
+        await axios.put(`/api/reviews/${currentDraftId}`, data);
+        return Promise.resolve();
+      } catch (error) {
+        console.error('Failed to update draft from step 2:', error);
+        return Promise.reject(error);
+      }
+    } else {
+      // Create new draft
+      const data = {
+        ...reviewData,
+        answers,
+        status: 'draft'
+      };
+      
+      try {
+        const response = await axios.post('/api/reviews', data);
+        currentDraftId = response.data.id; // Store draft ID
+        return Promise.resolve();
+      } catch (error) {
+        console.error('Failed to save draft from step 2:', error);
+        return Promise.reject(error);
+      }
     }
   }
   
@@ -1422,6 +1510,7 @@ function renderReviewsList(reviews) {
 // Step 1: Basic info and template selection
 async function showCreateReview() {
   currentView = 'create-review-step1';
+  currentDraftId = null; // Reset draft ID when starting new review
   const app = document.getElementById('app');
   
   // Load templates
@@ -1738,6 +1827,7 @@ async function handleStep2Submit(e) {
 
   try {
     await axios.post('/api/reviews', data);
+    currentDraftId = null; // Clear draft ID after successful submission
     showNotification(i18n.t('createSuccess'), 'success');
     showReviews();
   } catch (error) {
