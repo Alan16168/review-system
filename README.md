@@ -75,10 +75,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://4c46f11e.review-system.pages.dev (V4.1.2 + 分页功能)
+- **最新部署**: https://c8999258.review-system.pages.dev (V4.1.2 + 删除刷新修复)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-14 (V4.1.2 完整版 + 分页功能)
+- **部署日期**: 2025-10-14 (V4.1.2 完整版)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -879,6 +879,10 @@ MIT License
   - **V4.1.2 Bug修复 #2**：
     - 修复点击导航按钮（主页、仪表板等）时未保存草稿导致数据丢失的问题
     - 现在所有导航操作都会自动保存草稿
+  - **V4.1.2 Bug修复 #3**：
+    - 修复删除复盘后页面不自动刷新的问题
+    - 删除后根据当前视图自动刷新列表（我的复盘/仪表板）
+    - 使用友好的通知提示替代传统 alert 弹窗
 
 **V4.1.1 更新内容** (2025-10-14):
 - 🌍 **模板内容国际化**（核心修复）：
