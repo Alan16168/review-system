@@ -1368,8 +1368,9 @@ function renderReviewsList(reviews) {
 
 // ============ Create/Edit Review ============
 
+// Step 1: Basic info and template selection
 async function showCreateReview() {
-  currentView = 'create-review';
+  currentView = 'create-review-step1';
   const app = document.getElementById('app');
   
   // Load templates
@@ -1431,7 +1432,7 @@ async function showCreateReview() {
             <label class="block text-sm font-medium text-gray-700 mb-2">
               ${i18n.t('template')} <span class="text-red-500">*</span>
             </label>
-            <select id="review-template" required onchange="handleTemplateChange()"
+            <select id="review-template" required onchange="handleTemplateChangeStep1()"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               ${templates.map(template => `
                 <option value="${template.id}" ${template.is_default ? 'selected' : ''}>
@@ -1491,11 +1492,6 @@ async function showCreateReview() {
             </select>
           </div>
 
-          <!-- Dynamic Questions -->
-          <div id="questions-container" class="border-t pt-6">
-            <!-- Questions will be loaded dynamically based on template -->
-          </div>
-
           <!-- Status -->
           <div class="border-t pt-6">
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -1527,7 +1523,7 @@ async function showCreateReview() {
             </button>
             <button type="submit" 
                     class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
-              <i class="fas fa-save mr-2"></i>${i18n.t('save')}
+              <i class="fas fa-arrow-right mr-2"></i>${i18n.t('next') || '下一步'}
             </button>
           </div>
         </form>
@@ -1535,17 +1531,18 @@ async function showCreateReview() {
     </div>
   `;
 
-  document.getElementById('review-form').addEventListener('submit', handleCreateReview);
+  document.getElementById('review-form').addEventListener('submit', handleStep1Submit);
   
-  // Store templates in global variable for access
+  // Store templates and teams in global variable for access
   window.currentTemplates = templates;
+  window.currentTeams = teams;
   
   // Initialize with default template
-  handleTemplateChange();
+  handleTemplateChangeStep1();
 }
 
-// Handle template selection change
-async function handleTemplateChange() {
+// Handle template selection change in step 1
+async function handleTemplateChangeStep1() {
   const templateSelect = document.getElementById('review-template');
   const templateId = parseInt(templateSelect.value);
   const template = window.currentTemplates.find(t => t.id === templateId);
@@ -1561,38 +1558,118 @@ async function handleTemplateChange() {
     templateInfo.style.display = 'none';
   }
   
-  // Render questions
-  const questionsContainer = document.getElementById('questions-container');
-  questionsContainer.innerHTML = `
-    <h2 class="text-xl font-bold text-gray-800 mb-4">
-      <i class="fas fa-question-circle mr-2"></i>${escapeHtml(template.name)}
-    </h2>
-    ${template.questions.map(q => `
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          ${q.question_number}. ${escapeHtml(q.question_text)}
-        </label>
-        <textarea id="question${q.question_number}" rows="3"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                  placeholder="${escapeHtml(q.question_text)}"></textarea>
-      </div>
-    `).join('')}
-  `;
+  // Show question count
+  const questionCount = template.questions ? template.questions.length : 0;
+  templateInfo.querySelector('p').textContent = template.description + `\n\n共${questionCount}个问题`;
 }
 
-async function handleCreateReview(e) {
+// Handle step 1 form submission
+async function handleStep1Submit(e) {
   e.preventDefault();
   
   const title = document.getElementById('review-title').value;
   const description = document.getElementById('review-description').value;
-  const templateId = document.getElementById('review-template').value;
+  const templateId = parseInt(document.getElementById('review-template').value);
   const teamId = document.getElementById('review-team')?.value || null;
   const groupType = document.getElementById('review-group-type').value;
   const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
+  // Store data for step 2
+  window.createReviewData = {
+    title,
+    description,
+    template_id: templateId,
+    team_id: teamId || null,
+    group_type: groupType,
+    time_type: timeType,
+    status
+  };
+  
+  // Get template
+  const template = window.currentTemplates.find(t => t.id === templateId);
+  
+  // Go to step 2
+  showCreateReviewStep2(template);
+}
+
+// Step 2: Fill in questions based on template
+async function showCreateReviewStep2(template) {
+  currentView = 'create-review-step2';
+  const app = document.getElementById('app');
+  
+  const reviewData = window.createReviewData;
+  
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-50">
+      ${renderNavigation()}
+      
+      <div class="max-w-4xl mx-auto px-4 py-8">
+        <div class="mb-6">
+          <button onclick="showCreateReview()" class="text-indigo-600 hover:text-indigo-800 mb-4">
+            <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
+          </button>
+          <h1 class="text-3xl font-bold text-gray-800">
+            <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createReview')} - ${i18n.t('step') || '步骤'} 2/2
+          </h1>
+          <p class="text-sm text-gray-600 mt-2">
+            ${i18n.t('reviewTitle')}: ${escapeHtml(reviewData.title)} | ${i18n.t('template')}: ${escapeHtml(template.name)}
+          </p>
+        </div>
+
+        <!-- Template Description -->
+        ${template.description ? `
+        <div class="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-4 mb-6">
+          <h3 class="text-sm font-semibold text-blue-800 mb-2">
+            <i class="fas fa-info-circle mr-2"></i>${i18n.t('templateDescription')}
+          </h3>
+          <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(template.description)}</p>
+        </div>
+        ` : ''}
+
+        <form id="questions-form" class="space-y-6">
+          <!-- Dynamic Questions -->
+          ${template.questions.map(q => `
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${q.question_number}. ${escapeHtml(q.question_text)}
+              </label>
+              <textarea id="question${q.question_number}" rows="4"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                        placeholder="${escapeHtml(q.question_text)}"></textarea>
+            </div>
+          `).join('')}
+
+          <!-- Actions -->
+          <div class="flex justify-between space-x-4 pt-6 border-t bg-white rounded-lg shadow-md p-6 sticky bottom-0">
+            <button type="button" onclick="showCreateReview()" 
+                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-arrow-left mr-2"></i>${i18n.t('previous') || '上一步'}
+            </button>
+            <button type="submit" 
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
+              <i class="fas fa-save mr-2"></i>${i18n.t('save')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('questions-form').addEventListener('submit', handleStep2Submit);
+  
+  // Store template for later use
+  window.currentSelectedTemplate = template;
+}
+
+// Handle step 2 form submission (save review)
+async function handleStep2Submit(e) {
+  e.preventDefault();
+  
+  const template = window.currentSelectedTemplate;
+  const reviewData = window.createReviewData;
+  
   // Collect answers dynamically
-  const template = window.currentTemplates.find(t => t.id == templateId);
   const answers = {};
   if (template && template.questions) {
     template.questions.forEach(q => {
@@ -1604,13 +1681,7 @@ async function handleCreateReview(e) {
   }
   
   const data = {
-    title,
-    description: description || null,
-    template_id: parseInt(templateId),
-    team_id: teamId || null,
-    group_type: groupType,
-    time_type: timeType,
-    status,
+    ...reviewData,
     answers
   };
 
@@ -1622,6 +1693,8 @@ async function handleCreateReview(e) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
+
+// Old handleCreateReview function removed - now using two-step process
 
 // ============ Review Detail & Edit ============
 
