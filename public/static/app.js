@@ -1616,7 +1616,6 @@ function renderReviewsList(reviews) {
 // Step 1: Basic info and template selection
 async function showCreateReview() {
   try {
-    currentView = 'create-review-step1';
     currentDraftId = null; // Reset draft ID when starting new review
     const app = document.getElementById('app');
     
@@ -1645,6 +1644,9 @@ async function showCreateReview() {
       console.error('Load teams error:', error);
       teams = [];
     }
+    
+    // Set currentView only after all data is loaded successfully
+    currentView = 'create-review-step1';
   
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
