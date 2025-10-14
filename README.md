@@ -856,12 +856,20 @@ MIT License
     - 开始新复盘时重置 currentDraftId
     - 完成复盘提交后清除 currentDraftId
 - 🌐 **新增国际化键**：confirmLanguageSwitch, savingDraft, draftSaved, switchingLanguage
+- 🚀 **导航自动保存**（新增功能）：
+  - 所有导航按钮（主页、仪表板、我的复盘、团队、管理后台）在离开创建复盘页面前自动保存草稿
+  - 新增 autoSaveDraftBeforeNavigation() 辅助函数统一处理自动保存
+  - 修改 5 个导航函数：showHomePage(), showDashboard(), showReviews(), showTeams(), showAdmin()
+  - 防止用户在创建复盘时因点击导航按钮而丢失数据
 - ✅ **修复问题**：
   - V4.1.2初始版本：切换语言时未保存的复盘内容丢失
-  - **V4.1.2 Bug修复**：
+  - **V4.1.2 Bug修复 #1**：
     - 修复Step 1切换语言后草稿不出现在"我的复盘"列表的问题
     - 修复多次切换语言会创建多个草稿副本的问题
     - 确保草稿正确保存到服务器并可在列表中查看
+  - **V4.1.2 Bug修复 #2**：
+    - 修复点击导航按钮（主页、仪表板等）时未保存草稿导致数据丢失的问题
+    - 现在所有导航操作都会自动保存草稿
 
 **V4.1.1 更新内容** (2025-10-14):
 - 🌍 **模板内容国际化**（核心修复）：
