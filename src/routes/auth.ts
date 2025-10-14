@@ -241,7 +241,8 @@ auth.post('/request-password-reset', async (c) => {
 
     // Get app URL from environment or use default
     const appUrl = c.env.APP_URL || 'https://review-system.pages.dev';
-    const resetUrl = `${appUrl}/reset-password?token=${token}`;
+    // Use root path with token parameter for SPA routing
+    const resetUrl = `${appUrl}/?token=${token}`;
 
     // Send email with Resend
     if (c.env.RESEND_API_KEY) {
