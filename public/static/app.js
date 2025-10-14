@@ -3202,23 +3202,18 @@ async function showTeamDetail(teamId) {
 
 async function inviteMember(teamId, email) {
   try {
-    // First, find user by email
-    const usersResponse = await axios.get('/api/admin/users');
-    const user = usersResponse.data.users.find(u => u.email === email);
-    
-    if (!user) {
-      showNotification(i18n.t('userNotFound'), 'error');
-      return;
-    }
-
-    await axios.post(`/api/teams/${teamId}/members`, { user_id: user.id });
+    // Add member by email (backend will find user)
+    await axios.post(`/api/teams/${teamId}/members`, { email });
     showNotification(i18n.t('inviteSuccess'), 'success');
     showTeamDetail(teamId);
   } catch (error) {
-    if (error.response?.status === 403) {
+    const errorMsg = error.response?.data?.error || error.message;
+    if (error.response?.status === 404) {
+      showNotification(i18n.t('userNotFound'), 'error');
+    } else if (error.response?.status === 400 && errorMsg.includes('already a member')) {
       showNotification(i18n.t('alreadyMember'), 'error');
     } else {
-      showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+      showNotification(i18n.t('operationFailed') + ': ' + errorMsg, 'error');
     }
   }
 }

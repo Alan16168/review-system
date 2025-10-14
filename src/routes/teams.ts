@@ -186,12 +186,12 @@ teams.delete('/:id', async (c) => {
   }
 });
 
-// Add member to team
+// Add member to team (by user_id or email)
 teams.post('/:id/members', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const teamId = c.req.param('id');
-    const { user_id } = await c.req.json();
+    const { user_id, email, role = 'viewer' } = await c.req.json();
 
     // Check if current user is the owner
     const team = await c.env.DB.prepare(
@@ -202,21 +202,41 @@ teams.post('/:id/members', async (c) => {
       return c.json({ error: 'Only owner can add members' }, 403);
     }
 
-    // Check if target user exists
-    const targetUser = await c.env.DB.prepare(
-      'SELECT * FROM users WHERE id = ?'
-    ).bind(user_id).first();
+    // Find target user by ID or email
+    let targetUser;
+    if (user_id) {
+      targetUser = await c.env.DB.prepare(
+        'SELECT * FROM users WHERE id = ?'
+      ).bind(user_id).first();
+    } else if (email) {
+      targetUser = await c.env.DB.prepare(
+        'SELECT * FROM users WHERE email = ?'
+      ).bind(email).first();
+    } else {
+      return c.json({ error: 'User ID or email is required' }, 400);
+    }
 
     if (!targetUser) {
       return c.json({ error: 'User not found' }, 404);
     }
 
-    // Default role is 'viewer' for new members
-    const { role = 'viewer' } = await c.req.json();
+    // Check if user is already a member
+    const existingMember = await c.env.DB.prepare(
+      'SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ?'
+    ).bind(teamId, targetUser.id).first();
+
+    if (existingMember) {
+      return c.json({ error: 'User is already a member of this team' }, 400);
+    }
+
+    // Validate role
+    if (!['creator', 'viewer', 'operator'].includes(role)) {
+      return c.json({ error: 'Invalid role. Must be creator, viewer, or operator' }, 400);
+    }
     
     await c.env.DB.prepare(
-      'INSERT OR IGNORE INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)'
-    ).bind(teamId, user_id, role).run();
+      'INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)'
+    ).bind(teamId, targetUser.id, role).run();
 
     return c.json({ message: 'Member added successfully' });
   } catch (error) {
