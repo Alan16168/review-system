@@ -33,7 +33,8 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
         status: response.status,
         statusText: response.statusText,
         error: error,
-        to: options.to
+        to: options.to,
+        apiKeyPrefix: apiKey.substring(0, 10) + '...'
       });
       return false;
     }
@@ -41,7 +42,8 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
     const result = await response.json();
     console.log('Email sent successfully via Resend:', {
       id: result.id,
-      to: options.to
+      to: options.to,
+      from: 'Review System <onboarding@resend.dev>'
     });
     return true;
   } catch (error) {
