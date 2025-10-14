@@ -219,9 +219,14 @@ auth.post('/request-password-reset', async (c) => {
     // Get user by email
     const user = await getUserByEmail(c.env.DB, email);
     
+    // Log for debugging (remove in production)
+    console.log('[Password Reset] Email requested:', email);
+    console.log('[Password Reset] User found:', user ? `Yes (id: ${user.id}, email: ${user.email})` : 'No');
+    
     // Always return success message to prevent email enumeration
     // Don't reveal whether email exists or not
     if (!user) {
+      console.log('[Password Reset] User not found, skipping email send');
       return c.json({ 
         message: 'If your email is registered, you will receive a password reset link shortly.' 
       });
@@ -245,6 +250,7 @@ auth.post('/request-password-reset', async (c) => {
     const resetUrl = `${appUrl}/?token=${token}`;
 
     // Send email with Resend
+    console.log('[Password Reset] Attempting to send email to:', user.email);
     if (c.env.RESEND_API_KEY) {
       const emailSent = await sendPasswordResetEmail(
         c.env.RESEND_API_KEY,
@@ -254,8 +260,10 @@ auth.post('/request-password-reset', async (c) => {
       );
 
       if (!emailSent) {
-        console.error('Failed to send password reset email');
+        console.error('[Password Reset] Failed to send email to:', user.email);
         // Don't return error to user, just log it
+      } else {
+        console.log('[Password Reset] Email sent successfully to:', user.email);
       }
     } else {
       console.error('RESEND_API_KEY not configured');
