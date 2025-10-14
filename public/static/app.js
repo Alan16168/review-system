@@ -3,6 +3,54 @@ let currentUser = null;
 let authToken = null;
 let currentView = 'home';
 
+// Global function to save current review draft before language switch
+window.saveCurrentReviewDraft = async function() {
+  // Check if user is in create-review-step1 or create-review-step2
+  if (currentView === 'create-review-step1') {
+    // Step 1: Just collect data, no need to save to server
+    // The data will be preserved in window.createReviewData when switching language
+    return Promise.resolve();
+  }
+  
+  if (currentView === 'create-review-step2') {
+    // Step 2: Save as draft to server
+    const template = window.currentSelectedTemplate;
+    const reviewData = window.createReviewData;
+    
+    if (!template || !reviewData) {
+      return Promise.resolve();
+    }
+    
+    // Collect answers
+    const answers = {};
+    if (template.questions) {
+      template.questions.forEach(q => {
+        const answerElem = document.getElementById(`question${q.question_number}`);
+        if (answerElem && answerElem.value.trim()) {
+          answers[q.question_number] = answerElem.value.trim();
+        }
+      });
+    }
+    
+    // Save as draft
+    const data = {
+      ...reviewData,
+      answers,
+      status: 'draft'  // Force draft status
+    };
+    
+    try {
+      await axios.post('/api/reviews', data);
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Failed to save draft:', error);
+      return Promise.reject(error);
+    }
+  }
+  
+  return Promise.resolve();
+};
+
 // Global cache for learning resources
 let cachedArticles = [];
 let displayedArticles = [];
@@ -80,7 +128,7 @@ function showHomePage() {
               <a href="#contact" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('contact')}</a>
             </div>
             <div class="flex items-center space-x-4">
-              <button onclick="i18n.setLanguage(i18n.getCurrentLanguage() === 'zh' ? 'en' : 'zh')" 
+              <button onclick="handleLanguageSwitch()" 
                       class="text-sm text-gray-600 hover:text-indigo-600">
                 <i class="fas fa-language mr-1"></i>
                 ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
@@ -2300,7 +2348,7 @@ function renderNavigation() {
             </div>
           </div>
           <div class="flex items-center space-x-4">
-            <button onclick="i18n.setLanguage(i18n.getCurrentLanguage() === 'zh' ? 'en' : 'zh')" 
+            <button onclick="handleLanguageSwitch()" 
                     class="text-gray-700 hover:text-indigo-600">
               <i class="fas fa-language mr-1"></i>
               ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
@@ -2347,6 +2395,43 @@ function showNotification(message, type = 'info') {
   setTimeout(() => {
     notification.remove();
   }, 3000);
+}
+
+// Handle language switch with data preservation
+async function handleLanguageSwitch() {
+  const newLang = i18n.getCurrentLanguage() === 'zh' ? 'en' : 'zh';
+  
+  // Check if user is in the middle of creating a review
+  if (currentView === 'create-review-step1' || currentView === 'create-review-step2') {
+    // Show confirmation dialog
+    const confirmed = confirm(i18n.t('confirmLanguageSwitch'));
+    if (!confirmed) {
+      return;
+    }
+    
+    // Show saving notification
+    showNotification(i18n.t('savingDraft'), 'info');
+    
+    try {
+      // Save draft if in step 2
+      if (currentView === 'create-review-step2') {
+        await window.saveCurrentReviewDraft();
+        showNotification(i18n.t('draftSaved'), 'success');
+      }
+    } catch (error) {
+      console.error('Failed to save draft:', error);
+      showNotification(i18n.t('operationFailed'), 'error');
+      return;
+    }
+  }
+  
+  // Show switching notification
+  showNotification(i18n.t('switchingLanguage'), 'info');
+  
+  // Small delay to show notification
+  setTimeout(() => {
+    i18n.switchLanguage(newLang);
+  }, 500);
 }
 
 // ============ Teams Management ============

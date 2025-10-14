@@ -348,6 +348,10 @@ const translations = {
     'privacy2Text': '我们使用收集的信息来运营、维护和改进我们的服务，不会将您的个人信息出售给第三方。',
     'privacy3Title': '3. 数据安全',
     'privacy3Text': '我们采用业界标准的安全措施保护您的数据，包括加密传输和存储。',
+    'confirmLanguageSwitch': '您正在创建复盘，切换语言会保存当前内容为草稿。是否继续？',
+    'savingDraft': '正在保存草稿...',
+    'draftSaved': '草稿已保存',
+    'switchingLanguage': '正在切换语言...',
   },
   en: {
     // Auth
@@ -697,6 +701,10 @@ const translations = {
     'privacy2Text': 'We use collected information to operate, maintain, and improve our services. We do not sell your personal information to third parties.',
     'privacy3Title': '3. Data Security',
     'privacy3Text': 'We employ industry-standard security measures to protect your data, including encrypted transmission and storage.',
+    'confirmLanguageSwitch': 'You are creating a review. Switching language will save current content as draft. Continue?',
+    'savingDraft': 'Saving draft...',
+    'draftSaved': 'Draft saved',
+    'switchingLanguage': 'Switching language...',
   }
 };
 
@@ -719,6 +727,25 @@ class I18n {
       }
       window.location.reload();
     }
+  }
+
+  // Safe language switch with data preservation
+  async switchLanguage(lang) {
+    if (!translations[lang] || lang === this.currentLang) {
+      return;
+    }
+
+    // Check if user is in the middle of creating/editing a review
+    if (typeof window.saveCurrentReviewDraft === 'function') {
+      try {
+        await window.saveCurrentReviewDraft();
+      } catch (error) {
+        console.error('Failed to save draft:', error);
+      }
+    }
+
+    // Now switch language
+    this.setLanguage(lang);
   }
 
   getCurrentLanguage() {
