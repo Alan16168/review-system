@@ -33,21 +33,27 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Failed to send email via Resend:', {
+      const errorDetails = {
         status: response.status,
         statusText: response.statusText,
         error: error,
         to: options.to,
-        apiKeyPrefix: apiKey.substring(0, 10) + '...'
-      });
+        apiKeyPrefix: apiKey.substring(0, 10) + '...',
+        apiKeyLength: apiKey.length,
+        timestamp: new Date().toISOString()
+      };
+      console.error('❌ Failed to send email via Resend:', errorDetails);
+      // Store error for debugging
+      (globalThis as any).lastEmailError = errorDetails;
       return false;
     }
 
     const result = await response.json();
-    console.log('Email sent successfully via Resend:', {
+    console.log('✅ Email sent successfully via Resend:', {
       id: result.id,
       to: options.to,
-      from: 'onboarding@resend.dev'
+      from: 'onboarding@resend.dev',
+      timestamp: new Date().toISOString()
     });
     return true;
   } catch (error) {

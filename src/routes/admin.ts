@@ -182,6 +182,57 @@ admin.post('/reset-user-password', async (c) => {
   }
 });
 
+// Diagnose Resend API configuration
+admin.get('/diagnose-email', async (c) => {
+  try {
+    const diagnosis: any = {
+      timestamp: new Date().toISOString(),
+      hasApiKey: !!c.env.RESEND_API_KEY,
+      apiKeyLength: c.env.RESEND_API_KEY ? c.env.RESEND_API_KEY.length : 0,
+      apiKeyPrefix: c.env.RESEND_API_KEY ? c.env.RESEND_API_KEY.substring(0, 10) + '...' : 'N/A',
+      lastError: (globalThis as any).lastEmailError || null
+    };
+
+    // Test API key validity by checking API status
+    if (c.env.RESEND_API_KEY) {
+      try {
+        const testResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'Review System <onboarding@resend.dev>',
+            to: 'test@example.com', // Invalid email to test API response
+            subject: 'Diagnostic Test',
+            html: '<p>Test</p>',
+          }),
+        });
+
+        const responseText = await testResponse.text();
+        diagnosis.apiTest = {
+          status: testResponse.status,
+          statusText: testResponse.statusText,
+          response: responseText
+        };
+      } catch (error) {
+        diagnosis.apiTest = {
+          error: error instanceof Error ? error.message : String(error)
+        };
+      }
+    }
+
+    return c.json(diagnosis);
+  } catch (error) {
+    console.error('Diagnosis error:', error);
+    return c.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
+  }
+});
+
 // Test email sending (Admin only - for debugging)
 admin.post('/test-email', async (c) => {
   try {
@@ -199,6 +250,8 @@ admin.post('/test-email', async (c) => {
         }
       }, 500);
     }
+
+    console.log(`🔍 Testing email send to: ${email}`);
 
     // Test Resend API directly
     const response = await fetch('https://api.resend.com/emails', {
@@ -223,7 +276,7 @@ admin.post('/test-email', async (c) => {
       responseJson = { raw: responseText };
     }
 
-    return c.json({
+    const result = {
       success: response.ok,
       status: response.status,
       statusText: response.statusText,
@@ -232,9 +285,18 @@ admin.post('/test-email', async (c) => {
         to: email,
         from: 'onboarding@resend.dev',
         hasApiKey: true,
-        apiKeyPrefix: c.env.RESEND_API_KEY.substring(0, 10) + '...'
+        apiKeyPrefix: c.env.RESEND_API_KEY.substring(0, 10) + '...',
+        apiKeyLength: c.env.RESEND_API_KEY.length
       }
-    });
+    };
+
+    if (response.ok) {
+      console.log(`✅ Test email sent successfully to ${email}:`, responseJson);
+    } else {
+      console.error(`❌ Test email failed to ${email}:`, responseJson);
+    }
+
+    return c.json(result);
   } catch (error) {
     console.error('Test email error:', error);
     return c.json({ 
