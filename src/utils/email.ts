@@ -19,7 +19,7 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Review System <onboarding@resend.dev>',
+        from: 'Review System <noreply@ireviewsystem.com>',
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -64,7 +64,7 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
     console.log('✅ Email sent successfully via Resend:', {
       id: result.id,
       to: options.to,
-      from: 'onboarding@resend.dev',
+      from: 'noreply@ireviewsystem.com',
       timestamp: new Date().toISOString()
     });
     return true;

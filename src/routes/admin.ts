@@ -203,7 +203,7 @@ admin.get('/diagnose-email', async (c) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'Review System <onboarding@resend.dev>',
+            from: 'Review System <noreply@ireviewsystem.com>',
             to: 'test@example.com', // Invalid email to test API response
             subject: 'Diagnostic Test',
             html: '<p>Test</p>',
@@ -261,7 +261,7 @@ admin.post('/test-email', async (c) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Review System <onboarding@resend.dev>',
+        from: 'Review System <noreply@ireviewsystem.com>',
         to: email,
         subject: 'Test Email - Review System',
         html: '<h1>Test Email</h1><p>This is a test email from Review System admin panel.</p>',
@@ -283,7 +283,7 @@ admin.post('/test-email', async (c) => {
       response: responseJson,
       debug: {
         to: email,
-        from: 'onboarding@resend.dev',
+        from: 'noreply@ireviewsystem.com',
         hasApiKey: true,
         apiKeyPrefix: c.env.RESEND_API_KEY.substring(0, 10) + '...',
         apiKeyLength: c.env.RESEND_API_KEY.length
