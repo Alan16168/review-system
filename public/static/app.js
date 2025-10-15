@@ -1052,6 +1052,13 @@ function showRegister() {
                    placeholder="${i18n.t('password')}">
           </div>
           
+          <div class="mb-4">
+            <label class="block text-gray-700 mb-2">${i18n.t('confirmPassword')}</label>
+            <input type="password" id="register-confirm-password" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('confirmPassword')}">
+          </div>
+          
           <button onclick="handleRegister()" 
                   class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition mb-4">
             ${i18n.t('register')}
@@ -1217,6 +1224,25 @@ async function handleRegister() {
   const username = document.getElementById('register-username').value;
   const email = document.getElementById('register-email').value;
   const password = document.getElementById('register-password').value;
+  const confirmPassword = document.getElementById('register-confirm-password').value;
+
+  // Validate inputs
+  if (!username || !email || !password || !confirmPassword) {
+    alert(i18n.t('fillAllFields'));
+    return;
+  }
+
+  // Check if passwords match
+  if (password !== confirmPassword) {
+    alert(i18n.t('passwordMismatch'));
+    return;
+  }
+
+  // Check password length
+  if (password.length < 6) {
+    alert(i18n.t('passwordTooShort'));
+    return;
+  }
 
   try {
     const response = await axios.post('/api/auth/register', { email, password, username });
