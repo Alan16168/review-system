@@ -1342,8 +1342,11 @@ function renderRecentReviews(reviews) {
                 ${new Date(review.updated_at).toLocaleDateString()}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button onclick="showReviewDetail(${review.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                <button onclick="showReviewDetail(${review.id}, true)" class="text-indigo-600 hover:text-indigo-900 mr-3">
                   <i class="fas fa-eye"></i> ${i18n.t('view')}
+                </button>
+                <button onclick="showEditReview(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                  <i class="fas fa-edit"></i> ${i18n.t('edit')}
                 </button>
                 <button onclick="deleteReview(${review.id})" class="text-red-600 hover:text-red-900">
                   <i class="fas fa-trash"></i> ${i18n.t('delete')}
@@ -2155,7 +2158,7 @@ async function handleStep2Submit(e) {
 
 // ============ Review Detail & Edit ============
 
-async function showReviewDetail(id) {
+async function showReviewDetail(id, readOnly = false) {
   try {
     const response = await axios.get(`/api/reviews/${id}`);
     const review = response.data.review;
@@ -2164,7 +2167,7 @@ async function showReviewDetail(id) {
     const collaborators = response.data.collaborators || [];
     
     // If it's a team review, redirect to team collaboration view
-    if (review.team_id) {
+    if (review.team_id && !readOnly) {
       showTeamReviewCollaboration(id);
       return;
     }
@@ -2183,7 +2186,7 @@ async function showReviewDetail(id) {
             <div class="flex justify-between items-start">
               <div>
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                  ${escapeHtml(review.title)}
+                  ${readOnly ? '<i class="fas fa-eye mr-2 text-indigo-600"></i>' : ''}${escapeHtml(review.title)}
                 </h1>
                 <div class="flex items-center flex-wrap gap-2 text-sm text-gray-600">
                   <span>
@@ -2216,16 +2219,14 @@ async function showReviewDetail(id) {
                   ` : ''}
                 </div>
               </div>
+              ${!readOnly ? `
               <div class="flex space-x-2">
                 <button onclick="showEditReview(${review.id})" 
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                   <i class="fas fa-edit mr-2"></i>${i18n.t('edit')}
                 </button>
-                <button onclick="deleteReview(${review.id})" 
-                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                  <i class="fas fa-trash mr-2"></i>${i18n.t('delete')}
-                </button>
               </div>
+              ` : ''}
             </div>
           </div>
 
@@ -2245,13 +2246,13 @@ async function showReviewDetail(id) {
             </h2>
             
             ${questions.length > 0 ? questions.map(q => `
-              <div class="border-l-4 border-indigo-500 pl-4 py-2">
+              <div class="border-l-4 border-indigo-500 pl-4 py-2 bg-gray-50 rounded mb-3">
                 <h3 class="text-sm font-semibold text-gray-700 mb-2">
                   ${q.question_number}. ${escapeHtml(q.question_text)}
                 </h3>
-                <p class="text-gray-800 whitespace-pre-wrap">
+                <div class="text-gray-800 whitespace-pre-wrap bg-white p-3 rounded border border-gray-200">
                   ${escapeHtml(answers[q.question_number] || (i18n.t('noAnswer') || '未填写'))}
-                </p>
+                </div>
               </div>
             `).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
           </div>
@@ -2518,7 +2519,7 @@ async function showEditReview(id) {
         
         <div class="max-w-4xl mx-auto px-4 py-8">
           <div class="mb-6">
-            <button onclick="showReviewDetail(${id})" class="text-indigo-600 hover:text-indigo-800 mb-4">
+            <button onclick="showReviews()" class="text-indigo-600 hover:text-indigo-800 mb-4">
               <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
             </button>
             <h1 class="text-3xl font-bold text-gray-800">
@@ -2659,7 +2660,7 @@ async function showEditReview(id) {
 
             <!-- Actions -->
             <div class="flex justify-end space-x-4 pt-6 border-t">
-              <button type="button" onclick="showReviewDetail(${id})" 
+              <button type="button" onclick="showReviews()" 
                       class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                 ${i18n.t('cancel')}
               </button>
@@ -2695,8 +2696,9 @@ async function handleEditReview(e) {
   
   // Collect answers dynamically
   const answers = {};
-  if (window.currentEditQuestions && window.currentEditQuestions.length > 0) {
-    window.currentEditQuestions.forEach(q => {
+  const questions = window.currentEditQuestions || [];
+  if (questions.length > 0) {
+    questions.forEach(q => {
       const answerElem = document.getElementById(`question${q.question_number}`);
       if (answerElem) {
         const value = answerElem.value.trim();
@@ -2717,7 +2719,7 @@ async function handleEditReview(e) {
   try {
     await axios.put(`/api/reviews/${id}`, data);
     showNotification(i18n.t('updateSuccess'), 'success');
-    showReviewDetail(id);
+    showReviews();
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
