@@ -76,6 +76,22 @@
    - 中英双语切换
    - 本地化存储用户语言偏好
    - **模板内容国际化（V4.1.1）**：模板名称、描述、问题全部支持中英双语
+   - **服务端语言偏好持久化（V4.2.8 新增）**：
+     - 系统默认英文版
+     - 用户选择语言后自动保存到服务器
+     - 登录后自动应用用户偏好的语言
+     - 支持Google OAuth登录的语言设置
+
+7. ✅ **用户设置页面**（V4.2.8 新增）
+   - 点击导航栏用户名进入设置页面
+   - **账号设置**：
+     - 修改用户名
+     - 修改邮箱地址
+     - 选择语言偏好（中文/English）
+   - **密码管理**：
+     - 在设置页面直接修改密码
+     - 需要验证当前密码
+   - 设置自动同步到服务器和本地存储
 
 ## 🔗 访问链接
 
@@ -88,9 +104,9 @@
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
-- **Git Commit**: 5ff4602 (修复普通用户访问团队 V4.2.2)
+- **Git Commit**: Latest (用户设置页面 V4.2.8)
 - **本地端口**: 3000 (PM2 管理)
-- **修复**: 普通用户访问团队页面、仪表板添加团队按钮
+- **新增**: 用户设置页面、语言偏好持久化功能
 
 ### 测试账号
 | 角色 | 邮箱 | 密码 | 权限 |
@@ -264,6 +280,32 @@ webapp/
 ## 🛠️ API 接口
 
 ### 认证相关
+
+#### GET /api/auth/settings【V4.2.8 新增】
+获取当前用户设置
+```json
+Headers: Authorization: Bearer {token}
+Response: {
+  "username": "用户名",
+  "email": "user@example.com",
+  "language": "zh"  // "zh" or "en"
+}
+```
+
+#### PUT /api/auth/settings【V4.2.8 新增】
+更新用户设置
+```json
+Headers: Authorization: Bearer {token}
+Request: {
+  "username": "新用户名",  // 可选
+  "email": "newemail@example.com",  // 可选
+  "language": "en"  // 可选，"zh" or "en"
+}
+Response: {
+  "message": "Settings updated successfully",
+  "user": { "id", "username", "email", "language", "role" }
+}
+```
 
 #### POST /api/auth/change-password【V3.7 新增】
 修改密码（需要认证）
@@ -849,7 +891,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-15
-- **当前版本**: V4.2.7 完整版（密码重置链接404修复）🎉
+- **当前版本**: V4.2.8 完整版（用户设置页面 + 语言偏好持久化）🎉
 
 ## 📝 许可证
 
@@ -859,7 +901,42 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V4.2.7  
+**当前版本**: V4.2.8  
+
+**V4.2.8 更新内容** (2025-10-15):
+- 👤 **用户设置页面**（核心新功能）：
+  - 点击导航栏用户名进入个人设置页面
+  - **账号设置区域**：
+    - 修改用户名（实时更新到系统）
+    - 修改邮箱地址（验证邮箱唯一性）
+    - 选择语言偏好：中文/English（保存到服务器）
+  - **密码管理区域**：
+    - 直接在设置页面修改密码
+    - 需要验证当前密码才能修改
+    - 密码强度验证（至少6个字符）
+  - 精美的UI设计，分区清晰，操作方便
+- 🌍 **语言偏好持久化**（核心功能）：
+  - 系统默认英文版（首次访问）
+  - 用户切换语言时自动保存偏好到服务器
+  - 登录后自动应用用户的语言偏好
+  - 支持所有登录方式：邮箱登录、注册、Google OAuth
+  - 手动切换语言时实时同步到后端
+- 📊 **数据库字段利用**：
+  - users表中的language字段（zh/en）已存在
+  - 新增API利用现有字段实现语言偏好功能
+- 🔌 **新增API接口**：
+  - GET /api/auth/settings（获取用户设置）
+  - PUT /api/auth/settings（更新用户设置）
+  - 支持部分更新（username/email/language可选）
+- 🎨 **前端优化**：
+  - 修改renderNavigation()使用户名可点击
+  - 新增showUserSettings()函数显示设置页面
+  - 新增handleSaveSettings()处理设置保存
+  - 新增handleChangePasswordFromSettings()处理密码修改
+  - 修改handleLanguageSwitch()自动保存语言偏好
+  - 修改三个登录函数自动应用语言偏好
+- 🌐 **国际化支持**：新增8个翻译键（userSettings, accountSettings, languagePreference, saveChanges, settingsUpdated, chinese, english, selectLanguage）
+- ✅ **实现需求**：完成用户请求的语言偏好持久化和用户设置页面功能
 
 **V4.2.7 更新内容** (2025-10-15):
 - 🔗 **修复密码重置链接404错误**（关键修复）：

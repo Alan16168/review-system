@@ -366,4 +366,89 @@ auth.post('/reset-password', async (c) => {
   }
 });
 
+// Get user settings
+auth.get('/settings', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const dbUser = await getUserById(c.env.DB, user.id);
+    
+    if (!dbUser) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+    
+    return c.json({
+      username: dbUser.username,
+      email: dbUser.email,
+      language: dbUser.language || 'zh'
+    });
+  } catch (error) {
+    console.error('Get settings error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Update user settings
+auth.put('/settings', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const { username, email, language } = await c.req.json();
+    
+    // Validate language
+    if (language && !['zh', 'en'].includes(language)) {
+      return c.json({ error: 'Invalid language. Must be "zh" or "en"' }, 400);
+    }
+    
+    // Check if email is already taken by another user
+    if (email) {
+      const existingUser = await getUserByEmail(c.env.DB, email);
+      if (existingUser && existingUser.id !== user.id) {
+        return c.json({ error: 'Email already in use' }, 400);
+      }
+    }
+    
+    // Update user settings
+    const updates: string[] = [];
+    const params: any[] = [];
+    
+    if (username) {
+      updates.push('username = ?');
+      params.push(username);
+    }
+    
+    if (email) {
+      updates.push('email = ?');
+      params.push(email);
+    }
+    
+    if (language) {
+      updates.push('language = ?');
+      params.push(language);
+    }
+    
+    if (updates.length > 0) {
+      updates.push('updated_at = CURRENT_TIMESTAMP');
+      params.push(user.id);
+      
+      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+      await c.env.DB.prepare(query).bind(...params).run();
+    }
+    
+    const updatedUser = await getUserById(c.env.DB, user.id);
+    
+    return c.json({
+      message: 'Settings updated successfully',
+      user: {
+        id: updatedUser!.id,
+        username: updatedUser!.username,
+        email: updatedUser!.email,
+        language: updatedUser!.language,
+        role: updatedUser!.role
+      }
+    });
+  } catch (error) {
+    console.error('Update settings error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 export default auth;

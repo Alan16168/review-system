@@ -1214,6 +1214,11 @@ async function handleLogin() {
     localStorage.setItem('user', JSON.stringify(currentUser));
     axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
     
+    // Set user's preferred language
+    if (currentUser.language) {
+      i18n.setLanguage(currentUser.language);
+    }
+    
     showDashboard();
   } catch (error) {
     alert(i18n.t('loginFailed') + ': ' + (error.response?.data?.error || error.message));
@@ -1252,6 +1257,11 @@ async function handleRegister() {
     localStorage.setItem('authToken', authToken);
     localStorage.setItem('user', JSON.stringify(currentUser));
     axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+    
+    // Set user's preferred language
+    if (currentUser.language) {
+      i18n.setLanguage(currentUser.language);
+    }
     
     showDashboard();
   } catch (error) {
@@ -2750,10 +2760,10 @@ function renderNavigation() {
               <i class="fas fa-language mr-1"></i>
               ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
             </button>
-            <span class="text-gray-700">
+            <button onclick="showUserSettings()" class="text-gray-700 hover:text-indigo-600 cursor-pointer">
               <i class="fas fa-user mr-1"></i>${currentUser.username}
               <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
-            </span>
+            </button>
             <button onclick="logout()" class="text-red-600 hover:text-red-800">
               <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
             </button>
@@ -2824,6 +2834,17 @@ async function handleLanguageSwitch() {
   
   // Show switching notification
   showNotification(i18n.t('switchingLanguage'), 'info');
+  
+  // Save language preference to backend if user is logged in
+  if (currentUser && authToken) {
+    try {
+      await axios.put('/api/auth/settings', { language: newLang });
+      currentUser.language = newLang;
+      localStorage.setItem('user', JSON.stringify(currentUser));
+    } catch (error) {
+      console.error('Failed to save language preference:', error);
+    }
+  }
   
   // Small delay to show notification
   setTimeout(() => {
@@ -4008,6 +4029,11 @@ async function handleGoogleLogin(response) {
 
     console.log('Google login successful:', currentUser);
     
+    // Set user's preferred language
+    if (currentUser.language) {
+      i18n.setLanguage(currentUser.language);
+    }
+    
     // Redirect to dashboard
     showDashboard();
   } catch (error) {
@@ -4385,6 +4411,217 @@ async function reviewApplication(teamId, applicationId, action) {
     showNotification(action === 'approve' ? '已批准申请' : '已拒绝申请', 'success');
     await loadTeams(); // Refresh applications list
   } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// ============ User Settings ============
+
+async function showUserSettings() {
+  currentView = 'user-settings';
+  
+  try {
+    // Load current user settings from backend
+    const response = await axios.get('/api/auth/settings');
+    const settings = response.data;
+    
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="min-h-screen bg-gray-50">
+        ${renderNavigation()}
+        
+        <div class="max-w-4xl mx-auto px-4 py-8">
+          <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">
+              <i class="fas fa-user-cog text-indigo-600 mr-3"></i>${i18n.t('userSettings')}
+            </h2>
+            
+            <!-- Account Settings Section -->
+            <div class="mb-8">
+              <h3 class="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                <i class="fas fa-id-card text-indigo-500 mr-2"></i>${i18n.t('accountSettings')}
+              </h3>
+              
+              <div class="space-y-4">
+                <!-- Username -->
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">
+                    <i class="fas fa-user mr-2"></i>${i18n.t('username')}
+                  </label>
+                  <input type="text" id="settings-username" value="${settings.username}"
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                
+                <!-- Email -->
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">
+                    <i class="fas fa-envelope mr-2"></i>${i18n.t('email')}
+                  </label>
+                  <input type="email" id="settings-email" value="${settings.email}"
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                
+                <!-- Language Preference -->
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">
+                    <i class="fas fa-language mr-2"></i>${i18n.t('languagePreference')}
+                  </label>
+                  <select id="settings-language" 
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    <option value="zh" ${settings.language === 'zh' ? 'selected' : ''}>${i18n.t('chinese')}</option>
+                    <option value="en" ${settings.language === 'en' ? 'selected' : ''}>${i18n.t('english')}</option>
+                  </select>
+                </div>
+              </div>
+              
+              <!-- Save Button -->
+              <div class="mt-6">
+                <button onclick="handleSaveSettings()" 
+                        class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-semibold">
+                  <i class="fas fa-save mr-2"></i>${i18n.t('saveChanges')}
+                </button>
+              </div>
+            </div>
+            
+            <!-- Password Change Section -->
+            <div class="mt-8">
+              <h3 class="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                <i class="fas fa-key text-indigo-500 mr-2"></i>${i18n.t('changePassword')}
+              </h3>
+              
+              <div class="space-y-4">
+                <!-- Current Password -->
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">
+                    ${i18n.t('currentPassword')}
+                  </label>
+                  <input type="password" id="settings-current-password" 
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                         placeholder="${i18n.t('currentPassword')}">
+                </div>
+                
+                <!-- New Password -->
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">
+                    ${i18n.t('newPassword')}
+                  </label>
+                  <input type="password" id="settings-new-password" 
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                         placeholder="${i18n.t('newPassword')}">
+                </div>
+                
+                <!-- Confirm New Password -->
+                <div>
+                  <label class="block text-gray-700 font-medium mb-2">
+                    ${i18n.t('confirmNewPassword')}
+                  </label>
+                  <input type="password" id="settings-confirm-password" 
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                         placeholder="${i18n.t('confirmNewPassword')}">
+                </div>
+              </div>
+              
+              <!-- Change Password Button -->
+              <div class="mt-6">
+                <button onclick="handleChangePasswordFromSettings()" 
+                        class="w-full bg-amber-600 text-white py-3 rounded-lg hover:bg-amber-700 transition font-semibold">
+                  <i class="fas fa-lock mr-2"></i>${i18n.t('changePassword')}
+                </button>
+              </div>
+            </div>
+            
+            <!-- Back Button -->
+            <div class="mt-8">
+              <button onclick="showDashboard()" 
+                      class="text-indigo-600 hover:text-indigo-800 font-medium">
+                <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Load settings error:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    showDashboard();
+  }
+}
+
+async function handleSaveSettings() {
+  const username = document.getElementById('settings-username').value.trim();
+  const email = document.getElementById('settings-email').value.trim();
+  const language = document.getElementById('settings-language').value;
+  
+  if (!username || !email) {
+    showNotification(i18n.t('fillAllFields'), 'error');
+    return;
+  }
+  
+  try {
+    const response = await axios.put('/api/auth/settings', {
+      username,
+      email,
+      language
+    });
+    
+    // Update currentUser with new data
+    currentUser = response.data.user;
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    
+    showNotification(i18n.t('settingsUpdated'), 'success');
+    
+    // If language changed, reload to apply new language
+    if (language !== i18n.getCurrentLanguage()) {
+      setTimeout(() => {
+        i18n.setLanguage(language);
+      }, 1000);
+    } else {
+      // Refresh the settings page to show updated data
+      setTimeout(() => {
+        showUserSettings();
+      }, 1000);
+    }
+  } catch (error) {
+    console.error('Save settings error:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function handleChangePasswordFromSettings() {
+  const currentPassword = document.getElementById('settings-current-password').value;
+  const newPassword = document.getElementById('settings-new-password').value;
+  const confirmPassword = document.getElementById('settings-confirm-password').value;
+  
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    showNotification(i18n.t('fillAllFields'), 'error');
+    return;
+  }
+  
+  if (newPassword !== confirmPassword) {
+    showNotification(i18n.t('passwordMismatch'), 'error');
+    return;
+  }
+  
+  if (newPassword.length < 6) {
+    showNotification(i18n.t('passwordTooShort'), 'error');
+    return;
+  }
+  
+  try {
+    await axios.post('/api/auth/change-password', {
+      currentPassword,
+      newPassword
+    });
+    
+    showNotification(i18n.t('passwordChanged'), 'success');
+    
+    // Clear password fields
+    document.getElementById('settings-current-password').value = '';
+    document.getElementById('settings-new-password').value = '';
+    document.getElementById('settings-confirm-password').value = '';
+  } catch (error) {
+    console.error('Change password error:', error);
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }

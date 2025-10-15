@@ -368,6 +368,16 @@ const translations = {
     'savingDraft': '正在保存草稿...',
     'draftSaved': '草稿已保存',
     'switchingLanguage': '正在切换语言...',
+    
+    // User Settings
+    'userSettings': '用户设置',
+    'accountSettings': '账号设置',
+    'languagePreference': '语言偏好',
+    'saveChanges': '保存修改',
+    'settingsUpdated': '设置已更新',
+    'chinese': '中文',
+    'english': 'English',
+    'selectLanguage': '选择语言',
   },
   en: {
     // Auth
@@ -737,6 +747,16 @@ const translations = {
     'savingDraft': 'Saving draft...',
     'draftSaved': 'Draft saved',
     'switchingLanguage': 'Switching language...',
+    
+    // User Settings
+    'userSettings': 'User Settings',
+    'accountSettings': 'Account Settings',
+    'languagePreference': 'Language Preference',
+    'saveChanges': 'Save Changes',
+    'settingsUpdated': 'Settings updated successfully',
+    'chinese': '中文',
+    'english': 'English',
+    'selectLanguage': 'Select Language',
   }
 };
 
