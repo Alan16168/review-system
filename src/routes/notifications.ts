@@ -39,6 +39,9 @@ notifications.post('/broadcast', async (c) => {
     let emailsFailed = 0;
     const emailResults: any[] = [];
     
+    // Helper function to delay execution (rate limiting)
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    
     // Create notification records and send emails
     for (const user of users.results as any[]) {
       // Create notification record in database
@@ -99,6 +102,9 @@ notifications.post('/broadcast', async (c) => {
         emailsFailed++;
         console.error(`✗ Email failed to send to ${user.email}`);
       }
+      
+      // Rate limiting: Wait 600ms between emails (allows ~1.6 emails/sec, safely under 2/sec limit)
+      await delay(600);
     }
 
     console.log('Broadcast notification completed:', {
@@ -164,6 +170,9 @@ notifications.post('/send', async (c) => {
     let emailsSent = 0;
     let emailsFailed = 0;
     const emailResults: any[] = [];
+    
+    // Helper function to delay execution (rate limiting)
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
     for (const userId of user_ids) {
       // Get user details
@@ -241,6 +250,9 @@ notifications.post('/send', async (c) => {
         emailsFailed++;
         console.error(`✗ Email failed to send to ${user.email}`);
       }
+      
+      // Rate limiting: Wait 600ms between emails (allows ~1.6 emails/sec, safely under 2/sec limit)
+      await delay(600);
     }
 
     console.log('Send notification completed:', {
