@@ -3762,12 +3762,55 @@ function showNotificationsPanel(container) {
             </p>
           </div>
           
-          <!-- Selection Note (hidden by default) -->
+          <!-- User Selection Section (hidden by default) -->
           <div id="selection-note-section" style="display: none;">
-            <p class="text-sm text-gray-500 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <i class="fas fa-info-circle mr-1"></i>
-              ${i18n.t('selectUsersNote') || '请先在用户管理标签页选择要发送通知的用户'}
-            </p>
+            <div class="space-y-4">
+              <!-- Quick Select by Role -->
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <label class="block text-sm font-medium text-gray-700 mb-3">
+                  <i class="fas fa-users-cog mr-2"></i>${i18n.t('quickSelectByRole') || '按角色快速选择'}
+                </label>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="selectUsersByRole('all')" 
+                          class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
+                    <i class="fas fa-users mr-1"></i>${i18n.t('selectAll') || '全选'}
+                  </button>
+                  <button type="button" onclick="selectUsersByRole('admin')" 
+                          class="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
+                    <i class="fas fa-user-shield mr-1"></i>${i18n.t('adminRole') || '管理员'}
+                  </button>
+                  <button type="button" onclick="selectUsersByRole('premium')" 
+                          class="px-4 py-2 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700">
+                    <i class="fas fa-star mr-1"></i>${i18n.t('premiumRole') || '高级用户'}
+                  </button>
+                  <button type="button" onclick="selectUsersByRole('user')" 
+                          class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">
+                    <i class="fas fa-user mr-1"></i>${i18n.t('userRole') || '普通用户'}
+                  </button>
+                  <button type="button" onclick="selectUsersByRole('none')" 
+                          class="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-times mr-1"></i>${i18n.t('clearSelection') || '清除选择'}
+                  </button>
+                </div>
+              </div>
+              
+              <!-- User List -->
+              <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                  <span class="text-sm font-medium text-gray-700">
+                    <i class="fas fa-list mr-2"></i>${i18n.t('userList') || '用户列表'}
+                  </span>
+                  <span id="selected-count" class="text-sm text-indigo-600 ml-2">
+                    (${i18n.t('selected') || '已选择'}: 0)
+                  </span>
+                </div>
+                <div id="notification-user-list" class="max-h-64 overflow-y-auto">
+                  <div class="text-center py-4 text-gray-500">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>${i18n.t('loading') || '加载中...'}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           
           <button type="submit" 
@@ -3781,6 +3824,99 @@ function showNotificationsPanel(container) {
 
   document.getElementById('broadcast-form').addEventListener('submit', handleBroadcast);
   document.getElementById('selected-form').addEventListener('submit', handleSendToSelected);
+  
+  // Load users list when panel is shown
+  loadNotificationUsersList();
+}
+
+let notificationUsers = [];
+
+async function loadNotificationUsersList() {
+  try {
+    const response = await axios.get('/api/admin/users');
+    notificationUsers = response.data.users;
+    renderNotificationUsersList();
+  } catch (error) {
+    console.error('Failed to load users:', error);
+    document.getElementById('notification-user-list').innerHTML = `
+      <div class="text-center py-4 text-red-500">
+        <i class="fas fa-exclamation-circle mr-2"></i>${i18n.t('loadFailed') || '加载失败'}
+      </div>
+    `;
+  }
+}
+
+function renderNotificationUsersList() {
+  const container = document.getElementById('notification-user-list');
+  
+  if (notificationUsers.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-4 text-gray-500">
+        <i class="fas fa-inbox mr-2"></i>${i18n.t('noUsers') || '暂无用户'}
+      </div>
+    `;
+    return;
+  }
+  
+  const getRoleBadge = (role) => {
+    const badges = {
+      admin: '<span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full"><i class="fas fa-user-shield mr-1"></i>管理员</span>',
+      premium: '<span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full"><i class="fas fa-star mr-1"></i>高级用户</span>',
+      user: '<span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full"><i class="fas fa-user mr-1"></i>普通用户</span>'
+    };
+    return badges[role] || badges.user;
+  };
+  
+  container.innerHTML = `
+    <div class="divide-y divide-gray-200">
+      ${notificationUsers.map(user => `
+        <label class="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" 
+                 class="notification-user-checkbox rounded text-indigo-600 mr-3" 
+                 value="${user.id}"
+                 data-role="${user.role}"
+                 onchange="updateSelectedCount()">
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-medium text-gray-900">${escapeHtml(user.username)}</div>
+                <div class="text-sm text-gray-500">${escapeHtml(user.email)}</div>
+              </div>
+              <div>
+                ${getRoleBadge(user.role)}
+              </div>
+            </div>
+          </div>
+        </label>
+      `).join('')}
+    </div>
+  `;
+  
+  updateSelectedCount();
+}
+
+function selectUsersByRole(role) {
+  const checkboxes = document.querySelectorAll('.notification-user-checkbox');
+  
+  checkboxes.forEach(cb => {
+    if (role === 'all') {
+      cb.checked = true;
+    } else if (role === 'none') {
+      cb.checked = false;
+    } else {
+      cb.checked = cb.dataset.role === role;
+    }
+  });
+  
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const selected = document.querySelectorAll('.notification-user-checkbox:checked').length;
+  const countEl = document.getElementById('selected-count');
+  if (countEl) {
+    countEl.textContent = `(${i18n.t('selected') || '已选择'}: ${selected})`;
+  }
 }
 
 function switchNotificationTab(tab) {
@@ -3887,7 +4023,7 @@ async function handleSendToSelected(e) {
     }
   } else {
     // Send by user selection
-    const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked'))
+    const selectedUsers = Array.from(document.querySelectorAll('.notification-user-checkbox:checked'))
       .map(cb => parseInt(cb.value));
 
     if (selectedUsers.length === 0) {
@@ -3903,6 +4039,9 @@ async function handleSendToSelected(e) {
       });
       showNotification(`${i18n.t('notificationSent')}: ${response.data.recipient_count} ${i18n.t('users') || '用户'}`, 'success');
       document.getElementById('selected-form').reset();
+      // Clear selections
+      document.querySelectorAll('.notification-user-checkbox').forEach(cb => cb.checked = false);
+      updateSelectedCount();
     } catch (error) {
       showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     }
