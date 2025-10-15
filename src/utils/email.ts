@@ -33,10 +33,22 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
 
     if (!response.ok) {
       const error = await response.text();
+      let errorMessage = error;
+      
+      // Parse and provide helpful error messages
+      if (response.status === 403) {
+        errorMessage = `403 Forbidden: The sender domain 'onboarding@resend.dev' can only send to verified email addresses. Please verify the custom domain 'ireviewsystem.com' in Resend dashboard or add recipient emails to verified list.`;
+      } else if (response.status === 429) {
+        errorMessage = `429 Rate Limit: Too many requests. Resend free tier limits: 100 emails/day, 3000/month. Please wait or upgrade your plan.`;
+      } else if (response.status === 401) {
+        errorMessage = `401 Unauthorized: Invalid API key. Please check RESEND_API_KEY configuration.`;
+      }
+      
       const errorDetails = {
         status: response.status,
         statusText: response.statusText,
         error: error,
+        friendlyMessage: errorMessage,
         to: options.to,
         apiKeyPrefix: apiKey.substring(0, 10) + '...',
         apiKeyLength: apiKey.length,

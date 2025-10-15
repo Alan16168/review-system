@@ -108,12 +108,26 @@ notifications.post('/broadcast', async (c) => {
       details: emailResults
     });
 
+    // Get last error details if available
+    const lastError = (globalThis as any).lastEmailError;
+    
     return c.json({
-      message: 'Notification sent successfully',
+      message: emailsFailed > 0 
+        ? `Partial success: ${emailsSent} sent, ${emailsFailed} failed` 
+        : 'Notification sent successfully',
       recipient_count: users.results.length,
       emails_sent: emailsSent,
       emails_failed: emailsFailed,
-      email_details: emailResults
+      email_details: emailResults,
+      error_info: lastError ? {
+        status: lastError.status,
+        message: lastError.friendlyMessage || lastError.error,
+        suggestion: lastError.status === 403 
+          ? 'Please verify your custom domain in Resend dashboard. See RESEND_DOMAIN_VERIFICATION.md for instructions.'
+          : lastError.status === 429
+          ? 'Rate limit exceeded. Please wait or upgrade your Resend plan.'
+          : 'Check your Resend API key configuration.'
+      } : null
     });
   } catch (error) {
     console.error('Broadcast notification error:', error);
@@ -236,12 +250,26 @@ notifications.post('/send', async (c) => {
       details: emailResults
     });
 
+    // Get last error details if available
+    const lastError = (globalThis as any).lastEmailError;
+    
     return c.json({
-      message: 'Notification sent successfully',
+      message: emailsFailed > 0 
+        ? `Partial success: ${emailsSent} sent, ${emailsFailed} failed` 
+        : 'Notification sent successfully',
       recipient_count: user_ids.length,
       emails_sent: emailsSent,
       emails_failed: emailsFailed,
-      email_details: emailResults
+      email_details: emailResults,
+      error_info: lastError ? {
+        status: lastError.status,
+        message: lastError.friendlyMessage || lastError.error,
+        suggestion: lastError.status === 403 
+          ? 'Please verify your custom domain in Resend dashboard. See RESEND_DOMAIN_VERIFICATION.md for instructions.'
+          : lastError.status === 429
+          ? 'Rate limit exceeded. Please wait or upgrade your Resend plan.'
+          : 'Check your Resend API key configuration.'
+      } : null
     });
   } catch (error) {
     console.error('Send notification error:', error);
