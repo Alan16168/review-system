@@ -1259,16 +1259,21 @@ async function handleRegister() {
   }
 }
 
+let dashboardReviews = [];
+let dashboardCurrentPage = 1;
+const dashboardItemsPerPage = 5;
+
 async function loadDashboardData() {
   try {
     const reviewsRes = await axios.get('/api/reviews');
-    const reviews = reviewsRes.data.reviews;
+    dashboardReviews = reviewsRes.data.reviews;
     
-    document.getElementById('review-count').textContent = reviews.length;
+    document.getElementById('review-count').textContent = dashboardReviews.length;
     document.getElementById('completed-count').textContent = 
-      reviews.filter(r => r.status === 'completed').length;
+      dashboardReviews.filter(r => r.status === 'completed').length;
     
-    renderRecentReviews(reviews.slice(0, 5));
+    dashboardCurrentPage = 1; // Reset to first page
+    renderRecentReviews(dashboardReviews);
     
     // Load teams data for all users
     try {
@@ -1284,6 +1289,11 @@ async function loadDashboardData() {
   }
 }
 
+function changeDashboardPage(newPage) {
+  dashboardCurrentPage = newPage;
+  renderRecentReviews(dashboardReviews);
+}
+
 function renderRecentReviews(reviews) {
   const container = document.getElementById('recent-reviews');
   
@@ -1291,6 +1301,12 @@ function renderRecentReviews(reviews) {
     container.innerHTML = `<p class="text-gray-500 text-center py-4">${i18n.t('noData')}</p>`;
     return;
   }
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(reviews.length / dashboardItemsPerPage);
+  const startIndex = (dashboardCurrentPage - 1) * dashboardItemsPerPage;
+  const endIndex = startIndex + dashboardItemsPerPage;
+  const paginatedReviews = reviews.slice(startIndex, endIndex);
   
   container.innerHTML = `
     <div class="overflow-x-auto">
@@ -1304,11 +1320,11 @@ function renderRecentReviews(reviews) {
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          ${reviews.map(review => `
+          ${paginatedReviews.map(review => `
             <tr>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">${review.title}</div>
-                ${review.team_name ? `<div class="text-xs text-gray-500"><i class="fas fa-users mr-1"></i>${review.team_name}</div>` : ''}
+                <div class="text-sm font-medium text-gray-900">${escapeHtml(review.title)}</div>
+                ${review.team_name ? `<div class="text-xs text-gray-500"><i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}</div>` : ''}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs rounded-full ${review.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
@@ -1331,6 +1347,61 @@ function renderRecentReviews(reviews) {
         </tbody>
       </table>
     </div>
+    
+    <!-- Pagination -->
+    ${totalPages > 1 ? `
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <button onclick="changeDashboardPage(${dashboardCurrentPage - 1})" 
+                  ${dashboardCurrentPage === 1 ? 'disabled' : ''}
+                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${dashboardCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+            ${i18n.t('previousPage') || '上一页'}
+          </button>
+          <button onclick="changeDashboardPage(${dashboardCurrentPage + 1})" 
+                  ${dashboardCurrentPage === totalPages ? 'disabled' : ''}
+                  class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${dashboardCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">
+            ${i18n.t('nextPage') || '下一页'}
+          </button>
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              ${i18n.t('showing') || '显示'} 
+              <span class="font-medium">${startIndex + 1}</span>
+              ${i18n.t('to') || '到'}
+              <span class="font-medium">${Math.min(endIndex, reviews.length)}</span>
+              ${i18n.t('of') || '共'}
+              <span class="font-medium">${reviews.length}</span>
+              ${i18n.t('results') || '条结果'}
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button onclick="changeDashboardPage(${dashboardCurrentPage - 1})" 
+                      ${dashboardCurrentPage === 1 ? 'disabled' : ''}
+                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${dashboardCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
+                <button onclick="changeDashboardPage(${page})"
+                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
+                          page === dashboardCurrentPage 
+                            ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' 
+                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                        }">
+                  ${page}
+                </button>
+              `).join('')}
+              <button onclick="changeDashboardPage(${dashboardCurrentPage + 1})" 
+                      ${dashboardCurrentPage === totalPages ? 'disabled' : ''}
+                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${dashboardCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    ` : ''}
   `;
 }
 
