@@ -19,7 +19,7 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Review System <onboarding@resend.dev>', // Using Resend's onboarding domain for testing
+        from: 'Review System <noreply@ireviewsystem.com>',
         to: options.to,
         subject: options.subject,
         html: options.html,

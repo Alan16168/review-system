@@ -167,7 +167,7 @@ admin.post('/test-email', async (c) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Review System <onboarding@resend.dev>',
+        from: 'Review System <noreply@ireviewsystem.com>',
         to: email,
         subject: 'Test Email - Review System',
         html: '<h1>Test Email</h1><p>This is a test email from Review System admin panel.</p>',
