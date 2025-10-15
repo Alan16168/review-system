@@ -24,6 +24,11 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
         subject: options.subject,
         html: options.html,
         text: options.text || stripHtml(options.html),
+        reply_to: 'support@ireviewsystem.com',
+        headers: {
+          'X-Priority': '1',
+          'X-Mailer': 'Review System',
+        }
       }),
     });
 
@@ -61,7 +66,7 @@ export async function sendPasswordResetEmail(
   resetUrl: string,
   username: string
 ): Promise<boolean> {
-  const subject = 'Password Reset Request - Review System';
+  const subject = 'Reset Your Review System Password';
   
   const html = `
     <!DOCTYPE html>
@@ -145,12 +150,13 @@ export async function sendPasswordResetEmail(
           </ul>
         </div>
         
-        <p>If you have any questions, please contact our support team.</p>
+        <p>If you have any questions, please contact our support team at <a href="mailto:support@ireviewsystem.com">support@ireviewsystem.com</a>.</p>
         
         <p>Best regards,<br><strong>Review System Team</strong></p>
       </div>
       <div class="footer">
-        <p>This is an automated email, please do not reply.</p>
+        <p>You received this email because a password reset was requested for your account.</p>
+        <p>Review System - <a href="https://review-system.pages.dev">https://review-system.pages.dev</a></p>
         <p>&copy; 2025 Review System. All rights reserved.</p>
       </div>
     </body>
