@@ -141,6 +141,47 @@ admin.get('/stats', async (c) => {
   }
 });
 
+// Reset user password directly (Admin only)
+admin.post('/reset-user-password', async (c) => {
+  try {
+    const { userId, newPassword } = await c.req.json();
+
+    if (!userId || !newPassword) {
+      return c.json({ error: 'User ID and new password are required' }, 400);
+    }
+
+    if (newPassword.length < 6) {
+      return c.json({ error: 'Password must be at least 6 characters' }, 400);
+    }
+
+    // Get user
+    const user = await getUserById(c.env.DB, userId);
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Hash new password
+    const passwordHash = await hashPassword(newPassword);
+
+    // Update password
+    await c.env.DB.prepare(
+      'UPDATE users SET password_hash = ? WHERE id = ?'
+    ).bind(passwordHash, userId).run();
+
+    return c.json({ 
+      message: 'Password reset successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username
+      }
+    });
+  } catch (error) {
+    console.error('Reset user password error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 // Test email sending (Admin only - for debugging)
 admin.post('/test-email', async (c) => {
   try {
