@@ -19,12 +19,11 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Review System <noreply@ireviewsystem.com>',
+        from: 'Review System <onboarding@resend.dev>',
         to: options.to,
         subject: options.subject,
         html: options.html,
         text: options.text || stripHtml(options.html),
-        reply_to: 'support@ireviewsystem.com',
         headers: {
           'X-Priority': '1',
           'X-Mailer': 'Review System',
@@ -48,7 +47,7 @@ export async function sendEmail(apiKey: string, options: EmailOptions): Promise<
     console.log('Email sent successfully via Resend:', {
       id: result.id,
       to: options.to,
-      from: 'Review System <onboarding@resend.dev>'
+      from: 'onboarding@resend.dev'
     });
     return true;
   } catch (error) {

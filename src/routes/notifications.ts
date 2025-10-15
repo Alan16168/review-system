@@ -37,6 +37,7 @@ notifications.post('/broadcast', async (c) => {
     const timestamp = new Date().toISOString();
     let emailsSent = 0;
     let emailsFailed = 0;
+    const emailResults: any[] = [];
     
     // Create notification records and send emails
     for (const user of users.results as any[]) {
@@ -76,6 +77,8 @@ notifications.post('/broadcast', async (c) => {
         </html>
       `;
 
+      console.log(`Sending email to: ${user.email} (${user.username})`);
+      
       const emailSent = await sendEmail(c.env.RESEND_API_KEY, {
         to: user.email,
         subject: `[Review System] ${title}`,
@@ -83,24 +86,34 @@ notifications.post('/broadcast', async (c) => {
         text: `${title}\n\nHi ${user.username},\n\n${message}\n\nBest regards,\nReview System Team`
       });
 
+      emailResults.push({
+        email: user.email,
+        username: user.username,
+        success: emailSent
+      });
+
       if (emailSent) {
         emailsSent++;
+        console.log(`✓ Email sent successfully to ${user.email}`);
       } else {
         emailsFailed++;
+        console.error(`✗ Email failed to send to ${user.email}`);
       }
     }
 
     console.log('Broadcast notification completed:', {
       totalUsers: users.results.length,
       emailsSent,
-      emailsFailed
+      emailsFailed,
+      details: emailResults
     });
 
     return c.json({
       message: 'Notification sent successfully',
       recipient_count: users.results.length,
       emails_sent: emailsSent,
-      emails_failed: emailsFailed
+      emails_failed: emailsFailed,
+      email_details: emailResults
     });
   } catch (error) {
     console.error('Broadcast notification error:', error);
@@ -136,6 +149,7 @@ notifications.post('/send', async (c) => {
     const timestamp = new Date().toISOString();
     let emailsSent = 0;
     let emailsFailed = 0;
+    const emailResults: any[] = [];
 
     for (const userId of user_ids) {
       // Get user details
@@ -145,6 +159,13 @@ notifications.post('/send', async (c) => {
 
       if (!user) {
         console.log(`User ${userId} not found, skipping`);
+        emailResults.push({
+          userId,
+          email: 'not found',
+          username: 'not found',
+          success: false,
+          reason: 'User not found'
+        });
         continue;
       }
 
@@ -184,6 +205,8 @@ notifications.post('/send', async (c) => {
         </html>
       `;
 
+      console.log(`Sending email to: ${user.email} (${user.username})`);
+
       const emailSent = await sendEmail(c.env.RESEND_API_KEY, {
         to: user.email,
         subject: `[Review System] ${title}`,
@@ -191,24 +214,34 @@ notifications.post('/send', async (c) => {
         text: `${title}\n\nHi ${user.username},\n\n${message}\n\nBest regards,\nReview System Team`
       });
 
+      emailResults.push({
+        email: user.email,
+        username: user.username,
+        success: emailSent
+      });
+
       if (emailSent) {
         emailsSent++;
+        console.log(`✓ Email sent successfully to ${user.email}`);
       } else {
         emailsFailed++;
+        console.error(`✗ Email failed to send to ${user.email}`);
       }
     }
 
     console.log('Send notification completed:', {
       targetUsers: user_ids.length,
       emailsSent,
-      emailsFailed
+      emailsFailed,
+      details: emailResults
     });
 
     return c.json({
       message: 'Notification sent successfully',
       recipient_count: user_ids.length,
       emails_sent: emailsSent,
-      emails_failed: emailsFailed
+      emails_failed: emailsFailed,
+      email_details: emailResults
     });
   } catch (error) {
     console.error('Send notification error:', error);
