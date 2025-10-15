@@ -1321,6 +1321,7 @@ function renderRecentReviews(reviews) {
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('reviewTitle')}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('creator') || '创建者'}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('status')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('updatedAt')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('actions')}</th>
@@ -1332,6 +1333,12 @@ function renderRecentReviews(reviews) {
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">${escapeHtml(review.title)}</div>
                 ${review.team_name ? `<div class="text-xs text-gray-500"><i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}</div>` : ''}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <i class="fas fa-user-circle text-gray-400 mr-2"></i>
+                  <span class="text-sm text-gray-700">${escapeHtml(review.creator_name || 'Unknown')}</span>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs rounded-full ${review.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
@@ -2088,7 +2095,7 @@ async function showCreateReviewStep2(template) {
 
         <form id="questions-form" class="space-y-6">
           <!-- Dynamic Questions -->
-          ${template.questions.map(q => `
+          ${(template.questions && template.questions.length > 0) ? template.questions.map(q => `
             <div class="bg-white rounded-lg shadow-md p-6">
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${q.question_number}. ${escapeHtml(q.question_text)}
@@ -2097,7 +2104,7 @@ async function showCreateReviewStep2(template) {
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
                         placeholder="${escapeHtml(q.question_text)}"></textarea>
             </div>
-          `).join('')}
+          `).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
 
           <!-- Actions -->
           <div class="flex justify-between space-x-4 pt-6 border-t bg-white rounded-lg shadow-md p-6 sticky bottom-0">
