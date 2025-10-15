@@ -1128,17 +1128,14 @@ async function showDashboard() {
               </div>
             </div>
             <div class="flex items-center space-x-4">
-              <button onclick="i18n.setLanguage(i18n.getCurrentLanguage() === 'zh' ? 'en' : 'zh')" 
+              <button onclick="handleLanguageSwitch()" 
                       class="text-gray-700 hover:text-indigo-600">
                 <i class="fas fa-language mr-1"></i>
                 ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
               </button>
-              <span class="text-gray-700">
+              <button onclick="showUserSettings()" class="text-gray-700 hover:text-indigo-600 cursor-pointer">
                 <i class="fas fa-user mr-1"></i>${currentUser.username}
                 <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
-              </span>
-              <button onclick="showChangePassword()" class="text-gray-700 hover:text-indigo-600" title="${i18n.t('changePassword')}">
-                <i class="fas fa-key"></i>
               </button>
               <button onclick="logout()" class="text-red-600 hover:text-red-800">
                 <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
