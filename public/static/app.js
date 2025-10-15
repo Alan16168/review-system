@@ -3061,7 +3061,12 @@ function renderPublicTeamsList(teams) {
         </div>
       </div>
       
-      ${team.application_status === 'pending' ? `
+      ${team.is_member ? `
+        <button onclick="showTeamDetail(${team.id})" 
+                class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
+          <i class="fas fa-check-circle mr-1"></i>已加入 - 查看详情
+        </button>
+      ` : team.application_status === 'pending' ? `
         <button disabled class="w-full bg-gray-400 text-white px-4 py-2 rounded text-sm cursor-not-allowed">
           <i class="fas fa-clock mr-1"></i>申请审批中
         </button>

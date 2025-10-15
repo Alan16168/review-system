@@ -28,15 +28,15 @@ teams.get('/', async (c) => {
     `;
     const myTeamsResult = await c.env.DB.prepare(myTeamsQuery).bind(user.id).all();
 
-    // Get public teams (excluding teams user is already in)
+    // Get all public teams (including teams user is already in)
     const publicTeamsQuery = `
       SELECT t.*, u.username as owner_name,
         (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count,
-        (SELECT status FROM team_applications WHERE team_id = t.id AND user_id = ? AND status = 'pending') as application_status
+        (SELECT status FROM team_applications WHERE team_id = t.id AND user_id = ? AND status = 'pending') as application_status,
+        (SELECT 1 FROM team_members WHERE team_id = t.id AND user_id = ?) as is_member
       FROM teams t
       JOIN users u ON t.owner_id = u.id
       WHERE t.is_public = 1 
-      AND t.id NOT IN (SELECT team_id FROM team_members WHERE user_id = ?)
       ORDER BY t.created_at DESC
     `;
     const publicTeamsResult = await c.env.DB.prepare(publicTeamsQuery).bind(user.id, user.id).all();
