@@ -1594,72 +1594,43 @@ function renderReviewsList(reviews) {
       <table class="min-w-full">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ${i18n.t('reviewTitle')}
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ${i18n.t('status')}
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ${i18n.t('creator')}
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ${i18n.t('updatedAt')}
-            </th>
-            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ${i18n.t('actions')}
-            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('reviewTitle')}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('creator') || '创建者'}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('status')}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('updatedAt')}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('actions')}</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           ${paginatedReviews.map(review => `
-            <tr class="hover:bg-gray-50 transition">
-              <td class="px-6 py-4">
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${escapeHtml(review.title)}</div>
+                ${review.team_name ? `<div class="text-xs text-gray-500"><i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}</div>` : ''}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
-                  <div>
-                    <div class="text-sm font-medium text-gray-900">${escapeHtml(review.title)}</div>
-                    ${review.team_name ? `
-                      <div class="text-xs text-gray-500 mt-1">
-                        <i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}
-                      </div>
-                    ` : `
-                      <div class="text-xs text-gray-500 mt-1">
-                        <i class="fas fa-user mr-1"></i>${i18n.t('personalReview')}
-                      </div>
-                    `}
-                  </div>
+                  <i class="fas fa-user-circle text-gray-400 mr-2"></i>
+                  <span class="text-sm text-gray-700">${escapeHtml(review.creator_name || 'Unknown')}</span>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-3 py-1 text-xs font-semibold rounded-full ${
-                  review.status === 'completed' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
-                }">
-                  <i class="fas ${review.status === 'completed' ? 'fa-check-circle' : 'fa-clock'} mr-1"></i>
+                <span class="px-2 py-1 text-xs rounded-full ${review.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
                   ${i18n.t(review.status)}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${escapeHtml(review.creator_name || 'Unknown')}</div>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${new Date(review.updated_at).toLocaleDateString()}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-500">
-                  ${new Date(review.updated_at).toLocaleDateString()}
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button onclick="showReviewDetail(${review.id})" 
-                        class="text-indigo-600 hover:text-indigo-900 mr-3" title="${i18n.t('view')}">
-                  <i class="fas fa-eye"></i>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button onclick="showReviewDetail(${review.id}, true)" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                  <i class="fas fa-eye"></i> ${i18n.t('view')}
                 </button>
-                <button onclick="showEditReview(${review.id})" 
-                        class="text-blue-600 hover:text-blue-900 mr-3" title="${i18n.t('edit')}">
-                  <i class="fas fa-edit"></i>
+                <button onclick="showEditReview(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                  <i class="fas fa-edit"></i> ${i18n.t('edit')}
                 </button>
-                <button onclick="deleteReview(${review.id})" 
-                        class="text-red-600 hover:text-red-900" title="${i18n.t('delete')}">
-                  <i class="fas fa-trash"></i>
+                <button onclick="deleteReview(${review.id})" class="text-red-600 hover:text-red-900">
+                  <i class="fas fa-trash"></i> ${i18n.t('delete')}
                 </button>
               </td>
             </tr>
@@ -2513,9 +2484,10 @@ async function showEditReview(id) {
     if (currentUser.role === 'premium' || currentUser.role === 'admin') {
       try {
         const teamsResponse = await axios.get('/api/teams');
-        teams = teamsResponse.data.teams;
+        teams = teamsResponse.data.teams || teamsResponse.data.myTeams || [];
       } catch (error) {
         console.error('Load teams error:', error);
+        teams = [];
       }
     }
     
@@ -2555,7 +2527,7 @@ async function showEditReview(id) {
                         placeholder="${i18n.t('reviewDescriptionPlaceholder')}">${escapeHtml(review.description || '')}</textarea>
             </div>
 
-            ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams.length > 0 ? `
+            ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams && teams.length > 0 ? `
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('team')}
