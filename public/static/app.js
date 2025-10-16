@@ -2338,8 +2338,10 @@ async function handleStep2Submit(e) {
       showNotification(i18n.t('createSuccess'), 'success');
     }
     
-    // Clear draft ID after successful submission
+    // CRITICAL: Clear draft ID and change view BEFORE calling showReviews()
+    // This prevents autoSaveDraftBeforeNavigation() from saving again
     currentDraftId = null;
+    currentView = 'completing-review'; // Temporary state to prevent auto-save
     
     showReviews();
   } catch (error) {
