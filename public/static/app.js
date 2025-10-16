@@ -718,41 +718,22 @@ function showResourceTab(tab) {
   }
 }
 
-// Load Articles using API - Show 6 random articles, update 1 on refresh
+// Load Articles using API - Show 6 random articles, update all 6 on refresh
 async function loadArticles(refresh = false) {
   const articlesContent = document.getElementById('articles-content');
   
   try {
-    // Fetch articles if not cached
-    if (cachedArticles.length === 0) {
+    // Always fetch fresh articles when refreshing, or fetch if not cached
+    if (refresh || cachedArticles.length === 0) {
       const response = await axios.get('/api/resources/articles');
       const { articles, source } = response.data;
       cachedArticles = articles;
       console.log(`Articles loaded from: ${source}`);
     }
     
-    // Initialize: Select 6 random articles
-    if (!refresh || displayedArticles.length === 0) {
-      // Shuffle and pick 6
-      const shuffled = [...cachedArticles].sort(() => 0.5 - Math.random());
-      displayedArticles = shuffled.slice(0, 6);
-    } else {
-      // Refresh: Replace 1 random article
-      const randomIndex = Math.floor(Math.random() * displayedArticles.length);
-      
-      // Find an article not currently displayed
-      const availableArticles = cachedArticles.filter(
-        article => !displayedArticles.some(displayed => displayed.url === article.url)
-      );
-      
-      if (availableArticles.length > 0) {
-        const newArticle = availableArticles[Math.floor(Math.random() * availableArticles.length)];
-        displayedArticles[randomIndex] = newArticle;
-      } else {
-        // If all articles are shown, pick any random one
-        displayedArticles[randomIndex] = cachedArticles[Math.floor(Math.random() * cachedArticles.length)];
-      }
-    }
+    // Select 6 random articles (refresh all 6 when clicking update)
+    const shuffled = [...cachedArticles].sort(() => 0.5 - Math.random());
+    displayedArticles = shuffled.slice(0, 6);
     
     // Render all 6 articles
     articlesContent.innerHTML = `
@@ -774,7 +755,7 @@ async function loadArticles(refresh = false) {
       </div>
       <div class="text-center mt-4">
         <button onclick="loadArticles(true)" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition">
-          <i class="fas fa-sync-alt mr-1"></i>Update One Article
+          <i class="fas fa-sync-alt mr-1"></i>${i18n.t('updateArticles') || 'Update Articles'}
         </button>
       </div>
     `;
@@ -791,41 +772,22 @@ async function loadArticles(refresh = false) {
   }
 }
 
-// Load Videos using API - Show 6 random videos, update 1 on refresh
+// Load Videos using API - Show 6 random videos, update all 6 on refresh
 async function loadVideos(refresh = false) {
   const videosContent = document.getElementById('videos-content');
   
   try {
-    // Fetch videos if not cached
-    if (cachedVideos.length === 0) {
+    // Always fetch fresh videos when refreshing, or fetch if not cached
+    if (refresh || cachedVideos.length === 0) {
       const response = await axios.get('/api/resources/videos');
       const { videos, source } = response.data;
       cachedVideos = videos;
       console.log(`Videos loaded from: ${source}`);
     }
     
-    // Initialize: Select 6 random videos
-    if (!refresh || displayedVideos.length === 0) {
-      // Shuffle and pick 6
-      const shuffled = [...cachedVideos].sort(() => 0.5 - Math.random());
-      displayedVideos = shuffled.slice(0, 6);
-    } else {
-      // Refresh: Replace 1 random video
-      const randomIndex = Math.floor(Math.random() * displayedVideos.length);
-      
-      // Find a video not currently displayed
-      const availableVideos = cachedVideos.filter(
-        video => !displayedVideos.some(displayed => displayed.url === video.url)
-      );
-      
-      if (availableVideos.length > 0) {
-        const newVideo = availableVideos[Math.floor(Math.random() * availableVideos.length)];
-        displayedVideos[randomIndex] = newVideo;
-      } else {
-        // If all videos are shown, pick any random one
-        displayedVideos[randomIndex] = cachedVideos[Math.floor(Math.random() * cachedVideos.length)];
-      }
-    }
+    // Select 6 random videos (refresh all 6 when clicking update)
+    const shuffled = [...cachedVideos].sort(() => 0.5 - Math.random());
+    displayedVideos = shuffled.slice(0, 6);
     
     // Render all 6 videos
     videosContent.innerHTML = `
@@ -850,7 +812,7 @@ async function loadVideos(refresh = false) {
       </div>
       <div class="text-center mt-4">
         <button onclick="loadVideos(true)" class="text-red-600 hover:text-red-800 text-sm font-medium transition">
-          <i class="fas fa-sync-alt mr-1"></i>Update One Video
+          <i class="fas fa-sync-alt mr-1"></i>${i18n.t('updateVideos') || 'Update Videos'}
         </button>
       </div>
     `;

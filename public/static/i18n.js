@@ -454,6 +454,8 @@ const translations = {
     'systemTemplate': '系统模版',
     'userTemplate': '用户模版',
     'type': '类型',
+    'updateArticles': '更新文章',
+    'updateVideos': '更新视频',
   },
   en: {
     // Auth
@@ -909,6 +911,8 @@ const translations = {
     'systemTemplate': 'System Template',
     'userTemplate': 'User Template',
     'type': 'Type',
+    'updateArticles': 'Update Articles',
+    'updateVideos': 'Update Videos',
   }
 };
 

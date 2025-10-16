@@ -14,21 +14,28 @@ resources.get('/articles', async (c) => {
   try {
     const apiKey = c.env.GOOGLE_API_KEY;
     const searchEngineId = c.env.GOOGLE_SEARCH_ENGINE_ID;
+    
+    // Get language from header or query param
+    const lang = c.req.header('X-Language') || c.req.query('lang') || 'en';
 
     // If API keys not configured, return mock data
     if (!apiKey || !searchEngineId) {
       console.log('Google API keys not configured, returning mock data');
       return c.json({ 
-        articles: getMockArticles(),
+        articles: getMockArticles(lang),
         source: 'mock'
       });
     }
 
-    // Search for reflection and review related articles
-    const queries = [
-      'reflection practice learning',
-      'team retrospective agile',
-      'personal growth review'
+    // Search for systematic review related articles based on language
+    const queries = lang === 'zh' ? [
+      '什么是系统化的复盘',
+      '如何系统性复盘',
+      '系统性复盘的优势'
+    ] : [
+      'what is systematic review reflection',
+      'how to conduct systematic retrospective',
+      'benefits of systematic review'
     ];
 
     const allArticles: any[] = [];
@@ -59,19 +66,21 @@ resources.get('/articles', async (c) => {
     
     if (uniqueArticles.length === 0) {
       return c.json({ 
-        articles: getMockArticles(),
+        articles: getMockArticles(lang),
         source: 'mock_fallback'
       });
     }
 
     return c.json({ 
       articles: uniqueArticles,
-      source: 'google_search'
+      source: 'google_search',
+      language: lang
     });
   } catch (error) {
     console.error('Articles API error:', error);
+    const lang = c.req.header('X-Language') || c.req.query('lang') || 'en';
     return c.json({ 
-      articles: getMockArticles(),
+      articles: getMockArticles(lang),
       source: 'error_fallback'
     });
   }
@@ -81,21 +90,28 @@ resources.get('/articles', async (c) => {
 resources.get('/videos', async (c) => {
   try {
     const apiKey = c.env.YOUTUBE_API_KEY;
+    
+    // Get language from header or query param
+    const lang = c.req.header('X-Language') || c.req.query('lang') || 'en';
 
     // If API key not configured, return mock data
     if (!apiKey) {
       console.log('YouTube API key not configured, returning mock data');
       return c.json({ 
-        videos: getMockVideos(),
+        videos: getMockVideos(lang),
         source: 'mock'
       });
     }
 
-    // Search for reflection and review related videos
-    const queries = [
-      'reflection learning TED',
-      'team retrospective agile',
-      'personal growth review'
+    // Search for systematic review related videos based on language
+    const queries = lang === 'zh' ? [
+      '什么是系统化的复盘',
+      '如何系统性复盘',
+      '系统性复盘的优势'
+    ] : [
+      'what is systematic review reflection',
+      'how to conduct systematic retrospective',
+      'benefits of systematic review'
     ];
 
     const allVideos: any[] = [];
@@ -138,19 +154,21 @@ resources.get('/videos', async (c) => {
     
     if (uniqueVideos.length === 0) {
       return c.json({ 
-        videos: getMockVideos(),
+        videos: getMockVideos(lang),
         source: 'mock_fallback'
       });
     }
 
     return c.json({ 
       videos: uniqueVideos,
-      source: 'youtube_api'
+      source: 'youtube_api',
+      language: lang
     });
   } catch (error) {
     console.error('Videos API error:', error);
+    const lang = c.req.header('X-Language') || c.req.query('lang') || 'en';
     return c.json({ 
-      videos: getMockVideos(),
+      videos: getMockVideos(lang),
       source: 'error_fallback'
     });
   }
@@ -167,7 +185,73 @@ function formatViewCount(views: number): string {
 }
 
 // Mock data functions
-function getMockArticles() {
+function getMockArticles(lang: string = 'en') {
+  if (lang === 'zh') {
+    return [
+      {
+        title: '什么是系统化的复盘？深度解析复盘方法论',
+        description: '系统化复盘是一种结构化的反思方法，帮助个人和团队从经验中提炼智慧',
+        url: 'https://www.zhihu.com/question/19588756',
+        image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=系统复盘'
+      },
+      {
+        title: '如何进行系统性复盘？五步法详解',
+        description: '掌握系统复盘的五个关键步骤，让每一次经历都成为成长的机会',
+        url: 'https://36kr.com/p/1721732895105',
+        image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=复盘方法'
+      },
+      {
+        title: '系统性复盘的优势：为什么它能加速个人成长',
+        description: '探讨系统复盘如何帮助我们快速迭代、持续进步',
+        url: 'https://zhuanlan.zhihu.com/p/145678901',
+        image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=成长加速'
+      },
+      {
+        title: '联想柳传志的复盘方法论',
+        description: '学习联想集团如何通过系统复盘实现持续创新',
+        url: 'https://www.toutiao.com/article/7234567890/',
+        image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=企业实践'
+      },
+      {
+        title: '敏捷回顾会议：团队系统复盘最佳实践',
+        description: '如何组织高效的团队复盘会议，让团队不断进化',
+        url: 'https://www.infoq.cn/article/agile-retrospective',
+        image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=团队复盘'
+      },
+      {
+        title: '项目管理中的系统复盘：经验教训管理',
+        description: '在项目管理中如何系统化地收集、分析和应用经验教训',
+        url: 'https://www.pmreview.com.cn/lesson-learned',
+        image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=项目管理'
+      },
+      {
+        title: '个人年度复盘指南：如何总结过去展望未来',
+        description: '系统化的年度复盘方法，帮你更好地规划人生',
+        url: 'https://sspai.com/post/78901',
+        image: 'https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=年度总结'
+      },
+      {
+        title: '系统思维与复盘：如何发现问题背后的规律',
+        description: '运用系统思维进行深度复盘，找到问题的本质',
+        url: 'https://www.jianshu.com/p/abcd1234',
+        image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=系统思维'
+      },
+      {
+        title: 'OKR与复盘：目标管理的闭环实践',
+        description: '如何结合OKR方法论进行系统性复盘',
+        url: 'https://www.okr.com/zh/blog/okr-review',
+        image: 'https://via.placeholder.com/400x250/06B6D4/FFFFFF?text=OKR复盘'
+      },
+      {
+        title: '从失败中学习：系统复盘的力量',
+        description: '为什么顶尖团队都重视失败复盘和经验萃取',
+        url: 'https://www.huxiu.com/article/567890.html',
+        image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=失败学习'
+      }
+    ];
+  }
+  
+  return [
   return [
     {
       title: 'Harvard Business Review: Learning to Learn',
@@ -232,7 +316,83 @@ function getMockArticles() {
   ];
 }
 
-function getMockVideos() {
+function getMockVideos(lang: string = 'en') {
+  if (lang === 'zh') {
+    return [
+      {
+        title: '什么是系统化复盘？3分钟快速了解',
+        channel: '成长思维',
+        views: '50万',
+        thumbnail: 'https://via.placeholder.com/400x225/DC2626/FFFFFF?text=系统复盘',
+        url: 'https://www.youtube.com/results?search_query=系统化复盘'
+      },
+      {
+        title: '联想柳传志：复盘方法论详解',
+        channel: '管理智慧',
+        views: '120万',
+        thumbnail: 'https://via.placeholder.com/400x225/7C3AED/FFFFFF?text=柳传志',
+        url: 'https://www.youtube.com/results?search_query=柳传志+复盘'
+      },
+      {
+        title: '如何做好个人复盘？五步法实战',
+        channel: '个人成长课堂',
+        views: '80万',
+        thumbnail: 'https://via.placeholder.com/400x225/059669/FFFFFF?text=复盘实战',
+        url: 'https://www.youtube.com/results?search_query=个人复盘方法'
+      },
+      {
+        title: '团队复盘会议怎么开？完整流程演示',
+        channel: '敏捷教练',
+        views: '65万',
+        thumbnail: 'https://via.placeholder.com/400x225/F59E0B/FFFFFF?text=团队复盘',
+        url: 'https://www.youtube.com/results?search_query=团队复盘会议'
+      },
+      {
+        title: '年度复盘指南：如何总结一年的得失',
+        channel: '时间管理大师',
+        views: '95万',
+        thumbnail: 'https://via.placeholder.com/400x225/EC4899/FFFFFF?text=年度总结',
+        url: 'https://www.youtube.com/results?search_query=年度复盘'
+      },
+      {
+        title: '项目复盘：经验教训萃取实战',
+        channel: 'PMI中国',
+        views: '45万',
+        thumbnail: 'https://via.placeholder.com/400x225/3B82F6/FFFFFF?text=项目复盘',
+        url: 'https://www.youtube.com/results?search_query=项目复盘'
+      },
+      {
+        title: '系统思维与深度复盘',
+        channel: '思维训练营',
+        views: '70万',
+        thumbnail: 'https://via.placeholder.com/400x225/8B5CF6/FFFFFF?text=系统思维',
+        url: 'https://www.youtube.com/results?search_query=系统思维+复盘'
+      },
+      {
+        title: 'OKR复盘：如何做好目标回顾',
+        channel: 'OKR实践者',
+        views: '55万',
+        thumbnail: 'https://via.placeholder.com/400x225/06B6D4/FFFFFF?text=OKR',
+        url: 'https://www.youtube.com/results?search_query=OKR复盘'
+      },
+      {
+        title: '从失败中学习：复盘的艺术',
+        channel: '领导力学院',
+        views: '88万',
+        thumbnail: 'https://via.placeholder.com/400x225/14B8A6/FFFFFF?text=失败学习',
+        url: 'https://www.youtube.com/results?search_query=失败复盘'
+      },
+      {
+        title: '敏捷回顾会：Scrum团队的复盘实践',
+        channel: 'Scrum中文网',
+        views: '60万',
+        thumbnail: 'https://via.placeholder.com/400x225/EF4444/FFFFFF?text=敏捷回顾',
+        url: 'https://www.youtube.com/results?search_query=敏捷回顾会'
+      }
+    ];
+  }
+  
+  return [
   return [
     {
       title: 'TED Talk: The Power of Vulnerability',
