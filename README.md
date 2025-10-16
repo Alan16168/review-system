@@ -102,10 +102,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://5c0f21a2.review-system.pages.dev (V4.3.4 彻底修复重复保存问题)
+- **最新部署**: 待部署 (V5.0.0 多用户答案系统)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
-- **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-16 (V4.3.4 彻底修复创建复盘重复保存问题 - 关键修复)
+- **状态**: ✅ 本地开发完成，待部署到生产环境
+- **部署日期**: 2025-10-16 (V5.0.0 多用户答案系统 - 重大架构升级)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -906,7 +906,44 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V4.3.4  
+**当前版本**: V5.0.0  
+
+**V5.0.0 更新内容** (2025-10-16):
+- 🔄 **多用户答案系统**（重大架构变更）：
+  - **核心变化**：每个问题现在支持多个用户独立记录答案
+  - **权限规则**：
+    - ✅ 每个用户只能编辑自己的答案
+    - ✅ 创建者只能修改复盘基本属性（标题、说明、群体类型、时间类型、主人）
+    - ❌ 创建者**不能**修改其他用户的答案
+    - ❌ 团队成员**不能**修改其他用户的答案
+  - **适用范围**：所有复盘（个人、项目、团队）都使用统一的多用户答案系统
+- 📊 **数据库架构重构**（Migration 0014）：
+  - 统一使用 `review_answers` 表支持多用户
+  - 添加 `user_id` 字段到 `review_answers`
+  - 迁移数据从 `team_review_answers` 到 `review_answers`
+  - 删除废弃的 `team_review_answers` 表
+  - 新增唯一约束：`(review_id, user_id, question_number)`
+- 🔌 **后端API更新**：
+  - **GET /api/reviews/:id**: 返回 `answersByQuestion`（按问题分组的多用户答案）
+  - **PUT /api/reviews/:id**: 
+    - 只有创建者可以修改基本属性
+    - 所有用户只能修改自己的答案
+  - **GET /api/reviews/:id/all-answers**: 获取所有用户的答案（替代 `/team-answers`）
+  - **PUT /api/reviews/:id/my-answer/:questionNumber**: 保存当前用户的答案
+  - **DELETE /api/reviews/:id/my-answer/:questionNumber**: 删除当前用户自己的答案
+- 🎨 **前端界面优化**：
+  - 复盘详情页：显示所有用户的答案，每个答案显示用户名和时间
+  - 团队协作页：展示多用户答案，标注"我的答案"
+  - 编辑页面：
+    - 创建者无法修改其他用户的答案
+    - 团队成员只能编辑自己的答案
+    - 基本属性仅创建者可编辑（其他人显示禁用状态）
+  - 移除创建者删除其他用户答案的按钮
+  - 新增"删除我的答案"功能（每个用户可删除自己的答案）
+- 🌐 **国际化支持**：
+  - 新增翻译键：`onlyEditOwnAnswers`, `cannotEditOthersAnswers`
+  - 中英双语提示信息
+- ✅ **向后兼容**：现有复盘数据自动迁移到新架构，无需手动干预
 
 **V4.3.4 更新内容** (2025-10-16):
 - 🐛 **彻底修复重复保存问题**（关键Bug修复）：
