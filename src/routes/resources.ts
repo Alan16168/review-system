@@ -227,6 +227,7 @@ function formatViewCount(views: number): string {
 function getMockArticles(lang: string = 'en') {
   if (lang === 'zh') {
     return [
+      // 原有的10篇文章
       {
         title: '孙陶然：复盘"四步法",教你总结规律并反思',
         description: '复盘，最重要的目的和输出结果都是：规律总结。通过复盘对于思考问题以及解决问题的方法有哪些心得，对于某些事物的认知有哪些更新。',
@@ -286,6 +287,170 @@ function getMockArticles(lang: string = 'en') {
         description: '敏捷过程倡导可持续开发。不论团队内外，传递信息效果最好效率也最高的方式是面对面的交谈。通过定期复盘和迭代，持续改进团队协作。',
         url: 'https://wenku.baidu.com/view/09f2aa3367ec102de2bd89b0.html',
         image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=敏捷开发'
+      },
+      
+      // 新增：年度复盘相关文章
+      {
+        title: '年度工作复盘与总结报告',
+        description: '年度复盘是对全年工作的系统性回顾，通过数据分析和经验总结，发现问题、提炼规律，为下一年度的工作计划提供科学依据。',
+        url: 'https://wenku.baidu.com/view/50864e3974232f60ddccda38376baf1ffd4fe309.html',
+        image: 'https://via.placeholder.com/400x250/F97316/FFFFFF?text=年度复盘'
+      },
+      {
+        title: '个人年度成长复盘模板',
+        description: '个人年度复盘帮助梳理全年的成长轨迹，从目标达成、能力提升、经验积累等多维度进行深度反思，制定更有针对性的发展计划。',
+        url: 'https://wenku.baidu.com/view/b8f6d4264128915f804d2b160b4e767f5acf80d9.html',
+        image: 'https://via.placeholder.com/400x250/DB2777/FFFFFF?text=年度成长'
+      },
+      {
+        title: '企业年度经营复盘分析报告',
+        description: '企业年度经营复盘是对全年业务运营、财务状况、市场表现的全面分析，为战略调整和资源配置提供决策支持。',
+        url: 'https://wenku.baidu.com/view/2c964e58edfdc8d376ee3c4b.html',
+        image: 'https://via.placeholder.com/400x250/0EA5E9/FFFFFF?text=经营复盘'
+      },
+      
+      // 新增：个人复盘相关文章
+      {
+        title: '个人工作总结与复盘方法论',
+        description: '个人工作复盘不仅是对过去的总结，更是对未来的规划。通过结构化的复盘方法，提升个人的工作效能和职业竞争力。',
+        url: 'https://wenku.baidu.com/view/297960ca8d9951e79b89680203d8ce2f00666597.html',
+        image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=个人复盘'
+      },
+      {
+        title: '职场人士自我复盘技巧',
+        description: '职场中的自我复盘是持续成长的关键。通过定期的自我反思和总结，及时发现不足，调整工作方法，不断提升职业素养。',
+        url: 'https://wenku.baidu.com/view/8f5e2a6e78563c1ec5da50e2524de518974bd35e.html',
+        image: 'https://via.placeholder.com/400x250/DC2626/FFFFFF?text=职场复盘'
+      },
+      {
+        title: '个人能力提升复盘手册',
+        description: '系统化的个人能力复盘，帮助识别核心能力短板，制定针对性的提升计划，实现从量变到质变的职业发展。',
+        url: 'https://wenku.baidu.com/view/f3eed95dd8ef5ef7ba0d4a7302768e9951e76eba.html',
+        image: 'https://via.placeholder.com/400x250/059669/FFFFFF?text=能力提升'
+      },
+      
+      // 新增：工作复盘总结相关文章
+      {
+        title: '季度工作复盘总结报告模板',
+        description: '季度复盘是短周期的工作回顾，帮助团队快速调整策略，及时解决问题，确保年度目标的顺利达成。',
+        url: 'https://wenku.baidu.com/view/d0a3f8e5bb0d4a7302768e9951e79b89680268e8.html',
+        image: 'https://via.placeholder.com/400x250/2563EB/FFFFFF?text=季度复盘'
+      },
+      {
+        title: '月度工作复盘与改进计划',
+        description: '月度复盘是最常见的工作总结方式，通过每月一次的系统回顾，及时发现问题，快速迭代改进，保持工作的高效推进。',
+        url: 'https://wenku.baidu.com/view/5b6c8d0a580216fc710afd9c.html',
+        image: 'https://via.placeholder.com/400x250/EA580C/FFFFFF?text=月度复盘'
+      },
+      {
+        title: '周例会复盘与工作总结',
+        description: '周度复盘帮助团队保持高频沟通，及时同步进度，快速解决阻碍，是敏捷团队的重要实践。',
+        url: 'https://wenku.baidu.com/view/a06703b4d25abe23482fb4daa58da0116d171f37.html',
+        image: 'https://via.placeholder.com/400x250/7C2D12/FFFFFF?text=周度复盘'
+      },
+      {
+        title: '项目结项复盘报告范文',
+        description: '项目结项复盘是项目管理的重要环节，通过全面回顾项目执行过程，总结成功经验，积累项目管理知识库。',
+        url: 'https://wenku.baidu.com/view/fc9c6286bb0d4a7302768e9951e79b89680268cd.html',
+        image: 'https://via.placeholder.com/400x250/15803D/FFFFFF?text=项目复盘'
+      },
+      
+      // 新增：学习复盘相关文章
+      {
+        title: '学习方法复盘与优化策略',
+        description: '学习复盘帮助发现学习方法的优缺点，通过不断优化学习策略，提升学习效率和知识吸收能力。',
+        url: 'https://wenku.baidu.com/view/8a5e2a6e78563c1ec5da50e2524de518974bd367.html',
+        image: 'https://via.placeholder.com/400x250/9333EA/FFFFFF?text=学习复盘'
+      },
+      {
+        title: '考试复盘与错题分析方法',
+        description: '考试复盘不只是看分数，更重要的是分析错题背后的知识漏洞和思维误区，建立完善的知识体系。',
+        url: 'https://wenku.baidu.com/view/5c3d7180bb0d4a7302768e9951e79b89680268f9.html',
+        image: 'https://via.placeholder.com/400x250/C026D3/FFFFFF?text=考试复盘'
+      },
+      {
+        title: '培训学习复盘总结模板',
+        description: '培训后的复盘总结是知识转化的关键环节，通过系统梳理所学内容，制定行动计划，确保培训效果落地。',
+        url: 'https://wenku.baidu.com/view/c8e60b004128915f804d2b160b4e767f5acf80e2.html',
+        image: 'https://via.placeholder.com/400x250/0891B2/FFFFFF?text=培训复盘'
+      },
+      {
+        title: '读书笔记与阅读复盘方法',
+        description: '阅读复盘帮助深化对书籍内容的理解，通过结构化的笔记整理和反思，将知识内化为个人能力。',
+        url: 'https://wenku.baidu.com/view/d1f4d3ac51f01dc281e53a580216fc700a53d0c8.html',
+        image: 'https://via.placeholder.com/400x250/16A34A/FFFFFF?text=阅读复盘'
+      },
+      
+      // 新增：复盘模板相关文章
+      {
+        title: '复盘四步法实践模板',
+        description: '复盘四步法（回顾目标、评估结果、分析原因、总结经验）是最经典的复盘方法，本模板提供完整的实践指南。',
+        url: 'https://wenku.baidu.com/view/1a8c4b344bfe04a1b0717fd5360cba1aa9118c37.html',
+        image: 'https://via.placeholder.com/400x250/CA8A04/FFFFFF?text=四步法'
+      },
+      {
+        title: 'OKR复盘模板与使用指南',
+        description: 'OKR复盘模板帮助团队系统回顾目标和关键结果的达成情况，分析差距原因，制定改进措施。',
+        url: 'https://wenku.baidu.com/view/e8f6d4264128915f804d2b160b4e767f5acf80f1.html',
+        image: 'https://via.placeholder.com/400x250/BE185D/FFFFFF?text=OKR复盘'
+      },
+      {
+        title: 'PDCA循环复盘表格模板',
+        description: 'PDCA（计划-执行-检查-行动）循环是持续改进的经典工具，本模板将PDCA与复盘方法结合，提升改进效果。',
+        url: 'https://wenku.baidu.com/view/92f4d7bd00768e9951e79b89680203d8cf2f6a52.html',
+        image: 'https://via.placeholder.com/400x250/0284C7/FFFFFF?text=PDCA'
+      },
+      {
+        title: '敏捷回顾会议复盘模板',
+        description: '敏捷回顾会议是Scrum框架的核心实践，本模板提供结构化的回顾会议流程和复盘工具，帮助团队持续改进。',
+        url: 'https://wenku.baidu.com/view/bf9c6286bb0d4a7302768e9951e79b89680268da.html',
+        image: 'https://via.placeholder.com/400x250/047857/FFFFFF?text=敏捷回顾'
+      },
+      {
+        title: '会议复盘记录表模板',
+        description: '会议复盘表帮助记录会议的关键决策、待办事项和改进建议，提升会议效率和执行力。',
+        url: 'https://wenku.baidu.com/view/3c964e58edfdc8d376ee3c5a.html',
+        image: 'https://via.placeholder.com/400x250/A21CAF/FFFFFF?text=会议复盘'
+      },
+      
+      // 新增：团队复盘相关文章
+      {
+        title: '团队协作复盘与效能提升',
+        description: '团队复盘不仅关注结果，更注重协作过程的优化，通过开放讨论和相互反馈，提升团队整体效能。',
+        url: 'https://wenku.baidu.com/view/7f9c299e5cf7ba0d4a7302768e9951e79a896958.html',
+        image: 'https://via.placeholder.com/400x250/65A30D/FFFFFF?text=团队复盘'
+      },
+      {
+        title: '跨部门协作复盘总结',
+        description: '跨部门协作的复盘需要平衡各方视角，通过结构化的复盘流程，识别协作障碍，建立更顺畅的协作机制。',
+        url: 'https://wenku.baidu.com/view/c0a3f8e5bb0d4a7302768e9951e79b89680268f3.html',
+        image: 'https://via.placeholder.com/400x250/B91C1C/FFFFFF?text=跨部门'
+      },
+      {
+        title: '研发团队敏捷复盘实践',
+        description: '研发团队的敏捷复盘聚焦迭代速度、代码质量和技术债务，通过持续复盘建立高效的研发流程。',
+        url: 'https://wenku.baidu.com/view/6b6c8d0a580216fc710afd8f.html',
+        image: 'https://via.placeholder.com/400x250/0D9488/FFFFFF?text=研发复盘'
+      },
+      
+      // 新增：行业专项复盘文章
+      {
+        title: '销售业绩复盘与策略调整',
+        description: '销售复盘通过分析业绩数据、客户反馈和市场变化，优化销售策略，提升业绩达成率。',
+        url: 'https://wenku.baidu.com/view/d2f4d3ac51f01dc281e53a580216fc700a53d0d5.html',
+        image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=销售复盘'
+      },
+      {
+        title: '产品迭代复盘与用户反馈分析',
+        description: '产品迭代复盘关注用户体验和数据指标，通过系统分析用户反馈，指导产品优化方向。',
+        url: 'https://wenku.baidu.com/view/f8f6d4264128915f804d2b160b4e767f5acf80e8.html',
+        image: 'https://via.placeholder.com/400x250/DC2626/FFFFFF?text=产品复盘'
+      },
+      {
+        title: '营销活动复盘与ROI分析',
+        description: '营销活动复盘通过数据分析活动效果，评估投资回报率，优化营销资源配置和活动策略。',
+        url: 'https://wenku.baidu.com/view/a8e60b004128915f804d2b160b4e767f5acf80f8.html',
+        image: 'https://via.placeholder.com/400x250/059669/FFFFFF?text=营销复盘'
       }
     ];
   }
