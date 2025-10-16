@@ -236,10 +236,30 @@ async function showHomePage() {
               <span class="text-xl font-bold text-gray-800">${i18n.t('systemTitle')}</span>
             </div>
             <div class="hidden md:flex space-x-8">
-              <a href="#resources" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('resources')}</a>
-              <a href="#about" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('aboutUs')}</a>
-              <a href="#testimonials" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('testimonials')}</a>
-              <a href="#contact" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('contact')}</a>
+              ${currentUser ? `
+                <button onclick="showDashboard()" class="text-gray-700 hover:text-indigo-600 transition">
+                  <i class="fas fa-home mr-1"></i>${i18n.t('dashboard')}
+                </button>
+                <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 transition">
+                  <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
+                </button>
+                <button onclick="showPublicReviews()" class="text-gray-700 hover:text-indigo-600 transition">
+                  <i class="fas fa-globe mr-1"></i>${i18n.t('publicReviews')}
+                </button>
+                <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 transition">
+                  <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
+                </button>
+                ${currentUser.role === 'premium' || currentUser.role === 'admin' ? `
+                  <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 transition">
+                    <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
+                  </button>
+                ` : ''}
+              ` : `
+                <a href="#resources" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('resources')}</a>
+                <a href="#about" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('aboutUs')}</a>
+                <a href="#testimonials" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('testimonials')}</a>
+                <a href="#contact" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('contact')}</a>
+              `}
             </div>
             <div class="flex items-center space-x-4">
               <button onclick="handleLanguageSwitch()" 
@@ -248,12 +268,12 @@ async function showHomePage() {
                 ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
               </button>
               ${currentUser ? `
-                <span class="text-gray-700 font-medium">
-                  <i class="fas fa-user-circle mr-1"></i>${escapeHtml(currentUser.username)}
-                </span>
-                <button onclick="showDashboard()" 
-                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-                  <i class="fas fa-tachometer-alt mr-2"></i>${i18n.t('dashboard')}
+                <button onclick="showUserSettings()" class="text-gray-700 hover:text-indigo-600">
+                  <i class="fas fa-user mr-1"></i>${escapeHtml(currentUser.username)}
+                  <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
+                </button>
+                <button onclick="logout()" class="text-red-600 hover:text-red-800">
+                  <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
                 </button>
               ` : `
                 <button onclick="showLogin()" 
