@@ -101,11 +101,11 @@
 ## 🔗 访问链接
 
 ### 生产环境 ✅
-- **应用 URL**: https://f6072102.review-system.pages.dev
-- **最新部署**: ✅ V5.5.1 首页导航菜单修复
+- **应用 URL**: https://a5e5170f.review-system.pages.dev
+- **最新部署**: ✅ V5.6.0 语言智能学习资源
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境
-- **部署日期**: 2025-10-16 (V5.5.1 修复首页导航菜单)
+- **部署日期**: 2025-10-16 (V5.6.0 根据语言智能搜索文章和视频)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -896,7 +896,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-16
-- **当前版本**: V5.5.1（首页导航菜单修复）✅ 已部署生产环境
+- **当前版本**: V5.6.0（语言智能学习资源）✅ 已部署生产环境
 
 ## 📝 许可证
 
@@ -907,6 +907,34 @@ MIT License
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
 **当前版本**: V5.1.0  
+
+**V5.6.0 更新内容** (2025-10-16):
+- 🌍 **语言智能学习资源**（核心功能增强）：
+  - **根据用户语言搜索内容**：
+    - 中文用户：从互联网搜索中文文章和从YouTube搜索中文视频
+    - 英文用户：从互联网搜索英文文章和从YouTube搜索英文视频
+  - **系统复盘主题搜索**：
+    - 中文搜索词：'什么是系统化的复盘'、'如何系统性复盘'、'系统性复盘的优势'
+    - 英文搜索词：'what is systematic review reflection'、'how to conduct systematic retrospective'、'benefits of systematic review'
+  - **一次更新全部资源**：
+    - 按钮文字更新："Update One Article" → "更新文章 / Update Articles"
+    - 按钮文字更新："Update One Video" → "更新视频 / Update Videos"
+    - 点击更新时刷新全部6篇文章或6个视频（不再只更新1个）
+    - 每次点击都从API获取最新内容
+- 📚 **Mock数据增强**：
+  - 新增10篇中文系统复盘主题文章（知乎、36氪、联想等）
+  - 新增10个中文系统复盘主题视频（柳传志、敏捷回顾等）
+  - 英文Mock数据保持专业性（HBR、TED、McKinsey等）
+- 🔌 **后端API增强**：
+  - GET /api/resources/articles：自动检测X-Language请求头
+  - GET /api/resources/videos：自动检测X-Language请求头
+  - 根据语言参数返回对应语言的搜索结果
+  - Mock数据函数支持语言参数（lang: 'zh' | 'en'）
+- 🎨 **前端优化**：
+  - 简化loadArticles/loadVideos逻辑
+  - 更新时总是获取最新API数据
+  - 按钮文字支持国际化（i18n.t）
+- 🌐 **国际化**：新增 'updateArticles'（更新文章）、'updateVideos'（更新视频）翻译
 
 **V5.5.1 更新内容** (2025-10-16):
 - 🐛 **修复首页导航菜单问题**（关键Bug修复）：
