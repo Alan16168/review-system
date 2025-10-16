@@ -102,10 +102,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://f21e4aa3.review-system.pages.dev (V4.3.3 修复重复保存和返回按钮确认)
+- **最新部署**: https://b9d8d13a.review-system.pages.dev (V4.3.3 彻底修复重复保存问题)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-16 (V4.3.3 修复创建复盘重复保存问题和添加返回确认对话框)
+- **部署日期**: 2025-10-16 (V4.3.3 彻底修复创建复盘重复保存问题 - 关键修复)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -909,14 +909,22 @@ MIT License
 **当前版本**: V4.3.3  
 
 **V4.3.3 更新内容** (2025-10-16):
-- 🐛 **修复重复保存问题**（核心Bug修复）：
-  - **问题1**：点击"下一步"按钮自动保存一次，点击"保存"按钮又保存一次，导致两个相同记录
-  - **解决方案**：
+- 🐛 **彻底修复重复保存问题**（核心Bug修复 - 关键）：
+  - **根本原因**：`showReviews()`函数在开始时调用`autoSaveDraftBeforeNavigation()`，导致第二次保存
+  - **保存流程分析**：
+    1. 用户点击"保存"按钮
+    2. `handleStep2Submit()`执行保存（第一次保存）✅
+    3. 调用`showReviews()`跳转到复盘列表
+    4. `showReviews()`开头检测到`currentView === 'create-review-step2'`
+    5. 触发`autoSaveDraftBeforeNavigation()`（第二次保存）❌
+    6. 结果：数据库中出现两个相同记录
+  - **解决方案**（关键修复）：
+    - 在`handleStep2Submit()`中，保存成功后立即设置`currentView = 'completing-review'`
+    - 这样`showReviews()`调用`autoSaveDraftBeforeNavigation()`时会跳过保存
     - 移除Step 1到Step 2的自动保存逻辑
-    - "下一步"按钮现在只切换界面，不保存数据
+    - "下一步"按钮只切换界面，不保存
     - "保存"按钮是唯一的保存触发点
-    - 如果存在`currentDraftId`则更新草稿，否则创建新记录
-    - 保存成功后立即清除`currentDraftId`防止重复
+    - 保存后清除`currentDraftId`并更改视图状态
 - 📝 **返回按钮智能确认**（用户体验改进）：
   - **问题2**：点击"返回"按钮会自动保存，用户无法控制
   - **解决方案**：
