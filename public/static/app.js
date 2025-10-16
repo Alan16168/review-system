@@ -1325,6 +1325,7 @@ function renderRecentReviews(reviews) {
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('reviewTitle')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('creator') || '创建者'}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('ownerType')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('status')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('updatedAt')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('actions')}</th>
@@ -1342,6 +1343,9 @@ function renderRecentReviews(reviews) {
                   <i class="fas fa-user-circle text-gray-400 mr-2"></i>
                   <span class="text-sm text-gray-700">${escapeHtml(review.creator_name || 'Unknown')}</span>
                 </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${renderOwnerTypeBadge(review.owner_type)}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs rounded-full ${review.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
@@ -1497,6 +1501,18 @@ async function showReviews() {
                 <option value="yearly">${i18n.t('timeTypeYearly')}</option>
               </select>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-shield-alt mr-1"></i>${i18n.t('ownerType')}
+              </label>
+              <select id="filter-owner-type" onchange="filterReviews()" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="all">${i18n.t('all') || '全部'}</option>
+                <option value="private">${i18n.t('ownerTypePrivate')}</option>
+                <option value="team">${i18n.t('ownerTypeTeam')}</option>
+                <option value="public">${i18n.t('ownerTypePublic')}</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -1590,6 +1606,9 @@ function renderPublicReviewsList(reviews) {
               ${i18n.t('creator')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('ownerType')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ${i18n.t('status')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1619,6 +1638,9 @@ function renderPublicReviewsList(reviews) {
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm text-gray-900">${escapeHtml(review.creator_name)}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${renderOwnerTypeBadge(review.owner_type)}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1672,6 +1694,7 @@ function filterReviews() {
   const searchText = document.getElementById('search-input').value.toLowerCase();
   const groupTypeFilter = document.getElementById('filter-group-type').value;
   const timeTypeFilter = document.getElementById('filter-time-type').value;
+  const ownerTypeFilter = document.getElementById('filter-owner-type').value;
 
   let filtered = allReviews.filter(review => {
     // Status filter
@@ -1686,11 +1709,14 @@ function filterReviews() {
     // Time type filter
     if (timeTypeFilter !== 'all' && review.time_type !== timeTypeFilter) return false;
     
+    // Owner type filter
+    if (ownerTypeFilter !== 'all' && review.owner_type !== ownerTypeFilter) return false;
+    
     return true;
   });
 
   currentPage = 1; // Reset to first page when filtering
-  renderReviewsList(filtered);
+  renderReviews List(filtered);
 }
 
 function changePage(newPage, reviews) {
@@ -1731,6 +1757,7 @@ function renderReviewsList(reviews) {
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('reviewTitle')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('creator') || '创建者'}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('ownerType')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('status')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('updatedAt')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('actions')}</th>
@@ -1748,6 +1775,9 @@ function renderReviewsList(reviews) {
                   <i class="fas fa-user-circle text-gray-400 mr-2"></i>
                   <span class="text-sm text-gray-700">${escapeHtml(review.creator_name || 'Unknown')}</span>
                 </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${renderOwnerTypeBadge(review.owner_type)}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs rounded-full ${review.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
@@ -2296,9 +2326,17 @@ async function handleStep2Submit(e) {
   };
 
   try {
-    await axios.post('/api/reviews', data);
-    currentDraftId = null; // Clear draft ID after successful submission
-    showNotification(i18n.t('createSuccess'), 'success');
+    // Check if we have a draft ID from auto-save
+    if (currentDraftId) {
+      // Update existing draft instead of creating new one
+      await axios.put(`/api/reviews/${currentDraftId}`, data);
+      currentDraftId = null; // Clear draft ID after successful submission
+      showNotification(i18n.t('updateSuccess'), 'success');
+    } else {
+      // Create new review
+      await axios.post('/api/reviews', data);
+      showNotification(i18n.t('createSuccess'), 'success');
+    }
     showReviews();
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
@@ -2957,6 +2995,36 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Helper function to render owner_type badge
+function renderOwnerTypeBadge(ownerType) {
+  const ownerTypeConfig = {
+    'private': {
+      icon: 'fa-lock',
+      color: 'bg-gray-100 text-gray-800',
+      label: i18n.t('ownerTypePrivate')
+    },
+    'team': {
+      icon: 'fa-users',
+      color: 'bg-blue-100 text-blue-800',
+      label: i18n.t('ownerTypeTeam')
+    },
+    'public': {
+      icon: 'fa-globe',
+      color: 'bg-green-100 text-green-800',
+      label: i18n.t('ownerTypePublic')
+    }
+  };
+  
+  const config = ownerTypeConfig[ownerType] || ownerTypeConfig['private'];
+  
+  return `
+    <span class="px-2 py-1 text-xs rounded-full ${config.color} inline-flex items-center">
+      <i class="fas ${config.icon} mr-1"></i>
+      ${config.label}
+    </span>
+  `;
 }
 
 function showNotification(message, type = 'info') {
