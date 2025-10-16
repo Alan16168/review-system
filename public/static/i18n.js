@@ -382,6 +382,10 @@ const translations = {
     'draftSaved': '草稿已保存',
     'switchingLanguage': '正在切换语言...',
     'saveBeforeGoingBack': '您已填写了一些答案，是否保存为草稿？\n\n点击"确定"保存草稿\n点击"取消"直接返回（不保存）',
+    'onlyCreatorCanEditProperties': '只有创建者可以修改复盘属性，团队成员只能编辑答案内容',
+    'onlyCreatorCanEdit': '仅创建者可编辑',
+    'onlyEditOwnAnswers': '您只能编辑自己的答案',
+    'cannotEditOthersAnswers': '不能修改其他成员的答案',
     
     // User Settings
     'userSettings': '用户设置',
@@ -775,6 +779,10 @@ const translations = {
     'draftSaved': 'Draft saved',
     'switchingLanguage': 'Switching language...',
     'saveBeforeGoingBack': 'You have filled in some answers. Do you want to save as draft?\n\nClick "OK" to save draft\nClick "Cancel" to go back without saving',
+    'onlyCreatorCanEditProperties': 'Only the creator can modify review properties. Team members can only edit answer content',
+    'onlyCreatorCanEdit': 'Only creator can edit',
+    'onlyEditOwnAnswers': 'You can only edit your own answers',
+    'cannotEditOthersAnswers': 'Cannot edit other members\' answers',
     
     // User Settings
     'userSettings': 'User Settings',

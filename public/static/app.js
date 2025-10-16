@@ -2425,11 +2425,16 @@ async function showReviewDetail(id, readOnly = false) {
     const response = await axios.get(`/api/reviews/${id}`);
     const review = response.data.review;
     const questions = response.data.questions || [];
-    const answers = response.data.answers || {};
+    const answersByQuestion = response.data.answersByQuestion || {};
     const collaborators = response.data.collaborators || [];
     
-    // If it's a team review, redirect to team collaboration view
-    if (review.team_id && !readOnly) {
+    // If it's a team review or has multiple contributors, redirect to collaboration view
+    // Check if there are answers from multiple users
+    const hasMultipleContributors = Object.values(answersByQuestion).some(answers => 
+      Array.isArray(answers) && answers.length > 1
+    );
+    
+    if ((review.team_id || hasMultipleContributors) && !readOnly) {
       showTeamReviewCollaboration(id);
       return;
     }
@@ -2507,16 +2512,37 @@ async function showReviewDetail(id, readOnly = false) {
               <i class="fas fa-question-circle mr-2"></i>${review.template_name ? escapeHtml(review.template_name) : i18n.t('nineQuestions')}
             </h2>
             
-            ${questions.length > 0 ? questions.map(q => `
-              <div class="border-l-4 border-indigo-500 pl-4 py-2 bg-gray-50 rounded mb-3">
-                <h3 class="text-sm font-semibold text-gray-700 mb-2">
-                  ${q.question_number}. ${escapeHtml(q.question_text)}
-                </h3>
-                <div class="text-gray-800 whitespace-pre-wrap bg-white p-3 rounded border border-gray-200">
-                  ${escapeHtml(answers[q.question_number] || (i18n.t('noAnswer') || '未填写'))}
+            ${questions.length > 0 ? questions.map(q => {
+              const userAnswers = answersByQuestion[q.question_number] || [];
+              const myAnswer = userAnswers.find(a => a.user_id === currentUser.id);
+              
+              return `
+                <div class="border-l-4 border-indigo-500 pl-4 py-2 bg-gray-50 rounded mb-3">
+                  <h3 class="text-sm font-semibold text-gray-700 mb-2">
+                    ${q.question_number}. ${escapeHtml(q.question_text)}
+                  </h3>
+                  ${userAnswers.length > 0 ? userAnswers.map(ans => `
+                    <div class="text-gray-800 whitespace-pre-wrap bg-white p-3 rounded border ${
+                      ans.is_mine ? 'border-indigo-300' : 'border-gray-200'
+                    } mb-2">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-gray-600">
+                          <i class="fas fa-user-circle mr-1"></i>${escapeHtml(ans.username)}${ans.is_mine ? ` (${i18n.t('myAnswer') || '我'})` : ''}
+                        </span>
+                        <span class="text-xs text-gray-500">
+                          <i class="fas fa-clock mr-1"></i>${new Date(ans.updated_at).toLocaleString()}
+                        </span>
+                      </div>
+                      ${escapeHtml(ans.answer)}
+                    </div>
+                  `).join('') : `
+                    <div class="text-gray-500 bg-white p-3 rounded border border-gray-200">
+                      ${i18n.t('noAnswer') || '未填写'}
+                    </div>
+                  `}
                 </div>
-              </div>
-            `).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
+              `;
+            }).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
           </div>
 
           ${(collaborators && collaborators.length > 0) ? `
@@ -2554,14 +2580,14 @@ async function showReviewDetail(id, readOnly = false) {
 // Team Review Collaboration View
 async function showTeamReviewCollaboration(id) {
   try {
-    const [reviewResponse, teamAnswersResponse] = await Promise.all([
+    const [reviewResponse, allAnswersResponse] = await Promise.all([
       axios.get(`/api/reviews/${id}`),
-      axios.get(`/api/reviews/${id}/team-answers`)
+      axios.get(`/api/reviews/${id}/all-answers`)
     ]);
     
     const review = reviewResponse.data.review;
     const questions = reviewResponse.data.questions || [];
-    const { answersByQuestion, completionStatus, currentUserId } = teamAnswersResponse.data;
+    const { answersByQuestion, completionStatus, currentUserId } = allAnswersResponse.data;
     const isOwner = review.user_id === currentUserId;
     const totalQuestions = questions.length;
     
@@ -2651,9 +2677,20 @@ async function showTeamReviewCollaboration(id) {
                         <h3 class="text-sm font-semibold text-indigo-700">
                           <i class="fas fa-user-edit mr-1"></i>${i18n.t('myAnswer')}
                         </h3>
-                        <span class="text-xs text-gray-500" id="save-status-${num}">
-                          ${myAnswer ? '<i class="fas fa-check text-green-600 mr-1"></i>' + i18n.t('autoSaved') : ''}
-                        </span>
+                        <div class="flex items-center space-x-2">
+                          <span class="text-xs text-gray-500" id="save-status-${num}">
+                            ${myAnswer ? '<i class="fas fa-check text-green-600 mr-1"></i>' + i18n.t('autoSaved') : ''}
+                          </span>
+                          ${myAnswer ? `
+                            <button 
+                              onclick="handleDeleteMyAnswer(${id}, ${num})"
+                              class="text-red-600 hover:text-red-800 text-xs px-2 py-1 hover:bg-red-50 rounded"
+                              title="${i18n.t('deleteAnswer')}"
+                            >
+                              <i class="fas fa-trash mr-1"></i>${i18n.t('delete')}
+                            </button>
+                          ` : ''}
+                        </div>
                       </div>
                       <textarea 
                         id="my-answer-${num}"
@@ -2681,17 +2718,11 @@ async function showTeamReviewCollaboration(id) {
                                   </span>
                                 </div>
                               </div>
-                              ${isOwner ? `
-                                <button 
-                                  onclick="handleDeleteTeamAnswer(${id}, ${answer.user_id}, ${num})"
-                                  class="text-red-600 hover:text-red-800 text-xs px-2 py-1 hover:bg-red-50 rounded"
-                                  title="${i18n.t('deleteAnswer')}"
-                                >
-                                  <i class="fas fa-trash mr-1"></i>${i18n.t('delete')}
-                                </button>
-                              ` : ''}
                             </div>
                             <p class="text-gray-800 whitespace-pre-wrap">${escapeHtml(answer.answer)}</p>
+                            <p class="text-xs text-gray-500 mt-2">
+                              <i class="fas fa-lock mr-1"></i>${i18n.t('cannotEditOthersAnswers') || '不能修改其他成员的答案'}
+                            </p>
                           </div>
                         `).join('')}
                       </div>
@@ -2739,14 +2770,14 @@ async function handleSaveTeamAnswer(reviewId, questionNumber) {
   }
 }
 
-// Delete team answer (owner only)
-async function handleDeleteTeamAnswer(reviewId, userId, questionNumber) {
+// Delete my own answer (each user can only delete their own answers)
+async function handleDeleteMyAnswer(reviewId, questionNumber) {
   if (!confirm(i18n.t('confirmDeleteAnswer'))) {
     return;
   }
   
   try {
-    await axios.delete(`/api/reviews/${reviewId}/answer/${userId}/${questionNumber}`);
+    await axios.delete(`/api/reviews/${reviewId}/my-answer/${questionNumber}`);
     showNotification(i18n.t('answerDeleted'), 'success');
     
     // Reload the page to show updated data
@@ -2761,7 +2792,20 @@ async function showEditReview(id) {
     const response = await axios.get(`/api/reviews/${id}`);
     const review = response.data.review;
     const questions = response.data.questions || [];
-    const answers = response.data.answers || {};
+    const answersByQuestion = response.data.answersByQuestion || {};
+    
+    // Extract current user's answers for editing
+    const myAnswers = {};
+    Object.keys(answersByQuestion).forEach(qNum => {
+      const userAnswers = answersByQuestion[qNum] || [];
+      const myAnswer = userAnswers.find(a => a.user_id === currentUser.id);
+      if (myAnswer) {
+        myAnswers[qNum] = myAnswer.answer;
+      }
+    });
+    
+    // Check if current user is the creator
+    const isCreator = currentUser.id === review.user_id;
     
     // Load teams if premium user
     let teams = [];
@@ -2793,13 +2837,23 @@ async function showEditReview(id) {
           <form id="edit-review-form" class="bg-white rounded-lg shadow-md p-6 space-y-6">
             <input type="hidden" id="review-id" value="${id}">
             
+            ${!isCreator ? `
+            <div class="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg">
+              <p class="text-sm text-gray-700">
+                <i class="fas fa-info-circle mr-2"></i>${i18n.t('onlyCreatorCanEditProperties') || '只有创建者可以修改复盘属性，团队成员只能编辑答案内容'}
+              </p>
+            </div>
+            ` : ''}
+            
             <!-- Basic Info -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('reviewTitle')} <span class="text-red-500">*</span>
               </label>
               <input type="text" id="review-title" required value="${escapeHtml(review.title)}"
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                     ${!isCreator ? 'disabled' : ''}
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
+              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
 
             <div>
@@ -2807,8 +2861,10 @@ async function showEditReview(id) {
                 ${i18n.t('reviewDescription')}
               </label>
               <textarea id="review-description" rows="3"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                        ${!isCreator ? 'disabled' : ''}
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}"
                         placeholder="${i18n.t('reviewDescriptionPlaceholder')}">${escapeHtml(review.description || '')}</textarea>
+              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
 
             ${(currentUser.role === 'premium' || currentUser.role === 'admin') && teams && teams.length > 0 ? `
@@ -2858,11 +2914,13 @@ async function showEditReview(id) {
                 ${i18n.t('groupType')} <span class="text-red-500">*</span>
               </label>
               <select id="review-group-type" required
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                      ${!isCreator ? 'disabled' : ''}
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
                 <option value="personal" ${review.group_type === 'personal' ? 'selected' : ''}>${i18n.t('groupTypePersonal')}</option>
                 <option value="project" ${review.group_type === 'project' ? 'selected' : ''}>${i18n.t('groupTypeProject')}</option>
                 <option value="team" ${review.group_type === 'team' ? 'selected' : ''}>${i18n.t('groupTypeTeam')}</option>
               </select>
+              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
 
             <!-- Time Type -->
@@ -2871,13 +2929,15 @@ async function showEditReview(id) {
                 ${i18n.t('timeType')} <span class="text-red-500">*</span>
               </label>
               <select id="review-time-type" required
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                      ${!isCreator ? 'disabled' : ''}
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
                 <option value="daily" ${review.time_type === 'daily' ? 'selected' : ''}>${i18n.t('timeTypeDaily')}</option>
                 <option value="weekly" ${review.time_type === 'weekly' ? 'selected' : ''}>${i18n.t('timeTypeWeekly')}</option>
                 <option value="monthly" ${review.time_type === 'monthly' ? 'selected' : ''}>${i18n.t('timeTypeMonthly')}</option>
                 <option value="quarterly" ${review.time_type === 'quarterly' ? 'selected' : ''}>${i18n.t('timeTypeQuarterly')}</option>
                 <option value="yearly" ${review.time_type === 'yearly' ? 'selected' : ''}>${i18n.t('timeTypeYearly')}</option>
               </select>
+              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
 
             <!-- Owner Type (Access Control) -->
@@ -2886,11 +2946,14 @@ async function showEditReview(id) {
                 ${i18n.t('ownerType')} <span class="text-red-500">*</span>
               </label>
               <select id="review-owner-type" required
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                      ${!isCreator ? 'disabled' : ''}
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
                 <option value="private" ${(review.owner_type === 'private' || !review.owner_type) ? 'selected' : ''}>${i18n.t('ownerTypePrivate')}</option>
                 <option value="team" ${review.owner_type === 'team' ? 'selected' : ''}>${i18n.t('ownerTypeTeam')}</option>
                 <option value="public" ${review.owner_type === 'public' ? 'selected' : ''}>${i18n.t('ownerTypePublic')}</option>
               </select>
+              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
+              ${isCreator ? `
               <div class="mt-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
                 <p class="text-xs text-gray-700 space-y-1">
                   <span class="block"><strong>${i18n.t('ownerTypePrivate')}:</strong> ${i18n.t('ownerTypePrivateDesc')}</span>
@@ -2898,6 +2961,7 @@ async function showEditReview(id) {
                   <span class="block"><strong>${i18n.t('ownerTypePublic')}:</strong> ${i18n.t('ownerTypePublicDesc')}</span>
                 </p>
               </div>
+              ` : ''}
             </div>
 
             <!-- Dynamic Questions -->
@@ -2913,7 +2977,10 @@ async function showEditReview(id) {
                   </label>
                   <textarea id="question${q.question_number}" rows="3"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                            placeholder="${escapeHtml(q.question_text)}">${escapeHtml(answers[q.question_number] || '')}</textarea>
+                            placeholder="${escapeHtml(q.question_text)}">${escapeHtml(myAnswers[q.question_number] || '')}</textarea>
+                  <p class="mt-1 text-xs text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
+                  </p>
                 </div>
               `).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
             </div>
@@ -2924,21 +2991,24 @@ async function showEditReview(id) {
                 ${i18n.t('status')}
               </label>
               <div class="flex space-x-4">
-                <label class="flex items-center cursor-pointer">
+                <label class="flex items-center ${!isCreator ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
                   <input type="radio" name="status" value="draft" ${review.status === 'draft' ? 'checked' : ''}
+                         ${!isCreator ? 'disabled' : ''}
                          class="mr-2 text-indigo-600 focus:ring-indigo-500">
                   <span class="text-sm text-gray-700">
                     <i class="fas fa-clock text-yellow-600 mr-1"></i>${i18n.t('draft')}
                   </span>
                 </label>
-                <label class="flex items-center cursor-pointer">
+                <label class="flex items-center ${!isCreator ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
                   <input type="radio" name="status" value="completed" ${review.status === 'completed' ? 'checked' : ''}
+                         ${!isCreator ? 'disabled' : ''}
                          class="mr-2 text-indigo-600 focus:ring-indigo-500">
                   <span class="text-sm text-gray-700">
                     <i class="fas fa-check-circle text-green-600 mr-1"></i>${i18n.t('completed')}
                   </span>
                 </label>
               </div>
+              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
 
             <!-- Actions -->
@@ -2959,8 +3029,9 @@ async function showEditReview(id) {
 
     document.getElementById('edit-review-form').addEventListener('submit', handleEditReview);
     
-    // Store questions in global variable for access
+    // Store questions and creator status in global variable for access
     window.currentEditQuestions = questions;
+    window.currentEditIsCreator = isCreator;
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     showReviews();
@@ -2971,12 +3042,7 @@ async function handleEditReview(e) {
   e.preventDefault();
   
   const id = document.getElementById('review-id').value;
-  const title = document.getElementById('review-title').value;
-  const description = document.getElementById('review-description').value;
-  const groupType = document.getElementById('review-group-type').value;
-  const timeType = document.getElementById('review-time-type').value;
-  const ownerType = document.getElementById('review-owner-type').value;
-  const status = document.querySelector('input[name="status"]:checked').value;
+  const isCreator = window.currentEditIsCreator;
   
   // Collect answers dynamically
   const answers = {};
@@ -2991,15 +3057,32 @@ async function handleEditReview(e) {
     });
   }
   
-  const data = {
-    title,
-    description: description || null,
-    group_type: groupType,
-    time_type: timeType,
-    owner_type: ownerType,
-    status,
-    answers
-  };
+  // Build data object based on permissions
+  let data;
+  if (isCreator) {
+    // Creator can edit everything
+    const title = document.getElementById('review-title').value;
+    const description = document.getElementById('review-description').value;
+    const groupType = document.getElementById('review-group-type').value;
+    const timeType = document.getElementById('review-time-type').value;
+    const ownerType = document.getElementById('review-owner-type').value;
+    const status = document.querySelector('input[name="status"]:checked').value;
+    
+    data = {
+      title,
+      description: description || null,
+      group_type: groupType,
+      time_type: timeType,
+      owner_type: ownerType,
+      status,
+      answers
+    };
+  } else {
+    // Non-creator can only edit answers
+    data = {
+      answers
+    };
+  }
 
   try {
     await axios.put(`/api/reviews/${id}`, data);

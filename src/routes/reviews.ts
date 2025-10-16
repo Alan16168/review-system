@@ -2,10 +2,10 @@ import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth';
 import { UserPayload } from '../utils/auth';
 import { 
-  getTeamReviewAnswers, 
-  saveMyTeamAnswer, 
-  deleteTeamAnswer,
-  getTeamAnswerCompletionStatus 
+  getReviewAnswers, 
+  saveMyAnswer, 
+  deleteAnswer,
+  getAnswerCompletionStatus 
 } from '../utils/db';
 
 type Bindings = {
@@ -129,18 +129,29 @@ reviews.get('/:id', async (c) => {
       ORDER BY question_number ASC
     `).bind(lang, review.template_id).all();
 
-    // Get review answers
+    // Get review answers with user information (support multi-user answers)
     const answersResult = await c.env.DB.prepare(`
-      SELECT question_number, answer
-      FROM review_answers
-      WHERE review_id = ?
-      ORDER BY question_number ASC
+      SELECT ra.question_number, ra.answer, ra.user_id, u.username, u.email, ra.updated_at
+      FROM review_answers ra
+      JOIN users u ON ra.user_id = u.id
+      WHERE ra.review_id = ?
+      ORDER BY ra.question_number ASC, u.username ASC
     `).bind(reviewId).all();
 
-    // Map answers by question number
-    const answersMap: Record<number, string> = {};
+    // Group answers by question number
+    const answersByQuestion: Record<number, any[]> = {};
     (answersResult.results || []).forEach((ans: any) => {
-      answersMap[ans.question_number] = ans.answer;
+      if (!answersByQuestion[ans.question_number]) {
+        answersByQuestion[ans.question_number] = [];
+      }
+      answersByQuestion[ans.question_number].push({
+        user_id: ans.user_id,
+        username: ans.username,
+        email: ans.email,
+        answer: ans.answer,
+        updated_at: ans.updated_at,
+        is_mine: ans.user_id === user.id
+      });
     });
 
     // Get collaborators
@@ -155,7 +166,7 @@ reviews.get('/:id', async (c) => {
     return c.json({ 
       review,
       questions: questionsResult.results || [],
-      answers: answersMap,
+      answersByQuestion,
       collaborators: collaborators.results || []
     });
   } catch (error) {
@@ -223,14 +234,14 @@ reviews.post('/', async (c) => {
 
     const reviewId = result.meta.last_row_id;
 
-    // Save answers if provided
+    // Save answers if provided (with user_id)
     if (answers && typeof answers === 'object') {
       for (const [questionNumber, answer] of Object.entries(answers)) {
         if (answer && String(answer).trim()) {
           await c.env.DB.prepare(`
-            INSERT INTO review_answers (review_id, question_number, answer)
-            VALUES (?, ?, ?)
-          `).bind(reviewId, parseInt(questionNumber), String(answer)).run();
+            INSERT INTO review_answers (review_id, user_id, question_number, answer)
+            VALUES (?, ?, ?, ?)
+          `).bind(reviewId, user.id, parseInt(questionNumber), String(answer)).run();
         }
       }
     }
@@ -259,79 +270,77 @@ reviews.put('/:id', async (c) => {
     const reviewId = c.req.param('id');
     const body = await c.req.json();
 
-    // Check if user has edit permission based on owner_type
-    // 1. owner_type='private': only creator can edit
-    // 2. owner_type='team' + group_type='personal': team members can view but not edit (unless collaborator)
-    // 3. owner_type='team' + group_type='team': team members with proper role can edit
-    // 4. owner_type='public': no one can edit (read-only for everyone except creator)
-    // Collaborators with can_edit=1 can always edit
-    const checkQuery = `
-      SELECT r.owner_type, r.group_type, r.team_id FROM reviews r
-      LEFT JOIN review_collaborators rc ON r.id = rc.review_id
-      LEFT JOIN team_members tm ON r.team_id = tm.team_id AND tm.user_id = ?
+    // Check if user has access to this review
+    const reviewQuery = `
+      SELECT r.user_id, r.owner_type, r.group_type, r.team_id FROM reviews r
       WHERE r.id = ? AND (
         r.user_id = ?
-        OR (rc.user_id = ? AND rc.can_edit = 1)
-        OR (r.owner_type = 'team' AND r.group_type = 'team' AND tm.user_id = ? AND tm.role IN ('creator', 'operator'))
+        OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
+        OR (r.owner_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
       )
     `;
-    const hasPermission = await c.env.DB.prepare(checkQuery)
-      .bind(user.id, reviewId, user.id, user.id, user.id).first();
+    const review: any = await c.env.DB.prepare(reviewQuery)
+      .bind(reviewId, user.id, user.id, user.id).first();
 
-    if (!hasPermission) {
-      return c.json({ error: 'Access denied. You need creator or operator role to edit.' }, 403);
+    if (!review) {
+      return c.json({ error: 'Access denied. You do not have permission to access this review.' }, 403);
     }
 
     const { title, description, group_type, time_type, answers, status, owner_type } = body;
     
-    // Validate owner_type if provided
-    let validOwnerType = null;
-    if (owner_type) {
-      if (['private', 'team', 'public'].includes(owner_type)) {
-        validOwnerType = owner_type;
+    // Check if user is the creator (only creator can modify basic properties)
+    const isCreator = review.user_id === user.id;
+
+    // Update basic properties ONLY if user is the creator
+    if (isCreator && (title || description || group_type || time_type || status || owner_type)) {
+      // Validate owner_type if provided
+      let validOwnerType = null;
+      if (owner_type) {
+        if (['private', 'team', 'public'].includes(owner_type)) {
+          validOwnerType = owner_type;
+        }
       }
+
+      await c.env.DB.prepare(`
+        UPDATE reviews SET
+          title = COALESCE(?, title),
+          description = COALESCE(?, description),
+          group_type = COALESCE(?, group_type),
+          time_type = COALESCE(?, time_type),
+          status = COALESCE(?, status),
+          owner_type = COALESCE(?, owner_type),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(
+        title || null,
+        description || null,
+        group_type || null,
+        time_type || null,
+        status || null,
+        validOwnerType,
+        reviewId
+      ).run();
     }
 
-    // Update review basic info (template_id cannot be changed)
-    await c.env.DB.prepare(`
-      UPDATE reviews SET
-        title = COALESCE(?, title),
-        description = COALESCE(?, description),
-        group_type = COALESCE(?, group_type),
-        time_type = COALESCE(?, time_type),
-        status = COALESCE(?, status),
-        owner_type = COALESCE(?, owner_type),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(
-      title || null,
-      description || null,
-      group_type || null,
-      time_type || null,
-      status || null,
-      validOwnerType,
-      reviewId
-    ).run();
-
-    // Update answers if provided
+    // Update answers - each user can only update their own answers
     if (answers && typeof answers === 'object') {
       for (const [questionNumber, answer] of Object.entries(answers)) {
         const answerText = answer ? String(answer).trim() : '';
         
         if (answerText) {
-          // Insert or update answer
+          // Insert or update answer for current user
           await c.env.DB.prepare(`
-            INSERT INTO review_answers (review_id, question_number, answer, updated_at)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(review_id, question_number) 
+            INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(review_id, user_id, question_number) 
             DO UPDATE SET answer = excluded.answer, updated_at = CURRENT_TIMESTAMP
-          `).bind(reviewId, parseInt(questionNumber), answerText).run();
+          `).bind(reviewId, user.id, parseInt(questionNumber), answerText).run();
         } else {
-          // Delete answer if empty
+          // Delete current user's answer if empty
           await c.env.DB.prepare(`
             DELETE FROM review_answers 
-            WHERE review_id = ? AND question_number = ?
-          `).bind(reviewId, parseInt(questionNumber)).run();
+            WHERE review_id = ? AND user_id = ? AND question_number = ?
+          `).bind(reviewId, user.id, parseInt(questionNumber)).run();
         }
       }
     }
@@ -404,10 +413,10 @@ reviews.post('/:id/collaborators', async (c) => {
 // ==================== Team Review Collaboration Endpoints ====================
 
 /**
- * GET /api/reviews/:id/team-answers
- * Get all team members' answers for a review
+ * GET /api/reviews/:id/all-answers
+ * Get all users' answers for a review (replaces team-answers)
  */
-reviews.get('/:id/team-answers', async (c) => {
+reviews.get('/:id/all-answers', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const reviewId = parseInt(c.req.param('id'));
@@ -429,15 +438,15 @@ reviews.get('/:id/team-answers', async (c) => {
       return c.json({ error: 'Access denied' }, 403);
     }
 
-    // Get all team answers
-    const answers = await getTeamReviewAnswers(c.env.DB, reviewId);
+    // Get all answers
+    const answers = await getReviewAnswers(c.env.DB, reviewId);
     
     // Get completion status
-    const completionStatus = await getTeamAnswerCompletionStatus(c.env.DB, reviewId);
+    const completionStatus = await getAnswerCompletionStatus(c.env.DB, reviewId);
 
     // Group answers by question
     const answersByQuestion: {[key: number]: any[]} = {};
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= 20; i++) { // Support up to 20 questions
       answersByQuestion[i] = [];
     }
 
@@ -447,7 +456,8 @@ reviews.get('/:id/team-answers', async (c) => {
         username: answer.username,
         email: answer.email,
         answer: answer.answer,
-        updated_at: answer.updated_at
+        updated_at: answer.updated_at,
+        is_mine: answer.user_id === user.id
       });
     });
 
@@ -457,7 +467,7 @@ reviews.get('/:id/team-answers', async (c) => {
       currentUserId: user.id
     });
   } catch (error) {
-    console.error('Get team answers error:', error);
+    console.error('Get all answers error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
@@ -477,19 +487,17 @@ reviews.put('/:id/my-answer/:questionNumber', async (c) => {
       return c.json({ error: 'Answer cannot be empty' }, 400);
     }
 
-    if (questionNumber < 1 || questionNumber > 9) {
+    if (questionNumber < 1) {
       return c.json({ error: 'Invalid question number' }, 400);
     }
 
-    // Check if user has access to this review and can contribute based on owner_type and group_type
-    // For team reviews with group_type='team', team members can contribute
-    // For other types, only collaborators can contribute
+    // Check if user has access to this review and can contribute
     const accessQuery = `
       SELECT r.owner_type, r.group_type, r.team_id, r.user_id FROM reviews r
       WHERE r.id = ? AND (
         r.user_id = ?
         OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
-        OR (r.owner_type = 'team' AND r.group_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
+        OR (r.owner_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
       )
     `;
     const review: any = await c.env.DB.prepare(accessQuery)
@@ -500,45 +508,47 @@ reviews.put('/:id/my-answer/:questionNumber', async (c) => {
     }
 
     // Save the answer
-    await saveMyTeamAnswer(c.env.DB, reviewId, user.id, questionNumber, answer);
+    await saveMyAnswer(c.env.DB, reviewId, user.id, questionNumber, answer);
 
     return c.json({ message: 'Answer saved successfully' });
   } catch (error) {
-    console.error('Save team answer error:', error);
+    console.error('Save answer error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
 
 /**
- * DELETE /api/reviews/:id/answer/:userId/:questionNumber
- * Delete a user's answer (owner only)
+ * DELETE /api/reviews/:id/my-answer/:questionNumber
+ * Delete current user's own answer (each user can only delete their own answers)
  */
-reviews.delete('/:id/answer/:userId/:questionNumber', async (c) => {
+reviews.delete('/:id/my-answer/:questionNumber', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const reviewId = parseInt(c.req.param('id'));
-    const targetUserId = parseInt(c.req.param('userId'));
     const questionNumber = parseInt(c.req.param('questionNumber'));
 
-    // Check if current user is the review owner
-    const review = await c.env.DB.prepare(
-      'SELECT user_id FROM reviews WHERE id = ?'
-    ).bind(reviewId).first<{user_id: number}>();
+    // Check if user has access to this review
+    const accessQuery = `
+      SELECT 1 FROM reviews r
+      WHERE r.id = ? AND (
+        r.user_id = ?
+        OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
+        OR (r.owner_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
+      )
+    `;
+    const hasAccess = await c.env.DB.prepare(accessQuery)
+      .bind(reviewId, user.id, user.id, user.id).first();
 
-    if (!review) {
-      return c.json({ error: 'Review not found' }, 404);
+    if (!hasAccess) {
+      return c.json({ error: 'Access denied' }, 403);
     }
 
-    if (review.user_id !== user.id) {
-      return c.json({ error: 'Only the review owner can delete others\' answers' }, 403);
-    }
-
-    // Delete the answer
-    await deleteTeamAnswer(c.env.DB, reviewId, targetUserId, questionNumber);
+    // Delete current user's answer only
+    await deleteAnswer(c.env.DB, reviewId, user.id, questionNumber);
 
     return c.json({ message: 'Answer deleted successfully' });
   } catch (error) {
-    console.error('Delete team answer error:', error);
+    console.error('Delete answer error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

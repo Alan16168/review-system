@@ -134,8 +134,8 @@ export async function cleanupUserTokens(db: D1Database, userId: number): Promise
   ).bind(userId).run();
 }
 
-// Team review answer functions
-export interface TeamReviewAnswer {
+// Review answer functions (supports multi-user answers)
+export interface ReviewAnswer {
   id: number;
   review_id: number;
   user_id: number;
@@ -147,7 +147,7 @@ export interface TeamReviewAnswer {
   email?: string; // Joined from users table
 }
 
-export interface TeamAnswersByQuestion {
+export interface AnswersByQuestion {
   question_number: number;
   answers: {
     user_id: number;
@@ -159,19 +159,19 @@ export interface TeamAnswersByQuestion {
 }
 
 /**
- * Get all team members' answers for a review, grouped by question
+ * Get all users' answers for a review, grouped by question
  */
-export async function getTeamReviewAnswers(
+export async function getReviewAnswers(
   db: D1Database,
   reviewId: number
-): Promise<TeamReviewAnswer[]> {
+): Promise<ReviewAnswer[]> {
   const result = await db.prepare(`
-    SELECT tra.*, u.username, u.email
-    FROM team_review_answers tra
-    JOIN users u ON tra.user_id = u.id
-    WHERE tra.review_id = ?
-    ORDER BY tra.question_number, u.username
-  `).bind(reviewId).all<TeamReviewAnswer>();
+    SELECT ra.*, u.username, u.email
+    FROM review_answers ra
+    JOIN users u ON ra.user_id = u.id
+    WHERE ra.review_id = ?
+    ORDER BY ra.question_number, u.username
+  `).bind(reviewId).all<ReviewAnswer>();
   
   return result.results || [];
 }
@@ -179,18 +179,18 @@ export async function getTeamReviewAnswers(
 /**
  * Get a specific user's answer for a question
  */
-export async function getMyTeamAnswer(
+export async function getMyAnswer(
   db: D1Database,
   reviewId: number,
   userId: number,
   questionNumber: number
-): Promise<TeamReviewAnswer | null> {
+): Promise<ReviewAnswer | null> {
   const result = await db.prepare(`
-    SELECT tra.*, u.username, u.email
-    FROM team_review_answers tra
-    JOIN users u ON tra.user_id = u.id
-    WHERE tra.review_id = ? AND tra.user_id = ? AND tra.question_number = ?
-  `).bind(reviewId, userId, questionNumber).first<TeamReviewAnswer>();
+    SELECT ra.*, u.username, u.email
+    FROM review_answers ra
+    JOIN users u ON ra.user_id = u.id
+    WHERE ra.review_id = ? AND ra.user_id = ? AND ra.question_number = ?
+  `).bind(reviewId, userId, questionNumber).first<ReviewAnswer>();
   
   return result || null;
 }
@@ -198,7 +198,7 @@ export async function getMyTeamAnswer(
 /**
  * Save or update user's answer for a question
  */
-export async function saveMyTeamAnswer(
+export async function saveMyAnswer(
   db: D1Database,
   reviewId: number,
   userId: number,
@@ -206,7 +206,7 @@ export async function saveMyTeamAnswer(
   answer: string
 ): Promise<void> {
   await db.prepare(`
-    INSERT INTO team_review_answers (review_id, user_id, question_number, answer, updated_at)
+    INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
     VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(review_id, user_id, question_number) 
     DO UPDATE SET answer = ?, updated_at = CURRENT_TIMESTAMP
@@ -214,24 +214,24 @@ export async function saveMyTeamAnswer(
 }
 
 /**
- * Delete a user's answer (owner only)
+ * Delete a user's answer (only the answer owner can delete their own answer)
  */
-export async function deleteTeamAnswer(
+export async function deleteAnswer(
   db: D1Database,
   reviewId: number,
   userId: number,
   questionNumber: number
 ): Promise<void> {
   await db.prepare(`
-    DELETE FROM team_review_answers 
+    DELETE FROM review_answers 
     WHERE review_id = ? AND user_id = ? AND question_number = ?
   `).bind(reviewId, userId, questionNumber).run();
 }
 
 /**
- * Get completion status for all team members
+ * Get completion status for all participants (users who have answered)
  */
-export async function getTeamAnswerCompletionStatus(
+export async function getAnswerCompletionStatus(
   db: D1Database,
   reviewId: number
 ): Promise<{user_id: number, username: string, email: string, completed_count: number}[]> {
@@ -240,11 +240,11 @@ export async function getTeamAnswerCompletionStatus(
       u.id as user_id,
       u.username,
       u.email,
-      COUNT(tra.id) as completed_count
+      COUNT(ra.id) as completed_count
     FROM users u
-    LEFT JOIN team_review_answers tra ON u.id = tra.user_id AND tra.review_id = ?
+    LEFT JOIN review_answers ra ON u.id = ra.user_id AND ra.review_id = ?
     WHERE u.id IN (
-      SELECT DISTINCT user_id FROM team_review_answers WHERE review_id = ?
+      SELECT DISTINCT user_id FROM review_answers WHERE review_id = ?
       UNION
       SELECT user_id FROM review_collaborators WHERE review_id = ?
       UNION
