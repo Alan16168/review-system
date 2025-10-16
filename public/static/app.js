@@ -2341,12 +2341,13 @@ async function handleStep2Submit(e) {
       showNotification(i18n.t('createSuccess'), 'success');
     }
     
-    // CRITICAL: Clear draft ID and change view BEFORE calling showReviews()
+    // CRITICAL: Clear draft ID and change view BEFORE returning to dashboard
     // This prevents autoSaveDraftBeforeNavigation() from saving again
     currentDraftId = null;
     currentView = 'completing-review'; // Temporary state to prevent auto-save
     
-    showReviews();
+    showDashboard(); // Return to dashboard (main menu)
+    window.scrollTo(0, 0); // Scroll to top to show main menu
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   } finally {
@@ -3088,6 +3089,7 @@ async function handleEditReview(e) {
     await axios.put(`/api/reviews/${id}`, data);
     showNotification(i18n.t('updateSuccess'), 'success');
     showDashboard(); // Return to main menu (dashboard)
+    window.scrollTo(0, 0); // Scroll to top to show main menu
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
@@ -3118,11 +3120,6 @@ function renderNavigation() {
                 <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
               </button>
               ${currentUser.role === 'premium' || currentUser.role === 'admin' ? `
-                <button onclick="showTemplatesManagementPage()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
-                  <i class="fas fa-th-list mr-1"></i>${i18n.t('templateManagement')}
-                </button>
-              ` : ''}
-              ${currentUser.role === 'admin' ? `
                 <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                   <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
                 </button>
