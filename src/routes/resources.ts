@@ -27,34 +27,53 @@ resources.get('/articles', async (c) => {
       });
     }
 
-    // Search for systematic review related articles based on language
+    // Search for review-related articles based on language
     const queries = lang === 'zh' ? [
-      '什么是系统化的复盘',
-      '如何系统性复盘',
-      '系统性复盘的优势'
+      'site:wenku.baidu.com 复盘',
+      'site:wenku.baidu.com 系统复盘',
+      'site:wenku.baidu.com 如何复盘',
+      'site:wenku.baidu.com 复盘的方法',
+      'site:wenku.baidu.com 如何进行系统复盘'
     ] : [
-      'what is systematic review reflection',
-      'how to conduct systematic retrospective',
-      'benefits of systematic review'
+      'systematic review reflection',
+      'how to conduct retrospective',
+      'after action review method',
+      'project review best practices',
+      'learning from experience'
     ];
 
     const allArticles: any[] = [];
     
     for (const query of queries) {
-      const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=4`;
+      const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=2`;
       
       try {
         const response = await fetch(searchUrl);
         const data = await response.json();
         
         if (data.items) {
-          const articles = data.items.map((item: any) => ({
-            title: item.title,
-            description: item.snippet,
-            url: item.link,
-            image: item.pagemap?.cse_image?.[0]?.src || item.pagemap?.cse_thumbnail?.[0]?.src || `https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=${encodeURIComponent(item.title.substring(0, 20))}`
-          }));
-          allArticles.push(...articles);
+          for (const item of data.items) {
+            // Verify URL is accessible (skip 404 pages)
+            try {
+              const checkResponse = await fetch(item.link, { 
+                method: 'HEAD',
+                signal: AbortSignal.timeout(3000) // 3 second timeout
+              });
+              
+              // Only include if status is 200-399 (successful response)
+              if (checkResponse.ok) {
+                allArticles.push({
+                  title: item.title,
+                  description: item.snippet,
+                  url: item.link,
+                  image: item.pagemap?.cse_image?.[0]?.src || item.pagemap?.cse_thumbnail?.[0]?.src || `https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=${encodeURIComponent(item.title.substring(0, 20))}`
+                });
+              }
+            } catch (verifyError) {
+              // Skip URLs that fail verification
+              console.log(`Skipping invalid URL: ${item.link}`);
+            }
+          }
         }
       } catch (error) {
         console.error('Search query error:', error);
@@ -189,64 +208,64 @@ function getMockArticles(lang: string = 'en') {
   if (lang === 'zh') {
     return [
       {
-        title: '什么是系统化的复盘？深度解析复盘方法论',
-        description: '系统化复盘是一种结构化的反思方法，帮助个人和团队从经验中提炼智慧',
-        url: 'https://www.zhihu.com/question/19588756',
-        image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=系统复盘'
+        title: '复盘：如何从经验中学习',
+        description: '系统化的复盘方法，帮助个人和团队从每次经历中提取智慧和经验',
+        url: 'https://wenku.baidu.com/view/12345678.html',
+        image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=复盘方法'
       },
       {
-        title: '如何进行系统性复盘？五步法详解',
-        description: '掌握系统复盘的五个关键步骤，让每一次经历都成为成长的机会',
-        url: 'https://36kr.com/p/1721732895105',
-        image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=复盘方法'
+        title: '系统复盘：提升团队执行力的关键',
+        description: '通过系统复盘建立团队学习机制，持续改进工作流程',
+        url: 'https://wenku.baidu.com/view/23456789.html',
+        image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=团队复盘'
       },
       {
-        title: '系统性复盘的优势：为什么它能加速个人成长',
-        description: '探讨系统复盘如何帮助我们快速迭代、持续进步',
-        url: 'https://zhuanlan.zhihu.com/p/145678901',
-        image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=成长加速'
+        title: '如何复盘：联想复盘四步法详解',
+        description: '学习联想集团的复盘方法论，掌握高效复盘技巧',
+        url: 'https://wenku.baidu.com/view/34567890.html',
+        image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=四步法'
       },
       {
-        title: '联想柳传志的复盘方法论',
-        description: '学习联想集团如何通过系统复盘实现持续创新',
-        url: 'https://www.toutiao.com/article/7234567890/',
-        image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=企业实践'
+        title: '复盘的方法：从失败到成功的桥梁',
+        description: '掌握科学的复盘方法，让失败成为成功的垫脚石',
+        url: 'https://wenku.baidu.com/view/45678901.html',
+        image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=科学复盘'
       },
       {
-        title: '敏捷回顾会议：团队系统复盘最佳实践',
-        description: '如何组织高效的团队复盘会议，让团队不断进化',
-        url: 'https://www.infoq.cn/article/agile-retrospective',
-        image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=团队复盘'
+        title: '如何进行系统复盘：项目管理实战',
+        description: '项目结束后的系统复盘流程，提升项目管理能力',
+        url: 'https://wenku.baidu.com/view/56789012.html',
+        image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=项目复盘'
       },
       {
-        title: '项目管理中的系统复盘：经验教训管理',
-        description: '在项目管理中如何系统化地收集、分析和应用经验教训',
-        url: 'https://www.pmreview.com.cn/lesson-learned',
-        image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=项目管理'
+        title: '个人复盘：自我成长的加速器',
+        description: '个人复盘的具体方法和注意事项，助力个人快速成长',
+        url: 'https://wenku.baidu.com/view/67890123.html',
+        image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=个人成长'
       },
       {
-        title: '个人年度复盘指南：如何总结过去展望未来',
-        description: '系统化的年度复盘方法，帮你更好地规划人生',
-        url: 'https://sspai.com/post/78901',
-        image: 'https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=年度总结'
+        title: '团队复盘会议：如何开好复盘会',
+        description: '团队复盘会议的组织技巧和最佳实践',
+        url: 'https://wenku.baidu.com/view/78901234.html',
+        image: 'https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=复盘会议'
       },
       {
-        title: '系统思维与复盘：如何发现问题背后的规律',
-        description: '运用系统思维进行深度复盘，找到问题的本质',
-        url: 'https://www.jianshu.com/p/abcd1234',
-        image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=系统思维'
+        title: '系统性复盘：打造学习型组织',
+        description: '通过系统性复盘建立组织学习文化和知识管理体系',
+        url: 'https://wenku.baidu.com/view/89012345.html',
+        image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=学习组织'
       },
       {
-        title: 'OKR与复盘：目标管理的闭环实践',
-        description: '如何结合OKR方法论进行系统性复盘',
-        url: 'https://www.okr.com/zh/blog/okr-review',
-        image: 'https://via.placeholder.com/400x250/06B6D4/FFFFFF?text=OKR复盘'
+        title: '复盘工具与模板：让复盘更高效',
+        description: '实用的复盘工具和模板，提升复盘效率和效果',
+        url: 'https://wenku.baidu.com/view/90123456.html',
+        image: 'https://via.placeholder.com/400x250/06B6D4/FFFFFF?text=复盘工具'
       },
       {
-        title: '从失败中学习：系统复盘的力量',
-        description: '为什么顶尖团队都重视失败复盘和经验萃取',
-        url: 'https://www.huxiu.com/article/567890.html',
-        image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=失败学习'
+        title: '年度复盘：总结过去规划未来',
+        description: '年度复盘的框架和方法，全面回顾和展望',
+        url: 'https://wenku.baidu.com/view/01234567.html',
+        image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=年度复盘'
       }
     ];
   }
