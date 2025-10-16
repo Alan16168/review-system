@@ -436,6 +436,16 @@ const translations = {
     'templateInUse': '该模板正在使用中，已停用而非删除',
     'noTemplates': '暂无模板',
     'noQuestions': '暂无问题',
+    
+    // User Management
+    'editUser': '编辑用户',
+    'resetUserPassword': '重置密码',
+    'userInfo': '用户信息',
+    'newPassword': '新密码',
+    'confirmResetPassword': '确定要重置此用户的密码吗？',
+    'userUpdated': '用户信息已更新',
+    'passwordResetSuccess': '密码重置成功',
+    'emailInUse': '该邮箱已被其他用户使用',
   },
   en: {
     // Auth
@@ -873,6 +883,16 @@ const translations = {
     'templateInUse': 'Template is in use, deactivated instead of deleted',
     'noTemplates': 'No templates available',
     'noQuestions': 'No questions available',
+    
+    // User Management
+    'editUser': 'Edit User',
+    'resetUserPassword': 'Reset Password',
+    'userInfo': 'User Information',
+    'newPassword': 'New Password',
+    'confirmResetPassword': 'Are you sure you want to reset this user\'s password?',
+    'userUpdated': 'User information updated successfully',
+    'passwordResetSuccess': 'Password reset successfully',
+    'emailInUse': 'Email is already in use by another user',
   }
 };
 

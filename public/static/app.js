@@ -4047,14 +4047,25 @@ function renderUsersTable(users) {
                 ${new Date(user.created_at).toLocaleDateString()}
               </td>
               <td class="px-6 py-4 text-right text-sm">
-                ${user.id !== currentUser.id ? `
-                  <button onclick="deleteUser(${user.id})" 
-                          class="text-red-600 hover:text-red-900">
-                    <i class="fas fa-trash"></i>
+                <div class="flex justify-end space-x-2">
+                  <button onclick="showEditUserModal(${user.id})" 
+                          class="text-blue-600 hover:text-blue-900"
+                          title="${i18n.t('editUser')}">
+                    <i class="fas fa-edit"></i>
                   </button>
-                ` : `
-                  <span class="text-gray-400">${i18n.t('self') || '自己'}</span>
-                `}
+                  <button onclick="showResetPasswordModal(${user.id})" 
+                          class="text-orange-600 hover:text-orange-900"
+                          title="${i18n.t('resetUserPassword')}">
+                    <i class="fas fa-key"></i>
+                  </button>
+                  ${user.id !== currentUser.id ? `
+                    <button onclick="deleteUser(${user.id})" 
+                            class="text-red-600 hover:text-red-900"
+                            title="${i18n.t('delete')}">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  ` : ''}
+                </div>
               </td>
             </tr>
           `).join('')}
@@ -5830,4 +5841,214 @@ function closeQuestionsModal() {
   }
   currentEditingTemplate = null;
   currentTemplateQuestions = [];
+}
+
+// ============ User Management Functions ============
+
+async function showEditUserModal(userId) {
+  try {
+    // Find user from allUsers
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) {
+      showNotification(i18n.t('operationFailed') + ': User not found', 'error');
+      return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'user-modal';
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">
+              <i class="fas fa-edit mr-2"></i>${i18n.t('editUser')}
+            </h3>
+            <button onclick="closeUserModal()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          <form id="user-form" onsubmit="handleUpdateUser(event, ${userId})">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('username')} *
+                </label>
+                <input type="text" id="user-username" required value="${escapeHtml(user.username)}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('email')} *
+                </label>
+                <input type="email" id="user-email" required value="${escapeHtml(user.email)}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('role')} *
+                </label>
+                <select id="user-role" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="user" ${user.role === 'user' ? 'selected' : ''}>${i18n.t('userRole')}</option>
+                  <option value="premium" ${user.role === 'premium' ? 'selected' : ''}>${i18n.t('premiumRole')}</option>
+                  <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>${i18n.t('adminRole')}</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+              <button type="button" onclick="closeUserModal()"
+                      class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                ${i18n.t('cancel')}
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                ${i18n.t('save')}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function handleUpdateUser(e, userId) {
+  e.preventDefault();
+  
+  const data = {
+    username: document.getElementById('user-username').value,
+    email: document.getElementById('user-email').value,
+    role: document.getElementById('user-role').value
+  };
+
+  try {
+    await axios.put(`/api/admin/users/${userId}`, data);
+    showNotification(i18n.t('userUpdated'), 'success');
+    closeUserModal();
+    await loadUsersTable();
+  } catch (error) {
+    const errorMsg = error.response?.data?.error || error.message;
+    if (errorMsg.includes('Email already') || errorMsg.includes('already in use')) {
+      showNotification(i18n.t('emailInUse'), 'error');
+    } else {
+      showNotification(i18n.t('operationFailed') + ': ' + errorMsg, 'error');
+    }
+  }
+}
+
+function closeUserModal() {
+  const modal = document.getElementById('user-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+async function showResetPasswordModal(userId) {
+  try {
+    // Find user from allUsers
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) {
+      showNotification(i18n.t('operationFailed') + ': User not found', 'error');
+      return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'reset-password-modal';
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">
+              <i class="fas fa-key mr-2"></i>${i18n.t('resetUserPassword')}
+            </h3>
+            <button onclick="closeResetPasswordModal()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <div class="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg">
+            <div class="flex items-start">
+              <i class="fas fa-exclamation-triangle text-yellow-500 mt-1 mr-2"></i>
+              <div class="text-sm text-gray-700">
+                <p class="font-semibold mb-1">${i18n.t('userInfo')}:</p>
+                <p><strong>${i18n.t('username')}:</strong> ${escapeHtml(user.username)}</p>
+                <p><strong>${i18n.t('email')}:</strong> ${escapeHtml(user.email)}</p>
+              </div>
+            </div>
+          </div>
+          
+          <form id="reset-password-form" onsubmit="handleResetPassword(event, ${userId})">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('newPassword')} *
+                </label>
+                <input type="password" id="reset-new-password" required minlength="6"
+                       placeholder="${i18n.t('passwordMinLength') || '至少6个字符'}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-500 mt-1">${i18n.t('passwordMinLength') || '密码至少6个字符'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('confirmNewPassword')} *
+                </label>
+                <input type="password" id="reset-confirm-password" required minlength="6"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+              <button type="button" onclick="closeResetPasswordModal()"
+                      class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                ${i18n.t('cancel')}
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                <i class="fas fa-key mr-2"></i>${i18n.t('resetPassword')}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function handleResetPassword(e, userId) {
+  e.preventDefault();
+  
+  const newPassword = document.getElementById('reset-new-password').value;
+  const confirmPassword = document.getElementById('reset-confirm-password').value;
+  
+  if (newPassword !== confirmPassword) {
+    showNotification(i18n.t('passwordMismatch') || '两次输入的密码不一致', 'error');
+    return;
+  }
+  
+  if (newPassword.length < 6) {
+    showNotification(i18n.t('passwordMinLength') || '密码至少6个字符', 'error');
+    return;
+  }
+
+  try {
+    await axios.put(`/api/admin/users/${userId}/reset-password`, { newPassword });
+    showNotification(i18n.t('passwordResetSuccess'), 'success');
+    closeResetPasswordModal();
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+function closeResetPasswordModal() {
+  const modal = document.getElementById('reset-password-modal');
+  if (modal) {
+    modal.remove();
+  }
 }

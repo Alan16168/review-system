@@ -83,7 +83,84 @@ admin.get('/users', async (c) => {
   }
 });
 
-// Update user role
+// Update user information (Admin only)
+admin.put('/users/:id', async (c) => {
+  try {
+    const userId = parseInt(c.req.param('id'));
+    const { email, username, role } = await c.req.json();
+
+    // Validate inputs
+    if (!email && !username && !role) {
+      return c.json({ error: 'At least one field (email, username, role) is required' }, 400);
+    }
+
+    // Check if user exists
+    const user = await getUserById(c.env.DB, userId);
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Validate role if provided
+    if (role && !['user', 'premium', 'admin'].includes(role)) {
+      return c.json({ error: 'Invalid role' }, 400);
+    }
+
+    // Check if email already exists (for other users)
+    if (email && email !== user.email) {
+      const existingUser = await getUserByEmail(c.env.DB, email);
+      if (existingUser && existingUser.id !== userId) {
+        return c.json({ error: 'Email already in use by another user' }, 400);
+      }
+    }
+
+    // Build update query dynamically
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (email && email !== user.email) {
+      updates.push('email = ?');
+      values.push(email);
+    }
+
+    if (username && username !== user.username) {
+      updates.push('username = ?');
+      values.push(username);
+    }
+
+    if (role && role !== user.role) {
+      updates.push('role = ?');
+      values.push(role);
+    }
+
+    if (updates.length === 0) {
+      return c.json({ message: 'No changes made' });
+    }
+
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    values.push(userId);
+
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+    await c.env.DB.prepare(query).bind(...values).run();
+
+    // Get updated user
+    const updatedUser = await getUserById(c.env.DB, userId);
+
+    return c.json({ 
+      message: 'User updated successfully',
+      user: {
+        id: updatedUser?.id,
+        email: updatedUser?.email,
+        username: updatedUser?.username,
+        role: updatedUser?.role
+      }
+    });
+  } catch (error) {
+    console.error('Update user error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Update user role (kept for backward compatibility)
 admin.put('/users/:id/role', async (c) => {
   try {
     const userId = parseInt(c.req.param('id'));
@@ -141,7 +218,49 @@ admin.get('/stats', async (c) => {
   }
 });
 
-// Reset user password directly (Admin only)
+// Reset user password (Admin only) - RESTful endpoint
+admin.put('/users/:id/reset-password', async (c) => {
+  try {
+    const userId = parseInt(c.req.param('id'));
+    const { newPassword } = await c.req.json();
+
+    if (!newPassword) {
+      return c.json({ error: 'New password is required' }, 400);
+    }
+
+    if (newPassword.length < 6) {
+      return c.json({ error: 'Password must be at least 6 characters' }, 400);
+    }
+
+    // Get user
+    const user = await getUserById(c.env.DB, userId);
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Hash new password
+    const passwordHash = await hashPassword(newPassword);
+
+    // Update password
+    await c.env.DB.prepare(
+      'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(passwordHash, userId).run();
+
+    return c.json({ 
+      message: 'Password reset successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username
+      }
+    });
+  } catch (error) {
+    console.error('Reset user password error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Reset user password directly (Admin only) - Legacy endpoint
 admin.post('/reset-user-password', async (c) => {
   try {
     const { userId, newPassword } = await c.req.json();
