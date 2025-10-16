@@ -4035,13 +4035,13 @@ function renderUsersTable(users) {
               </td>
               <td class="px-6 py-4 text-sm text-gray-500">${escapeHtml(user.email)}</td>
               <td class="px-6 py-4">
-                <select class="text-sm px-2 py-1 border border-gray-300 rounded"
-                        onchange="updateUserRole(${user.id}, this.value)"
-                        ${user.id === currentUser.id ? 'disabled' : ''}>
-                  <option value="user" ${user.role === 'user' ? 'selected' : ''}>${i18n.t('userRole')}</option>
-                  <option value="premium" ${user.role === 'premium' ? 'selected' : ''}>${i18n.t('premiumRole')}</option>
-                  <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>${i18n.t('adminRole')}</option>
-                </select>
+                <span class="px-2 py-1 text-xs rounded-full ${
+                  user.role === 'admin' ? 'bg-red-100 text-red-800' : 
+                  user.role === 'premium' ? 'bg-purple-100 text-purple-800' : 
+                  'bg-gray-100 text-gray-800'
+                }">
+                  ${i18n.t(user.role + 'Role')}
+                </span>
               </td>
               <td class="px-6 py-4 text-sm text-gray-500">
                 ${new Date(user.created_at).toLocaleDateString()}
