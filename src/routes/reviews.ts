@@ -57,7 +57,7 @@ function getLanguage(c: any): string {
 }
 
 // Get all reviews (personal and team reviews the user has access to)
-// Note: This endpoint returns "My Reviews" - only reviews created by the current user
+// Note: This endpoint returns "My Reviews" - reviews created by user or their team reviews
 // Public reviews are excluded and should be accessed via /api/reviews/public endpoint
 reviews.get('/', async (c) => {
   try {
@@ -65,7 +65,7 @@ reviews.get('/', async (c) => {
 
     // Get reviews based on owner_type access control:
     // 1. owner_type='private': only creator can see
-    // 2. owner_type='team': team members can see (if user is the creator)
+    // 2. owner_type='team': all team members can see (regardless of who created it)
     // 3. owner_type='public': excluded from "My Reviews" (use /api/reviews/public instead)
     // Also include reviews where user is a collaborator
     const query = `
@@ -76,7 +76,7 @@ reviews.get('/', async (c) => {
       LEFT JOIN review_collaborators rc ON r.id = rc.review_id
       WHERE (
         (r.owner_type = 'private' AND r.user_id = ?)
-        OR (r.owner_type = 'team' AND r.user_id = ?)
+        OR (r.owner_type = 'team' AND r.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
         OR rc.user_id = ?
       )
       ORDER BY r.updated_at DESC
