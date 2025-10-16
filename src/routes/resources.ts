@@ -252,7 +252,6 @@ function getMockArticles(lang: string = 'en') {
   }
   
   return [
-  return [
     {
       title: 'Harvard Business Review: Learning to Learn',
       description: 'Deep dive into how systematic reflection and review accelerate personal growth',
@@ -392,7 +391,6 @@ function getMockVideos(lang: string = 'en') {
     ];
   }
   
-  return [
   return [
     {
       title: 'TED Talk: The Power of Vulnerability',
