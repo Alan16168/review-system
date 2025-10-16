@@ -449,6 +449,8 @@ const translations = {
     'answerLength': '答案长度',
     'maxCharacters': '最大字符数',
     'charactersHint': '字符',
+    'creator': '创建者',
+    'system': '系统',
   },
   en: {
     // Auth
@@ -899,6 +901,8 @@ const translations = {
     'answerLength': 'Answer Length',
     'maxCharacters': 'Max Characters',
     'charactersHint': 'characters',
+    'creator': 'Creator',
+    'system': 'System',
   }
 };
 

@@ -3872,26 +3872,30 @@ async function showAdmin() {
         <div class="bg-white rounded-lg shadow-md mb-6">
           <div class="border-b border-gray-200">
             <nav class="flex space-x-8 px-6" aria-label="Tabs">
-              <button onclick="showAdminTab('users')" 
-                      class="admin-tab active py-4 px-1 border-b-2 font-medium text-sm"
-                      data-tab="users">
-                <i class="fas fa-users mr-2"></i>${i18n.t('userManagement')}
-              </button>
+              ${currentUser.role === 'admin' ? `
+                <button onclick="showAdminTab('users')" 
+                        class="admin-tab active py-4 px-1 border-b-2 font-medium text-sm"
+                        data-tab="users">
+                  <i class="fas fa-users mr-2"></i>${i18n.t('userManagement')}
+                </button>
+              ` : ''}
               <button onclick="showAdminTab('templates')" 
-                      class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
+                      class="admin-tab ${currentUser.role === 'premium' ? 'active' : ''} py-4 px-1 border-b-2 font-medium text-sm"
                       data-tab="templates">
                 <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('templateManagement')}
               </button>
-              <button onclick="showAdminTab('notifications')" 
-                      class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                      data-tab="notifications">
-                <i class="fas fa-bell mr-2"></i>${i18n.t('sendNotification')}
-              </button>
-              <button onclick="showAdminTab('stats')" 
-                      class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                      data-tab="stats">
-                <i class="fas fa-chart-bar mr-2"></i>${i18n.t('systemStats')}
-              </button>
+              ${currentUser.role === 'admin' ? `
+                <button onclick="showAdminTab('notifications')" 
+                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
+                        data-tab="notifications">
+                  <i class="fas fa-bell mr-2"></i>${i18n.t('sendNotification')}
+                </button>
+                <button onclick="showAdminTab('stats')" 
+                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
+                        data-tab="stats">
+                  <i class="fas fa-chart-bar mr-2"></i>${i18n.t('systemStats')}
+                </button>
+              ` : ''}
             </nav>
           </div>
         </div>
@@ -3920,7 +3924,12 @@ async function showAdmin() {
   `;
   document.head.appendChild(style);
 
-  showAdminTab('users');
+  // Show appropriate default tab based on user role
+  if (currentUser.role === 'admin') {
+    showAdminTab('users');
+  } else {
+    showAdminTab('templates');
+  }
 }
 
 async function showAdminTab(tab) {
@@ -5268,6 +5277,9 @@ function renderTemplatesTable(templates) {
               ${i18n.t('templateName')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('creator') || '创建者'}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ${i18n.t('questionCount')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -5287,6 +5299,12 @@ function renderTemplatesTable(templates) {
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">${escapeHtml(template.name)}</div>
                 ${template.name_en ? `<div class="text-xs text-gray-500">${escapeHtml(template.name_en)}</div>` : ''}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <i class="fas fa-user-circle text-gray-400 mr-2"></i>
+                  <span class="text-sm text-gray-700">${escapeHtml(template.creator_name || i18n.t('system'))}</span>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="text-sm text-gray-900">${template.question_count}</span>

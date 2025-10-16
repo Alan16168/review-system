@@ -119,21 +119,38 @@ templates.get('/:id', async (c) => {
 // Admin: Get all templates (including inactive ones)
 templates.get('/admin/all', premiumOrAdmin, async (c) => {
   try {
-    // Get all templates (including inactive)
-    const templatesResult = await c.env.DB.prepare(`
+    const user = c.get('user') as any;
+    
+    // Get templates based on user role
+    // Premium users: only their own templates
+    // Admins: all templates
+    let query = `
       SELECT 
-        id, 
-        name,
-        name_en,
-        description,
-        description_en,
-        is_default,
-        is_active,
-        created_at,
-        updated_at
-      FROM templates
-      ORDER BY is_default DESC, created_at DESC
-    `).all();
+        t.id, 
+        t.name,
+        t.name_en,
+        t.description,
+        t.description_en,
+        t.is_default,
+        t.is_active,
+        t.created_at,
+        t.updated_at,
+        t.created_by,
+        u.username as creator_name
+      FROM templates t
+      LEFT JOIN users u ON t.created_by = u.id
+    `;
+    
+    if (user.role === 'premium') {
+      query += ` WHERE t.created_by = ?`;
+    }
+    
+    query += ` ORDER BY t.is_default DESC, t.created_at DESC`;
+    
+    const statement = c.env.DB.prepare(query);
+    const templatesResult = user.role === 'premium' 
+      ? await statement.bind(user.id).all()
+      : await statement.all();
 
     const templateList = templatesResult.results || [];
 
@@ -213,6 +230,7 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
 // Admin: Create a new template
 templates.post('/', premiumOrAdmin, async (c) => {
   try {
+    const user = c.get('user') as any;
     const { name, name_en, description, description_en, is_default } = await c.req.json();
 
     if (!name) {
@@ -226,16 +244,17 @@ templates.post('/', premiumOrAdmin, async (c) => {
       `).run();
     }
 
-    // Insert new template
+    // Insert new template with creator
     const result = await c.env.DB.prepare(`
-      INSERT INTO templates (name, name_en, description, description_en, is_default, is_active)
-      VALUES (?, ?, ?, ?, ?, 1)
+      INSERT INTO templates (name, name_en, description, description_en, is_default, is_active, created_by)
+      VALUES (?, ?, ?, ?, ?, 1, ?)
     `).bind(
       name,
       name_en || null,
       description || null,
       description_en || null,
-      is_default ? 1 : 0
+      is_default ? 1 : 0,
+      user.id
     ).run();
 
     return c.json({ 
@@ -251,16 +270,22 @@ templates.post('/', premiumOrAdmin, async (c) => {
 // Admin: Update a template
 templates.put('/:id', premiumOrAdmin, async (c) => {
   try {
+    const user = c.get('user') as any;
     const templateId = c.req.param('id');
     const { name, name_en, description, description_en, is_default, is_active } = await c.req.json();
 
-    // Check if template exists
+    // Check if template exists and get creator
     const existing = await c.env.DB.prepare(`
-      SELECT id FROM templates WHERE id = ?
-    `).bind(templateId).first();
+      SELECT id, created_by FROM templates WHERE id = ?
+    `).bind(templateId).first<any>();
 
     if (!existing) {
       return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Permission check: Premium users can only edit their own templates
+    if (user.role === 'premium' && existing.created_by !== user.id) {
+      return c.json({ error: 'You can only edit your own templates' }, 403);
     }
 
     // If this is set as default, unset other defaults
@@ -301,15 +326,21 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
 // Admin: Delete a template (soft delete)
 templates.delete('/:id', premiumOrAdmin, async (c) => {
   try {
+    const user = c.get('user') as any;
     const templateId = c.req.param('id');
 
-    // Check if template exists
+    // Check if template exists and get creator
     const template = await c.env.DB.prepare(`
-      SELECT id, is_default FROM templates WHERE id = ?
+      SELECT id, is_default, created_by FROM templates WHERE id = ?
     `).bind(templateId).first<any>();
 
     if (!template) {
       return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Permission check: Premium users can only delete their own templates
+    if (user.role === 'premium' && template.created_by !== user.id) {
+      return c.json({ error: 'You can only delete your own templates' }, 403);
     }
 
     // Cannot delete default template
@@ -356,6 +387,7 @@ templates.delete('/:id', premiumOrAdmin, async (c) => {
 // Admin: Add a question to a template
 templates.post('/:id/questions', premiumOrAdmin, async (c) => {
   try {
+    const user = c.get('user') as any;
     const templateId = c.req.param('id');
     const { question_text, question_text_en, question_number, answer_length } = await c.req.json();
 
@@ -363,13 +395,18 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
       return c.json({ error: 'Question text is required' }, 400);
     }
 
-    // Check if template exists
+    // Check if template exists and get creator
     const template = await c.env.DB.prepare(`
-      SELECT id FROM templates WHERE id = ?
-    `).bind(templateId).first();
+      SELECT id, created_by FROM templates WHERE id = ?
+    `).bind(templateId).first<any>();
 
     if (!template) {
       return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Permission check: Premium users can only edit their own templates
+    if (user.role === 'premium' && template.created_by !== user.id) {
+      return c.json({ error: 'You can only edit your own templates' }, 403);
     }
 
     // Get the next question number if not provided
@@ -403,12 +440,27 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
 // Admin: Update a question
 templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) => {
   try {
+    const user = c.get('user') as any;
     const templateId = c.req.param('templateId');
     const questionId = c.req.param('questionId');
     const { question_text, question_text_en, question_number, answer_length } = await c.req.json();
 
     if (!question_text) {
       return c.json({ error: 'Question text is required' }, 400);
+    }
+
+    // Check template ownership
+    const template = await c.env.DB.prepare(`
+      SELECT id, created_by FROM templates WHERE id = ?
+    `).bind(templateId).first<any>();
+
+    if (!template) {
+      return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Permission check: Premium users can only edit their own templates
+    if (user.role === 'premium' && template.created_by !== user.id) {
+      return c.json({ error: 'You can only edit your own templates' }, 403);
     }
 
     // Default answer_length to 50 if not provided
@@ -441,8 +493,23 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
 // Admin: Delete a question
 templates.delete('/:templateId/questions/:questionId', premiumOrAdmin, async (c) => {
   try {
+    const user = c.get('user') as any;
     const templateId = c.req.param('templateId');
     const questionId = c.req.param('questionId');
+
+    // Check template ownership
+    const template = await c.env.DB.prepare(`
+      SELECT id, created_by FROM templates WHERE id = ?
+    `).bind(templateId).first<any>();
+
+    if (!template) {
+      return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Permission check: Premium users can only edit their own templates
+    if (user.role === 'premium' && template.created_by !== user.id) {
+      return c.json({ error: 'You can only edit your own templates' }, 403);
+    }
 
     // Delete question
     await c.env.DB.prepare(`
