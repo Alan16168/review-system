@@ -2276,7 +2276,7 @@ async function showCreateReviewStep2(template) {
 
           <!-- Actions -->
           <div class="flex justify-between space-x-4 pt-6 border-t bg-white rounded-lg shadow-md p-6 sticky bottom-0">
-            <button type="button" onclick="showCreateReview(window.createReviewData)" 
+            <button type="button" onclick="handlePreviousWithConfirmation()" 
                     class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
               <i class="fas fa-arrow-left mr-2"></i>${i18n.t('previous') || '上一步'}
             </button>
@@ -2326,23 +2326,89 @@ async function handleStep2Submit(e) {
   };
 
   try {
-    // Check if we have a draft ID from auto-save
+    // Check if we have a draft ID from previous save
     if (currentDraftId) {
       // Update existing draft instead of creating new one
       await axios.put(`/api/reviews/${currentDraftId}`, data);
-      currentDraftId = null; // Clear draft ID after successful submission
       showNotification(i18n.t('updateSuccess'), 'success');
     } else {
       // Create new review
-      await axios.post('/api/reviews', data);
+      const response = await axios.post('/api/reviews', data);
+      // Don't set currentDraftId here - we're completing the review, not drafting
       showNotification(i18n.t('createSuccess'), 'success');
     }
+    
+    // Clear draft ID after successful submission
+    currentDraftId = null;
+    
     showReviews();
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   } finally {
     window.isSubmitting = false;
   }
+}
+
+// Handle "Previous" button with confirmation dialog
+async function handlePreviousWithConfirmation() {
+  // Check if user has filled any answers
+  const template = window.currentSelectedTemplate;
+  let hasAnswers = false;
+  
+  if (template && template.questions) {
+    for (const q of template.questions) {
+      const answerElem = document.getElementById(`question${q.question_number}`);
+      if (answerElem && answerElem.value.trim()) {
+        hasAnswers = true;
+        break;
+      }
+    }
+  }
+  
+  if (hasAnswers) {
+    // Ask user if they want to save as draft
+    const confirmed = confirm(i18n.t('saveBeforeGoingBack') || '您已填写了一些答案，是否保存为草稿？\n\n点击"确定"保存草稿\n点击"取消"直接返回（不保存）');
+    
+    if (confirmed) {
+      // User wants to save draft
+      try {
+        const reviewData = window.createReviewData;
+        const answers = {};
+        
+        // Collect answers
+        if (template && template.questions) {
+          template.questions.forEach(q => {
+            const answerElem = document.getElementById(`question${q.question_number}`);
+            if (answerElem && answerElem.value.trim()) {
+              answers[q.question_number] = answerElem.value.trim();
+            }
+          });
+        }
+        
+        const data = {
+          ...reviewData,
+          status: 'draft', // Force to draft
+          answers
+        };
+        
+        // Save or update draft
+        if (currentDraftId) {
+          await axios.put(`/api/reviews/${currentDraftId}`, data);
+          showNotification(i18n.t('draftSaved'), 'success');
+        } else {
+          const response = await axios.post('/api/reviews', data);
+          currentDraftId = response.data.id;
+          showNotification(i18n.t('draftSaved'), 'success');
+        }
+      } catch (error) {
+        showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+        return; // Don't go back if save failed
+      }
+    }
+  }
+  
+  // Go back to step 1
+  showCreateReview(window.createReviewData);
 }
 
 // Old handleCreateReview function removed - now using two-step process

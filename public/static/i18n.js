@@ -381,6 +381,7 @@ const translations = {
     'savingDraft': '正在保存草稿...',
     'draftSaved': '草稿已保存',
     'switchingLanguage': '正在切换语言...',
+    'saveBeforeGoingBack': '您已填写了一些答案，是否保存为草稿？\n\n点击"确定"保存草稿\n点击"取消"直接返回（不保存）',
     
     // User Settings
     'userSettings': '用户设置',
@@ -773,6 +774,7 @@ const translations = {
     'savingDraft': 'Saving draft...',
     'draftSaved': 'Draft saved',
     'switchingLanguage': 'Switching language...',
+    'saveBeforeGoingBack': 'You have filled in some answers. Do you want to save as draft?\n\nClick "OK" to save draft\nClick "Cancel" to go back without saving',
     
     // User Settings
     'userSettings': 'User Settings',
