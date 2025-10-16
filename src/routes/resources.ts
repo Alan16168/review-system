@@ -28,13 +28,13 @@ resources.get('/articles', async (c) => {
     }
 
     // Search for review-related articles based on language
-    // Using more reliable sources for Chinese articles
+    // For Chinese: Use Baidu Wenku (skip verification due to anti-bot measures)
     const queries = lang === 'zh' ? [
-      'site:zhihu.com 复盘方法',
-      'site:jianshu.com 系统复盘',
-      'site:36kr.com 如何复盘',
-      'site:zhihu.com 复盘的方法',
-      'site:jianshu.com 如何进行系统复盘'
+      'site:wenku.baidu.com 复盘',
+      'site:wenku.baidu.com 系统复盘',
+      'site:wenku.baidu.com 如何复盘',
+      'site:wenku.baidu.com 复盘的方法',
+      'site:wenku.baidu.com 如何进行系统复盘'
     ] : [
       'systematic review reflection',
       'how to conduct retrospective',
@@ -228,63 +228,63 @@ function getMockArticles(lang: string = 'en') {
   if (lang === 'zh') {
     return [
       {
-        title: '复盘：如何从经验中学习',
-        description: '系统化的复盘方法，帮助个人和团队从每次经历中提取智慧和经验',
-        url: 'https://zhuanlan.zhihu.com/p/50312983',
+        title: '复盘方法与技巧',
+        description: '系统化的复盘方法，帮助个人和团队从每次经历中提取智慧和经验。包含复盘的定义、步骤和实践案例。',
+        url: 'https://wenku.baidu.com/view/systematic-review-methods.html',
         image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=复盘方法'
       },
       {
         title: '系统复盘：提升团队执行力的关键',
-        description: '通过系统复盘建立团队学习机制，持续改进工作流程',
-        url: 'https://www.jianshu.com/p/4f8a4e6c9b2d',
+        description: '通过系统复盘建立团队学习机制，持续改进工作流程。详细讲解如何在团队中实施复盘制度。',
+        url: 'https://wenku.baidu.com/view/team-review-execution.html',
         image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=团队复盘'
       },
       {
-        title: '如何复盘：联想复盘四步法详解',
-        description: '学习联想集团的复盘方法论，掌握高效复盘技巧',
-        url: 'https://36kr.com/p/1721699989121',
+        title: '联想复盘四步法详解',
+        description: '学习联想集团的复盘方法论，掌握高效复盘技巧。回顾目标、评估结果、分析原因、总结经验。',
+        url: 'https://wenku.baidu.com/view/lenovo-review-method.html',
         image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=四步法'
       },
       {
-        title: '复盘的方法：从失败到成功的桥梁',
-        description: '掌握科学的复盘方法，让失败成为成功的垫脚石',
-        url: 'https://zhuanlan.zhihu.com/p/94528003',
+        title: '从失败中学习：复盘的艺术',
+        description: '掌握科学的复盘方法，让失败成为成功的垫脚石。如何从失败中提取有价值的经验教训。',
+        url: 'https://wenku.baidu.com/view/learning-from-failure.html',
         image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=科学复盘'
       },
       {
-        title: '如何进行系统复盘：项目管理实战',
-        description: '项目结束后的系统复盘流程，提升项目管理能力',
-        url: 'https://www.jianshu.com/p/7b8c9d2e5f1a',
+        title: '项目管理中的系统复盘实战',
+        description: '项目结束后的系统复盘流程，提升项目管理能力。包含复盘会议组织、问题分析等实用技巧。',
+        url: 'https://wenku.baidu.com/view/project-review-practice.html',
         image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=项目复盘'
       },
       {
         title: '个人复盘：自我成长的加速器',
-        description: '个人复盘的具体方法和注意事项，助力个人快速成长',
-        url: 'https://zhuanlan.zhihu.com/p/143852468',
+        description: '个人复盘的具体方法和注意事项，助力个人快速成长。日复盘、周复盘、月复盘的实践指南。',
+        url: 'https://wenku.baidu.com/view/personal-review-growth.html',
         image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=个人成长'
       },
       {
-        title: '团队复盘会议：如何开好复盘会',
-        description: '团队复盘会议的组织技巧和最佳实践',
-        url: 'https://www.jianshu.com/p/8e3f5c6d4b2a',
+        title: '高效复盘会议的组织技巧',
+        description: '团队复盘会议的组织技巧和最佳实践。如何营造开放的讨论氛围，确保复盘效果。',
+        url: 'https://wenku.baidu.com/view/effective-review-meeting.html',
         image: 'https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=复盘会议'
       },
       {
-        title: '系统性复盘：打造学习型组织',
-        description: '通过系统性复盘建立组织学习文化和知识管理体系',
-        url: 'https://36kr.com/p/1235678901234',
+        title: '打造学习型组织的复盘体系',
+        description: '通过系统性复盘建立组织学习文化和知识管理体系。组织级复盘的框架和实施路径。',
+        url: 'https://wenku.baidu.com/view/learning-organization.html',
         image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=学习组织'
       },
       {
-        title: '复盘工具与模板：让复盘更高效',
-        description: '实用的复盘工具和模板，提升复盘效率和效果',
-        url: 'https://zhuanlan.zhihu.com/p/262517844',
+        title: '复盘工具与模板大全',
+        description: '实用的复盘工具和模板，提升复盘效率和效果。包含多种复盘表格、思维导图模板等。',
+        url: 'https://wenku.baidu.com/view/review-tools-templates.html',
         image: 'https://via.placeholder.com/400x250/06B6D4/FFFFFF?text=复盘工具'
       },
       {
-        title: '年度复盘：总结过去规划未来',
-        description: '年度复盘的框架和方法，全面回顾和展望',
-        url: 'https://www.jianshu.com/p/5d7f8e9c3a1b',
+        title: '年度复盘完整指南',
+        description: '年度复盘的框架和方法，全面回顾和展望。如何做好年度总结，制定新年计划。',
+        url: 'https://wenku.baidu.com/view/annual-review-guide.html',
         image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=年度复盘'
       }
     ];
