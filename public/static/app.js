@@ -444,30 +444,22 @@ async function showHomePage() {
       <section class="py-16 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">${i18n.t('ourTeam')}</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="bg-white rounded-xl p-6 text-center shadow-lg">
-              <div class="w-24 h-24 bg-indigo-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <i class="fas fa-user-tie text-indigo-600 text-4xl"></i>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div class="bg-white rounded-xl p-8 text-center shadow-lg">
+              <div class="w-28 h-28 bg-indigo-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <i class="fas fa-user-tie text-indigo-600 text-5xl"></i>
               </div>
-              <h3 class="text-xl font-bold text-gray-900 mb-2">${i18n.t('founderName')}</h3>
-              <p class="text-indigo-600 mb-3">${i18n.t('founderTitle')}</p>
-              <p class="text-gray-600 text-sm">${i18n.t('founderBio')}</p>
+              <h3 class="text-2xl font-bold text-gray-900 mb-2">${i18n.t('founderName')}</h3>
+              <p class="text-indigo-600 mb-3 font-semibold">${i18n.t('founderTitle')}</p>
+              <p class="text-gray-600">${i18n.t('founderBio')}</p>
             </div>
-            <div class="bg-white rounded-xl p-6 text-center shadow-lg">
-              <div class="w-24 h-24 bg-purple-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <i class="fas fa-code text-purple-600 text-4xl"></i>
+            <div class="bg-white rounded-xl p-8 text-center shadow-lg">
+              <div class="w-28 h-28 bg-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <i class="fas fa-paint-brush text-pink-600 text-5xl"></i>
               </div>
-              <h3 class="text-xl font-bold text-gray-900 mb-2">${i18n.t('techLeadName')}</h3>
-              <p class="text-purple-600 mb-3">${i18n.t('techLeadTitle')}</p>
-              <p class="text-gray-600 text-sm">${i18n.t('techLeadBio')}</p>
-            </div>
-            <div class="bg-white rounded-xl p-6 text-center shadow-lg">
-              <div class="w-24 h-24 bg-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <i class="fas fa-paint-brush text-pink-600 text-4xl"></i>
-              </div>
-              <h3 class="text-xl font-bold text-gray-900 mb-2">${i18n.t('designLeadName')}</h3>
-              <p class="text-pink-600 mb-3">${i18n.t('designLeadTitle')}</p>
-              <p class="text-gray-600 text-sm">${i18n.t('designLeadBio')}</p>
+              <h3 class="text-2xl font-bold text-gray-900 mb-2">${i18n.t('designLeadName')}</h3>
+              <p class="text-pink-600 mb-3 font-semibold">${i18n.t('designLeadTitle')}</p>
+              <p class="text-gray-600">${i18n.t('designLeadBio')}</p>
             </div>
           </div>
         </div>

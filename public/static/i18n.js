@@ -285,15 +285,12 @@ const translations = {
     
     // Team
     'ourTeam': '团队介绍',
-    'founderName': '张伟',
+    'founderName': 'Alan',
     'founderTitle': '创始人 & CEO',
-    'founderBio': '10年企业管理经验，致力于推动组织学习和知识管理',
-    'techLeadName': '李明',
-    'techLeadTitle': '技术负责人',
-    'techLeadBio': '全栈工程师，专注于构建高效协作工具',
-    'designLeadName': '王芳',
+    'founderBio': '18年企业管理经验，致力于推动组织学习和知识管理',
+    'designLeadName': 'Helen',
     'designLeadTitle': '设计负责人',
-    'designLeadBio': 'UX设计师，追求极致的用户体验',
+    'designLeadBio': '平台设计师，追求极致的用户体验',
     
     // Testimonials
     'userTestimonials': '用户评价',
@@ -742,15 +739,12 @@ const translations = {
     
     // Team
     'ourTeam': 'Our Team',
-    'founderName': 'Wei Zhang',
+    'founderName': 'Alan',
     'founderTitle': 'Founder & CEO',
-    'founderBio': '10 years of enterprise management experience, dedicated to organizational learning and knowledge management',
-    'techLeadName': 'Ming Li',
-    'techLeadTitle': 'Tech Lead',
-    'techLeadBio': 'Full-stack engineer focused on building efficient collaboration tools',
-    'designLeadName': 'Fang Wang',
+    'founderBio': '18 years of enterprise management experience, dedicated to organizational learning and knowledge management',
+    'designLeadName': 'Helen',
     'designLeadTitle': 'Design Lead',
-    'designLeadBio': 'UX designer pursuing ultimate user experience',
+    'designLeadBio': 'Platform designer pursuing ultimate user experience',
     
     // Testimonials
     'userTestimonials': 'User Testimonials',
