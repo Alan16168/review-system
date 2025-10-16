@@ -102,10 +102,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://3863e9af.review-system.pages.dev (V4.3.2 显示主人属性和修复重复保存)
+- **最新部署**: https://150730df.review-system.pages.dev (V4.3.2 显示主人属性和修复重复保存 - 语法修复)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-16 (V4.3.2 显示主人属性和修复重复保存问题)
+- **部署日期**: 2025-10-16 (V4.3.2 显示主人属性和修复重复保存问题 - 语法错误已修复)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
