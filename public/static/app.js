@@ -2270,6 +2270,12 @@ async function showCreateReviewStep2(template) {
 async function handleStep2Submit(e) {
   e.preventDefault();
   
+  // Prevent duplicate submission
+  if (window.isSubmitting) {
+    return;
+  }
+  window.isSubmitting = true;
+  
   const template = window.currentSelectedTemplate;
   const reviewData = window.createReviewData;
   
@@ -2296,6 +2302,8 @@ async function handleStep2Submit(e) {
     showReviews();
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  } finally {
+    window.isSubmitting = false;
   }
 }
 
@@ -2910,6 +2918,9 @@ function renderNavigation() {
               </button>
               <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                 <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
+              </button>
+              <button onclick="showPublicReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                <i class="fas fa-globe mr-1"></i>${i18n.t('publicReviews')}
               </button>
               <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                 <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
