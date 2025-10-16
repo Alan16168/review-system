@@ -97,10 +97,10 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署**: https://f131504f.review-system.pages.dev (V4.2.10 创建者列 + 编辑错误修复)
+- **最新部署**: https://e9574d50.review-system.pages.dev (V4.2.11 统一版面+修复teams undefined)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已部署并运行中
-- **部署日期**: 2025-10-15 (V4.2.10 添加创建者列和修复编辑undefined错误)
+- **部署日期**: 2025-10-15 (V4.2.11 统一版面+查看只读+修复teams undefined错误)
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
