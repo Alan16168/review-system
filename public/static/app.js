@@ -1432,8 +1432,11 @@ function renderRecentReviews(reviews) {
 // ============ Reviews Page ============
 
 async function showReviews() {
-  // Auto-save draft before leaving create review page
-  await autoSaveDraftBeforeNavigation();
+  // Only auto-save if coming from create review page AND not just completed a save
+  // Skip auto-save if currentView is already changed (e.g., 'completing-review')
+  if (currentView === 'create-review-step1' || currentView === 'create-review-step2') {
+    await autoSaveDraftBeforeNavigation();
+  }
   
   currentView = 'reviews';
   const app = document.getElementById('app');
@@ -2240,7 +2243,7 @@ async function showCreateReviewStep2(template) {
       
       <div class="max-w-4xl mx-auto px-4 py-8">
         <div class="mb-6">
-          <button onclick="showCreateReview(window.createReviewData)" class="text-indigo-600 hover:text-indigo-800 mb-4">
+          <button onclick="handlePreviousWithConfirmation()" class="text-indigo-600 hover:text-indigo-800 mb-4">
             <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
           </button>
           <h1 class="text-3xl font-bold text-gray-800">
