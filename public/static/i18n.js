@@ -36,7 +36,7 @@ const translations = {
     'addUser': '添加用户',
     
     // Navigation
-    'dashboard': '仪表板',
+    'dashboard': '工作台',
     'myReviews': '我的复盘',
     'publicReviews': '公开的复盘',
     'teams': '团队',
@@ -451,6 +451,9 @@ const translations = {
     'charactersHint': '字符',
     'creator': '创建者',
     'system': '系统',
+    'systemTemplate': '系统模版',
+    'userTemplate': '用户模版',
+    'type': '类型',
   },
   en: {
     // Auth
@@ -903,6 +906,9 @@ const translations = {
     'charactersHint': 'characters',
     'creator': 'Creator',
     'system': 'System',
+    'systemTemplate': 'System Template',
+    'userTemplate': 'User Template',
+    'type': 'Type',
   }
 };
 

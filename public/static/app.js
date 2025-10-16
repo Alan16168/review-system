@@ -5277,6 +5277,9 @@ function renderTemplatesTable(templates) {
               ${i18n.t('templateName')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('type') || '类型'}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ${i18n.t('creator') || '创建者'}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -5299,6 +5302,16 @@ function renderTemplatesTable(templates) {
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">${escapeHtml(template.name)}</div>
                 ${template.name_en ? `<div class="text-xs text-gray-500">${escapeHtml(template.name_en)}</div>` : ''}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${template.creator_role === 'admin' || !template.creator_name ? 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                    <i class="fas fa-crown mr-1"></i>${i18n.t('systemTemplate')}
+                  </span>` : 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    <i class="fas fa-user mr-1"></i>${i18n.t('userTemplate')}
+                  </span>`
+                }
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
@@ -5401,13 +5414,15 @@ function showCreateTemplateModal() {
               <textarea id="template-description-en" rows="3"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
-            <div class="flex items-center">
-              <input type="checkbox" id="template-is-default"
-                     class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-              <label for="template-is-default" class="ml-2 text-sm text-gray-700">
-                ${i18n.t('isDefault')}
-              </label>
-            </div>
+            ${currentUser.role === 'admin' ? `
+              <div class="flex items-center">
+                <input type="checkbox" id="template-is-default"
+                       class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                <label for="template-is-default" class="ml-2 text-sm text-gray-700">
+                  ${i18n.t('isDefault')}
+                </label>
+              </div>
+            ` : ''}
           </div>
           <div class="flex justify-end space-x-3 mt-6">
             <button type="button" onclick="closeTemplateModal()"
@@ -5429,12 +5444,13 @@ function showCreateTemplateModal() {
 async function handleCreateTemplate(e) {
   e.preventDefault();
   
+  const isDefaultCheckbox = document.getElementById('template-is-default');
   const data = {
     name: document.getElementById('template-name').value,
     name_en: document.getElementById('template-name-en').value || null,
     description: document.getElementById('template-description').value || null,
     description_en: document.getElementById('template-description-en').value || null,
-    is_default: document.getElementById('template-is-default').checked
+    is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false
   };
 
   try {
@@ -5497,13 +5513,15 @@ async function showEditTemplateModal(templateId) {
                 <textarea id="template-description-en" rows="3"
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(template.description_en || '')}</textarea>
               </div>
-              <div class="flex items-center">
-                <input type="checkbox" id="template-is-default" ${template.is_default ? 'checked' : ''}
-                       class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-                <label for="template-is-default" class="ml-2 text-sm text-gray-700">
-                  ${i18n.t('isDefault')}
-                </label>
-              </div>
+              ${currentUser.role === 'admin' ? `
+                <div class="flex items-center">
+                  <input type="checkbox" id="template-is-default" ${template.is_default ? 'checked' : ''}
+                         class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                  <label for="template-is-default" class="ml-2 text-sm text-gray-700">
+                    ${i18n.t('isDefault')}
+                  </label>
+                </div>
+              ` : ''}
               <div class="flex items-center">
                 <input type="checkbox" id="template-is-active" ${template.is_active ? 'checked' : ''}
                        class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
@@ -5535,12 +5553,13 @@ async function showEditTemplateModal(templateId) {
 async function handleUpdateTemplate(e, templateId) {
   e.preventDefault();
   
+  const isDefaultCheckbox = document.getElementById('template-is-default');
   const data = {
     name: document.getElementById('template-name').value,
     name_en: document.getElementById('template-name-en').value || null,
     description: document.getElementById('template-description').value || null,
     description_en: document.getElementById('template-description-en').value || null,
-    is_default: document.getElementById('template-is-default').checked,
+    is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false,
     is_active: document.getElementById('template-is-active').checked
   };
 

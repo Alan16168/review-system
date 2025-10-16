@@ -136,7 +136,8 @@ templates.get('/admin/all', premiumOrAdmin, async (c) => {
         t.created_at,
         t.updated_at,
         t.created_by,
-        u.username as creator_name
+        u.username as creator_name,
+        u.role as creator_role
       FROM templates t
       LEFT JOIN users u ON t.created_by = u.id
     `;
@@ -237,8 +238,12 @@ templates.post('/', premiumOrAdmin, async (c) => {
       return c.json({ error: 'Template name is required' }, 400);
     }
 
+    // Only admin users can set templates as default
+    const canSetDefault = user.role === 'admin';
+    const actualIsDefault = is_default && canSetDefault;
+
     // If this is set as default, unset other defaults
-    if (is_default) {
+    if (actualIsDefault) {
       await c.env.DB.prepare(`
         UPDATE templates SET is_default = 0
       `).run();
@@ -253,7 +258,7 @@ templates.post('/', premiumOrAdmin, async (c) => {
       name_en || null,
       description || null,
       description_en || null,
-      is_default ? 1 : 0,
+      actualIsDefault ? 1 : 0,
       user.id
     ).run();
 
@@ -276,7 +281,7 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
 
     // Check if template exists and get creator
     const existing = await c.env.DB.prepare(`
-      SELECT id, created_by FROM templates WHERE id = ?
+      SELECT id, created_by, is_default as current_is_default FROM templates WHERE id = ?
     `).bind(templateId).first<any>();
 
     if (!existing) {
@@ -288,8 +293,13 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
       return c.json({ error: 'You can only edit your own templates' }, 403);
     }
 
+    // Only admin can set/unset default flag
+    // For non-admin users, keep the existing is_default value
+    const canSetDefault = user.role === 'admin';
+    const actualIsDefault = canSetDefault ? is_default : existing.current_is_default;
+
     // If this is set as default, unset other defaults
-    if (is_default) {
+    if (actualIsDefault && !existing.current_is_default) {
       await c.env.DB.prepare(`
         UPDATE templates SET is_default = 0 WHERE id != ?
       `).bind(templateId).run();
@@ -311,7 +321,7 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
       name_en || null,
       description || null,
       description_en || null,
-      is_default ? 1 : 0,
+      actualIsDefault ? 1 : 0,
       is_active ? 1 : 0,
       templateId
     ).run();
