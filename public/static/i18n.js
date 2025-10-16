@@ -38,6 +38,7 @@ const translations = {
     // Navigation
     'dashboard': '仪表板',
     'myReviews': '我的复盘',
+    'publicReviews': '公开的复盘',
     'teams': '团队',
     'admin': '管理后台',
     'profile': '个人资料',
@@ -95,6 +96,18 @@ const translations = {
     'timeTypeMonthly': '月复盘',
     'timeTypeQuarterly': '季复盘',
     'timeTypeYearly': '年复盘',
+    
+    // Owner Type (Access Control)
+    'ownerType': '主人',
+    'ownerTypePrivate': '私有',
+    'ownerTypeTeam': '团队',
+    'ownerTypePublic': '公开',
+    'ownerTypeNote': '主人属性说明',
+    'ownerTypePrivateDesc': '私有：仅创建者可见和编辑',
+    'ownerTypeTeamDesc': '团队：团队成员可见；群体类型为"团队"时成员可协作',
+    'ownerTypePublicDesc': '公开：所有人可见但不可编辑（仅创建者可编辑）',
+    'publicReviewsDesc': '查看所有公开的复盘，供学习和参考',
+    'noPublicReviews': '暂无公开的复盘',
     
     // Team Management
     'teamList': '团队列表',
@@ -417,6 +430,7 @@ const translations = {
     // Navigation
     'dashboard': 'Dashboard',
     'myReviews': 'My Reviews',
+    'publicReviews': 'Public Reviews',
     'teams': 'Teams',
     'admin': 'Admin',
     'profile': 'Profile',
@@ -474,6 +488,18 @@ const translations = {
     'timeTypeMonthly': 'Monthly Review',
     'timeTypeQuarterly': 'Quarterly Review',
     'timeTypeYearly': 'Yearly Review',
+    
+    // Owner Type (Access Control)
+    'ownerType': 'Owner',
+    'ownerTypePrivate': 'Private',
+    'ownerTypeTeam': 'Team',
+    'ownerTypePublic': 'Public',
+    'ownerTypeNote': 'Owner Type Description',
+    'ownerTypePrivateDesc': 'Private: Only creator can view and edit',
+    'ownerTypeTeamDesc': 'Team: Team members can view; can collaborate if Group Type is "Team"',
+    'ownerTypePublicDesc': 'Public: Everyone can view but not edit (only creator can edit)',
+    'publicReviewsDesc': 'View all public reviews for learning and reference',
+    'noPublicReviews': 'No public reviews yet',
     
     // Team Management
     'teamList': 'Team List',

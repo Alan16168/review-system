@@ -17,6 +17,27 @@ const reviews = new Hono<{ Bindings: Bindings }>();
 // All routes require authentication
 reviews.use('/*', authMiddleware);
 
+// Get public reviews (owner_type='public')
+reviews.get('/public', async (c) => {
+  try {
+    const query = `
+      SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
+      FROM reviews r
+      LEFT JOIN users u ON r.user_id = u.id
+      LEFT JOIN teams t ON r.team_id = t.id
+      WHERE r.owner_type = 'public'
+      ORDER BY r.updated_at DESC
+    `;
+
+    const result = await c.env.DB.prepare(query).all();
+
+    return c.json({ reviews: result.results || [] });
+  } catch (error) {
+    console.error('Get public reviews error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 // Helper function to get language from request
 function getLanguage(c: any): string {
   // Try X-Language header first
@@ -40,16 +61,23 @@ reviews.get('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
 
-    // Get personal reviews and team reviews
+    // Get reviews based on owner_type access control:
+    // 1. owner_type='private': only creator can see
+    // 2. owner_type='team': team members can see
+    // 3. owner_type='public': everyone can see (but not edit)
+    // Also include reviews where user is a collaborator
     const query = `
       SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
       LEFT JOIN teams t ON r.team_id = t.id
       LEFT JOIN review_collaborators rc ON r.id = rc.review_id
-      WHERE r.user_id = ? 
-         OR rc.user_id = ?
-         OR (r.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
+      WHERE (
+        (r.owner_type = 'private' AND r.user_id = ?)
+        OR (r.owner_type = 'team' AND r.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
+        OR (r.owner_type = 'public')
+        OR rc.user_id = ?
+      )
       ORDER BY r.updated_at DESC
     `;
 
@@ -78,9 +106,10 @@ reviews.get('/:id', async (c) => {
       LEFT JOIN teams t ON r.team_id = t.id
       LEFT JOIN templates tp ON r.template_id = tp.id
       WHERE r.id = ? AND (
-        r.user_id = ? 
+        (r.owner_type = 'private' AND r.user_id = ?)
+        OR (r.owner_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
+        OR (r.owner_type = 'public')
         OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
-        OR EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?)
       )
     `;
 
@@ -140,7 +169,7 @@ reviews.post('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const body = await c.req.json();
-    const { title, description, team_id, group_type, time_type, template_id, answers, status } = body;
+    const { title, description, team_id, group_type, time_type, template_id, answers, status, owner_type } = body;
 
     if (!title) {
       return c.json({ error: 'Title is required' }, 400);
@@ -167,18 +196,29 @@ reviews.post('/', async (c) => {
       }
     }
 
-    // Create review with template_id
+    // Validate owner_type
+    let ownerType = owner_type || 'private';
+    if (!['private', 'team', 'public'].includes(ownerType)) {
+      ownerType = 'private';
+    }
+    // If owner_type is 'team' but no team_id, force to 'private'
+    if (ownerType === 'team' && !team_id) {
+      ownerType = 'private';
+    }
+
+    // Create review with template_id and owner_type
     const result = await c.env.DB.prepare(`
       INSERT INTO reviews (
         title, description, user_id, team_id, group_type, time_type,
-        template_id, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        template_id, status, owner_type
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       title, description || null, user.id, team_id || null,
       group_type || 'personal',
       time_type || 'daily',
       templateIdToUse,
-      status || 'draft'
+      status || 'draft',
+      ownerType
     ).run();
 
     const reviewId = result.meta.last_row_id;
@@ -219,18 +259,20 @@ reviews.put('/:id', async (c) => {
     const reviewId = c.req.param('id');
     const body = await c.req.json();
 
-    // Check if user has edit permission
-    // Creator can always edit
-    // Collaborators with can_edit=1 can edit
-    // Team members with 'creator' or 'operator' role can edit
+    // Check if user has edit permission based on owner_type
+    // 1. owner_type='private': only creator can edit
+    // 2. owner_type='team' + group_type='personal': team members can view but not edit (unless collaborator)
+    // 3. owner_type='team' + group_type='team': team members with proper role can edit
+    // 4. owner_type='public': no one can edit (read-only for everyone except creator)
+    // Collaborators with can_edit=1 can always edit
     const checkQuery = `
-      SELECT 1 FROM reviews r
+      SELECT r.owner_type, r.group_type, r.team_id FROM reviews r
       LEFT JOIN review_collaborators rc ON r.id = rc.review_id
       LEFT JOIN team_members tm ON r.team_id = tm.team_id AND tm.user_id = ?
       WHERE r.id = ? AND (
         r.user_id = ?
         OR (rc.user_id = ? AND rc.can_edit = 1)
-        OR (tm.user_id = ? AND tm.role IN ('creator', 'operator'))
+        OR (r.owner_type = 'team' AND r.group_type = 'team' AND tm.user_id = ? AND tm.role IN ('creator', 'operator'))
       )
     `;
     const hasPermission = await c.env.DB.prepare(checkQuery)
@@ -240,8 +282,16 @@ reviews.put('/:id', async (c) => {
       return c.json({ error: 'Access denied. You need creator or operator role to edit.' }, 403);
     }
 
-    const { title, description, group_type, time_type, answers, status } = body;
+    const { title, description, group_type, time_type, answers, status, owner_type } = body;
     
+    // Validate owner_type if provided
+    let validOwnerType = null;
+    if (owner_type) {
+      if (['private', 'team', 'public'].includes(owner_type)) {
+        validOwnerType = owner_type;
+      }
+    }
+
     // Update review basic info (template_id cannot be changed)
     await c.env.DB.prepare(`
       UPDATE reviews SET
@@ -250,6 +300,7 @@ reviews.put('/:id', async (c) => {
         group_type = COALESCE(?, group_type),
         time_type = COALESCE(?, time_type),
         status = COALESCE(?, status),
+        owner_type = COALESCE(?, owner_type),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
@@ -258,6 +309,7 @@ reviews.put('/:id', async (c) => {
       group_type || null,
       time_type || null,
       status || null,
+      validOwnerType,
       reviewId
     ).run();
 
@@ -360,13 +412,14 @@ reviews.get('/:id/team-answers', async (c) => {
     const user = c.get('user') as UserPayload;
     const reviewId = parseInt(c.req.param('id'));
 
-    // Check if user has access to this review
+    // Check if user has access to this review based on owner_type
     const accessQuery = `
       SELECT 1 FROM reviews r
       WHERE r.id = ? AND (
-        r.user_id = ? 
+        (r.owner_type = 'private' AND r.user_id = ?)
+        OR (r.owner_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
+        OR (r.owner_type = 'public')
         OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
-        OR EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?)
       )
     `;
     const hasAccess = await c.env.DB.prepare(accessQuery)
@@ -428,20 +481,22 @@ reviews.put('/:id/my-answer/:questionNumber', async (c) => {
       return c.json({ error: 'Invalid question number' }, 400);
     }
 
-    // Check if user has access to this review
+    // Check if user has access to this review and can contribute based on owner_type and group_type
+    // For team reviews with group_type='team', team members can contribute
+    // For other types, only collaborators can contribute
     const accessQuery = `
-      SELECT 1 FROM reviews r
+      SELECT r.owner_type, r.group_type, r.team_id, r.user_id FROM reviews r
       WHERE r.id = ? AND (
-        r.user_id = ? 
+        r.user_id = ?
         OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
-        OR EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?)
+        OR (r.owner_type = 'team' AND r.group_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
       )
     `;
-    const hasAccess = await c.env.DB.prepare(accessQuery)
+    const review: any = await c.env.DB.prepare(accessQuery)
       .bind(reviewId, user.id, user.id, user.id).first();
 
-    if (!hasAccess) {
-      return c.json({ error: 'Access denied' }, 403);
+    if (!review) {
+      return c.json({ error: 'Access denied. You cannot contribute to this review.' }, 403);
     }
 
     // Save the answer

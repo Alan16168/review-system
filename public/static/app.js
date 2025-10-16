@@ -1117,6 +1117,9 @@ async function showDashboard() {
                 <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                   <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
                 </button>
+                <button onclick="showPublicReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                  <i class="fas fa-globe mr-1"></i>${i18n.t('publicReviews')}
+                </button>
                 <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                   <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
                 </button>
@@ -1511,6 +1514,138 @@ async function showReviews() {
   await loadAllReviews();
 }
 
+// Show Public Reviews page
+async function showPublicReviews() {
+  currentView = 'public-reviews';
+  const app = document.getElementById('app');
+  
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-50">
+      ${renderNavigation()}
+      
+      <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="mb-6">
+          <h1 class="text-3xl font-bold text-gray-800">
+            <i class="fas fa-globe mr-2"></i>${i18n.t('publicReviews')}
+          </h1>
+          <p class="text-gray-600 mt-2">
+            ${i18n.t('publicReviewsDesc') || '查看所有公开的复盘，供学习和参考'}
+          </p>
+        </div>
+
+        <!-- Public Reviews List -->
+        <div id="public-reviews-container" class="bg-white rounded-lg shadow-md">
+          <div class="p-8 text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+            <p class="text-gray-600">${i18n.t('loading')}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await loadPublicReviews();
+}
+
+let publicReviews = [];
+
+async function loadPublicReviews() {
+  try {
+    const response = await axios.get('/api/reviews/public');
+    publicReviews = response.data.reviews;
+    renderPublicReviewsList(publicReviews);
+  } catch (error) {
+    console.error('Load public reviews error:', error);
+    document.getElementById('public-reviews-container').innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+        <p class="text-red-600">${i18n.t('operationFailed')}</p>
+      </div>
+    `;
+  }
+}
+
+function renderPublicReviewsList(reviews) {
+  const container = document.getElementById('public-reviews-container');
+  
+  if (!reviews || reviews.length === 0) {
+    container.innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
+        <p class="text-gray-600">${i18n.t('noPublicReviews') || '暂无公开的复盘'}</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('reviewTitle')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('creator')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('status')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('updatedAt')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('actions')}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${reviews.map(review => `
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div>
+                    <div class="text-sm font-medium text-gray-900">
+                      ${escapeHtml(review.title)}
+                    </div>
+                    ${review.team_name ? `
+                      <div class="text-xs text-gray-500">
+                        <i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${escapeHtml(review.creator_name)}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  review.status === 'completed' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }">
+                  ${i18n.t(review.status)}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${new Date(review.updated_at).toLocaleString()}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                <button onclick="showReviewDetail(${review.id}, true)" 
+                        class="text-indigo-600 hover:text-indigo-900">
+                  <i class="fas fa-eye"></i> ${i18n.t('view')}
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 let allReviews = [];
 let currentPage = 1;
 const itemsPerPage = 5;
@@ -1842,6 +1977,26 @@ async function showCreateReview(preservedData = null) {
             </select>
           </div>
 
+          <!-- Owner Type (Access Control) -->
+          <div class="border-t pt-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('ownerType')} <span class="text-red-500">*</span>
+            </label>
+            <select id="review-owner-type" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="private">${i18n.t('ownerTypePrivate')}</option>
+              <option value="team">${i18n.t('ownerTypeTeam')}</option>
+              <option value="public">${i18n.t('ownerTypePublic')}</option>
+            </select>
+            <div class="mt-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+              <p class="text-xs text-gray-700 space-y-1">
+                <span class="block"><strong>${i18n.t('ownerTypePrivate')}:</strong> ${i18n.t('ownerTypePrivateDesc')}</span>
+                <span class="block"><strong>${i18n.t('ownerTypeTeam')}:</strong> ${i18n.t('ownerTypeTeamDesc')}</span>
+                <span class="block"><strong>${i18n.t('ownerTypePublic')}:</strong> ${i18n.t('ownerTypePublicDesc')}</span>
+              </p>
+            </div>
+          </div>
+
           <!-- Status -->
           <div class="border-t pt-6">
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -1915,6 +2070,9 @@ async function showCreateReview(preservedData = null) {
     }
     if (preservedData.time_type) {
       document.getElementById('review-time-type').value = preservedData.time_type;
+    }
+    if (preservedData.owner_type) {
+      document.getElementById('review-owner-type').value = preservedData.owner_type;
     }
     if (preservedData.status) {
       const statusRadio = document.querySelector(`input[name="status"][value="${preservedData.status}"]`);
@@ -2010,7 +2168,15 @@ async function handleStep1Submit(e) {
   }
   
   const timeType = document.getElementById('review-time-type').value;
+  const ownerType = document.getElementById('review-owner-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
+  
+  // Validation: If owner_type is 'team' but no team selected, force to 'private'
+  let finalOwnerType = ownerType;
+  if (ownerType === 'team' && !teamId) {
+    finalOwnerType = 'private';
+    showNotification(i18n.t('ownerTypeTeam') + ' ' + i18n.t('requiresTeam') || '团队主人需要选择团队，已自动改为私有', 'warning');
+  }
   
   // Store data for step 2
   window.createReviewData = {
@@ -2020,6 +2186,7 @@ async function handleStep1Submit(e) {
     team_id: teamId || null,
     group_type: groupType,
     time_type: timeType,
+    owner_type: finalOwnerType,
     status
   };
   
@@ -2596,6 +2763,26 @@ async function showEditReview(id) {
               </select>
             </div>
 
+            <!-- Owner Type (Access Control) -->
+            <div class="border-t pt-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('ownerType')} <span class="text-red-500">*</span>
+              </label>
+              <select id="review-owner-type" required
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="private" ${(review.owner_type === 'private' || !review.owner_type) ? 'selected' : ''}>${i18n.t('ownerTypePrivate')}</option>
+                <option value="team" ${review.owner_type === 'team' ? 'selected' : ''}>${i18n.t('ownerTypeTeam')}</option>
+                <option value="public" ${review.owner_type === 'public' ? 'selected' : ''}>${i18n.t('ownerTypePublic')}</option>
+              </select>
+              <div class="mt-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                <p class="text-xs text-gray-700 space-y-1">
+                  <span class="block"><strong>${i18n.t('ownerTypePrivate')}:</strong> ${i18n.t('ownerTypePrivateDesc')}</span>
+                  <span class="block"><strong>${i18n.t('ownerTypeTeam')}:</strong> ${i18n.t('ownerTypeTeamDesc')}</span>
+                  <span class="block"><strong>${i18n.t('ownerTypePublic')}:</strong> ${i18n.t('ownerTypePublicDesc')}</span>
+                </p>
+              </div>
+            </div>
+
             <!-- Dynamic Questions -->
             <div class="border-t pt-6">
               <h2 class="text-xl font-bold text-gray-800 mb-4">
@@ -2671,6 +2858,7 @@ async function handleEditReview(e) {
   const description = document.getElementById('review-description').value;
   const groupType = document.getElementById('review-group-type').value;
   const timeType = document.getElementById('review-time-type').value;
+  const ownerType = document.getElementById('review-owner-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
   // Collect answers dynamically
@@ -2691,6 +2879,7 @@ async function handleEditReview(e) {
     description: description || null,
     group_type: groupType,
     time_type: timeType,
+    owner_type: ownerType,
     status,
     answers
   };
