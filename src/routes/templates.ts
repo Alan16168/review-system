@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { authMiddleware, UserPayload } from '../middleware/auth';
+import { authMiddleware, UserPayload, adminOnly } from '../middleware/auth';
 
 const templates = new Hono();
 
@@ -110,6 +110,364 @@ templates.get('/:id', async (c) => {
     });
   } catch (error) {
     console.error('Get template error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Admin: Get all templates (including inactive ones)
+templates.get('/admin/all', adminOnly, async (c) => {
+  try {
+    // Get all templates (including inactive)
+    const templatesResult = await c.env.DB.prepare(`
+      SELECT 
+        id, 
+        name,
+        name_en,
+        description,
+        description_en,
+        is_default,
+        is_active,
+        created_at,
+        updated_at
+      FROM templates
+      ORDER BY is_default DESC, created_at DESC
+    `).all();
+
+    const templateList = templatesResult.results || [];
+
+    // Get question count for each template
+    const templatesWithCounts = await Promise.all(
+      templateList.map(async (template: any) => {
+        const countResult = await c.env.DB.prepare(`
+          SELECT COUNT(*) as question_count
+          FROM template_questions
+          WHERE template_id = ?
+        `).bind(template.id).first();
+
+        return {
+          ...template,
+          question_count: countResult?.question_count || 0
+        };
+      })
+    );
+
+    return c.json({ templates: templatesWithCounts });
+  } catch (error) {
+    console.error('Get all templates error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Admin: Get template with all details (for editing)
+templates.get('/admin/:id', adminOnly, async (c) => {
+  try {
+    const templateId = c.req.param('id');
+
+    // Get template with all fields
+    const template = await c.env.DB.prepare(`
+      SELECT 
+        id, 
+        name,
+        name_en,
+        description,
+        description_en,
+        is_default,
+        is_active,
+        created_at,
+        updated_at
+      FROM templates
+      WHERE id = ?
+    `).bind(templateId).first();
+
+    if (!template) {
+      return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Get all questions with both languages
+    const questionsResult = await c.env.DB.prepare(`
+      SELECT 
+        id,
+        question_number,
+        question_text,
+        question_text_en
+      FROM template_questions
+      WHERE template_id = ?
+      ORDER BY question_number ASC
+    `).bind(templateId).all();
+
+    return c.json({
+      template: {
+        ...template,
+        questions: questionsResult.results || []
+      }
+    });
+  } catch (error) {
+    console.error('Get template for admin error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Admin: Create a new template
+templates.post('/', adminOnly, async (c) => {
+  try {
+    const { name, name_en, description, description_en, is_default } = await c.req.json();
+
+    if (!name) {
+      return c.json({ error: 'Template name is required' }, 400);
+    }
+
+    // If this is set as default, unset other defaults
+    if (is_default) {
+      await c.env.DB.prepare(`
+        UPDATE templates SET is_default = 0
+      `).run();
+    }
+
+    // Insert new template
+    const result = await c.env.DB.prepare(`
+      INSERT INTO templates (name, name_en, description, description_en, is_default, is_active)
+      VALUES (?, ?, ?, ?, ?, 1)
+    `).bind(
+      name,
+      name_en || null,
+      description || null,
+      description_en || null,
+      is_default ? 1 : 0
+    ).run();
+
+    return c.json({ 
+      message: 'Template created successfully',
+      id: result.meta.last_row_id 
+    });
+  } catch (error) {
+    console.error('Create template error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Admin: Update a template
+templates.put('/:id', adminOnly, async (c) => {
+  try {
+    const templateId = c.req.param('id');
+    const { name, name_en, description, description_en, is_default, is_active } = await c.req.json();
+
+    // Check if template exists
+    const existing = await c.env.DB.prepare(`
+      SELECT id FROM templates WHERE id = ?
+    `).bind(templateId).first();
+
+    if (!existing) {
+      return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // If this is set as default, unset other defaults
+    if (is_default) {
+      await c.env.DB.prepare(`
+        UPDATE templates SET is_default = 0 WHERE id != ?
+      `).bind(templateId).run();
+    }
+
+    // Update template
+    await c.env.DB.prepare(`
+      UPDATE templates
+      SET name = ?,
+          name_en = ?,
+          description = ?,
+          description_en = ?,
+          is_default = ?,
+          is_active = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      name,
+      name_en || null,
+      description || null,
+      description_en || null,
+      is_default ? 1 : 0,
+      is_active ? 1 : 0,
+      templateId
+    ).run();
+
+    return c.json({ message: 'Template updated successfully' });
+  } catch (error) {
+    console.error('Update template error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Admin: Delete a template (soft delete)
+templates.delete('/:id', adminOnly, async (c) => {
+  try {
+    const templateId = c.req.param('id');
+
+    // Check if template exists
+    const template = await c.env.DB.prepare(`
+      SELECT id, is_default FROM templates WHERE id = ?
+    `).bind(templateId).first<any>();
+
+    if (!template) {
+      return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Cannot delete default template
+    if (template.is_default) {
+      return c.json({ error: 'Cannot delete the default template' }, 400);
+    }
+
+    // Check if template is being used by any reviews
+    const usageCheck = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM reviews WHERE template_id = ?
+    `).bind(templateId).first<any>();
+
+    if (usageCheck && usageCheck.count > 0) {
+      // Soft delete - just mark as inactive
+      await c.env.DB.prepare(`
+        UPDATE templates SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).bind(templateId).run();
+      
+      return c.json({ 
+        message: 'Template deactivated (it is being used by existing reviews)',
+        soft_deleted: true
+      });
+    } else {
+      // Hard delete - remove template and its questions
+      await c.env.DB.prepare(`
+        DELETE FROM template_questions WHERE template_id = ?
+      `).bind(templateId).run();
+      
+      await c.env.DB.prepare(`
+        DELETE FROM templates WHERE id = ?
+      `).bind(templateId).run();
+      
+      return c.json({ 
+        message: 'Template deleted successfully',
+        soft_deleted: false
+      });
+    }
+  } catch (error) {
+    console.error('Delete template error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Admin: Add a question to a template
+templates.post('/:id/questions', adminOnly, async (c) => {
+  try {
+    const templateId = c.req.param('id');
+    const { question_text, question_text_en, question_number } = await c.req.json();
+
+    if (!question_text) {
+      return c.json({ error: 'Question text is required' }, 400);
+    }
+
+    // Check if template exists
+    const template = await c.env.DB.prepare(`
+      SELECT id FROM templates WHERE id = ?
+    `).bind(templateId).first();
+
+    if (!template) {
+      return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Get the next question number if not provided
+    let nextNumber = question_number;
+    if (!nextNumber) {
+      const maxResult = await c.env.DB.prepare(`
+        SELECT MAX(question_number) as max_number FROM template_questions WHERE template_id = ?
+      `).bind(templateId).first<any>();
+      nextNumber = (maxResult?.max_number || 0) + 1;
+    }
+
+    // Insert question
+    const result = await c.env.DB.prepare(`
+      INSERT INTO template_questions (template_id, question_number, question_text, question_text_en)
+      VALUES (?, ?, ?, ?)
+    `).bind(templateId, nextNumber, question_text, question_text_en || null).run();
+
+    return c.json({ 
+      message: 'Question added successfully',
+      id: result.meta.last_row_id
+    });
+  } catch (error) {
+    console.error('Add question error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Admin: Update a question
+templates.put('/:templateId/questions/:questionId', adminOnly, async (c) => {
+  try {
+    const templateId = c.req.param('templateId');
+    const questionId = c.req.param('questionId');
+    const { question_text, question_text_en, question_number } = await c.req.json();
+
+    if (!question_text) {
+      return c.json({ error: 'Question text is required' }, 400);
+    }
+
+    // Update question
+    await c.env.DB.prepare(`
+      UPDATE template_questions
+      SET question_text = ?,
+          question_text_en = ?,
+          question_number = ?
+      WHERE id = ? AND template_id = ?
+    `).bind(
+      question_text,
+      question_text_en || null,
+      question_number,
+      questionId,
+      templateId
+    ).run();
+
+    return c.json({ message: 'Question updated successfully' });
+  } catch (error) {
+    console.error('Update question error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Admin: Delete a question
+templates.delete('/:templateId/questions/:questionId', adminOnly, async (c) => {
+  try {
+    const templateId = c.req.param('templateId');
+    const questionId = c.req.param('questionId');
+
+    // Delete question
+    await c.env.DB.prepare(`
+      DELETE FROM template_questions
+      WHERE id = ? AND template_id = ?
+    `).bind(questionId, templateId).run();
+
+    return c.json({ message: 'Question deleted successfully' });
+  } catch (error) {
+    console.error('Delete question error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Admin: Reorder questions
+templates.put('/:id/questions/reorder', adminOnly, async (c) => {
+  try {
+    const templateId = c.req.param('id');
+    const { questions } = await c.req.json(); // Array of { id, question_number }
+
+    if (!Array.isArray(questions)) {
+      return c.json({ error: 'Questions array is required' }, 400);
+    }
+
+    // Update each question's number
+    for (const q of questions) {
+      await c.env.DB.prepare(`
+        UPDATE template_questions
+        SET question_number = ?
+        WHERE id = ? AND template_id = ?
+      `).bind(q.question_number, q.id, templateId).run();
+    }
+
+    return c.json({ message: 'Questions reordered successfully' });
+  } catch (error) {
+    console.error('Reorder questions error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

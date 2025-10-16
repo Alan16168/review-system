@@ -3087,7 +3087,7 @@ async function handleEditReview(e) {
   try {
     await axios.put(`/api/reviews/${id}`, data);
     showNotification(i18n.t('updateSuccess'), 'success');
-    showReviews();
+    showDashboard(); // Return to main menu (dashboard)
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
@@ -3875,6 +3875,11 @@ async function showAdmin() {
                       data-tab="users">
                 <i class="fas fa-users mr-2"></i>${i18n.t('userManagement')}
               </button>
+              <button onclick="showAdminTab('templates')" 
+                      class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
+                      data-tab="templates">
+                <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('templateManagement')}
+              </button>
               <button onclick="showAdminTab('notifications')" 
                       class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
                       data-tab="notifications">
@@ -3928,6 +3933,9 @@ async function showAdminTab(tab) {
   switch(tab) {
     case 'users':
       await showUsersManagement(content);
+      break;
+    case 'templates':
+      await showTemplatesManagement(content);
       break;
     case 'notifications':
       showNotificationsPanel(content);
@@ -5163,4 +5171,663 @@ async function handleChangePasswordFromSettings() {
     console.error('Change password error:', error);
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
+}
+
+// ============ Template Management Functions ============
+
+let allTemplates = [];
+let currentEditingTemplate = null;
+
+async function showTemplatesManagement(container) {
+  container.innerHTML = `
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('templateManagement')}
+        </h2>
+        <button onclick="showCreateTemplateModal()" 
+                class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+          <i class="fas fa-plus mr-2"></i>${i18n.t('createTemplate')}
+        </button>
+      </div>
+      <div id="templates-table">
+        <div class="text-center py-8">
+          <i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await loadTemplatesTable();
+}
+
+async function loadTemplatesTable() {
+  try {
+    const response = await axios.get('/api/templates/admin/all');
+    allTemplates = response.data.templates;
+    renderTemplatesTable(allTemplates);
+  } catch (error) {
+    document.getElementById('templates-table').innerHTML = `
+      <div class="text-center py-8 text-red-600">
+        <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
+        <p>${i18n.t('operationFailed')}</p>
+      </div>
+    `;
+  }
+}
+
+function renderTemplatesTable(templates) {
+  const container = document.getElementById('templates-table');
+  
+  if (!templates || templates.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-8 text-gray-500">
+        <i class="fas fa-clipboard-list text-4xl mb-4"></i>
+        <p>${i18n.t('noTemplates')}</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('templateName')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('questionCount')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('isDefault')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('status')}
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('actions')}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${templates.map(template => `
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${escapeHtml(template.name)}</div>
+                ${template.name_en ? `<div class="text-xs text-gray-500">${escapeHtml(template.name_en)}</div>` : ''}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm text-gray-900">${template.question_count}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${template.is_default ? 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    <i class="fas fa-check mr-1"></i>${i18n.t('yes')}
+                  </span>` : 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                    ${i18n.t('no')}
+                  </span>`
+                }
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${template.is_active ? 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    ${i18n.t('active')}
+                  </span>` : 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                    ${i18n.t('inactive')}
+                  </span>`
+                }
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button onclick="showManageQuestionsModal(${template.id})" 
+                        class="text-indigo-600 hover:text-indigo-900 mr-3"
+                        title="${i18n.t('manageQuestions')}">
+                  <i class="fas fa-tasks"></i>
+                </button>
+                <button onclick="showEditTemplateModal(${template.id})" 
+                        class="text-blue-600 hover:text-blue-900 mr-3"
+                        title="${i18n.t('edit')}">
+                  <i class="fas fa-edit"></i>
+                </button>
+                ${!template.is_default ? `
+                  <button onclick="deleteTemplate(${template.id})" 
+                          class="text-red-600 hover:text-red-900"
+                          title="${i18n.t('delete')}">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                ` : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function showCreateTemplateModal() {
+  const modal = document.createElement('div');
+  modal.id = 'template-modal';
+  modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4';
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-gray-800">
+            <i class="fas fa-plus mr-2"></i>${i18n.t('createTemplate')}
+          </h3>
+          <button onclick="closeTemplateModal()" class="text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <form id="template-form" onsubmit="handleCreateTemplate(event)">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('templateNameCn')} *
+              </label>
+              <input type="text" id="template-name" required
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('templateNameEn')}
+              </label>
+              <input type="text" id="template-name-en"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('templateDescriptionCn')}
+              </label>
+              <textarea id="template-description" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('templateDescriptionEn')}
+              </label>
+              <textarea id="template-description-en" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+            <div class="flex items-center">
+              <input type="checkbox" id="template-is-default"
+                     class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+              <label for="template-is-default" class="ml-2 text-sm text-gray-700">
+                ${i18n.t('isDefault')}
+              </label>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" onclick="closeTemplateModal()"
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+              ${i18n.t('cancel')}
+            </button>
+            <button type="submit"
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              ${i18n.t('create')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function handleCreateTemplate(e) {
+  e.preventDefault();
+  
+  const data = {
+    name: document.getElementById('template-name').value,
+    name_en: document.getElementById('template-name-en').value || null,
+    description: document.getElementById('template-description').value || null,
+    description_en: document.getElementById('template-description-en').value || null,
+    is_default: document.getElementById('template-is-default').checked
+  };
+
+  try {
+    await axios.post('/api/templates', data);
+    showNotification(i18n.t('templateCreated'), 'success');
+    closeTemplateModal();
+    await loadTemplatesTable();
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function showEditTemplateModal(templateId) {
+  try {
+    const response = await axios.get(`/api/templates/admin/${templateId}`);
+    const template = response.data.template;
+    currentEditingTemplate = template;
+    
+    const modal = document.createElement('div');
+    modal.id = 'template-modal';
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">
+              <i class="fas fa-edit mr-2"></i>${i18n.t('editTemplate')}
+            </h3>
+            <button onclick="closeTemplateModal()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          <form id="template-form" onsubmit="handleUpdateTemplate(event, ${templateId})">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('templateNameCn')} *
+                </label>
+                <input type="text" id="template-name" required value="${escapeHtml(template.name)}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('templateNameEn')}
+                </label>
+                <input type="text" id="template-name-en" value="${escapeHtml(template.name_en || '')}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('templateDescriptionCn')}
+                </label>
+                <textarea id="template-description" rows="3"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(template.description || '')}</textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('templateDescriptionEn')}
+                </label>
+                <textarea id="template-description-en" rows="3"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(template.description_en || '')}</textarea>
+              </div>
+              <div class="flex items-center">
+                <input type="checkbox" id="template-is-default" ${template.is_default ? 'checked' : ''}
+                       class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                <label for="template-is-default" class="ml-2 text-sm text-gray-700">
+                  ${i18n.t('isDefault')}
+                </label>
+              </div>
+              <div class="flex items-center">
+                <input type="checkbox" id="template-is-active" ${template.is_active ? 'checked' : ''}
+                       class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                <label for="template-is-active" class="ml-2 text-sm text-gray-700">
+                  ${i18n.t('active')}
+                </label>
+              </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+              <button type="button" onclick="closeTemplateModal()"
+                      class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                ${i18n.t('cancel')}
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                ${i18n.t('save')}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function handleUpdateTemplate(e, templateId) {
+  e.preventDefault();
+  
+  const data = {
+    name: document.getElementById('template-name').value,
+    name_en: document.getElementById('template-name-en').value || null,
+    description: document.getElementById('template-description').value || null,
+    description_en: document.getElementById('template-description-en').value || null,
+    is_default: document.getElementById('template-is-default').checked,
+    is_active: document.getElementById('template-is-active').checked
+  };
+
+  try {
+    await axios.put(`/api/templates/${templateId}`, data);
+    showNotification(i18n.t('templateUpdated'), 'success');
+    closeTemplateModal();
+    await loadTemplatesTable();
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function deleteTemplate(templateId) {
+  if (!confirm(i18n.t('confirmDeleteTemplate'))) {
+    return;
+  }
+
+  try {
+    const response = await axios.delete(`/api/templates/${templateId}`);
+    if (response.data.soft_deleted) {
+      showNotification(i18n.t('templateInUse'), 'warning');
+    } else {
+      showNotification(i18n.t('templateDeleted'), 'success');
+    }
+    await loadTemplatesTable();
+  } catch (error) {
+    const errorMsg = error.response?.data?.error || error.message;
+    if (errorMsg.includes('default')) {
+      showNotification(i18n.t('cannotDeleteDefault'), 'error');
+    } else {
+      showNotification(i18n.t('operationFailed') + ': ' + errorMsg, 'error');
+    }
+  }
+}
+
+function closeTemplateModal() {
+  const modal = document.getElementById('template-modal');
+  if (modal) {
+    modal.remove();
+  }
+  currentEditingTemplate = null;
+}
+
+// Question Management Functions
+
+let currentTemplateQuestions = [];
+
+async function showManageQuestionsModal(templateId) {
+  try {
+    const response = await axios.get(`/api/templates/admin/${templateId}`);
+    const template = response.data.template;
+    currentEditingTemplate = template;
+    currentTemplateQuestions = template.questions || [];
+    
+    const modal = document.createElement('div');
+    modal.id = 'questions-modal';
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">
+              <i class="fas fa-tasks mr-2"></i>${i18n.t('manageQuestions')}: ${escapeHtml(template.name)}
+            </h3>
+            <button onclick="closeQuestionsModal()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <div class="mb-4">
+            <button onclick="showAddQuestionForm()" 
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+              <i class="fas fa-plus mr-2"></i>${i18n.t('addQuestion')}
+            </button>
+          </div>
+          
+          <div id="questions-list">
+            ${renderQuestionsList()}
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+function renderQuestionsList() {
+  if (!currentTemplateQuestions || currentTemplateQuestions.length === 0) {
+    return `
+      <div class="text-center py-8 text-gray-500">
+        <i class="fas fa-tasks text-4xl mb-4"></i>
+        <p>${i18n.t('noQuestions')}</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="space-y-3">
+      ${currentTemplateQuestions.map((q, index) => `
+        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center mb-2">
+                <span class="text-sm font-semibold text-indigo-600 mr-2">
+                  Q${q.question_number}
+                </span>
+                <div class="flex space-x-2">
+                  ${index > 0 ? `
+                    <button onclick="moveQuestion(${q.id}, 'up')" 
+                            class="text-gray-500 hover:text-gray-700" title="${i18n.t('moveUp')}">
+                      <i class="fas fa-arrow-up"></i>
+                    </button>
+                  ` : ''}
+                  ${index < currentTemplateQuestions.length - 1 ? `
+                    <button onclick="moveQuestion(${q.id}, 'down')" 
+                            class="text-gray-500 hover:text-gray-700" title="${i18n.t('moveDown')}">
+                      <i class="fas fa-arrow-down"></i>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+              <div class="text-sm text-gray-900 mb-1">${escapeHtml(q.question_text)}</div>
+              ${q.question_text_en ? `
+                <div class="text-xs text-gray-500">${escapeHtml(q.question_text_en)}</div>
+              ` : ''}
+            </div>
+            <div class="ml-4 flex space-x-2">
+              <button onclick="showEditQuestionForm(${q.id})" 
+                      class="text-blue-600 hover:text-blue-900" title="${i18n.t('edit')}">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button onclick="deleteQuestion(${q.id})" 
+                      class="text-red-600 hover:text-red-900" title="${i18n.t('delete')}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function showAddQuestionForm() {
+  const form = document.createElement('div');
+  form.id = 'question-form-container';
+  form.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[60] p-4';
+  form.innerHTML = `
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+      <div class="p-6">
+        <h4 class="text-lg font-bold text-gray-800 mb-4">
+          <i class="fas fa-plus mr-2"></i>${i18n.t('addQuestion')}
+        </h4>
+        <form id="question-form" onsubmit="handleAddQuestion(event)">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('questionTextCn')} *
+              </label>
+              <textarea id="question-text" required rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('questionTextEn')}
+              </label>
+              <textarea id="question-text-en" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" onclick="closeQuestionForm()"
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+              ${i18n.t('cancel')}
+            </button>
+            <button type="submit"
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              ${i18n.t('add')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(form);
+}
+
+async function handleAddQuestion(e) {
+  e.preventDefault();
+  
+  const data = {
+    question_text: document.getElementById('question-text').value,
+    question_text_en: document.getElementById('question-text-en').value || null
+  };
+
+  try {
+    await axios.post(`/api/templates/${currentEditingTemplate.id}/questions`, data);
+    showNotification(i18n.t('questionAdded'), 'success');
+    closeQuestionForm();
+    await refreshQuestionsList();
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+function showEditQuestionForm(questionId) {
+  const question = currentTemplateQuestions.find(q => q.id === questionId);
+  if (!question) return;
+  
+  const form = document.createElement('div');
+  form.id = 'question-form-container';
+  form.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[60] p-4';
+  form.innerHTML = `
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+      <div class="p-6">
+        <h4 class="text-lg font-bold text-gray-800 mb-4">
+          <i class="fas fa-edit mr-2"></i>${i18n.t('editQuestion')}
+        </h4>
+        <form id="question-form" onsubmit="handleUpdateQuestion(event, ${questionId})">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('questionTextCn')} *
+              </label>
+              <textarea id="question-text" required rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(question.question_text)}</textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('questionTextEn')}
+              </label>
+              <textarea id="question-text-en" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(question.question_text_en || '')}</textarea>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" onclick="closeQuestionForm()"
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+              ${i18n.t('cancel')}
+            </button>
+            <button type="submit"
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              ${i18n.t('save')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(form);
+}
+
+async function handleUpdateQuestion(e, questionId) {
+  e.preventDefault();
+  
+  const question = currentTemplateQuestions.find(q => q.id === questionId);
+  const data = {
+    question_text: document.getElementById('question-text').value,
+    question_text_en: document.getElementById('question-text-en').value || null,
+    question_number: question.question_number
+  };
+
+  try {
+    await axios.put(`/api/templates/${currentEditingTemplate.id}/questions/${questionId}`, data);
+    showNotification(i18n.t('questionUpdated'), 'success');
+    closeQuestionForm();
+    await refreshQuestionsList();
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function deleteQuestion(questionId) {
+  if (!confirm(i18n.t('confirmDeleteQuestion'))) {
+    return;
+  }
+
+  try {
+    await axios.delete(`/api/templates/${currentEditingTemplate.id}/questions/${questionId}`);
+    showNotification(i18n.t('questionDeleted'), 'success');
+    await refreshQuestionsList();
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function moveQuestion(questionId, direction) {
+  const index = currentTemplateQuestions.findIndex(q => q.id === questionId);
+  if (index === -1) return;
+  
+  const newIndex = direction === 'up' ? index - 1 : index + 1;
+  if (newIndex < 0 || newIndex >= currentTemplateQuestions.length) return;
+  
+  // Swap question numbers
+  const questions = [...currentTemplateQuestions];
+  const tempNumber = questions[index].question_number;
+  questions[index].question_number = questions[newIndex].question_number;
+  questions[newIndex].question_number = tempNumber;
+  
+  // Update on server
+  try {
+    await axios.put(`/api/templates/${currentEditingTemplate.id}/questions/reorder`, {
+      questions: questions.map(q => ({ id: q.id, question_number: q.question_number }))
+    });
+    await refreshQuestionsList();
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function refreshQuestionsList() {
+  try {
+    const response = await axios.get(`/api/templates/admin/${currentEditingTemplate.id}`);
+    currentTemplateQuestions = response.data.template.questions || [];
+    document.getElementById('questions-list').innerHTML = renderQuestionsList();
+  } catch (error) {
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+function closeQuestionForm() {
+  const form = document.getElementById('question-form-container');
+  if (form) {
+    form.remove();
+  }
+}
+
+function closeQuestionsModal() {
+  const modal = document.getElementById('questions-modal');
+  if (modal) {
+    modal.remove();
+  }
+  currentEditingTemplate = null;
+  currentTemplateQuestions = [];
 }
