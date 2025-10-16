@@ -3117,6 +3117,11 @@ function renderNavigation() {
               <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                 <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
               </button>
+              ${currentUser.role === 'premium' || currentUser.role === 'admin' ? `
+                <button onclick="showTemplatesManagementPage()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                  <i class="fas fa-th-list mr-1"></i>${i18n.t('templateManagement')}
+                </button>
+              ` : ''}
               ${currentUser.role === 'admin' ? `
                 <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
                   <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
@@ -5189,6 +5194,23 @@ async function handleChangePasswordFromSettings() {
 let allTemplates = [];
 let currentEditingTemplate = null;
 
+// Wrapper function for navigation menu to show templates management page
+function showTemplatesManagementPage() {
+  const container = document.getElementById('main-content');
+  container.innerHTML = `
+    <div class="max-w-7xl mx-auto">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">
+          <i class="fas fa-th-list mr-3"></i>${i18n.t('templateManagement')}
+        </h1>
+        <p class="text-gray-600 mt-2">${i18n.t('templateManagementDesc') || '管理复盘模板和问题'}</p>
+      </div>
+      <div id="templates-container"></div>
+    </div>
+  `;
+  showTemplatesManagement(document.getElementById('templates-container'));
+}
+
 async function showTemplatesManagement(container) {
   container.innerHTML = `
     <div class="bg-white rounded-lg shadow-md p-6">
@@ -5632,6 +5654,9 @@ function renderQuestionsList() {
               ${q.question_text_en ? `
                 <div class="text-xs text-gray-500">${escapeHtml(q.question_text_en)}</div>
               ` : ''}
+              <div class="text-xs text-indigo-600 mt-1">
+                <i class="fas fa-text-width mr-1"></i>${i18n.t('answerLength')}: ${q.answer_length || 50} ${i18n.t('charactersHint')}
+              </div>
             </div>
             <div class="ml-4 flex space-x-2">
               <button onclick="showEditQuestionForm(${q.id})" 
@@ -5676,6 +5701,14 @@ function showAddQuestionForm() {
               <textarea id="question-text-en" rows="3"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('answerLength')} *
+              </label>
+              <input type="number" id="question-answer-length" required min="10" max="1000" value="50"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: 10-1000 (${i18n.t('defaultValue')}: 50)</p>
+            </div>
           </div>
           <div class="flex justify-end space-x-3 mt-6">
             <button type="button" onclick="closeQuestionForm()"
@@ -5699,7 +5732,8 @@ async function handleAddQuestion(e) {
   
   const data = {
     question_text: document.getElementById('question-text').value,
-    question_text_en: document.getElementById('question-text-en').value || null
+    question_text_en: document.getElementById('question-text-en').value || null,
+    answer_length: parseInt(document.getElementById('question-answer-length').value) || 50
   };
 
   try {
@@ -5741,6 +5775,14 @@ function showEditQuestionForm(questionId) {
               <textarea id="question-text-en" rows="3"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(question.question_text_en || '')}</textarea>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('answerLength')} *
+              </label>
+              <input type="number" id="question-answer-length" required min="10" max="1000" value="${question.answer_length || 50}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: 10-1000 (${i18n.t('defaultValue')}: 50)</p>
+            </div>
           </div>
           <div class="flex justify-end space-x-3 mt-6">
             <button type="button" onclick="closeQuestionForm()"
@@ -5766,7 +5808,8 @@ async function handleUpdateQuestion(e, questionId) {
   const data = {
     question_text: document.getElementById('question-text').value,
     question_text_en: document.getElementById('question-text-en').value || null,
-    question_number: question.question_number
+    question_number: question.question_number,
+    answer_length: parseInt(document.getElementById('question-answer-length').value) || 50
   };
 
   try {

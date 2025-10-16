@@ -446,6 +446,9 @@ const translations = {
     'userUpdated': '用户信息已更新',
     'passwordResetSuccess': '密码重置成功',
     'emailInUse': '该邮箱已被其他用户使用',
+    'answerLength': '答案长度',
+    'maxCharacters': '最大字符数',
+    'charactersHint': '字符',
   },
   en: {
     // Auth
@@ -893,6 +896,9 @@ const translations = {
     'userUpdated': 'User information updated successfully',
     'passwordResetSuccess': 'Password reset successfully',
     'emailInUse': 'Email is already in use by another user',
+    'answerLength': 'Answer Length',
+    'maxCharacters': 'Max Characters',
+    'charactersHint': 'characters',
   }
 };
 

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { authMiddleware, UserPayload, adminOnly } from '../middleware/auth';
+import { authMiddleware, UserPayload, adminOnly, premiumOrAdmin } from '../middleware/auth';
 
 const templates = new Hono();
 
@@ -50,7 +50,8 @@ templates.get('/', async (c) => {
         const questionsResult = await c.env.DB.prepare(`
           SELECT 
             question_number,
-            CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text
+            CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text,
+            answer_length
           FROM template_questions
           WHERE template_id = ?
           ORDER BY question_number ASC
@@ -96,7 +97,8 @@ templates.get('/:id', async (c) => {
     const questionsResult = await c.env.DB.prepare(`
       SELECT 
         question_number,
-        CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text
+        CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text,
+        answer_length
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
@@ -115,7 +117,7 @@ templates.get('/:id', async (c) => {
 });
 
 // Admin: Get all templates (including inactive ones)
-templates.get('/admin/all', adminOnly, async (c) => {
+templates.get('/admin/all', premiumOrAdmin, async (c) => {
   try {
     // Get all templates (including inactive)
     const templatesResult = await c.env.DB.prepare(`
@@ -159,7 +161,7 @@ templates.get('/admin/all', adminOnly, async (c) => {
 });
 
 // Admin: Get template with all details (for editing)
-templates.get('/admin/:id', adminOnly, async (c) => {
+templates.get('/admin/:id', premiumOrAdmin, async (c) => {
   try {
     const templateId = c.req.param('id');
 
@@ -189,7 +191,8 @@ templates.get('/admin/:id', adminOnly, async (c) => {
         id,
         question_number,
         question_text,
-        question_text_en
+        question_text_en,
+        answer_length
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
@@ -208,7 +211,7 @@ templates.get('/admin/:id', adminOnly, async (c) => {
 });
 
 // Admin: Create a new template
-templates.post('/', adminOnly, async (c) => {
+templates.post('/', premiumOrAdmin, async (c) => {
   try {
     const { name, name_en, description, description_en, is_default } = await c.req.json();
 
@@ -246,7 +249,7 @@ templates.post('/', adminOnly, async (c) => {
 });
 
 // Admin: Update a template
-templates.put('/:id', adminOnly, async (c) => {
+templates.put('/:id', premiumOrAdmin, async (c) => {
   try {
     const templateId = c.req.param('id');
     const { name, name_en, description, description_en, is_default, is_active } = await c.req.json();
@@ -296,7 +299,7 @@ templates.put('/:id', adminOnly, async (c) => {
 });
 
 // Admin: Delete a template (soft delete)
-templates.delete('/:id', adminOnly, async (c) => {
+templates.delete('/:id', premiumOrAdmin, async (c) => {
   try {
     const templateId = c.req.param('id');
 
@@ -351,10 +354,10 @@ templates.delete('/:id', adminOnly, async (c) => {
 });
 
 // Admin: Add a question to a template
-templates.post('/:id/questions', adminOnly, async (c) => {
+templates.post('/:id/questions', premiumOrAdmin, async (c) => {
   try {
     const templateId = c.req.param('id');
-    const { question_text, question_text_en, question_number } = await c.req.json();
+    const { question_text, question_text_en, question_number, answer_length } = await c.req.json();
 
     if (!question_text) {
       return c.json({ error: 'Question text is required' }, 400);
@@ -378,11 +381,14 @@ templates.post('/:id/questions', adminOnly, async (c) => {
       nextNumber = (maxResult?.max_number || 0) + 1;
     }
 
+    // Default answer_length to 50 if not provided
+    const finalAnswerLength = answer_length || 50;
+
     // Insert question
     const result = await c.env.DB.prepare(`
-      INSERT INTO template_questions (template_id, question_number, question_text, question_text_en)
-      VALUES (?, ?, ?, ?)
-    `).bind(templateId, nextNumber, question_text, question_text_en || null).run();
+      INSERT INTO template_questions (template_id, question_number, question_text, question_text_en, answer_length)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(templateId, nextNumber, question_text, question_text_en || null, finalAnswerLength).run();
 
     return c.json({ 
       message: 'Question added successfully',
@@ -395,27 +401,32 @@ templates.post('/:id/questions', adminOnly, async (c) => {
 });
 
 // Admin: Update a question
-templates.put('/:templateId/questions/:questionId', adminOnly, async (c) => {
+templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) => {
   try {
     const templateId = c.req.param('templateId');
     const questionId = c.req.param('questionId');
-    const { question_text, question_text_en, question_number } = await c.req.json();
+    const { question_text, question_text_en, question_number, answer_length } = await c.req.json();
 
     if (!question_text) {
       return c.json({ error: 'Question text is required' }, 400);
     }
+
+    // Default answer_length to 50 if not provided
+    const finalAnswerLength = answer_length !== undefined ? answer_length : 50;
 
     // Update question
     await c.env.DB.prepare(`
       UPDATE template_questions
       SET question_text = ?,
           question_text_en = ?,
-          question_number = ?
+          question_number = ?,
+          answer_length = ?
       WHERE id = ? AND template_id = ?
     `).bind(
       question_text,
       question_text_en || null,
       question_number,
+      finalAnswerLength,
       questionId,
       templateId
     ).run();
@@ -428,7 +439,7 @@ templates.put('/:templateId/questions/:questionId', adminOnly, async (c) => {
 });
 
 // Admin: Delete a question
-templates.delete('/:templateId/questions/:questionId', adminOnly, async (c) => {
+templates.delete('/:templateId/questions/:questionId', premiumOrAdmin, async (c) => {
   try {
     const templateId = c.req.param('templateId');
     const questionId = c.req.param('questionId');
@@ -447,7 +458,7 @@ templates.delete('/:templateId/questions/:questionId', adminOnly, async (c) => {
 });
 
 // Admin: Reorder questions
-templates.put('/:id/questions/reorder', adminOnly, async (c) => {
+templates.put('/:id/questions/reorder', premiumOrAdmin, async (c) => {
   try {
     const templateId = c.req.param('id');
     const { questions } = await c.req.json(); // Array of { id, question_number }
