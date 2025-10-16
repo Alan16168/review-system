@@ -2264,7 +2264,7 @@ async function showReviewDetail(id, readOnly = false) {
             `).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
           </div>
 
-          ${collaborators.length > 0 ? `
+          ${(collaborators && collaborators.length > 0) ? `
           <div class="mt-6 bg-white rounded-lg shadow-md p-6">
             <h2 class="text-xl font-bold text-gray-800 mb-4">
               <i class="fas fa-users mr-2"></i>${i18n.t('collaborators') || '协作者'}
@@ -2354,7 +2354,7 @@ async function showTeamReviewCollaboration(id) {
                   <i class="fas fa-check-circle mr-2 text-green-600"></i>${i18n.t('completionStatus')}
                 </h3>
                 <div class="flex flex-wrap gap-3">
-                  ${completionStatus.map(member => `
+                  ${(completionStatus && completionStatus.length > 0) ? completionStatus.map(member => `
                     <div class="flex items-center px-4 py-2 bg-gray-50 rounded-lg border ${
                       member.user_id === currentUserId ? 'border-indigo-500' : 'border-gray-200'
                     }">
@@ -2369,7 +2369,7 @@ async function showTeamReviewCollaboration(id) {
                         </div>
                       </div>
                     </div>
-                  `).join('')}
+                  `).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noMembers') || '暂无成员') + '</p>'}
                 </div>
               </div>
             </div>
@@ -2377,7 +2377,7 @@ async function showTeamReviewCollaboration(id) {
 
           <!-- Team Answers for Each Question -->
           <div class="space-y-6">
-            ${questions.map(q => {
+            ${(questions && questions.length > 0) ? questions.map(q => {
               const num = q.question_number;
               const memberAnswers = answersByQuestion[num] || [];
               const myAnswer = memberAnswers.find(a => a.user_id === currentUserId);
@@ -2449,7 +2449,7 @@ async function showTeamReviewCollaboration(id) {
                   </div>
                 </div>
               `;
-            }).join('')}
+            }).join('') : '<p class="text-gray-500 text-center py-8">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
           </div>
         </div>
       </div>
