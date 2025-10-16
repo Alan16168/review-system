@@ -1716,7 +1716,7 @@ function filterReviews() {
   });
 
   currentPage = 1; // Reset to first page when filtering
-  renderReviews List(filtered);
+  renderReviewsList(filtered);
 }
 
 function changePage(newPage, reviews) {
