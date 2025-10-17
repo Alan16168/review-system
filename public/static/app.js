@@ -3873,11 +3873,14 @@ async function deleteTeam(teamId) {
 }
 
 async function leaveTeam(teamId) {
-  if (!confirm(i18n.t('confirmDelete') + ' ' + i18n.t('leaveTeam') + '?')) return;
+  // Show custom confirmation dialog
+  const confirmMessage = i18n.t('confirmLeaveTeam') || 'Are you sure you want to leave this team? You will lose access to all team reviews and resources.';
+  if (!confirm(confirmMessage)) return;
   
   try {
-    await axios.delete(`/api/teams/${teamId}/members/${currentUser.id}`);
-    showNotification(i18n.t('deleteSuccess'), 'success');
+    // Use new leave team endpoint
+    await axios.post(`/api/teams/${teamId}/leave`);
+    showNotification(i18n.t('leaveTeamSuccess') || 'Successfully left the team', 'success');
     showTeams();
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');

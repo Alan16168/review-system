@@ -283,7 +283,7 @@ teams.put('/:id/members/:userId/role', async (c) => {
   }
 });
 
-// Remove member from team
+// Remove member from team (by team owner)
 teams.delete('/:id/members/:userId', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
@@ -306,6 +306,42 @@ teams.delete('/:id/members/:userId', async (c) => {
     return c.json({ message: 'Member removed successfully' });
   } catch (error) {
     console.error('Remove member error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Leave team (member can leave by themselves)
+teams.post('/:id/leave', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const teamId = c.req.param('id');
+
+    // Check if user is a member of the team
+    const membership: any = await c.env.DB.prepare(
+      'SELECT * FROM team_members WHERE team_id = ? AND user_id = ?'
+    ).bind(teamId, user.id).first();
+
+    if (!membership) {
+      return c.json({ error: 'You are not a member of this team' }, 404);
+    }
+
+    // Check if user is the team creator/owner
+    const team: any = await c.env.DB.prepare(
+      'SELECT owner_id FROM teams WHERE id = ?'
+    ).bind(teamId).first();
+
+    if (team && team.owner_id === user.id) {
+      return c.json({ error: 'Team owner cannot leave the team. Please transfer ownership or delete the team.' }, 403);
+    }
+
+    // Remove user from team
+    await c.env.DB.prepare(
+      'DELETE FROM team_members WHERE team_id = ? AND user_id = ?'
+    ).bind(teamId, user.id).run();
+
+    return c.json({ message: 'You have successfully left the team' });
+  } catch (error) {
+    console.error('Leave team error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

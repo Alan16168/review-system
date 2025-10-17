@@ -289,11 +289,13 @@ reviews.put('/:id', async (c) => {
 
     const { title, description, group_type, time_type, answers, status, owner_type } = body;
     
-    // Check if user is the creator (only creator can modify basic properties)
+    // Check if user is the creator or admin
     const isCreator = review.user_id === user.id;
+    const isAdmin = user.role === 'admin';
+    const canModifyBasicProperties = isCreator || isAdmin;
 
-    // Update basic properties ONLY if user is the creator
-    if (isCreator && (title || description || group_type || time_type || status || owner_type)) {
+    // Update basic properties if user is creator or admin
+    if (canModifyBasicProperties && (title || description || group_type || time_type || status || owner_type)) {
       // Validate owner_type if provided
       let validOwnerType = null;
       if (owner_type) {
@@ -359,20 +361,40 @@ reviews.delete('/:id', async (c) => {
     const user = c.get('user') as UserPayload;
     const reviewId = c.req.param('id');
 
-    // Only review creator or team creator can delete
-    const checkQuery = `
-      SELECT r.* FROM reviews r
-      LEFT JOIN team_members tm ON r.team_id = tm.team_id AND tm.user_id = ?
-      WHERE r.id = ? AND (
-        r.user_id = ?
-        OR (tm.user_id = ? AND tm.role = 'creator')
-      )
-    `;
-    const review = await c.env.DB.prepare(checkQuery)
-      .bind(user.id, reviewId, user.id, user.id).first();
-
+    // Get review information
+    const review: any = await c.env.DB.prepare('SELECT * FROM reviews WHERE id = ?').bind(reviewId).first();
+    
     if (!review) {
-      return c.json({ error: 'Access denied. Only review creator or team creator can delete.' }, 404);
+      return c.json({ error: 'Review not found' }, 404);
+    }
+
+    // Permission check:
+    // 1. Admin (role='admin') can delete any review
+    // 2. Review creator can delete their own review
+    // 3. Team creator can delete team reviews
+    let hasPermission = false;
+    
+    // Check if user is admin
+    if (user.role === 'admin') {
+      hasPermission = true;
+    }
+    // Check if user is the review creator
+    else if (review.user_id === user.id) {
+      hasPermission = true;
+    }
+    // Check if user is team creator (for team reviews)
+    else if (review.team_id) {
+      const teamMember: any = await c.env.DB.prepare(
+        'SELECT role FROM team_members WHERE team_id = ? AND user_id = ?'
+      ).bind(review.team_id, user.id).first();
+      
+      if (teamMember && teamMember.role === 'creator') {
+        hasPermission = true;
+      }
+    }
+
+    if (!hasPermission) {
+      return c.json({ error: 'Access denied. Only review creator, team creator, or admin can delete.' }, 403);
     }
 
     await c.env.DB.prepare('DELETE FROM reviews WHERE id = ?').bind(reviewId).run();
