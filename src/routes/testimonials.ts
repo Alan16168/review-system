@@ -1,0 +1,196 @@
+import { Hono } from 'hono';
+import type { Context } from 'hono';
+import { requireAdmin } from '../middleware/auth';
+
+const app = new Hono<{ Bindings: { DB: D1Database } }>();
+
+// Public endpoint: Get latest 3 testimonials (for homepage)
+app.get('/latest', async (c: Context) => {
+  const lang = c.req.header('X-Language') || 'en';
+  
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT id, name, name_en, role, role_en, content, content_en, 
+             avatar_url, rating, created_at
+      FROM testimonials
+      WHERE is_featured = 1
+      ORDER BY display_order ASC, created_at DESC
+      LIMIT 3
+    `).all();
+    
+    const testimonials = result.results.map((t: any) => ({
+      id: t.id,
+      name: lang === 'zh' ? t.name : (t.name_en || t.name),
+      role: lang === 'zh' ? t.role : (t.role_en || t.role),
+      content: lang === 'zh' ? t.content : (t.content_en || t.content),
+      avatar_url: t.avatar_url,
+      rating: t.rating,
+      created_at: t.created_at
+    }));
+    
+    return c.json({ testimonials });
+  } catch (error) {
+    console.error('Error fetching testimonials:', error);
+    return c.json({ error: 'Failed to fetch testimonials' }, 500);
+  }
+});
+
+// Admin endpoints: CRUD operations
+// Get all testimonials (admin only)
+app.get('/admin/all', requireAdmin, async (c: Context) => {
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT id, name, name_en, role, role_en, content, content_en,
+             avatar_url, rating, is_featured, display_order,
+             created_at, updated_at
+      FROM testimonials
+      ORDER BY display_order ASC, created_at DESC
+    `).all();
+    
+    return c.json({ testimonials: result.results });
+  } catch (error) {
+    console.error('Error fetching all testimonials:', error);
+    return c.json({ error: 'Failed to fetch testimonials' }, 500);
+  }
+});
+
+// Get single testimonial (admin only)
+app.get('/admin/:id', requireAdmin, async (c: Context) => {
+  const id = parseInt(c.req.param('id'));
+  
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT id, name, name_en, role, role_en, content, content_en,
+             avatar_url, rating, is_featured, display_order,
+             created_at, updated_at
+      FROM testimonials
+      WHERE id = ?
+    `).bind(id).first();
+    
+    if (!result) {
+      return c.json({ error: 'Testimonial not found' }, 404);
+    }
+    
+    return c.json({ testimonial: result });
+  } catch (error) {
+    console.error('Error fetching testimonial:', error);
+    return c.json({ error: 'Failed to fetch testimonial' }, 500);
+  }
+});
+
+// Create testimonial (admin only)
+app.post('/admin', requireAdmin, async (c: Context) => {
+  try {
+    const { name, name_en, role, role_en, content, content_en, 
+            avatar_url, rating, is_featured, display_order } = await c.req.json();
+    
+    // Validation
+    if (!name || !role || !content) {
+      return c.json({ error: 'Name, role, and content are required' }, 400);
+    }
+    
+    if (rating && (rating < 1 || rating > 5)) {
+      return c.json({ error: 'Rating must be between 1 and 5' }, 400);
+    }
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO testimonials (
+        name, name_en, role, role_en, content, content_en,
+        avatar_url, rating, is_featured, display_order
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      name,
+      name_en || null,
+      role,
+      role_en || null,
+      content,
+      content_en || null,
+      avatar_url || null,
+      rating || 5,
+      is_featured ? 1 : 0,
+      display_order || 0
+    ).run();
+    
+    return c.json({ 
+      message: 'Testimonial created successfully',
+      id: result.meta.last_row_id 
+    }, 201);
+  } catch (error) {
+    console.error('Error creating testimonial:', error);
+    return c.json({ error: 'Failed to create testimonial' }, 500);
+  }
+});
+
+// Update testimonial (admin only)
+app.put('/admin/:id', requireAdmin, async (c: Context) => {
+  const id = parseInt(c.req.param('id'));
+  
+  try {
+    const { name, name_en, role, role_en, content, content_en,
+            avatar_url, rating, is_featured, display_order } = await c.req.json();
+    
+    // Validation
+    if (rating && (rating < 1 || rating > 5)) {
+      return c.json({ error: 'Rating must be between 1 and 5' }, 400);
+    }
+    
+    const result = await c.env.DB.prepare(`
+      UPDATE testimonials
+      SET name = ?,
+          name_en = ?,
+          role = ?,
+          role_en = ?,
+          content = ?,
+          content_en = ?,
+          avatar_url = ?,
+          rating = ?,
+          is_featured = ?,
+          display_order = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(
+      name,
+      name_en || null,
+      role,
+      role_en || null,
+      content,
+      content_en || null,
+      avatar_url || null,
+      rating || 5,
+      is_featured ? 1 : 0,
+      display_order || 0,
+      id
+    ).run();
+    
+    if (result.meta.changes === 0) {
+      return c.json({ error: 'Testimonial not found' }, 404);
+    }
+    
+    return c.json({ message: 'Testimonial updated successfully' });
+  } catch (error) {
+    console.error('Error updating testimonial:', error);
+    return c.json({ error: 'Failed to update testimonial' }, 500);
+  }
+});
+
+// Delete testimonial (admin only)
+app.delete('/admin/:id', requireAdmin, async (c: Context) => {
+  const id = parseInt(c.req.param('id'));
+  
+  try {
+    const result = await c.env.DB.prepare(`
+      DELETE FROM testimonials WHERE id = ?
+    `).bind(id).run();
+    
+    if (result.meta.changes === 0) {
+      return c.json({ error: 'Testimonial not found' }, 404);
+    }
+    
+    return c.json({ message: 'Testimonial deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting testimonial:', error);
+    return c.json({ error: 'Failed to delete testimonial' }, 500);
+  }
+});
+
+export default app;

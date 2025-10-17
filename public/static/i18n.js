@@ -304,6 +304,16 @@ const translations = {
     'testimonial3Name': '陈浩',
     'testimonial3Role': '团队Lead',
     'testimonial3Text': '团队协作功能很实用，大家可以共同参与复盘，形成集体智慧。',
+    'testimonialsManagement': '留言管理',
+    'addTestimonial': '添加留言',
+    'editTestimonial': '编辑留言',
+    'noTestimonials': '暂无留言',
+    'testimonialCreated': '留言创建成功',
+    'testimonialUpdated': '留言更新成功',
+    'testimonialDeleted': '留言删除成功',
+    'featured': '精选',
+    'displayOrder': '显示顺序',
+    'rating': '评分',
     
     // Contact
     'contactUs': '联系我们',
@@ -758,6 +768,16 @@ const translations = {
     'testimonial3Name': 'Hao Chen',
     'testimonial3Role': 'Team Lead',
     'testimonial3Text': 'Team collaboration features are very practical. Everyone can participate in reviews and form collective wisdom.',
+    'testimonialsManagement': 'Testimonials Management',
+    'addTestimonial': 'Add Testimonial',
+    'editTestimonial': 'Edit Testimonial',
+    'noTestimonials': 'No testimonials yet',
+    'testimonialCreated': 'Testimonial created successfully',
+    'testimonialUpdated': 'Testimonial updated successfully',
+    'testimonialDeleted': 'Testimonial deleted successfully',
+    'featured': 'Featured',
+    'displayOrder': 'Display Order',
+    'rating': 'Rating',
     
     // Contact
     'contactUs': 'Contact Us',

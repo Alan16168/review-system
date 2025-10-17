@@ -8,6 +8,7 @@ import admin from './routes/admin';
 import notifications from './routes/notifications';
 import resources from './routes/resources';
 import templates from './routes/templates';
+import testimonials from './routes/testimonials';
 
 type Bindings = {
   DB: D1Database;
@@ -36,6 +37,7 @@ app.route('/api/admin', admin);
 app.route('/api/notifications', notifications);
 app.route('/api/resources', resources);
 app.route('/api/templates', templates);
+app.route('/api/testimonials', testimonials);
 
 // Main page - Login/Dashboard
 app.get('/', (c) => {

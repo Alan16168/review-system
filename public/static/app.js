@@ -469,51 +469,11 @@ async function showHomePage() {
       <section id="testimonials" class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">${i18n.t('userTestimonials')}</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
-              <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
-                  <i class="fas fa-user text-indigo-600"></i>
-                </div>
-                <div>
-                  <div class="font-bold text-gray-900">${i18n.t('testimonial1Name')}</div>
-                  <div class="text-sm text-gray-600">${i18n.t('testimonial1Role')}</div>
-                </div>
-              </div>
-              <div class="text-yellow-400 mb-2">
-                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-              </div>
-              <p class="text-gray-600">${i18n.t('testimonial1Text')}</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
-              <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                  <i class="fas fa-user text-purple-600"></i>
-                </div>
-                <div>
-                  <div class="font-bold text-gray-900">${i18n.t('testimonial2Name')}</div>
-                  <div class="text-sm text-gray-600">${i18n.t('testimonial2Role')}</div>
-                </div>
-              </div>
-              <div class="text-yellow-400 mb-2">
-                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-              </div>
-              <p class="text-gray-600">${i18n.t('testimonial2Text')}</p>
-            </div>
-            <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
-              <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mr-3">
-                  <i class="fas fa-user text-pink-600"></i>
-                </div>
-                <div>
-                  <div class="font-bold text-gray-900">${i18n.t('testimonial3Name')}</div>
-                  <div class="text-sm text-gray-600">${i18n.t('testimonial3Role')}</div>
-                </div>
-              </div>
-              <div class="text-yellow-400 mb-2">
-                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-              </div>
-              <p class="text-gray-600">${i18n.t('testimonial3Text')}</p>
+          <div id="testimonials-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Testimonials will be loaded dynamically -->
+            <div class="col-span-3 text-center text-gray-500">
+              <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+              <p>${i18n.t('loading') || 'Loading...'}</p>
             </div>
           </div>
         </div>
@@ -615,6 +575,7 @@ async function showHomePage() {
 
   // Load resources after page render
   loadArticles();
+  loadTestimonials();
   
   // Initialize carousel
   initCarousel();
@@ -816,6 +777,68 @@ async function loadVideos(refresh = false) {
       <div class="text-center py-12">
         <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
         <p class="text-gray-600">${i18n.t('loadError')}</p>
+      </div>
+    `;
+  }
+}
+
+// Load Testimonials from API - Show latest 3 testimonials
+async function loadTestimonials() {
+  const testimonialsContainer = document.getElementById('testimonials-container');
+  
+  try {
+    const lang = localStorage.getItem('language') || 'en';
+    const response = await axios.get('/api/testimonials/latest', {
+      headers: { 'X-Language': lang }
+    });
+    const { testimonials } = response.data;
+    
+    if (!testimonials || testimonials.length === 0) {
+      testimonialsContainer.innerHTML = `
+        <div class="col-span-3 text-center py-8 text-gray-500">
+          <i class="fas fa-comments text-4xl mb-3"></i>
+          <p>${i18n.t('noTestimonials') || 'No testimonials yet'}</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const bgColors = ['bg-indigo-100', 'bg-purple-100', 'bg-pink-100'];
+    const textColors = ['text-indigo-600', 'text-purple-600', 'text-pink-600'];
+    
+    testimonialsContainer.innerHTML = testimonials.map((testimonial, index) => {
+      const bgColor = bgColors[index % 3];
+      const textColor = textColors[index % 3];
+      const stars = '★'.repeat(testimonial.rating) + '☆'.repeat(5 - testimonial.rating);
+      
+      return `
+        <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 ${bgColor} rounded-full flex items-center justify-center mr-3">
+              ${testimonial.avatar_url ? 
+                `<img src="${testimonial.avatar_url}" alt="${escapeHtml(testimonial.name)}" class="w-12 h-12 rounded-full object-cover">` :
+                `<i class="fas fa-user ${textColor}"></i>`
+              }
+            </div>
+            <div>
+              <div class="font-bold text-gray-900">${escapeHtml(testimonial.name)}</div>
+              <div class="text-sm text-gray-600">${escapeHtml(testimonial.role)}</div>
+            </div>
+          </div>
+          <div class="text-yellow-400 mb-2" style="letter-spacing: 2px;">
+            ${stars}
+          </div>
+          <p class="text-gray-600">${escapeHtml(testimonial.content)}</p>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('Failed to load testimonials:', error);
+    testimonialsContainer.innerHTML = `
+      <div class="col-span-3 text-center py-8 text-red-500">
+        <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+        <p>${i18n.t('loadError') || 'Failed to load testimonials'}</p>
       </div>
     `;
   }
@@ -3869,6 +3892,11 @@ async function showAdmin() {
                         data-tab="stats">
                   <i class="fas fa-chart-bar mr-2"></i>${i18n.t('systemStats')}
                 </button>
+                <button onclick="showAdminTab('testimonials')" 
+                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
+                        data-tab="testimonials">
+                  <i class="fas fa-comments mr-2"></i>${i18n.t('testimonialsManagement') || '留言管理'}
+                </button>
               ` : ''}
             </nav>
           </div>
@@ -3927,6 +3955,9 @@ async function showAdminTab(tab) {
       break;
     case 'stats':
       await showStatsPanel(content);
+      break;
+    case 'testimonials':
+      await showTestimonialsManagement(content);
       break;
   }
 }
@@ -4528,6 +4559,378 @@ async function showStatsPanel(container) {
         <p>${i18n.t('operationFailed')}</p>
       </div>
     `;
+  }
+}
+
+// Testimonials Management (Admin only)
+async function showTestimonialsManagement(container) {
+  container.innerHTML = `
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-comments mr-2"></i>${i18n.t('testimonialsManagement') || '留言管理'}
+        </h2>
+        <button onclick="showCreateTestimonialModal()" 
+                class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+          <i class="fas fa-plus mr-2"></i>${i18n.t('addTestimonial') || '添加留言'}
+        </button>
+      </div>
+      <div id="testimonials-table">
+        <div class="text-center py-8">
+          <i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  await loadTestimonialsTable();
+}
+
+async function loadTestimonialsTable() {
+  const testimonialsTable = document.getElementById('testimonials-table');
+  
+  try {
+    const response = await axios.get('/api/testimonials/admin/all');
+    const { testimonials } = response.data;
+    
+    if (testimonials.length === 0) {
+      testimonialsTable.innerHTML = `
+        <div class="text-center py-8 text-gray-500">
+          <i class="fas fa-comments text-4xl mb-3"></i>
+          <p>${i18n.t('noTestimonials') || '暂无留言'}</p>
+        </div>
+      `;
+      return;
+    }
+    
+    testimonialsTable.innerHTML = `
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('name') || '姓名'}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('role') || '角色'}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('content') || '内容'}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('rating') || '评分'}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('featured') || '精选'}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('order') || '排序'}</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">${i18n.t('actions') || '操作'}</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            ${testimonials.map(t => `
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">${escapeHtml(t.name)}</div>
+                  ${t.name_en ? `<div class="text-xs text-gray-500">${escapeHtml(t.name_en)}</div>` : ''}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">${escapeHtml(t.role)}</div>
+                  ${t.role_en ? `<div class="text-xs text-gray-500">${escapeHtml(t.role_en)}</div>` : ''}
+                </td>
+                <td class="px-6 py-4">
+                  <div class="text-sm text-gray-900 max-w-xs truncate">${escapeHtml(t.content)}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-yellow-400">${'★'.repeat(t.rating)}${'☆'.repeat(5 - t.rating)}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${t.is_featured ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                    ${t.is_featured ? (i18n.t('yes') || '是') : (i18n.t('no') || '否')}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  ${t.display_order}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button onclick="showEditTestimonialModal(${t.id})" 
+                          class="text-indigo-600 hover:text-indigo-900 mr-3">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button onclick="deleteTestimonial(${t.id})" 
+                          class="text-red-600 hover:text-red-900">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Failed to load testimonials:', error);
+    testimonialsTable.innerHTML = `
+      <div class="text-center py-8 text-red-500">
+        <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+        <p>${i18n.t('loadError') || '加载失败'}</p>
+      </div>
+    `;
+  }
+}
+
+function showCreateTestimonialModal() {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+      <h3 class="text-xl font-bold mb-4">
+        <i class="fas fa-plus-circle mr-2"></i>${i18n.t('addTestimonial') || '添加留言'}
+      </h3>
+      <form id="create-testimonial-form" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('name') || '姓名'} (中文) *</label>
+            <input type="text" id="testimonial-name" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('name') || '姓名'} (English)</label>
+            <input type="text" id="testimonial-name-en"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('role') || '角色'} (中文) *</label>
+            <input type="text" id="testimonial-role" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('role') || '角色'} (English)</label>
+            <input type="text" id="testimonial-role-en"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('content') || '内容'} (中文) *</label>
+          <textarea id="testimonial-content" required rows="3"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('content') || '内容'} (English)</label>
+          <textarea id="testimonial-content-en" rows="3"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('rating') || '评分'} *</label>
+            <select id="testimonial-rating" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="5">5 ★★★★★</option>
+              <option value="4">4 ★★★★☆</option>
+              <option value="3">3 ★★★☆☆</option>
+              <option value="2">2 ★★☆☆☆</option>
+              <option value="1">1 ★☆☆☆☆</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('displayOrder') || '显示顺序'}</label>
+            <input type="number" id="testimonial-order" value="0" min="0"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div class="flex items-end">
+            <label class="flex items-center">
+              <input type="checkbox" id="testimonial-featured" class="mr-2">
+              <span class="text-sm font-medium text-gray-700">${i18n.t('featured') || '设为精选'}</span>
+            </label>
+          </div>
+        </div>
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="this.closest('.fixed').remove()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            ${i18n.t('cancel') || '取消'}
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+            ${i18n.t('create') || '创建'}
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  modal.querySelector('#create-testimonial-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await createTestimonial(modal);
+  });
+  
+  document.body.appendChild(modal);
+}
+
+async function createTestimonial(modal) {
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+  
+  try {
+    const data = {
+      name: document.getElementById('testimonial-name').value,
+      name_en: document.getElementById('testimonial-name-en').value || null,
+      role: document.getElementById('testimonial-role').value,
+      role_en: document.getElementById('testimonial-role-en').value || null,
+      content: document.getElementById('testimonial-content').value,
+      content_en: document.getElementById('testimonial-content-en').value || null,
+      rating: parseInt(document.getElementById('testimonial-rating').value),
+      display_order: parseInt(document.getElementById('testimonial-order').value),
+      is_featured: document.getElementById('testimonial-featured').checked
+    };
+    
+    await axios.post('/api/testimonials/admin', data);
+    
+    showNotification(i18n.t('testimonialCreated') || '留言创建成功', 'success');
+    modal.remove();
+    await loadTestimonialsTable();
+  } catch (error) {
+    console.error('Failed to create testimonial:', error);
+    showNotification(error.response?.data?.error || (i18n.t('operationFailed') || '操作失败'), 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+  }
+}
+
+async function showEditTestimonialModal(id) {
+  try {
+    const response = await axios.get(`/api/testimonials/admin/${id}`);
+    const t = response.data.testimonial;
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+        <h3 class="text-xl font-bold mb-4">
+          <i class="fas fa-edit mr-2"></i>${i18n.t('editTestimonial') || '编辑留言'}
+        </h3>
+        <form id="edit-testimonial-form" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('name') || '姓名'} (中文) *</label>
+              <input type="text" id="edit-testimonial-name" value="${escapeHtml(t.name)}" required
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('name') || '姓名'} (English)</label>
+              <input type="text" id="edit-testimonial-name-en" value="${escapeHtml(t.name_en || '')}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('role') || '角色'} (中文) *</label>
+              <input type="text" id="edit-testimonial-role" value="${escapeHtml(t.role)}" required
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('role') || '角色'} (English)</label>
+              <input type="text" id="edit-testimonial-role-en" value="${escapeHtml(t.role_en || '')}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('content') || '内容'} (中文) *</label>
+            <textarea id="edit-testimonial-content" required rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(t.content)}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('content') || '内容'} (English)</label>
+            <textarea id="edit-testimonial-content-en" rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(t.content_en || '')}</textarea>
+          </div>
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('rating') || '评分'} *</label>
+              <select id="edit-testimonial-rating" required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="5" ${t.rating === 5 ? 'selected' : ''}>5 ★★★★★</option>
+                <option value="4" ${t.rating === 4 ? 'selected' : ''}>4 ★★★★☆</option>
+                <option value="3" ${t.rating === 3 ? 'selected' : ''}>3 ★★★☆☆</option>
+                <option value="2" ${t.rating === 2 ? 'selected' : ''}>2 ★★☆☆☆</option>
+                <option value="1" ${t.rating === 1 ? 'selected' : ''}>1 ★☆☆☆☆</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">${i18n.t('displayOrder') || '显示顺序'}</label>
+              <input type="number" id="edit-testimonial-order" value="${t.display_order}" min="0"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex items-end">
+              <label class="flex items-center">
+                <input type="checkbox" id="edit-testimonial-featured" ${t.is_featured ? 'checked' : ''} class="mr-2">
+                <span class="text-sm font-medium text-gray-700">${i18n.t('featured') || '设为精选'}</span>
+              </label>
+            </div>
+          </div>
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" onclick="this.closest('.fixed').remove()" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+              ${i18n.t('cancel') || '取消'}
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              ${i18n.t('save') || '保存'}
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+    
+    modal.querySelector('#edit-testimonial-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await updateTestimonial(id, modal);
+    });
+    
+    document.body.appendChild(modal);
+  } catch (error) {
+    console.error('Failed to load testimonial:', error);
+    showNotification(i18n.t('loadError') || '加载失败', 'error');
+  }
+}
+
+async function updateTestimonial(id, modal) {
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+  
+  try {
+    const data = {
+      name: document.getElementById('edit-testimonial-name').value,
+      name_en: document.getElementById('edit-testimonial-name-en').value || null,
+      role: document.getElementById('edit-testimonial-role').value,
+      role_en: document.getElementById('edit-testimonial-role-en').value || null,
+      content: document.getElementById('edit-testimonial-content').value,
+      content_en: document.getElementById('edit-testimonial-content-en').value || null,
+      rating: parseInt(document.getElementById('edit-testimonial-rating').value),
+      display_order: parseInt(document.getElementById('edit-testimonial-order').value),
+      is_featured: document.getElementById('edit-testimonial-featured').checked
+    };
+    
+    await axios.put(`/api/testimonials/admin/${id}`, data);
+    
+    showNotification(i18n.t('testimonialUpdated') || '留言更新成功', 'success');
+    modal.remove();
+    await loadTestimonialsTable();
+  } catch (error) {
+    console.error('Failed to update testimonial:', error);
+    showNotification(error.response?.data?.error || (i18n.t('operationFailed') || '操作失败'), 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+  }
+}
+
+async function deleteTestimonial(id) {
+  if (!confirm(i18n.t('confirmDelete') || '确定要删除这条留言吗？')) return;
+  
+  try {
+    await axios.delete(`/api/testimonials/admin/${id}`);
+    showNotification(i18n.t('testimonialDeleted') || '留言删除成功', 'success');
+    await loadTestimonialsTable();
+  } catch (error) {
+    console.error('Failed to delete testimonial:', error);
+    showNotification(error.response?.data?.error || (i18n.t('operationFailed') || '操作失败'), 'error');
   }
 }
 
