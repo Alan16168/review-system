@@ -102,21 +102,21 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://5b29d4df.review-system.pages.dev
-- **版本**: ✅ V5.10.1 - 修复公开复盘编辑按钮
+- **最新部署 ID**: https://42279336.review-system.pages.dev
+- **版本**: ✅ V5.10.2 - 修复团队成员编辑公开复盘权限
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境
 - **部署日期**: 2025-10-17
-- **部署时间**: 15:27 (编译时间: 1.43s)
+- **部署时间**: 15:45 (编译时间: 1.68s)
 - **更新内容**:
-  - ✅ 修复"公开的复盘"页面编辑按钮无响应问题
-  - ✅ 修复管理员面板"公开复盘管理"编辑按钮
-  - ✅ 编辑按钮现在正确调用 showEditReview() 函数
-  - ✅ 用户可以正常编辑公开复盘记录
+  - ✅ 修复团队成员无法编辑公开团队复盘的问题
+  - ✅ 后端API返回 is_team_member 标志
+  - ✅ 前端正确判断团队成员编辑权限
+  - ✅ 公开复盘（群体类型=团队）的团队成员现在可以看到编辑按钮
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
-- **Git Commit**: ✅ V5.10.1 (修复公开复盘编辑按钮)
+- **Git Commit**: ✅ V5.10.2 (修复团队成员编辑公开复盘权限)
 - **本地端口**: 3000 (PM2 管理)
 - **更新内容**: 
   - ✅ 修复"公开的复盘"页面编辑按钮无响应问题
@@ -898,7 +898,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ## 📄 部署状态
 
 - **平台**: Cloudflare Pages
-- **生产环境**: ✅ 已部署 (https://5b29d4df.review-system.pages.dev)
+- **生产环境**: ✅ 已部署 (https://42279336.review-system.pages.dev)
 - **开发环境**: ✅ 运行中 (https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev)
 - **技术栈**: Hono + TypeScript + Cloudflare D1
 - **数据库**: ✅ review-system-production (D1)
@@ -907,7 +907,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **最后更新**: 2025-10-17
-- **当前版本**: V5.10.1（修复公开复盘编辑按钮）✅ 已部署生产环境
+- **当前版本**: V5.10.2（修复团队成员编辑公开复盘权限）✅ 已部署生产环境
 
 ## 📝 许可证
 
@@ -917,7 +917,28 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.10.1  
+**当前版本**: V5.10.2  
+
+**V5.10.2 更新内容** (2025-10-17):
+- 🔐 **修复团队成员编辑公开复盘权限**（关键权限修复）：
+  - **问题**: 公开复盘（owner_type='public' 且 group_type='team'）的团队成员无法看到"编辑"按钮
+  - **原因**: 
+    1. 后端 `/api/reviews/public` 端点未返回团队成员信息
+    2. 前端 `canEditReview()` 无法判断当前用户是否为团队成员
+  - **解决方案**:
+    1. **后端修复**: 为每个复盘查询 team_members 表，返回 `is_team_member` 标志
+    2. **前端修复**: 检查 `is_team_member` 标志判断编辑权限
+  - **权限规则**（完整）:
+    - ✅ 管理员: 可以编辑任何公开复盘
+    - ✅ 创建者: 可以编辑自己的公开复盘
+    - ✅ 团队成员: 可以编辑团队的公开复盘（group_type='team' 或 owner_type='team'）
+    - ❌ 其他用户: 无法编辑（按钮隐藏）
+  - **测试场景**:
+    - ✅ 公开 + 团队类型 + 团队成员 = 显示编辑按钮
+    - ✅ 公开 + 个人类型 + 非创建者 = 隐藏编辑按钮
+    - ✅ 团队主人 + 团队成员 = 显示编辑按钮
+- 🎯 **用户体验改进**: 团队成员现在可以正常编辑团队的公开复盘
+- ✅ **部署状态**: 已成功部署到生产环境（https://42279336.review-system.pages.dev）
 
 **V5.10.1 更新内容** (2025-10-17):
 - 🐛 **修复公开复盘编辑按钮**（关键Bug修复）：
