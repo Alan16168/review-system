@@ -14,7 +14,7 @@ app.get('/latest', async (c: Context) => {
              avatar_url, rating, created_at
       FROM testimonials
       WHERE is_featured = 1
-      ORDER BY display_order ASC, created_at DESC
+      ORDER BY created_at DESC
       LIMIT 3
     `).all();
     
@@ -38,7 +38,7 @@ app.get('/latest', async (c: Context) => {
 // Public endpoint: Create testimonial (public access - pending approval)
 app.post('/public', async (c: Context) => {
   try {
-    const { name, content, rating } = await c.req.json();
+    const { name, role, content, rating } = await c.req.json();
     
     // Validation
     if (!name || !content) {
@@ -56,7 +56,7 @@ app.post('/public', async (c: Context) => {
       ) VALUES (?, ?, ?, ?, 0, 999)
     `).bind(
       name,
-      'Visitor', // Default role for public submissions
+      role || 'Visitor', // Use provided role or default to 'Visitor'
       content,
       rating || 5
     ).run();

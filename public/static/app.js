@@ -6535,6 +6535,15 @@ function showPublicMessageModal() {
           
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
+              <i class="fas fa-briefcase mr-2"></i>${i18n.t('yourRole')}
+            </label>
+            <input type="text" id="public-role"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('roleExample')}">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
               <i class="fas fa-comment mr-2"></i>${i18n.t('yourMessage')}*
             </label>
             <textarea id="public-content" required rows="6"
@@ -6587,6 +6596,7 @@ async function submitPublicMessage(e) {
   e.preventDefault();
   
   const name = document.getElementById('public-name').value.trim();
+  const role = document.getElementById('public-role').value.trim();
   const content = document.getElementById('public-content').value.trim();
   const rating = parseInt(document.getElementById('public-rating').value);
   
@@ -6598,6 +6608,7 @@ async function submitPublicMessage(e) {
   try {
     const response = await axios.post('/api/testimonials/public', {
       name,
+      role: role || 'Visitor',
       content,
       rating
     });
