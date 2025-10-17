@@ -454,7 +454,12 @@ async function showHomePage() {
       <!-- Testimonials Section -->
       <section id="testimonials" class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">${i18n.t('userTestimonials')}</h2>
+          <div class="flex justify-between items-center mb-12">
+            <h2 class="text-4xl font-bold text-gray-900">${i18n.t('userTestimonials')}</h2>
+            <button onclick="showPublicMessageModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition flex items-center">
+              <i class="fas fa-plus mr-2"></i>${i18n.t('leaveYourMessage')}
+            </button>
+          </div>
           <div id="testimonials-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Testimonials will be loaded dynamically -->
             <div class="col-span-3 text-center text-gray-500">
@@ -781,9 +786,15 @@ async function loadTestimonials() {
     
     if (!testimonials || testimonials.length === 0) {
       testimonialsContainer.innerHTML = `
-        <div class="col-span-3 text-center py-8 text-gray-500">
-          <i class="fas fa-comments text-4xl mb-3"></i>
-          <p>${i18n.t('noTestimonials') || 'No testimonials yet'}</p>
+        <div class="col-span-3 text-center py-12">
+          <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-12">
+            <i class="fas fa-comments text-6xl text-indigo-400 mb-4"></i>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">${i18n.t('noTestimonials')}</h3>
+            <p class="text-gray-600 mb-6">${i18n.t('beFirstToLeave')}</p>
+            <button onclick="showPublicMessageModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-medium transition inline-flex items-center">
+              <i class="fas fa-edit mr-2"></i>${i18n.t('leaveYourMessage')}
+            </button>
+          </div>
         </div>
       `;
       return;
@@ -6488,6 +6499,124 @@ async function handleResetPassword(e, userId) {
 
 function closeResetPasswordModal() {
   const modal = document.getElementById('reset-password-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Public Message Modal Functions
+function showPublicMessageModal() {
+  const modal = document.createElement('div');
+  modal.id = 'public-message-modal';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+  modal.innerHTML = `
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-pen-to-square mr-2 text-indigo-600"></i>${i18n.t('leaveYourMessage')}
+          </h2>
+          <button onclick="closePublicMessageModal()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="p-6">
+        <form id="public-message-form" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              <i class="fas fa-user mr-2"></i>${i18n.t('yourName')}*
+            </label>
+            <input type="text" id="public-name" required
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('yourName')}">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              <i class="fas fa-comment mr-2"></i>${i18n.t('yourMessage')}*
+            </label>
+            <textarea id="public-content" required rows="6"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="${i18n.t('yourMessage')}"></textarea>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              <i class="fas fa-star mr-2"></i>${i18n.t('yourRating')}
+            </label>
+            <select id="public-rating" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              <option value="5">★★★★★ (5)</option>
+              <option value="4">★★★★☆ (4)</option>
+              <option value="3">★★★☆☆ (3)</option>
+              <option value="2">★★☆☆☆ (2)</option>
+              <option value="1">★☆☆☆☆ (1)</option>
+            </select>
+          </div>
+          
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p class="text-sm text-yellow-800">
+              <i class="fas fa-info-circle mr-2"></i>
+              ${i18n.t('messageWillBeReviewed') || 'Your message will be reviewed by administrators before being published.'}
+            </p>
+          </div>
+          
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" onclick="closePublicMessageModal()" 
+                    class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+              ${i18n.t('cancel')}
+            </button>
+            <button type="submit"
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+              <i class="fas fa-paper-plane mr-2"></i>${i18n.t('submitMessage')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Handle form submission
+  document.getElementById('public-message-form').addEventListener('submit', submitPublicMessage);
+}
+
+async function submitPublicMessage(e) {
+  e.preventDefault();
+  
+  const name = document.getElementById('public-name').value.trim();
+  const content = document.getElementById('public-content').value.trim();
+  const rating = parseInt(document.getElementById('public-rating').value);
+  
+  if (!name || !content) {
+    showNotification(i18n.t('pleaseComplete') || 'Please complete all required fields', 'error');
+    return;
+  }
+  
+  try {
+    const response = await axios.post('/api/testimonials/public', {
+      name,
+      content,
+      rating
+    });
+    
+    showNotification(response.data.message || i18n.t('messageSubmitted') || 'Message submitted successfully!', 'success');
+    closePublicMessageModal();
+    
+    // Reload testimonials after a short delay
+    setTimeout(() => {
+      loadTestimonials();
+    }, 1000);
+  } catch (error) {
+    console.error('Failed to submit message:', error);
+    showNotification(i18n.t('operationFailed') || 'Failed to submit message', 'error');
+  }
+}
+
+function closePublicMessageModal() {
+  const modal = document.getElementById('public-message-modal');
   if (modal) {
     modal.remove();
   }

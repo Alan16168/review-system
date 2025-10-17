@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { adminOnly } from '../middleware/auth';
+import { authMiddleware, adminOnly } from '../middleware/auth';
 
 const app = new Hono<{ Bindings: { DB: D1Database } }>();
 
@@ -35,9 +35,45 @@ app.get('/latest', async (c: Context) => {
   }
 });
 
+// Public endpoint: Create testimonial (public access - pending approval)
+app.post('/public', async (c: Context) => {
+  try {
+    const { name, content, rating } = await c.req.json();
+    
+    // Validation
+    if (!name || !content) {
+      return c.json({ error: 'Name and content are required' }, 400);
+    }
+    
+    if (rating && (rating < 1 || rating > 5)) {
+      return c.json({ error: 'Rating must be between 1 and 5' }, 400);
+    }
+    
+    // Create testimonial with is_featured = 0 (needs admin approval)
+    const result = await c.env.DB.prepare(`
+      INSERT INTO testimonials (
+        name, role, content, rating, is_featured, display_order
+      ) VALUES (?, ?, ?, ?, 0, 999)
+    `).bind(
+      name,
+      'Visitor', // Default role for public submissions
+      content,
+      rating || 5
+    ).run();
+    
+    return c.json({ 
+      message: 'Thank you for your message! It will be reviewed and published soon.',
+      id: result.meta.last_row_id 
+    }, 201);
+  } catch (error) {
+    console.error('Error creating public testimonial:', error);
+    return c.json({ error: 'Failed to submit message' }, 500);
+  }
+});
+
 // Admin endpoints: CRUD operations
 // Get all testimonials (admin only)
-app.get('/admin/all', adminOnly, async (c: Context) => {
+app.get('/admin/all', authMiddleware, adminOnly, async (c: Context) => {
   try {
     const result = await c.env.DB.prepare(`
       SELECT id, name, name_en, role, role_en, content, content_en,
@@ -55,7 +91,7 @@ app.get('/admin/all', adminOnly, async (c: Context) => {
 });
 
 // Get single testimonial (admin only)
-app.get('/admin/:id', adminOnly, async (c: Context) => {
+app.get('/admin/:id', authMiddleware, adminOnly, async (c: Context) => {
   const id = parseInt(c.req.param('id'));
   
   try {
@@ -79,7 +115,7 @@ app.get('/admin/:id', adminOnly, async (c: Context) => {
 });
 
 // Create testimonial (admin only)
-app.post('/admin', adminOnly, async (c: Context) => {
+app.post('/admin', authMiddleware, adminOnly, async (c: Context) => {
   try {
     const { name, name_en, role, role_en, content, content_en, 
             avatar_url, rating, is_featured, display_order } = await c.req.json();
@@ -122,7 +158,7 @@ app.post('/admin', adminOnly, async (c: Context) => {
 });
 
 // Update testimonial (admin only)
-app.put('/admin/:id', adminOnly, async (c: Context) => {
+app.put('/admin/:id', authMiddleware, adminOnly, async (c: Context) => {
   const id = parseInt(c.req.param('id'));
   
   try {
@@ -174,7 +210,7 @@ app.put('/admin/:id', adminOnly, async (c: Context) => {
 });
 
 // Delete testimonial (admin only)
-app.delete('/admin/:id', adminOnly, async (c: Context) => {
+app.delete('/admin/:id', authMiddleware, adminOnly, async (c: Context) => {
   const id = parseInt(c.req.param('id'));
   
   try {
