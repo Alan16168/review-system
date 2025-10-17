@@ -1697,7 +1697,7 @@ function renderPublicReviewsList(reviews) {
                   <i class="fas fa-eye"></i> ${i18n.t('view')}
                 </button>
                 ${canEditReview(review) ? `
-                  <button onclick="viewReview(${review.id})" 
+                  <button onclick="showEditReview(${review.id})" 
                           class="text-green-600 hover:text-green-900">
                     <i class="fas fa-edit"></i> ${i18n.t('edit')}
                   </button>
@@ -6846,7 +6846,7 @@ async function adminEditPublicReview(reviewId) {
   // Redirect to review edit page
   window.location.hash = '';
   await new Promise(resolve => setTimeout(resolve, 100));
-  viewReview(reviewId);
+  showEditReview(reviewId);
 }
 
 async function adminDeletePublicReview(reviewId) {
