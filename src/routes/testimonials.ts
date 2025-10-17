@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { requireAdmin } from '../middleware/auth';
+import { adminOnly } from '../middleware/auth';
 
 const app = new Hono<{ Bindings: { DB: D1Database } }>();
 
@@ -37,7 +37,7 @@ app.get('/latest', async (c: Context) => {
 
 // Admin endpoints: CRUD operations
 // Get all testimonials (admin only)
-app.get('/admin/all', requireAdmin, async (c: Context) => {
+app.get('/admin/all', adminOnly, async (c: Context) => {
   try {
     const result = await c.env.DB.prepare(`
       SELECT id, name, name_en, role, role_en, content, content_en,
@@ -55,7 +55,7 @@ app.get('/admin/all', requireAdmin, async (c: Context) => {
 });
 
 // Get single testimonial (admin only)
-app.get('/admin/:id', requireAdmin, async (c: Context) => {
+app.get('/admin/:id', adminOnly, async (c: Context) => {
   const id = parseInt(c.req.param('id'));
   
   try {
@@ -79,7 +79,7 @@ app.get('/admin/:id', requireAdmin, async (c: Context) => {
 });
 
 // Create testimonial (admin only)
-app.post('/admin', requireAdmin, async (c: Context) => {
+app.post('/admin', adminOnly, async (c: Context) => {
   try {
     const { name, name_en, role, role_en, content, content_en, 
             avatar_url, rating, is_featured, display_order } = await c.req.json();
@@ -122,7 +122,7 @@ app.post('/admin', requireAdmin, async (c: Context) => {
 });
 
 // Update testimonial (admin only)
-app.put('/admin/:id', requireAdmin, async (c: Context) => {
+app.put('/admin/:id', adminOnly, async (c: Context) => {
   const id = parseInt(c.req.param('id'));
   
   try {
@@ -174,7 +174,7 @@ app.put('/admin/:id', requireAdmin, async (c: Context) => {
 });
 
 // Delete testimonial (admin only)
-app.delete('/admin/:id', requireAdmin, async (c: Context) => {
+app.delete('/admin/:id', adminOnly, async (c: Context) => {
   const id = parseInt(c.req.param('id'));
   
   try {
