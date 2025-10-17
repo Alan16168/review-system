@@ -773,6 +773,43 @@ async function loadVideos(refresh = false) {
   }
 }
 
+// Format testimonial time for display
+function formatTestimonialTime(created_at) {
+  if (!created_at) return '';
+  
+  const now = new Date();
+  const createdDate = new Date(created_at);
+  const diffMs = now - createdDate;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  // Format: YYYY-MM-DD HH:MM
+  const year = createdDate.getFullYear();
+  const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+  const day = String(createdDate.getDate()).padStart(2, '0');
+  const hours = String(createdDate.getHours()).padStart(2, '0');
+  const minutes = String(createdDate.getMinutes()).padStart(2, '0');
+  
+  const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`;
+  
+  // Relative time
+  let relativeTime = '';
+  if (diffMins < 1) {
+    relativeTime = i18n.t('justNow');
+  } else if (diffMins < 60) {
+    relativeTime = `${diffMins} ${i18n.t('minutesAgo')}`;
+  } else if (diffHours < 24) {
+    relativeTime = `${diffHours} ${i18n.t('hoursAgo')}`;
+  } else if (diffDays < 30) {
+    relativeTime = `${diffDays} ${i18n.t('daysAgo')}`;
+  } else {
+    relativeTime = formattedDate;
+  }
+  
+  return `<span title="${formattedDate}">${relativeTime}</span>`;
+}
+
 // Load Testimonials from API - Show latest 3 testimonials
 async function loadTestimonials() {
   const testimonialsContainer = document.getElementById('testimonials-container');
@@ -817,9 +854,12 @@ async function loadTestimonials() {
                 `<i class="fas fa-user ${textColor}"></i>`
               }
             </div>
-            <div>
+            <div class="flex-1">
               <div class="font-bold text-gray-900">${escapeHtml(testimonial.name)}</div>
               <div class="text-sm text-gray-600">${escapeHtml(testimonial.role)}</div>
+              <div class="text-xs text-gray-500 mt-1">
+                <i class="far fa-clock mr-1"></i>${formatTestimonialTime(testimonial.created_at)}
+              </div>
             </div>
           </div>
           <div class="text-yellow-400 mb-2" style="letter-spacing: 2px;">
