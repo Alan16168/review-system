@@ -1696,6 +1696,18 @@ function renderPublicReviewsList(reviews) {
                         class="text-indigo-600 hover:text-indigo-900">
                   <i class="fas fa-eye"></i> ${i18n.t('view')}
                 </button>
+                ${canEditReview(review) ? `
+                  <button onclick="viewReview(${review.id})" 
+                          class="text-green-600 hover:text-green-900">
+                    <i class="fas fa-edit"></i> ${i18n.t('edit')}
+                  </button>
+                ` : ''}
+                ${canDeleteReview(review) ? `
+                  <button onclick="deletePublicReview(${review.id})" 
+                          class="text-red-600 hover:text-red-900">
+                    <i class="fas fa-trash"></i> ${i18n.t('delete')}
+                  </button>
+                ` : ''}
               </td>
             </tr>
           `).join('')}
@@ -1703,6 +1715,54 @@ function renderPublicReviewsList(reviews) {
       </table>
     </div>
   `;
+}
+
+// Check if current user can edit a review
+function canEditReview(review) {
+  if (!currentUser) return false;
+  
+  // Admin can edit any review
+  if (currentUser.role === 'admin') return true;
+  
+  // Creator can edit their own review
+  if (review.user_id === currentUser.id) return true;
+  
+  // Team members can edit team reviews (if it's a team review)
+  if (review.team_id && review.owner_type === 'team') {
+    // This check will be verified server-side
+    return true;
+  }
+  
+  return false;
+}
+
+// Check if current user can delete a review
+function canDeleteReview(review) {
+  if (!currentUser) return false;
+  
+  // Admin can delete any review
+  if (currentUser.role === 'admin') return true;
+  
+  // Creator can delete their own review
+  if (review.user_id === currentUser.id) return true;
+  
+  return false;
+}
+
+async function deletePublicReview(reviewId) {
+  if (!confirm(i18n.t('confirmDeleteReview') || '确认删除此复盘吗？此操作不可撤销。')) {
+    return;
+  }
+  
+  try {
+    await axios.delete(`/api/reviews/${reviewId}`);
+    showNotification(i18n.t('deleteSuccess') || '删除成功', 'success');
+    // Reload the public reviews list
+    await loadPublicReviews();
+  } catch (error) {
+    console.error('Failed to delete review:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
 }
 
 let allReviews = [];
@@ -3937,6 +3997,11 @@ async function showAdmin() {
                         data-tab="testimonials">
                   <i class="fas fa-comments mr-2"></i>${i18n.t('testimonialsManagement') || '留言管理'}
                 </button>
+                <button onclick="showAdminTab('publicReviews')" 
+                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
+                        data-tab="publicReviews">
+                  <i class="fas fa-globe mr-2"></i>${i18n.t('publicReviewsManagement') || '公开复盘管理'}
+                </button>
               ` : ''}
             </nav>
           </div>
@@ -3998,6 +4063,9 @@ async function showAdminTab(tab) {
       break;
     case 'testimonials':
       await showTestimonialsManagement(content);
+      break;
+    case 'publicReviews':
+      await showPublicReviewsManagement(content);
       break;
   }
 }
@@ -6673,5 +6741,125 @@ function closePublicMessageModal() {
   const modal = document.getElementById('public-message-modal');
   if (modal) {
     modal.remove();
+  }
+}
+
+// ============ Public Reviews Management (Admin Panel) ============
+
+async function showPublicReviewsManagement(container) {
+  container.innerHTML = `
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-globe mr-2"></i>${i18n.t('publicReviewsManagement') || '公开复盘管理'}
+        </h2>
+      </div>
+      <div id="public-reviews-table-container">
+        <div class="text-center py-4">
+          <i class="fas fa-spinner fa-spin text-2xl"></i>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  await loadPublicReviewsTable();
+}
+
+async function loadPublicReviewsTable() {
+  const tableContainer = document.getElementById('public-reviews-table-container');
+  
+  try {
+    const response = await axios.get('/api/reviews/public');
+    const reviews = response.data.reviews || [];
+    
+    if (reviews.length === 0) {
+      tableContainer.innerHTML = `
+        <div class="text-center py-8 text-gray-500">
+          <i class="fas fa-inbox text-4xl mb-3"></i>
+          <p>${i18n.t('noPublicReviews') || '暂无公开复盘'}</p>
+        </div>
+      `;
+      return;
+    }
+    
+    tableContainer.innerHTML = `
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('title')}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('creator')}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('team')}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('status')}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('createdAt')}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('actions')}</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            ${reviews.map(review => `
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${review.id}</td>
+                <td class="px-6 py-4 text-sm text-gray-900">
+                  <a href="#" onclick="viewReview(${review.id}); return false;" class="text-indigo-600 hover:text-indigo-900">
+                    ${escapeHtml(review.title)}
+                  </a>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(review.creator_name || 'N/A')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(review.team_name || '-')}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    review.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                    review.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 
+                    'bg-gray-100 text-gray-800'
+                  }">
+                    ${i18n.t(review.status) || review.status}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(review.created_at).toLocaleDateString()}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button onclick="adminEditPublicReview(${review.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                    <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
+                  </button>
+                  <button onclick="adminDeletePublicReview(${review.id})" class="text-red-600 hover:text-red-900">
+                    <i class="fas fa-trash mr-1"></i>${i18n.t('delete')}
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Failed to load public reviews:', error);
+    tableContainer.innerHTML = `
+      <div class="text-center py-8 text-red-500">
+        <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+        <p>${i18n.t('loadError') || '加载失败'}</p>
+      </div>
+    `;
+  }
+}
+
+async function adminEditPublicReview(reviewId) {
+  // Redirect to review edit page
+  window.location.hash = '';
+  await new Promise(resolve => setTimeout(resolve, 100));
+  viewReview(reviewId);
+}
+
+async function adminDeletePublicReview(reviewId) {
+  if (!confirm(i18n.t('confirmDeleteReview') || '确认删除此复盘吗？此操作不可撤销。')) {
+    return;
+  }
+  
+  try {
+    await axios.delete(`/api/reviews/${reviewId}`);
+    showNotification(i18n.t('deleteSuccess') || '删除成功', 'success');
+    await loadPublicReviewsTable();
+  } catch (error) {
+    console.error('Failed to delete review:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
