@@ -1,6 +1,13 @@
 # 系统复盘平台 (Review System Platform)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/Alan16168/review-system?style=social)](https://github.com/Alan16168/review-system)
+[![Cloudflare Pages](https://img.shields.io/badge/Deployed%20on-Cloudflare%20Pages-orange)](https://review-system.pages.dev)
+
 一个帮助个人和团队进行深度复盘的全栈 Web 应用系统，支持中英双语。
+
+**🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
+**🌐 在线演示**: https://review-system.pages.dev
 
 ## 🌟 项目概述
 
