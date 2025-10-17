@@ -319,7 +319,7 @@ const translations = {
     'contactUs': '联系我们',
     'phone': '电话',
     'address': '地址',
-    'addressText': '北京市朝阳区xxx大厦xxx室',
+    'addressText': 'Richmond BC',
     'followUs': '关注我们',
     
     // Footer
@@ -783,7 +783,7 @@ const translations = {
     'contactUs': 'Contact Us',
     'phone': 'Phone',
     'address': 'Address',
-    'addressText': 'Building XXX, Chaoyang District, Beijing, China',
+    'addressText': 'Richmond BC',
     'followUs': 'Follow Us',
     
     // Footer

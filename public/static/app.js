@@ -418,20 +418,6 @@ async function showHomePage() {
               <h2 class="text-4xl font-bold text-gray-900 mb-6">${i18n.t('aboutCompany')}</h2>
               <p class="text-lg text-gray-600 mb-4">${i18n.t('aboutCompanyText1')}</p>
               <p class="text-lg text-gray-600 mb-6">${i18n.t('aboutCompanyText2')}</p>
-              <div class="flex space-x-6">
-                <div class="text-center">
-                  <div class="text-3xl font-bold text-indigo-600">10K+</div>
-                  <div class="text-sm text-gray-600">${i18n.t('activeUsers')}</div>
-                </div>
-                <div class="text-center">
-                  <div class="text-3xl font-bold text-indigo-600">50K+</div>
-                  <div class="text-sm text-gray-600">${i18n.t('reviewsCreated')}</div>
-                </div>
-                <div class="text-center">
-                  <div class="text-3xl font-bold text-indigo-600">500+</div>
-                  <div class="text-sm text-gray-600">${i18n.t('teamsActive')}</div>
-                </div>
-              </div>
             </div>
             <div class="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl p-8 h-96 flex items-center justify-center">
               <i class="fas fa-users text-indigo-600 text-9xl opacity-50"></i>
@@ -490,14 +476,14 @@ async function showHomePage() {
                   <i class="fas fa-envelope text-indigo-600 text-2xl mr-4"></i>
                   <div>
                     <div class="font-bold text-gray-900">${i18n.t('email')}</div>
-                    <div class="text-gray-600">contact@reviewsystem.com</div>
+                    <div class="text-gray-600">ireviewsystem@hotmail.com</div>
                   </div>
                 </div>
                 <div class="flex items-center mb-4">
                   <i class="fas fa-phone text-indigo-600 text-2xl mr-4"></i>
                   <div>
                     <div class="font-bold text-gray-900">${i18n.t('phone')}</div>
-                    <div class="text-gray-600">+1 (555) 123-4567</div>
+                    <div class="text-gray-600">+1 (778)-883-9266</div>
                   </div>
                 </div>
                 <div class="flex items-center">
