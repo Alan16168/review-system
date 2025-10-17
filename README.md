@@ -102,27 +102,26 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://0889b0b4.review-system.pages.dev
-- **版本**: ✅ V5.6.6 - 更新团队介绍
+- **最新部署 ID**: https://5b0cfab4.review-system.pages.dev
+- **版本**: ✅ V5.10.1 - 修复公开复盘编辑按钮
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境
-- **部署日期**: 2025-10-16
+- **部署日期**: 2025-10-17
 - **更新内容**:
-  - ✅ 团队介绍精简为2人：Alan（创始人 & CEO）和 Helen（设计负责人）
-  - ✅ Alan：18年企业管理经验，致力于推动组织学习和知识管理
-  - ✅ Helen：平台设计师，追求极致的用户体验
-  - ✅ 优化团队展示布局，从3列改为2列居中显示
+  - ✅ 修复"公开的复盘"页面编辑按钮无响应问题
+  - ✅ 修复管理员面板"公开复盘管理"编辑按钮
+  - ✅ 编辑按钮现在正确调用 showEditReview() 函数
+  - ✅ 用户可以正常编辑公开复盘记录
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
-- **Git Commit**: ✅ V5.6.5 (扩充文章池到35篇)
+- **Git Commit**: ✅ V5.10.1 (修复公开复盘编辑按钮)
 - **本地端口**: 3000 (PM2 管理)
 - **更新内容**: 
-  - ✅ 文章池从10篇扩充到35篇真实百度文库链接
-  - ✅ 涵盖年度复盘、个人成长、工作总结、学习反思等多个主题
-  - ✅ 新增复盘模板、团队协作、行业专项复盘等分类
-  - ✅ 用户每次点击"更新文章"按钮能看到更多不同的文章
-  - ✅ 所有文章链接均已验证可访问（跳过HEAD验证避免反爬虫）
+  - ✅ 修复"公开的复盘"页面编辑按钮无响应问题
+  - ✅ 修复管理员面板"公开复盘管理"编辑按钮
+  - ✅ 将不存在的 viewReview() 函数调用改为 showEditReview()
+  - ✅ 编辑按钮现在可以正确导航到复盘编辑页面
 
 ### 测试账号
 | 角色 | 邮箱 | 密码 | 权限 |
@@ -898,7 +897,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ## 📄 部署状态
 
 - **平台**: Cloudflare Pages
-- **生产环境**: ✅ 已部署 (https://692c14b3.review-system.pages.dev)
+- **生产环境**: ✅ 已部署 (https://5b0cfab4.review-system.pages.dev)
 - **开发环境**: ✅ 运行中 (https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev)
 - **技术栈**: Hono + TypeScript + Cloudflare D1
 - **数据库**: ✅ review-system-production (D1)
@@ -906,8 +905,8 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **Google API**: ✅ 已配置（YouTube + Custom Search）
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
-- **最后更新**: 2025-10-16
-- **当前版本**: V5.6.6（更新团队介绍）✅ 已部署生产环境
+- **最后更新**: 2025-10-17
+- **当前版本**: V5.10.1（修复公开复盘编辑按钮）✅ 已部署生产环境
 
 ## 📝 许可证
 
@@ -917,7 +916,22 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.6.6  
+**当前版本**: V5.10.1  
+
+**V5.10.1 更新内容** (2025-10-17):
+- 🐛 **修复公开复盘编辑按钮**（关键Bug修复）：
+  - **问题**: "公开的复盘"页面点击"编辑"按钮无响应
+  - **原因**: 按钮调用不存在的 `viewReview()` 函数
+  - **解决**: 将函数调用改为正确的 `showEditReview()` 函数
+  - **影响范围**: 两处修复
+    1. 公开的复盘列表页面（renderPublicReviewsList）
+    2. 管理员面板公开复盘管理（adminEditPublicReview）
+  - **测试验证**: 
+    - ✅ 创建者可以编辑自己的公开复盘
+    - ✅ 管理员可以编辑任何公开复盘
+    - ✅ 团队成员可以编辑团队公开复盘
+- 🎯 **用户体验改进**: 用户现在可以正常编辑公开复盘，功能完全恢复
+- ✅ **部署状态**: 已成功部署到生产环境（https://5b0cfab4.review-system.pages.dev）
 
 **V5.6.6 更新内容** (2025-10-16):
 - 👥 **团队介绍更新**（品牌优化）：
