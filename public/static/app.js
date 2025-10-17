@@ -1727,10 +1727,13 @@ function canEditReview(review) {
   // Creator can edit their own review
   if (review.user_id === currentUser.id) return true;
   
-  // Team members can edit team reviews (if it's a team review)
-  if (review.team_id && review.owner_type === 'team') {
-    // This check will be verified server-side
-    return true;
+  // Team members can edit team reviews (both group_type='team' OR owner_type='team')
+  // For public reviews with team_id, check is_team_member flag from API
+  if (review.team_id) {
+    // If group_type is 'team' OR owner_type is 'team', and user is a team member
+    if ((review.group_type === 'team' || review.owner_type === 'team') && review.is_team_member) {
+      return true;
+    }
   }
   
   return false;

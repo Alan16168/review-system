@@ -20,6 +20,8 @@ reviews.use('/*', authMiddleware);
 // Get public reviews (owner_type='public')
 reviews.get('/public', async (c) => {
   try {
+    const user = c.get('user') as UserPayload;
+    
     const query = `
       SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
       FROM reviews r
@@ -30,8 +32,27 @@ reviews.get('/public', async (c) => {
     `;
 
     const result = await c.env.DB.prepare(query).all();
+    const reviews = result.results || [];
+    
+    // For each review with team_id, check if current user is a team member
+    const reviewsWithMembership = await Promise.all(
+      reviews.map(async (review: any) => {
+        if (review.team_id) {
+          // Check if current user is a member of this team
+          const memberCheck = await c.env.DB.prepare(`
+            SELECT 1 FROM team_members 
+            WHERE team_id = ? AND user_id = ?
+          `).bind(review.team_id, user.id).first();
+          
+          review.is_team_member = !!memberCheck;
+        } else {
+          review.is_team_member = false;
+        }
+        return review;
+      })
+    );
 
-    return c.json({ reviews: result.results || [] });
+    return c.json({ reviews: reviewsWithMembership });
   } catch (error) {
     console.error('Get public reviews error:', error);
     return c.json({ error: 'Internal server error' }, 500);
