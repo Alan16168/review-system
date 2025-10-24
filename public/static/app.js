@@ -1396,6 +1396,9 @@ function renderRecentReviews(reviews) {
                 <button onclick="showEditReview(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
                   <i class="fas fa-edit"></i> ${i18n.t('edit')}
                 </button>
+                <button onclick="printReview(${review.id})" class="text-green-600 hover:text-green-900 mr-3">
+                  <i class="fas fa-print"></i> ${i18n.t('print')}
+                </button>
                 <button onclick="deleteReview(${review.id})" class="text-red-600 hover:text-red-900">
                   <i class="fas fa-trash"></i> ${i18n.t('delete')}
                 </button>
@@ -1696,6 +1699,10 @@ function renderPublicReviewsList(reviews) {
                         class="text-indigo-600 hover:text-indigo-900">
                   <i class="fas fa-eye"></i> ${i18n.t('view')}
                 </button>
+                <button onclick="printReview(${review.id})" 
+                        class="text-blue-600 hover:text-blue-900">
+                  <i class="fas fa-print"></i> ${i18n.t('print')}
+                </button>
                 ${canEditReview(review) ? `
                   <button onclick="showEditReview(${review.id})" 
                           class="text-green-600 hover:text-green-900">
@@ -1893,6 +1900,9 @@ function renderReviewsList(reviews) {
                 </button>
                 <button onclick="showEditReview(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
                   <i class="fas fa-edit"></i> ${i18n.t('edit')}
+                </button>
+                <button onclick="printReview(${review.id})" class="text-green-600 hover:text-green-900 mr-3">
+                  <i class="fas fa-print"></i> ${i18n.t('print')}
                 </button>
                 <button onclick="deleteReview(${review.id})" class="text-red-600 hover:text-red-900">
                   <i class="fas fa-trash"></i> ${i18n.t('delete')}
@@ -2515,6 +2525,197 @@ async function handlePreviousWithConfirmation() {
 }
 
 // Old handleCreateReview function removed - now using two-step process
+
+// ============ Print Review ============
+
+async function printReview(reviewId) {
+  try {
+    // Fetch review data
+    const response = await axios.get(`/api/reviews/${reviewId}`);
+    const review = response.data.review;
+    const questions = response.data.questions || [];
+    const answersByQuestion = response.data.answersByQuestion || {};
+    
+    // Create printable content
+    let printContent = `
+      <!DOCTYPE html>
+      <html lang="zh-CN">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${i18n.t('printReview')} - ${review.title}</title>
+        <style>
+          @media print {
+            body { margin: 0; padding: 20px; }
+            .no-print { display: none !important; }
+            .page-break { page-break-after: always; }
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Microsoft YaHei', 'SimSun';
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          h1 {
+            color: #4F46E5;
+            border-bottom: 3px solid #4F46E5;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+          }
+          h2 {
+            color: #6366F1;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+          }
+          .meta-info {
+            background: #F3F4F6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+          }
+          .meta-item {
+            margin: 8px 0;
+          }
+          .meta-label {
+            font-weight: bold;
+            color: #6B7280;
+            display: inline-block;
+            width: 100px;
+          }
+          .question {
+            background: #F9FAFB;
+            padding: 15px;
+            border-left: 4px solid #4F46E5;
+            margin-bottom: 20px;
+            border-radius: 4px;
+          }
+          .question-title {
+            font-weight: bold;
+            color: #1F2937;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+          }
+          .answer {
+            padding: 10px 15px;
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+          }
+          .answer-header {
+            font-size: 0.9em;
+            color: #6B7280;
+            margin-bottom: 5px;
+          }
+          .button-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+          }
+          .print-button {
+            background: #4F46E5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+          }
+          .print-button:hover {
+            background: #4338CA;
+          }
+          @media print {
+            .button-container { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="button-container no-print">
+          <button class="print-button" onclick="window.print()">
+            <i class="fas fa-print"></i> ${i18n.t('print')}
+          </button>
+        </div>
+        
+        <h1>${review.title}</h1>
+        
+        <div class="meta-info">
+          <div class="meta-item">
+            <span class="meta-label">${i18n.t('status')}:</span>
+            <span>${i18n.t(review.status)}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">${i18n.t('type')}:</span>
+            <span>${i18n.t(review.review_type)}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">${i18n.t('createdAt')}:</span>
+            <span>${new Date(review.created_at).toLocaleString()}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">${i18n.t('updatedAt')}:</span>
+            <span>${new Date(review.updated_at).toLocaleString()}</span>
+          </div>
+        </div>
+    `;
+    
+    // Add questions and answers
+    questions.forEach((question, index) => {
+      printContent += `
+        <div class="question">
+          <div class="question-title">${index + 1}. ${question.question_text}</div>
+      `;
+      
+      const answers = answersByQuestion[question.id] || [];
+      if (answers.length > 0) {
+        answers.forEach(answer => {
+          printContent += `
+            <div class="answer">
+              ${answer.user_name ? `<div class="answer-header"><strong>${answer.user_name}</strong> - ${new Date(answer.created_at).toLocaleString()}</div>` : ''}
+              <div>${answer.answer_text || i18n.t('noAnswer')}</div>
+            </div>
+          `;
+        });
+      } else {
+        printContent += `
+          <div class="answer">
+            <div>${i18n.t('noAnswer')}</div>
+          </div>
+        `;
+      }
+      
+      printContent += `</div>`;
+    });
+    
+    printContent += `
+        <div class="button-container no-print">
+          <button class="print-button" onclick="window.print()">
+            <i class="fas fa-print"></i> ${i18n.t('print')}
+          </button>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Trigger print dialog after content loads
+    printWindow.onload = function() {
+      printWindow.focus();
+    };
+    
+  } catch (error) {
+    console.error('Print error:', error);
+    showToast(i18n.t('printError') || 'Failed to generate print preview', 'error');
+  }
+}
 
 // ============ Review Detail & Edit ============
 
