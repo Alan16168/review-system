@@ -5786,9 +5786,9 @@ async function showUserSettings() {
                     <div>
                       <p class="text-sm text-gray-600">${i18n.t('currentSubscription') || '当前订阅'}</p>
                       <p class="text-xl font-bold text-gray-800">
-                        ${(settings.subscription_tier === 'premium') ? i18n.t('premiumPlan') || '高级用户' : i18n.t('freePlan') || '免费用户'}
+                        ${(settings.role === 'premium' || settings.subscription_tier === 'premium') ? i18n.t('premiumPlan') || '高级用户' : i18n.t('freePlan') || '免费用户'}
                       </p>
-                      ${(settings.subscription_tier === 'premium' && settings.subscription_expires_at) ? `
+                      ${((settings.role === 'premium' || settings.subscription_tier === 'premium') && settings.subscription_expires_at) ? `
                         <p class="text-sm text-gray-600 mt-1">
                           ${i18n.t('expiryDate') || '到期日期'}: 
                           <span class="font-semibold">${new Date(settings.subscription_expires_at).toLocaleDateString()}</span>
@@ -5796,17 +5796,17 @@ async function showUserSettings() {
                       ` : ''}
                     </div>
                     <div>
-                      ${(settings.subscription_tier !== 'premium') ? `
+                      ${(settings.role !== 'premium' && settings.subscription_tier !== 'premium' && settings.role !== 'admin') ? `
                         <button onclick="showUpgradeModal()" 
                                 class="bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition font-semibold">
                           <i class="fas fa-crown mr-2"></i>${i18n.t('upgradeToPremium') || '升级到高级用户'}
                         </button>
-                      ` : `
+                      ` : (settings.role === 'premium' || settings.subscription_tier === 'premium') ? `
                         <button onclick="showRenewModal()" 
                                 class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition font-semibold">
                           <i class="fas fa-sync-alt mr-2"></i>${i18n.t('renewSubscription') || '续费订阅'}
                         </button>
-                      `}
+                      ` : ''}
                     </div>
                   </div>
                 </div>

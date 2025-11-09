@@ -113,6 +113,60 @@ cron.get('/send-renewal-reminders', async (c) => {
   }
 });
 
+// Check and expire subscriptions
+// This should be called daily to downgrade expired premium users back to free
+cron.get('/expire-subscriptions', async (c) => {
+  try {
+    const now = new Date();
+    
+    // Find premium users whose subscription has expired
+    const expiredUsers = await c.env.DB.prepare(`
+      SELECT id, email, username, subscription_expires_at
+      FROM users
+      WHERE subscription_tier = 'premium'
+        AND role = 'premium'
+        AND subscription_expires_at IS NOT NULL
+        AND subscription_expires_at < ?
+    `).bind(now.toISOString()).all();
+    
+    let downgradeCount = 0;
+    
+    // Downgrade expired users
+    for (const user of expiredUsers.results || []) {
+      try {
+        // Update user to free tier - keep role and subscription_tier synchronized
+        await c.env.DB.prepare(`
+          UPDATE users
+          SET subscription_tier = 'free',
+              role = 'user',
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).bind(user.id).run();
+        
+        downgradeCount++;
+        console.log(`Downgraded user ${user.id} (${user.email}) to free tier`);
+      } catch (error) {
+        console.error(`Failed to downgrade user ${user.id}:`, error);
+      }
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Expired subscriptions processed',
+      stats: {
+        totalExpired: expiredUsers.results?.length || 0,
+        downgradeCount
+      }
+    });
+  } catch (error) {
+    console.error('Expire subscriptions error:', error);
+    return c.json({
+      error: 'Failed to expire subscriptions',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
+  }
+});
+
 // Manual trigger endpoint (requires admin auth)
 cron.post('/trigger-renewal-reminders', async (c) => {
   // In production, you should add admin authentication here

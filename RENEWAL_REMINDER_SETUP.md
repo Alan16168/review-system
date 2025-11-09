@@ -263,6 +263,40 @@ const oneDayFromNow = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
 
 然后为每种类型分别查询和发送邮件。
 
+## 订阅过期自动处理
+
+系统已实现自动过期处理功能：
+
+### GET /api/cron/expire-subscriptions
+
+自动处理过期订阅，将过期的高级用户降级为免费用户。
+
+**功能**：
+1. 查找订阅已过期的高级用户
+2. 将 `role` 从 `'premium'` 改为 `'user'`
+3. 将 `subscription_tier` 从 `'premium'` 改为 `'free'`
+4. 保持 `role` 和 `subscription_tier` 同步
+
+**配置方法**：
+
+在同一个 Cron 服务中添加第二个任务：
+
+#### Cron-job.org 配置
+
+创建两个 Cron Jobs：
+
+1. **续费提醒**（每天 00:00）：
+   - URL: `https://your-domain.pages.dev/api/cron/send-renewal-reminders`
+   - Schedule: `0 0 * * *`
+
+2. **过期处理**（每天 01:00）：
+   - URL: `https://your-domain.pages.dev/api/cron/expire-subscriptions`
+   - Schedule: `0 1 * * *`
+
+**重要**：确保两个任务都配置好，这样系统才能：
+- 提前提醒用户续费
+- 自动降级过期用户
+
 ## 安全注意事项
 
 1. **API 访问控制**：

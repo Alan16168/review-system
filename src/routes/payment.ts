@@ -245,7 +245,7 @@ payment.post('/subscription/capture-order', async (c) => {
     const startDate = currentExpiry > new Date() ? currentExpiry : new Date();
     const expiryDate = new Date(startDate.getTime() + paymentRecord.subscription_duration_days * 24 * 60 * 60 * 1000);
     
-    // Update user subscription
+    // Update user subscription - keep role and subscription_tier synchronized
     await c.env.DB.prepare(`
       UPDATE users 
       SET subscription_tier = ?,
@@ -254,9 +254,9 @@ payment.post('/subscription/capture-order', async (c) => {
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
-      paymentRecord.subscription_tier,
+      'premium',  // subscription_tier
       expiryDate.toISOString(),
-      'premium',
+      'premium',  // role - keep synchronized with subscription_tier
       user.id
     ).run();
     
