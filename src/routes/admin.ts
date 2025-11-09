@@ -75,7 +75,7 @@ admin.get('/users', async (c) => {
         
         // Count templates created by this user
         const templateCount = await c.env.DB.prepare(
-          'SELECT COUNT(*) as count FROM templates WHERE creator_id = ?'
+          'SELECT COUNT(*) as count FROM templates WHERE created_by = ?'
         ).bind(u.id).first();
         
         return {

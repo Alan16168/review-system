@@ -4394,7 +4394,7 @@ function renderUsersTable(users) {
                 </span>
               </td>
               <td class="px-6 py-4 text-sm text-gray-500">
-                ${user.last_login_at ? new Date(user.last_login_at).toLocaleString() : '<span class="text-gray-400">${i18n.t(\'never\') || \'从未\'}</span>'}
+                ${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : '<span class="text-gray-400">${i18n.t(\'never\') || \'从未\'}</span>'}
               </td>
               <td class="px-6 py-4 text-sm text-gray-500">
                 ${new Date(user.created_at).toLocaleDateString()}
