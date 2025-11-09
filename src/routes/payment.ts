@@ -71,6 +71,7 @@ payment.get('/subscription/info', async (c) => {
       expiresAt: user.subscription_expires_at,
       premium: {
         price: config.price_usd,
+        renewal_price: config.renewal_price_usd || config.price_usd,
         durationDays: config.duration_days,
         description: config.description,
         descriptionEn: config.description_en,
