@@ -111,19 +111,21 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://79acc64f.review-system.pages.dev
+- **最新部署 ID**: https://5d10a8dc.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.15.2 - 购物车系统 + PayPal多商品结算
+- **版本**: ✅ V5.15.3 - 续费按钮添加到购物车
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-09
 - **部署时间**: 最新部署
 - **更新内容**:
+  - ✅ **续费按钮改进**：高级用户点击"续费"按钮添加到购物车
+  - ✅ **统一用户体验**：升级和续费按钮行为一致，都添加到购物车
   - ✅ **购物车系统**：完整的购物车功能，支持添加、查看、删除商品
   - ✅ **购物车图标**：导航栏显示购物车图标和商品数量徽章
   - ✅ **购物车模态框**：查看购物车内商品，支持单个删除和清空
   - ✅ **PayPal多商品结算**：支持购物车内所有商品一次性支付
-  - ✅ **升级按钮改进**：点击升级按钮添加到购物车，而非直接支付
+  - ✅ **智能价格识别**：续费使用 renewal_price，升级使用 price
   - ✅ **防止重复添加**：同一商品类型（升级/续费）不能重复加入购物车
   - ✅ **数据库支持**：新增shopping_cart表存储购物车数据
   - ✅ **国际化支持**：新增18个购物车相关翻译键（中英双语）
@@ -131,13 +133,14 @@
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
-- **Git Commit**: ✅ V5.15.2 (购物车系统 + PayPal多商品结算)
+- **Git Commit**: ✅ V5.15.3 (续费按钮添加到购物车)
 - **本地端口**: 3000 (PM2 管理)
 - **更新内容**: 
+  - ✅ 续费按钮改为添加到购物车（与升级按钮一致）
   - ✅ 完整的购物车功能（添加、查看、删除、清空）
   - ✅ 购物车图标和商品数量徽章
   - ✅ PayPal多商品一次性结算
-  - ✅ 升级按钮改为添加到购物车
+  - ✅ 升级和续费都添加到购物车
   - ✅ 防止重复商品添加
   - ✅ 购物车数据库表（shopping_cart）
   - ✅ 18个新增国际化翻译键
@@ -929,19 +932,19 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ## 📄 部署状态
 
 - **平台**: Cloudflare Pages
-- **生产环境**: ✅ 已发布 (https://6db9e254.review-system.pages.dev)
+- **生产环境**: ✅ 已发布 (https://5d10a8dc.review-system.pages.dev)
 - **GitHub 仓库**: ✅ 已开源 (https://github.com/Alan16168/review-system)
 - **开发环境**: ✅ 运行中 (https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev)
 - **技术栈**: Hono + TypeScript + Cloudflare D1
 - **数据库**: ✅ review-system-production (D1) + shopping_cart表
 - **Google OAuth**: ✅ 已配置并启用
 - **Google API**: ✅ 已配置（YouTube + Custom Search）
-- **PayPal Integration**: ✅ 支持单商品和购物车结算
+- **PayPal Integration**: ✅ 升级和续费都添加到购物车，统一结算
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-09
-- **当前版本**: V5.15.2（购物车系统 + PayPal多商品结算）✅ 已发布到生产环境
+- **当前版本**: V5.15.3（续费按钮添加到购物车）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -951,7 +954,26 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.15.2  
+**当前版本**: V5.15.3  
+
+**V5.15.3 更新内容** (2025-11-09):
+- 🔄 **续费按钮改进**（用户体验统一）：
+  - **变更前**: 高级用户点击"续费"按钮，直接显示 PayPal 支付模态框
+  - **变更后**: 点击"续费"按钮，将续费服务添加到购物车
+  - **统一行为**: 升级和续费按钮现在行为完全一致，都是添加到购物车
+  - **用户体验**: 用户可以先将服务添加到购物车，稍后统一结算
+  - **智能价格**: 续费使用 `renewal_price`（续费价格），升级使用 `price`（标准价格）
+- 🛒 **购物车使用流程**：
+  1. 免费用户点击"升级"→ 添加升级服务到购物车
+  2. 高级用户点击"续费"→ 添加续费服务到购物车
+  3. 点击购物车图标 → 查看所有商品
+  4. 点击"结算"按钮 → PayPal 一次性支付所有商品
+- 💾 **代码优化**：
+  - 移除 `closeUpgradeModal()` 函数（不再需要）
+  - 移除 `closeRenewModal()` 函数（不再需要）
+  - 简化 `showRenewModal()` 函数逻辑（直接添加到购物车）
+  - 减少 94 行冗余代码
+- ✅ **部署状态**: 已成功部署到生产环境（https://5d10a8dc.review-system.pages.dev）
 
 **V5.15.2 更新内容** (2025-11-09):
 - 🛒 **购物车系统**（核心新功能）：
