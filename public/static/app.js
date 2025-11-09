@@ -7226,13 +7226,8 @@ async function showUpgradeModal() {
 // Show renew subscription modal for premium users - Add to cart
 async function showRenewModal() {
   try {
-    // Get current user info and subscription config
-    const [userResponse, configResponse] = await Promise.all([
-      axios.get('/api/auth/settings'),
-      axios.get('/api/payment/subscription/info')
-    ]);
-    
-    const user = userResponse.data;
+    // Get subscription config
+    const configResponse = await axios.get('/api/payment/subscription/info');
     const { premium } = configResponse.data;
     
     // For renewal, use renewal_price (or fallback to regular price)
