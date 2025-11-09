@@ -7,7 +7,8 @@
 一个帮助个人和团队进行深度复盘的全栈 Web 应用系统，支持中英双语。
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
-**🌐 在线演示**: https://review-system.pages.dev
+**🌐 在线演示**: https://review-system.pages.dev  
+**💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）
 
 ## 🌟 项目概述
 
@@ -109,20 +110,21 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://54e5be9a.review-system.pages.dev
+- **最新部署 ID**: https://9fb312fe.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.10.2 - 修复团队成员编辑公开复盘权限
+- **版本**: ✅ V5.11.0 - PayPal订阅支付系统（术语更新）
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
-- **部署日期**: 2025-10-17
-- **部署时间**: 16:10 (编译时间: 1.48s)
+- **部署日期**: 2025-11-09
+- **部署时间**: 最新部署
 - **更新内容**:
-  - ✅ 修复团队成员无法编辑公开团队复盘的问题
-  - ✅ 后端API返回 is_team_member 标志
-  - ✅ 前端正确判断团队成员编辑权限
-  - ✅ 公开复盘（群体类型=团队）的团队成员现在可以看到编辑按钮
+  - ✅ 完整的PayPal订阅支付功能
+  - ✅ 订阅管理术语更新（"续约"按钮）
+  - ✅ subscription_tier显示"高级用户"/"Premium User"
+  - ✅ 管理员不显示订阅管理区域
+  - ✅ 高级用户显示续约按钮和到期日期
+  - ✅ 国际化翻译完整更新（中英双语）
   - ✅ 已推送到 GitHub 公开仓库
-  - ✅ 完整的文档和开源许可证
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -918,8 +920,8 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
-- **最后更新**: 2025-10-17
-- **当前版本**: V5.10.2（修复团队成员编辑公开复盘权限）✅ 已发布到生产环境
+- **最后更新**: 2025-11-09
+- **当前版本**: V5.11.0（PayPal订阅支付系统 - 术语更新）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -929,7 +931,31 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.10.2  
+**当前版本**: V5.11.0  
+
+**V5.11.0 更新内容** (2025-11-09):
+- 💳 **PayPal订阅支付系统术语更新**（用户体验优化）：
+  - **订阅管理显示优化**：
+    - ✅ role='admin'（管理员）不显示订阅管理区域
+    - ✅ role='premium'（高级用户）显示订阅管理
+    - ✅ subscription_tier显示为"高级用户"（中文）或"Premium User"（英文）
+    - ✅ 续约按钮文字改为"续约"（中文）/"Renew"（英文）
+    - ✅ 到期日期prominently显示
+  - **国际化翻译更新**：
+    - 新增 'premiumUser': '高级用户' / 'Premium User'
+    - 新增 'freeUser': '免费用户' / 'Free User'
+    - 修改 'renewSubscription': '续约' / 'Renew'（原为'续费订阅'/'Renew Subscription'）
+  - **数据同步**：subscription_tier始终与role字段保持同步
+  - **到期计算**：默认365天从注册日或最后支付日起算
+- 🎨 **前端UI优化**：
+  - 用户设置页面订阅管理区域根据角色智能显示/隐藏
+  - 高级用户看到完整订阅信息和续约按钮
+  - 管理员不看到订阅管理（管理员不需要订阅）
+- 📊 **后端逻辑**：
+  - 支付成功后同时更新 role='premium' 和 subscription_tier='premium'
+  - 订阅过期后同时降级 role='user' 和 subscription_tier='free'
+  - 确保两个字段永远保持一致
+- ✅ **部署状态**: 已成功部署到生产环境（https://9fb312fe.review-system.pages.dev）
 
 **V5.10.2 更新内容** (2025-10-17):
 - 🔐 **修复团队成员编辑公开复盘权限**（关键权限修复）：
