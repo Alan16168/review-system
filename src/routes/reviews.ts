@@ -104,8 +104,27 @@ reviews.get('/', async (c) => {
     `;
 
     const result = await c.env.DB.prepare(query).bind(user.id, user.id, user.id).all();
+    const reviews = result.results || [];
 
-    return c.json({ reviews: result.results || [] });
+    // For each review with team_id, check if current user is a team member
+    const reviewsWithMembership = await Promise.all(
+      reviews.map(async (review: any) => {
+        if (review.team_id) {
+          // Check if current user is a member of this team
+          const memberCheck = await c.env.DB.prepare(`
+            SELECT 1 FROM team_members 
+            WHERE team_id = ? AND user_id = ?
+          `).bind(review.team_id, user.id).first();
+          
+          review.is_team_member = !!memberCheck;
+        } else {
+          review.is_team_member = false;
+        }
+        return review;
+      })
+    );
+
+    return c.json({ reviews: reviewsWithMembership });
   } catch (error) {
     console.error('Get reviews error:', error);
     return c.json({ error: 'Internal server error' }, 500);
@@ -176,6 +195,16 @@ reviews.get('/:id', async (c) => {
       });
     });
 
+    // Check if current user is a team member
+    let is_team_member = false;
+    if (review.team_id) {
+      const memberCheck = await c.env.DB.prepare(`
+        SELECT 1 FROM team_members 
+        WHERE team_id = ? AND user_id = ?
+      `).bind(review.team_id, user.id).first();
+      is_team_member = !!memberCheck;
+    }
+
     // Get collaborators
     const collabQuery = `
       SELECT u.id, u.username, u.email, rc.can_edit
@@ -186,7 +215,10 @@ reviews.get('/:id', async (c) => {
     const collaborators = await c.env.DB.prepare(collabQuery).bind(reviewId).all();
 
     return c.json({ 
-      review,
+      review: {
+        ...review,
+        is_team_member
+      },
       questions: questionsResult.results || [],
       answersByQuestion,
       collaborators: collaborators.results || []

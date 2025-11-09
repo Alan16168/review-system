@@ -1734,13 +1734,12 @@ function canEditReview(review) {
   // Creator can edit their own review
   if (review.user_id === currentUser.id) return true;
   
-  // Team members can edit team reviews (both group_type='team' OR owner_type='team')
-  // For public reviews with team_id, check is_team_member flag from API
-  if (review.team_id) {
-    // If group_type is 'team' OR owner_type is 'team', and user is a team member
-    if ((review.group_type === 'team' || review.owner_type === 'team') && review.is_team_member) {
-      return true;
-    }
+  // Team members can edit team reviews
+  // This includes:
+  // 1. Reviews created by team (has team_id)
+  // 2. User is a member of that team (is_team_member flag from API)
+  if (review.team_id && review.is_team_member) {
+    return true;
   }
   
   return false;
@@ -5773,47 +5772,6 @@ async function showUserSettings() {
                 </button>
               </div>
             </div>
-            
-            <!-- Subscription Section (Hidden for Admins) -->
-            ${settings.role !== 'admin' ? `
-            <div class="mt-8">
-              <h3 class="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
-                <i class="fas fa-crown text-yellow-500 mr-2"></i>${i18n.t('subscriptionManagement') || '订阅管理'}
-              </h3>
-              
-              <div class="space-y-4">
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <p class="text-sm text-gray-600">${i18n.t('currentSubscription') || '当前订阅'}</p>
-                      <p class="text-xl font-bold text-gray-800">
-                        ${(settings.role === 'premium' || settings.subscription_tier === 'premium') ? i18n.t('premiumUser') || '高级用户' : i18n.t('freeUser') || '免费用户'}
-                      </p>
-                      ${((settings.role === 'premium' || settings.subscription_tier === 'premium') && settings.subscription_expires_at) ? `
-                        <p class="text-sm text-gray-600 mt-1">
-                          ${i18n.t('expiryDate') || '到期日期'}: 
-                          <span class="font-semibold">${new Date(settings.subscription_expires_at).toLocaleDateString()}</span>
-                        </p>
-                      ` : ''}
-                    </div>
-                    <div>
-                      ${(settings.role !== 'premium' && settings.subscription_tier !== 'premium') ? `
-                        <button onclick="showUpgradeModal()" 
-                                class="bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition font-semibold">
-                          <i class="fas fa-crown mr-2"></i>${i18n.t('upgradeToPremium') || '升级到高级用户'}
-                        </button>
-                      ` : (settings.role === 'premium' || settings.subscription_tier === 'premium') ? `
-                        <button onclick="showRenewModal()" 
-                                class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition font-semibold">
-                          <i class="fas fa-sync-alt mr-2"></i>${i18n.t('renewSubscription') || '续约'}
-                        </button>
-                      ` : ''}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            ` : ''}
             
             <!-- Password Change Section -->
             <div class="mt-8">
