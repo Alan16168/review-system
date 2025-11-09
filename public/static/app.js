@@ -2584,6 +2584,19 @@ async function printReview(reviewId) {
             display: inline-block;
             width: 100px;
           }
+          .description-section {
+            background: #EEF2FF;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #6366F1;
+          }
+          .description-content {
+            color: #374151;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            margin-top: 10px;
+          }
           .question {
             background: #F9FAFB;
             padding: 15px;
@@ -2649,7 +2662,7 @@ async function printReview(reviewId) {
           </div>
           <div class="meta-item">
             <span class="meta-label">${i18n.t('type')}:</span>
-            <span>${i18n.t(review.review_type)}</span>
+            <span>${review.group_type ? i18n.t(review.group_type) : 'undefined'}</span>
           </div>
           <div class="meta-item">
             <span class="meta-label">${i18n.t('createdAt')}:</span>
@@ -2660,6 +2673,13 @@ async function printReview(reviewId) {
             <span>${new Date(review.updated_at).toLocaleString()}</span>
           </div>
         </div>
+        
+        ${review.template_description ? `
+        <div class="description-section">
+          <h2>${i18n.t('reviewDescription') || '复盘说明'}</h2>
+          <div class="description-content">${review.template_description}</div>
+        </div>
+        ` : ''}
     `;
     
     // Add questions and answers
@@ -2669,13 +2689,13 @@ async function printReview(reviewId) {
           <div class="question-title">${index + 1}. ${question.question_text}</div>
       `;
       
-      const answers = answersByQuestion[question.id] || [];
+      const answers = answersByQuestion[question.question_number] || [];
       if (answers.length > 0) {
         answers.forEach(answer => {
           printContent += `
             <div class="answer">
-              ${answer.user_name ? `<div class="answer-header"><strong>${answer.user_name}</strong> - ${new Date(answer.created_at).toLocaleString()}</div>` : ''}
-              <div>${answer.answer_text || i18n.t('noAnswer')}</div>
+              ${answer.username ? `<div class="answer-header"><strong>${answer.username}</strong> - ${new Date(answer.updated_at).toLocaleString()}</div>` : ''}
+              <div>${answer.answer || i18n.t('noAnswer')}</div>
             </div>
           `;
         });
