@@ -477,7 +477,7 @@ admin.get('/subscription/config', async (c) => {
 admin.put('/subscription/config/:tier', async (c) => {
   try {
     const tier = c.req.param('tier');
-    const { price_usd, duration_days, description, description_en, is_active } = await c.req.json();
+    const { price_usd, renewal_price_usd, duration_days, description, description_en, is_active } = await c.req.json();
     
     if (!price_usd || !duration_days) {
       return c.json({ error: 'Price and duration are required' }, 400);
@@ -486,6 +486,7 @@ admin.put('/subscription/config/:tier', async (c) => {
     await c.env.DB.prepare(`
       UPDATE subscription_config 
       SET price_usd = ?,
+          renewal_price_usd = ?,
           duration_days = ?,
           description = ?,
           description_en = ?,
@@ -494,6 +495,7 @@ admin.put('/subscription/config/:tier', async (c) => {
       WHERE tier = ?
     `).bind(
       price_usd,
+      renewal_price_usd || price_usd,
       duration_days,
       description || null,
       description_en || null,

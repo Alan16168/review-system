@@ -7406,12 +7406,23 @@ async function showSubscriptionManagement(container) {
         </h3>
         <div class="bg-white rounded-lg shadow p-6">
           <form onsubmit="handleUpdateSubscriptionConfig(event)" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('annualPrice') || '年费价格（美元）'}
-              </label>
-              <input type="number" step="0.01" id="premium-price" value="${premiumConfig?.price_usd || 20}" 
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('annualPrice') || '高级用户年费（美元）'}
+                </label>
+                <input type="number" step="0.01" id="premium-price" value="${premiumConfig?.price_usd || 20}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <p class="text-xs text-gray-500 mt-1">${i18n.t('newUserUpgradePrice') || '新用户升级价格'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('renewalPrice') || '高级用户续费费用（美元）'}
+                </label>
+                <input type="number" step="0.01" id="renewal-price" value="${premiumConfig?.renewal_price_usd || 20}" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <p class="text-xs text-gray-500 mt-1">${i18n.t('existingUserRenewalPrice') || '现有用户续费价格'}</p>
+              </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -7474,10 +7485,12 @@ async function handleUpdateSubscriptionConfig(e) {
   
   try {
     const price = document.getElementById('premium-price').value;
+    const renewalPrice = document.getElementById('renewal-price').value;
     const duration = document.getElementById('premium-duration').value;
     
     await axios.put('/api/admin/subscription/config/premium', {
       price_usd: parseFloat(price),
+      renewal_price_usd: parseFloat(renewalPrice),
       duration_days: parseInt(duration),
       description: '高级用户年费',
       description_en: 'Premium Annual Subscription',
@@ -7485,6 +7498,8 @@ async function handleUpdateSubscriptionConfig(e) {
     });
     
     showNotification(i18n.t('updateSuccess') || '更新成功', 'success');
+    // Refresh the page to show updated values
+    showAdmin();
   } catch (error) {
     console.error('Update subscription config error:', error);
     showNotification(i18n.t('operationFailed') || '操作失败', 'error');

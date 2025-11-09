@@ -194,7 +194,10 @@ const translations = {
     'subscriptionManagement': '订阅管理',
     'pricingSettings': '价格设置',
     'updatePricing': '更新价格',
-    'annualPrice': '年费价格（美元）',
+    'annualPrice': '高级用户年费（美元）',
+    'renewalPrice': '高级用户续费费用（美元）',
+    'newUserUpgradePrice': '新用户升级价格',
+    'existingUserRenewalPrice': '现有用户续费价格',
     'duration': '时长（天）',
     'upgradeAccount': '升级账户',
     'upgradeToPremiumDesc': '升级到高级用户可以创建团队、邀请成员、进行团队协作复盘',
@@ -751,7 +754,10 @@ const translations = {
     'createCustomTemplates': 'Create Custom Templates',
     'pricingSettings': 'Pricing Settings',
     'updatePricing': 'Update Pricing',
-    'annualPrice': 'Annual Price (USD)',
+    'annualPrice': 'Premium Annual Fee (USD)',
+    'renewalPrice': 'Premium Renewal Fee (USD)',
+    'newUserUpgradePrice': 'New User Upgrade Price',
+    'existingUserRenewalPrice': 'Existing User Renewal Price',
     'duration': 'Duration (Days)',
     
     // Admin Panel
