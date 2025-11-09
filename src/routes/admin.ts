@@ -459,4 +459,74 @@ admin.post('/test-email', async (c) => {
   }
 });
 
+// Get subscription configuration
+admin.get('/subscription/config', async (c) => {
+  try {
+    const configs = await c.env.DB.prepare(
+      'SELECT * FROM subscription_config ORDER BY tier'
+    ).all();
+    
+    return c.json({ configs: configs.results || [] });
+  } catch (error) {
+    console.error('Get subscription config error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Update subscription configuration
+admin.put('/subscription/config/:tier', async (c) => {
+  try {
+    const tier = c.req.param('tier');
+    const { price_usd, duration_days, description, description_en, is_active } = await c.req.json();
+    
+    if (!price_usd || !duration_days) {
+      return c.json({ error: 'Price and duration are required' }, 400);
+    }
+    
+    await c.env.DB.prepare(`
+      UPDATE subscription_config 
+      SET price_usd = ?,
+          duration_days = ?,
+          description = ?,
+          description_en = ?,
+          is_active = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE tier = ?
+    `).bind(
+      price_usd,
+      duration_days,
+      description || null,
+      description_en || null,
+      is_active !== undefined ? is_active : 1,
+      tier
+    ).run();
+    
+    return c.json({ message: 'Subscription config updated successfully' });
+  } catch (error) {
+    console.error('Update subscription config error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Get all payments (admin view)
+admin.get('/payments', async (c) => {
+  try {
+    const payments = await c.env.DB.prepare(`
+      SELECT 
+        p.id, p.user_id, p.amount_usd, p.currency, p.payment_method,
+        p.payment_status, p.subscription_tier, p.subscription_duration_days,
+        p.created_at, p.completed_at,
+        u.email, u.username
+      FROM payments p
+      LEFT JOIN users u ON p.user_id = u.id
+      ORDER BY p.created_at DESC
+    `).all();
+    
+    return c.json({ payments: payments.results || [] });
+  } catch (error) {
+    console.error('Get payments error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 export default admin;

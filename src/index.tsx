@@ -9,6 +9,7 @@ import notifications from './routes/notifications';
 import resources from './routes/resources';
 import templates from './routes/templates';
 import testimonials from './routes/testimonials';
+import payment from './routes/payment';
 
 type Bindings = {
   DB: D1Database;
@@ -19,6 +20,9 @@ type Bindings = {
   GOOGLE_CLIENT_SECRET?: string;
   RESEND_API_KEY?: string;
   APP_URL?: string;
+  PAYPAL_CLIENT_ID?: string;
+  PAYPAL_CLIENT_SECRET?: string;
+  PAYPAL_MODE?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -38,6 +42,7 @@ app.route('/api/notifications', notifications);
 app.route('/api/resources', resources);
 app.route('/api/templates', templates);
 app.route('/api/testimonials', testimonials);
+app.route('/api/payment', payment);
 
 // Main page - Login/Dashboard
 app.get('/', (c) => {
@@ -53,6 +58,8 @@ app.get('/', (c) => {
         <link href="/static/styles.css" rel="stylesheet">
         <!-- Google Sign-In -->
         <script src="https://accounts.google.com/gsi/client" async defer></script>
+        <!-- PayPal SDK - Replace with your Client ID -->
+        <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD" data-sdk-integration-source="button-factory"></script>
     </head>
     <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
         <div id="app"></div>

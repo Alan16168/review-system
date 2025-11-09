@@ -272,6 +272,15 @@ async function showHomePage() {
                   <i class="fas fa-user mr-1"></i>${escapeHtml(currentUser.username)}
                   <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
                 </button>
+                ${currentUser.role === 'user' ? `
+                  <button onclick="showUpgradeModal()" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition">
+                    <i class="fas fa-crown mr-1"></i>${i18n.t('upgrade') || '升级'}
+                  </button>
+                ` : currentUser.role === 'premium' ? `
+                  <button onclick="showRenewModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                    <i class="fas fa-sync-alt mr-1"></i>${i18n.t('renewSubscription') || '续费'}
+                  </button>
+                ` : ''}
                 <button onclick="logout()" class="text-red-600 hover:text-red-800">
                   <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
                 </button>
@@ -4206,6 +4215,11 @@ async function showAdmin() {
                         data-tab="publicReviews">
                   <i class="fas fa-globe mr-2"></i>${i18n.t('publicReviewsManagement') || '公开复盘管理'}
                 </button>
+                <button onclick="showAdminTab('subscription')" 
+                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
+                        data-tab="subscription">
+                  <i class="fas fa-credit-card mr-2"></i>${i18n.t('subscriptionManagement') || '订阅管理'}
+                </button>
               ` : ''}
             </nav>
           </div>
@@ -4270,6 +4284,9 @@ async function showAdminTab(tab) {
       break;
     case 'publicReviews':
       await showPublicReviewsManagement(content);
+      break;
+    case 'subscription':
+      await showSubscriptionManagement(content);
       break;
   }
 }
@@ -7090,5 +7107,305 @@ async function adminDeletePublicReview(reviewId) {
   } catch (error) {
     console.error('Failed to delete review:', error);
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// ==================== Payment & Subscription Functions ====================
+
+// Show upgrade modal for free users
+async function showUpgradeModal() {
+  try {
+    // Get subscription info
+    const response = await axios.get('/api/payment/subscription/info');
+    const { premium } = response.data;
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-crown text-yellow-500 mr-2"></i>
+          ${i18n.t('upgradeToPremium') || '升级到高级用户'}
+        </h2>
+        <div class="mb-6">
+          <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-6 mb-4">
+            <div class="text-center mb-4">
+              <div class="text-4xl font-bold text-gray-800">
+                $${premium.price}
+              </div>
+              <div class="text-sm text-gray-600">${i18n.t('pricePerYear') || '每年'}</div>
+            </div>
+            <div class="text-sm text-gray-700">
+              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('createTeam') || '创建团队'}</p>
+              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('unlimitedReviews') || '无限复盘'}</p>
+              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('customTemplates') || '自定义模板'}</p>
+              <p><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('prioritySupport') || '优先支持'}</p>
+            </div>
+          </div>
+          <div id="paypal-button-container" class="mb-4"></div>
+        </div>
+        <button onclick="closeUpgradeModal()" class="w-full px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+          ${i18n.t('cancel') || '取消'}
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    window.currentUpgradeModal = modal;
+    
+    // Initialize PayPal button
+    if (window.paypal) {
+      paypal.Buttons({
+        createOrder: async () => {
+          try {
+            const orderResponse = await axios.post('/api/payment/subscription/create-order', {
+              tier: 'premium'
+            });
+            return orderResponse.data.orderId;
+          } catch (error) {
+            console.error('Create order error:', error);
+            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+            throw error;
+          }
+        },
+        onApprove: async (data) => {
+          try {
+            showNotification(i18n.t('processingPayment') || '正在处理支付...', 'info');
+            
+            const captureResponse = await axios.post('/api/payment/subscription/capture-order', {
+              orderId: data.orderID
+            });
+            
+            showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
+            closeUpgradeModal();
+            
+            // Reload page to update user status
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } catch (error) {
+            console.error('Capture order error:', error);
+            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+          }
+        },
+        onError: (err) => {
+          console.error('PayPal error:', err);
+          showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+        }
+      }).render('#paypal-button-container');
+    }
+  } catch (error) {
+    console.error('Show upgrade modal error:', error);
+    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+  }
+}
+
+function closeUpgradeModal() {
+  if (window.currentUpgradeModal) {
+    window.currentUpgradeModal.remove();
+    window.currentUpgradeModal = null;
+  }
+}
+
+// Show renew subscription modal for premium users
+async function showRenewModal() {
+  try {
+    // Get subscription info
+    const response = await axios.get('/api/payment/subscription/info');
+    const { premium, expiresAt } = response.data;
+    
+    const expiryDate = expiresAt ? new Date(expiresAt).toLocaleDateString() : 'N/A';
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-sync-alt text-blue-500 mr-2"></i>
+          ${i18n.t('renewSubscription') || '续费订阅'}
+        </h2>
+        <div class="mb-6">
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p class="text-sm text-gray-700 mb-2">
+              <strong>${i18n.t('subscriptionExpires') || '订阅到期'}:</strong> ${expiryDate}
+            </p>
+          </div>
+          <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-6 mb-4">
+            <div class="text-center mb-4">
+              <div class="text-4xl font-bold text-gray-800">
+                $${premium.price}
+              </div>
+              <div class="text-sm text-gray-600">${i18n.t('pricePerYear') || '每年'}</div>
+            </div>
+            <div class="text-xs text-gray-600 text-center">
+              ${i18n.t('renewDescription') || '续费将延长您的高级会员资格一年'}
+            </div>
+          </div>
+          <div id="paypal-button-container-renew" class="mb-4"></div>
+        </div>
+        <button onclick="closeRenewModal()" class="w-full px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+          ${i18n.t('cancel') || '取消'}
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    window.currentRenewModal = modal;
+    
+    // Initialize PayPal button
+    if (window.paypal) {
+      paypal.Buttons({
+        createOrder: async () => {
+          try {
+            const orderResponse = await axios.post('/api/payment/subscription/create-order', {
+              tier: 'premium'
+            });
+            return orderResponse.data.orderId;
+          } catch (error) {
+            console.error('Create order error:', error);
+            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+            throw error;
+          }
+        },
+        onApprove: async (data) => {
+          try {
+            showNotification(i18n.t('processingPayment') || '正在处理支付...', 'info');
+            
+            const captureResponse = await axios.post('/api/payment/subscription/capture-order', {
+              orderId: data.orderID
+            });
+            
+            showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
+            closeRenewModal();
+            
+            // Reload page to update subscription status
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } catch (error) {
+            console.error('Capture order error:', error);
+            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+          }
+        },
+        onError: (err) => {
+          console.error('PayPal error:', err);
+          showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+        }
+      }).render('#paypal-button-container-renew');
+    }
+  } catch (error) {
+    console.error('Show renew modal error:', error);
+    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+  }
+}
+
+function closeRenewModal() {
+  if (window.currentRenewModal) {
+    window.currentRenewModal.remove();
+    window.currentRenewModal = null;
+  }
+}
+
+// Show subscription management page (in admin panel for subscription settings)
+async function showSubscriptionManagement(container) {
+  try {
+    // Get subscription config
+    const configResponse = await axios.get('/api/admin/subscription/config');
+    const configs = configResponse.data.configs || [];
+    const premiumConfig = configs.find(c => c.tier === 'premium');
+    
+    // Get payments
+    const paymentsResponse = await axios.get('/api/admin/payments');
+    const payments = paymentsResponse.data.payments || [];
+    
+    container.innerHTML = `
+      <div class="mb-8">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-cog mr-2"></i>${i18n.t('pricingSettings') || '价格设置'}
+        </h3>
+        <div class="bg-white rounded-lg shadow p-6">
+          <form onsubmit="handleUpdateSubscriptionConfig(event)" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('annualPrice') || '年费价格（美元）'}
+              </label>
+              <input type="number" step="0.01" id="premium-price" value="${premiumConfig?.price_usd || 20}" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('duration') || '时长（天）'}
+              </label>
+              <input type="number" id="premium-duration" value="${premiumConfig?.duration_days || 365}" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <button type="submit" class="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+              <i class="fas fa-save mr-2"></i>${i18n.t('updatePricing') || '更新价格'}
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <div>
+        <h3 class="text-xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-receipt mr-2"></i>${i18n.t('paymentHistory') || '支付历史'}
+        </h3>
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('user') || '用户'}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('amount') || '金额'}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('status') || '状态'}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('paymentDate') || '支付日期'}</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${payments.map(p => `
+                <tr>
+                  <td class="px-6 py-4 text-sm text-gray-900">${p.username || p.email}</td>
+                  <td class="px-6 py-4 text-sm text-gray-900">$${p.amount_usd}</td>
+                  <td class="px-6 py-4 text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full ${
+                      p.payment_status === 'completed' ? 'bg-green-100 text-green-800' : 
+                      p.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                      'bg-red-100 text-red-800'
+                    }">
+                      ${p.payment_status}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500">${new Date(p.created_at).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Show subscription management error:', error);
+    container.innerHTML = `<p class="text-red-500">${i18n.t('operationFailed') || '操作失败'}</p>`;
+  }
+}
+
+async function handleUpdateSubscriptionConfig(e) {
+  e.preventDefault();
+  
+  try {
+    const price = document.getElementById('premium-price').value;
+    const duration = document.getElementById('premium-duration').value;
+    
+    await axios.put('/api/admin/subscription/config/premium', {
+      price_usd: parseFloat(price),
+      duration_days: parseInt(duration),
+      description: '高级用户年费',
+      description_en: 'Premium Annual Subscription',
+      is_active: 1
+    });
+    
+    showNotification(i18n.t('updateSuccess') || '更新成功', 'success');
+  } catch (error) {
+    console.error('Update subscription config error:', error);
+    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
   }
 }
