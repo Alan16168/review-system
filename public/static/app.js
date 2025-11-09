@@ -5774,7 +5774,8 @@ async function showUserSettings() {
               </div>
             </div>
             
-            <!-- Subscription Section -->
+            <!-- Subscription Section (Hidden for Admins) -->
+            ${settings.role !== 'admin' ? `
             <div class="mt-8">
               <h3 class="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
                 <i class="fas fa-crown text-yellow-500 mr-2"></i>${i18n.t('subscriptionManagement') || '订阅管理'}
@@ -5796,7 +5797,7 @@ async function showUserSettings() {
                       ` : ''}
                     </div>
                     <div>
-                      ${(settings.role !== 'premium' && settings.subscription_tier !== 'premium' && settings.role !== 'admin') ? `
+                      ${(settings.role !== 'premium' && settings.subscription_tier !== 'premium') ? `
                         <button onclick="showUpgradeModal()" 
                                 class="bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition font-semibold">
                           <i class="fas fa-crown mr-2"></i>${i18n.t('upgradeToPremium') || '升级到高级用户'}
@@ -5812,6 +5813,7 @@ async function showUserSettings() {
                 </div>
               </div>
             </div>
+            ` : ''}
             
             <!-- Password Change Section -->
             <div class="mt-8">
