@@ -50,6 +50,9 @@ app.route('/api/cart', cart);
 
 // Main page - Login/Dashboard
 app.get('/', (c) => {
+  // Get PayPal Client ID from environment variables
+  const paypalClientId = c.env.PAYPAL_CLIENT_ID || 'YOUR_PAYPAL_CLIENT_ID';
+  
   return c.html(`
     <!DOCTYPE html>
     <html lang="zh-CN">
@@ -62,8 +65,8 @@ app.get('/', (c) => {
         <link href="/static/styles.css" rel="stylesheet">
         <!-- Google Sign-In -->
         <script src="https://accounts.google.com/gsi/client" async defer></script>
-        <!-- PayPal SDK - Replace with your Client ID -->
-        <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID&currency=USD" data-sdk-integration-source="button-factory"></script>
+        <!-- PayPal SDK - Client ID from environment variables -->
+        <script src="https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=USD" data-sdk-integration-source="button-factory"></script>
     </head>
     <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
         <div id="app"></div>
