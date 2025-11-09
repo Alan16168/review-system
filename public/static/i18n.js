@@ -195,6 +195,10 @@ const translations = {
     'updatePricing': '更新价格',
     'annualPrice': '年费价格（美元）',
     'duration': '时长（天）',
+    'upgradeAccount': '升级账户',
+    'upgradeToPremiumDesc': '升级到高级用户可以创建团队、邀请成员、进行团队协作复盘',
+    'upgradeToPremiumConfirm': '升级到高级用户后，您将获得创建团队、邀请成员等高级功能。\n\n请联系管理员进行账户升级。',
+    'contactAdminForUpgrade': '请联系管理员升级您的账户',
     
     // Admin Panel
     'adminPanel': '管理面板',
@@ -713,6 +717,10 @@ const translations = {
     'status': 'Status',
     'paymentDate': 'Payment Date',
     'subscriptionManagement': 'Subscription Management',
+    'upgradeAccount': 'Upgrade Account',
+    'upgradeToPremiumDesc': 'Upgrade to Premium to create teams, invite members, and collaborate on reviews',
+    'upgradeToPremiumConfirm': 'Upgrading to Premium will give you access to create teams, invite members, and more advanced features.\n\nPlease contact the administrator to upgrade your account.',
+    'contactAdminForUpgrade': 'Please contact the administrator to upgrade your account',
     'pricingSettings': 'Pricing Settings',
     'updatePricing': 'Update Pricing',
     'annualPrice': 'Annual Price (USD)',

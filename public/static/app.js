@@ -5773,6 +5773,37 @@ async function showUserSettings() {
               </div>
             </div>
             
+            <!-- User Upgrade Section (Only for role='user') -->
+            ${settings.role === 'user' ? `
+            <div class="mt-8">
+              <h3 class="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                <i class="fas fa-user-plus text-purple-500 mr-2"></i>${i18n.t('userManagement') || '用户管理'}
+              </h3>
+              
+              <div class="space-y-4">
+                <div class="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                      <p class="text-sm text-gray-600 mb-1">${i18n.t('currentPlan') || '当前方案'}</p>
+                      <p class="text-2xl font-bold text-gray-800 mb-2">
+                        <i class="fas fa-user-circle text-gray-500 mr-2"></i>${i18n.t('freeUser') || '免费用户'}
+                      </p>
+                      <p class="text-sm text-gray-600">
+                        ${i18n.t('upgradeToPremiumDesc') || '升级到高级用户可以创建团队、邀请成员、进行团队协作复盘'}
+                      </p>
+                    </div>
+                    <div class="ml-6">
+                      <button onclick="handleUpgradeToPremium()" 
+                              class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-semibold shadow-lg transform hover:scale-105">
+                        <i class="fas fa-crown mr-2"></i>${i18n.t('upgradeAccount') || '升级账户'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            ` : ''}
+            
             <!-- Password Change Section -->
             <div class="mt-8">
               <h3 class="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
@@ -5913,6 +5944,19 @@ async function handleChangePasswordFromSettings() {
   } catch (error) {
     console.error('Change password error:', error);
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Handle upgrade to premium account
+async function handleUpgradeToPremium() {
+  // Show confirmation dialog
+  const message = i18n.t('upgradeToPremiumConfirm') || '升级到高级用户后，您将获得创建团队、邀请成员等高级功能。\n\n请联系管理员进行账户升级。';
+  
+  if (confirm(message)) {
+    showNotification(i18n.t('contactAdminForUpgrade') || '请联系管理员升级您的账户', 'info');
+    
+    // Optionally, could send a notification to admin or open a contact form
+    // For now, just show an informational message
   }
 }
 
