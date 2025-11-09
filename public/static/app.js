@@ -5787,7 +5787,7 @@ async function showUserSettings() {
                     <div>
                       <p class="text-sm text-gray-600">${i18n.t('currentSubscription') || '当前订阅'}</p>
                       <p class="text-xl font-bold text-gray-800">
-                        ${(settings.role === 'premium' || settings.subscription_tier === 'premium') ? i18n.t('premiumPlan') || '高级用户' : i18n.t('freePlan') || '免费用户'}
+                        ${(settings.role === 'premium' || settings.subscription_tier === 'premium') ? i18n.t('premiumUser') || '高级用户' : i18n.t('freeUser') || '免费用户'}
                       </p>
                       ${((settings.role === 'premium' || settings.subscription_tier === 'premium') && settings.subscription_expires_at) ? `
                         <p class="text-sm text-gray-600 mt-1">
@@ -5805,7 +5805,7 @@ async function showUserSettings() {
                       ` : (settings.role === 'premium' || settings.subscription_tier === 'premium') ? `
                         <button onclick="showRenewModal()" 
                                 class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition font-semibold">
-                          <i class="fas fa-sync-alt mr-2"></i>${i18n.t('renewSubscription') || '续费订阅'}
+                          <i class="fas fa-sync-alt mr-2"></i>${i18n.t('renewSubscription') || '续约'}
                         </button>
                       ` : ''}
                     </div>
