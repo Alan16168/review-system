@@ -110,20 +110,18 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://9fb312fe.review-system.pages.dev
+- **最新部署 ID**: https://ad35b6f0.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.11.0 - PayPal订阅支付系统（术语更新）
+- **版本**: ✅ V5.12.0 - 团队成员权限修复
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-09
 - **部署时间**: 最新部署
 - **更新内容**:
-  - ✅ 完整的PayPal订阅支付功能
-  - ✅ 订阅管理术语更新（"续约"按钮）
-  - ✅ subscription_tier显示"高级用户"/"Premium User"
-  - ✅ 管理员不显示订阅管理区域
-  - ✅ 高级用户显示续约按钮和到期日期
-  - ✅ 国际化翻译完整更新（中英双语）
+  - ✅ 删除所有订阅管理功能（用户设置页面不再显示订阅区域）
+  - ✅ 修正团队成员权限：团队成员现在可以编辑、查看和打印团队创建的review
+  - ✅ 后端API增强：GET /api/reviews 和 GET /api/reviews/:id 返回 is_team_member 标志
+  - ✅ 前端权限检查简化：team_id + is_team_member = 可编辑
   - ✅ 已推送到 GitHub 公开仓库
 
 ### 开发环境
@@ -921,7 +919,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-09
-- **当前版本**: V5.11.0（PayPal订阅支付系统 - 术语更新）✅ 已发布到生产环境
+- **当前版本**: V5.12.0（删除订阅管理 + 团队成员权限修复）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -931,7 +929,34 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.11.0  
+**当前版本**: V5.12.0  
+
+**V5.12.0 更新内容** (2025-11-09):
+- 🗑️ **删除订阅管理功能**（用户要求）：
+  - 完全移除用户设置页面的订阅管理区域
+  - 移除升级、续约按钮和订阅信息显示
+  - 简化用户设置界面，只保留账号设置和密码管理
+- 👥 **修正团队成员权限**（核心Bug修复）：
+  - **问题**: 团队成员无法编辑、查看和打印团队创建的review
+  - **根本原因**: 前端权限检查逻辑过于复杂，依赖group_type和owner_type
+  - **解决方案**:
+    1. **后端API增强**: 
+       - GET /api/reviews 返回每个review的 is_team_member 标志
+       - GET /api/reviews/:id 返回 is_team_member 标志
+       - GET /api/reviews/public 已有 is_team_member 标志
+    2. **前端权限简化**:
+       - canEditReview() 逻辑简化为: 管理员 OR 创建者 OR (有team_id且is_team_member)
+       - 移除对group_type和owner_type的复杂判断
+       - 统一使用is_team_member标志判断团队成员身份
+  - **修复效果**:
+    - ✅ 团队成员现在可以编辑团队的review（显示编辑按钮）
+    - ✅ 团队成员可以查看团队的review详情
+    - ✅ 团队成员可以打印团队的review
+    - ✅ 权限逻辑统一，不再有边界情况
+- 📊 **数据库查询优化**: 
+  - 所有review列表查询统一添加团队成员检查
+  - 使用Promise.all并行查询，提升性能
+- ✅ **部署状态**: 已成功部署到生产环境（https://ad35b6f0.review-system.pages.dev）
 
 **V5.11.0 更新内容** (2025-11-09):
 - 💳 **PayPal订阅支付系统术语更新**（用户体验优化）：
