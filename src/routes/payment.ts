@@ -311,3 +311,232 @@ payment.get('/history', async (c) => {
 });
 
 export default payment;
+
+// ============ Cart Payment Endpoints ============
+
+// Create PayPal order for cart items
+payment.post('/cart/create-order', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const { items } = await c.req.json();
+    
+    if (!items || items.length === 0) {
+      return c.json({ error: 'Cart is empty' }, 400);
+    }
+    
+    // Calculate total
+    const total = items.reduce((sum: number, item: any) => sum + parseFloat(item.price_usd), 0);
+    
+    // Get PayPal credentials
+    const clientId = c.env.PAYPAL_CLIENT_ID;
+    const clientSecret = c.env.PAYPAL_CLIENT_SECRET;
+    const mode = c.env.PAYPAL_MODE || 'sandbox';
+    
+    if (!clientId || !clientSecret) {
+      return c.json({ error: 'PayPal not configured' }, 500);
+    }
+    
+    // Get access token
+    const accessToken = await getPayPalAccessToken(clientId, clientSecret, mode);
+    
+    // Create order
+    const base = mode === 'live' 
+      ? 'https://api-m.paypal.com'
+      : 'https://api-m.sandbox.paypal.com';
+    
+    const orderData = {
+      intent: 'CAPTURE',
+      purchase_units: [{
+        amount: {
+          currency_code: 'USD',
+          value: total.toFixed(2),
+          breakdown: {
+            item_total: {
+              currency_code: 'USD',
+              value: total.toFixed(2)
+            }
+          }
+        },
+        items: items.map((item: any) => ({
+          name: item.item_type === 'upgrade' ? 'Premium Upgrade' : 'Premium Renewal',
+          description: `${item.duration_days} days subscription`,
+          unit_amount: {
+            currency_code: 'USD',
+            value: parseFloat(item.price_usd).toFixed(2)
+          },
+          quantity: '1'
+        }))
+      }]
+    };
+    
+    const orderResponse = await fetch(`${base}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(orderData),
+    });
+    
+    const order = await orderResponse.json();
+    
+    if (!orderResponse.ok) {
+      console.error('PayPal create order error:', order);
+      return c.json({ error: 'Failed to create PayPal order' }, 500);
+    }
+    
+    // Save payment records for each item
+    for (const item of items) {
+      await c.env.DB.prepare(`
+        INSERT INTO payments (
+          user_id, amount_usd, currency, payment_method, payment_status,
+          paypal_order_id, subscription_tier, subscription_duration_days,
+          transaction_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        user.id,
+        parseFloat(item.price_usd),
+        'USD',
+        'paypal',
+        'pending',
+        order.id,
+        item.tier,
+        item.duration_days,
+        JSON.stringify({ cart_item_id: item.id, item_type: item.item_type })
+      ).run();
+    }
+    
+    return c.json({ orderId: order.id });
+  } catch (error) {
+    console.error('Create cart order error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Capture PayPal order for cart
+payment.post('/cart/capture-order', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const { orderId } = await c.req.json();
+    
+    if (!orderId) {
+      return c.json({ error: 'Order ID is required' }, 400);
+    }
+    
+    // Get PayPal credentials
+    const clientId = c.env.PAYPAL_CLIENT_ID;
+    const clientSecret = c.env.PAYPAL_CLIENT_SECRET;
+    const mode = c.env.PAYPAL_MODE || 'sandbox';
+    
+    // Get access token
+    const accessToken = await getPayPalAccessToken(clientId, clientSecret, mode);
+    
+    // Capture order
+    const base = mode === 'live' 
+      ? 'https://api-m.paypal.com'
+      : 'https://api-m.sandbox.paypal.com';
+    
+    const captureResponse = await fetch(`${base}/v2/checkout/orders/${orderId}/capture`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    const captureData = await captureResponse.json();
+    
+    if (!captureResponse.ok) {
+      console.error('PayPal capture error:', captureData);
+      
+      // Update payment status to failed
+      await c.env.DB.prepare(`
+        UPDATE payments 
+        SET payment_status = 'failed',
+            transaction_data = ?
+        WHERE paypal_order_id = ? AND user_id = ?
+      `).bind(
+        JSON.stringify(captureData),
+        orderId,
+        user.id
+      ).run();
+      
+      return c.json({ error: 'Payment capture failed' }, 500);
+    }
+    
+    // Get payment records
+    const payments: any = await c.env.DB.prepare(`
+      SELECT * FROM payments 
+      WHERE paypal_order_id = ? AND user_id = ?
+    `).bind(orderId, user.id).all();
+    
+    if (!payments.results || payments.results.length === 0) {
+      return c.json({ error: 'Payment record not found' }, 404);
+    }
+    
+    // Get payer info
+    const payerId = captureData.payer?.payer_id || null;
+    
+    // Process each payment (upgrade or renewal)
+    let newExpiryDate: Date | null = null;
+    
+    for (const payment of payments.results) {
+      // Update payment status
+      await c.env.DB.prepare(`
+        UPDATE payments 
+        SET payment_status = 'completed',
+            paypal_payer_id = ?,
+            completed_at = CURRENT_TIMESTAMP,
+            transaction_data = ?
+        WHERE id = ?
+      `).bind(
+        payerId,
+        JSON.stringify(captureData),
+        payment.id
+      ).run();
+      
+      // Update user subscription
+      const txData = JSON.parse(payment.transaction_data || '{}');
+      const isRenewal = txData.item_type === 'renewal';
+      
+      // Get current user data
+      const currentUser: any = await c.env.DB.prepare(`
+        SELECT subscription_expires_at FROM users WHERE id = ?
+      `).bind(user.id).first();
+      
+      // Calculate new expiry date
+      const currentExpiry = currentUser.subscription_expires_at 
+        ? new Date(currentUser.subscription_expires_at)
+        : new Date();
+      
+      const startDate = (isRenewal && currentExpiry > new Date()) 
+        ? currentExpiry 
+        : new Date();
+      
+      newExpiryDate = new Date(startDate.getTime() + payment.subscription_duration_days * 24 * 60 * 60 * 1000);
+    }
+    
+    // Update user role and subscription
+    if (newExpiryDate) {
+      await c.env.DB.prepare(`
+        UPDATE users 
+        SET subscription_tier = 'premium',
+            subscription_expires_at = ?,
+            role = 'premium',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(
+        newExpiryDate.toISOString(),
+        user.id
+      ).run();
+    }
+    
+    return c.json({ 
+      message: 'Payment successful',
+      subscription_expires_at: newExpiryDate?.toISOString()
+    });
+  } catch (error) {
+    console.error('Capture cart order error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});

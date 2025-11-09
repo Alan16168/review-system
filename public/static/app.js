@@ -3449,6 +3449,10 @@ function renderNavigation() {
               <i class="fas fa-language mr-1"></i>
               ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
             </button>
+            <button onclick="showCart()" class="relative text-gray-700 hover:text-indigo-600">
+              <i class="fas fa-shopping-cart text-xl"></i>
+              <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+            </button>
             <button onclick="showUserSettings()" class="text-gray-700 hover:text-indigo-600 cursor-pointer">
               <i class="fas fa-user mr-1"></i>${currentUser.username}
               <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
@@ -7187,97 +7191,33 @@ async function showUpgradeModal() {
     const { premium } = configResponse.data;
     const isRenewal = user.role === 'premium';
     
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">
-          <i class="fas ${isRenewal ? 'fa-sync-alt text-green-500' : 'fa-crown text-yellow-500'} mr-2"></i>
-          ${isRenewal ? (i18n.t('renewSubscription') || '续费订阅') : (i18n.t('upgradeToPremium') || '升级到高级用户')}
-        </h2>
-        <div class="mb-6">
-          ${isRenewal ? `
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <p class="text-sm text-gray-700 mb-2">
-                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                ${i18n.t('currentExpiryDate') || '当前到期日期'}: <strong>${user.subscription_expires_at ? new Date(user.subscription_expires_at).toLocaleDateString() : 'N/A'}</strong>
-              </p>
-              <p class="text-sm text-gray-600">
-                ${i18n.t('renewalExtendsBy365Days') || '续费将延长365天有效期'}
-              </p>
-            </div>
-          ` : ''}
-          <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-6 mb-4">
-            <div class="text-center mb-4">
-              <div class="text-4xl font-bold text-gray-800">
-                $${premium.price}
-              </div>
-              <div class="text-sm text-gray-600">${i18n.t('per365Days') || '365天'}</div>
-            </div>
-            ${!isRenewal ? `
-            <div class="text-sm text-gray-700">
-              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('createTeams') || '创建团队'}</p>
-              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('inviteMembers') || '邀请成员'}</p>
-              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('teamCollaboration') || '团队协作复盘'}</p>
-              <p><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('createCustomTemplates') || '创建自定义模板'}</p>
-            </div>
-            ` : ''}
-          </div>
-          <div id="paypal-button-container" class="mb-4"></div>
-        </div>
-        <button onclick="closeUpgradeModal()" class="w-full px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-          ${i18n.t('cancel') || '取消'}
-        </button>
-      </div>
-    `;
+    // Determine price based on user type
+    const price = isRenewal ? premium.renewal_price : premium.price;
+    const itemType = isRenewal ? 'renewal' : 'upgrade';
+    const serviceTitle = isRenewal ? (i18n.t('renewalService') || '续费服务') : (i18n.t('upgradeService') || '升级服务');
     
-    document.body.appendChild(modal);
-    window.currentUpgradeModal = modal;
+    // Add to cart
+    await axios.post('/api/cart', {
+      item_type: itemType,
+      subscription_tier: 'premium',
+      price_usd: price,
+      duration_days: 365,
+      description: serviceTitle,
+      description_en: isRenewal ? 'Renewal Service' : 'Upgrade Service'
+    });
     
-    // Initialize PayPal button
-    if (window.paypal) {
-      paypal.Buttons({
-        createOrder: async () => {
-          try {
-            const orderResponse = await axios.post('/api/payment/subscription/create-order', {
-              tier: 'premium'
-            });
-            return orderResponse.data.orderId;
-          } catch (error) {
-            console.error('Create order error:', error);
-            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
-            throw error;
-          }
-        },
-        onApprove: async (data) => {
-          try {
-            showNotification(i18n.t('processingPayment') || '正在处理支付...', 'info');
-            
-            const captureResponse = await axios.post('/api/payment/subscription/capture-order', {
-              orderId: data.orderID
-            });
-            
-            showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
-            closeUpgradeModal();
-            
-            // Reload page to update user status
-            setTimeout(() => {
-              window.location.reload();
-            }, 1500);
-          } catch (error) {
-            console.error('Capture order error:', error);
-            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
-          }
-        },
-        onError: (err) => {
-          console.error('PayPal error:', err);
-          showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
-        }
-      }).render('#paypal-button-container');
-    }
+    showNotification(i18n.t('addedToCart') || '已添加到购物车', 'success');
+    
+    // Update cart count
+    await updateCartCount();
+    
   } catch (error) {
-    console.error('Show upgrade modal error:', error);
-    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+    console.error('Add to cart error:', error);
+    if (error.response?.data?.error === 'Item already in cart') {
+      showNotification(i18n.t('itemAlreadyInCart') || '该商品已在购物车中', 'info');
+    } else {
+      showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+    }
   }
 }
 
@@ -7504,4 +7444,290 @@ async function handleUpdateSubscriptionConfig(e) {
     console.error('Update subscription config error:', error);
     showNotification(i18n.t('operationFailed') || '操作失败', 'error');
   }
+}
+
+// ============ Shopping Cart Functions ============
+
+// Update cart count badge
+async function updateCartCount() {
+  try {
+    const response = await axios.get('/api/cart');
+    const count = response.data.count || 0;
+    const badge = document.getElementById('cart-count');
+    
+    if (badge) {
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+  } catch (error) {
+    console.error('Update cart count error:', error);
+  }
+}
+
+// Show shopping cart modal
+async function showCart() {
+  try {
+    const response = await axios.get('/api/cart');
+    const items = response.data.items || [];
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.id = 'cart-modal';
+    
+    // Calculate total
+    const total = items.reduce((sum, item) => sum + parseFloat(item.price_usd), 0);
+    
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="bg-indigo-600 text-white p-6 flex justify-between items-center">
+          <h2 class="text-2xl font-bold">
+            <i class="fas fa-shopping-cart mr-2"></i>${i18n.t('shoppingCart') || '购物车'}
+          </h2>
+          <button onclick="closeCart()" class="text-white hover:text-gray-200 text-2xl">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto p-6">
+          ${items.length === 0 ? `
+            <div class="text-center py-12">
+              <i class="fas fa-shopping-cart text-6xl text-gray-300 mb-4"></i>
+              <p class="text-gray-500 text-lg">${i18n.t('cartEmpty') || '购物车是空的'}</p>
+            </div>
+          ` : `
+            <div class="space-y-4">
+              ${items.map(item => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:shadow-md transition">
+                  <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                      <i class="fas ${item.item_type === 'upgrade' ? 'fa-arrow-up text-purple-500' : 'fa-sync-alt text-green-500'} text-xl mr-3"></i>
+                      <h3 class="font-semibold text-lg text-gray-800">
+                        ${i18n.getCurrentLanguage() === 'en' && item.description_en ? item.description_en : item.description}
+                      </h3>
+                    </div>
+                    <p class="text-sm text-gray-600 ml-8">
+                      <i class="fas fa-crown text-yellow-500 mr-1"></i>
+                      ${i18n.t('premiumUser') || '高级用户'} - ${item.duration_days} ${i18n.t('days') || '天'}
+                    </p>
+                  </div>
+                  <div class="flex items-center space-x-4">
+                    <span class="text-2xl font-bold text-indigo-600">$${item.price_usd}</span>
+                    <button onclick="removeFromCart(${item.id})" 
+                            class="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-full transition">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+        
+        <!-- Footer -->
+        ${items.length > 0 ? `
+          <div class="border-t border-gray-200 p-6 bg-gray-50">
+            <div class="flex justify-between items-center mb-4">
+              <span class="text-lg font-semibold text-gray-700">${i18n.t('cartTotal') || '总计'}:</span>
+              <span class="text-3xl font-bold text-indigo-600">$${total.toFixed(2)}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <button onclick="clearCart()" 
+                      class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-semibold">
+                <i class="fas fa-trash mr-2"></i>${i18n.t('clearCart') || '清空购物车'}
+              </button>
+              <button onclick="proceedToCheckout()" 
+                      class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold shadow-lg">
+                <i class="fas fa-credit-card mr-2"></i>${i18n.t('checkout') || '结算'}
+              </button>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close on outside click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeCart();
+      }
+    });
+    
+  } catch (error) {
+    console.error('Show cart error:', error);
+    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+  }
+}
+
+// Close cart modal
+function closeCart() {
+  const modal = document.getElementById('cart-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Remove item from cart
+async function removeFromCart(itemId) {
+  try {
+    await axios.delete(`/api/cart/${itemId}`);
+    showNotification(i18n.t('removeFromCart') || '已从购物车移除', 'success');
+    closeCart();
+    await updateCartCount();
+    // Reopen cart to show updated list
+    setTimeout(() => showCart(), 300);
+  } catch (error) {
+    console.error('Remove from cart error:', error);
+    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+  }
+}
+
+// Clear entire cart
+async function clearCart() {
+  if (!confirm(i18n.t('confirmClearCart') || '确定要清空购物车吗？')) {
+    return;
+  }
+  
+  try {
+    await axios.delete('/api/cart');
+    showNotification(i18n.t('clearCart') || '购物车已清空', 'success');
+    closeCart();
+    await updateCartCount();
+  } catch (error) {
+    console.error('Clear cart error:', error);
+    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+  }
+}
+
+// Proceed to checkout with PayPal
+async function proceedToCheckout() {
+  try {
+    // Get cart items
+    const cartResponse = await axios.get('/api/cart');
+    const items = cartResponse.data.items || [];
+    
+    if (items.length === 0) {
+      showNotification(i18n.t('cartEmpty') || '购物车是空的', 'error');
+      return;
+    }
+    
+    // Close cart modal
+    closeCart();
+    
+    // Show checkout modal with PayPal
+    const total = items.reduce((sum, item) => sum + parseFloat(item.price_usd), 0);
+    
+    const checkoutModal = document.createElement('div');
+    checkoutModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    checkoutModal.id = 'checkout-modal';
+    
+    checkoutModal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">
+          <i class="fas fa-credit-card text-indigo-600 mr-2"></i>${i18n.t('checkout') || '结算'}
+        </h2>
+        
+        <div class="mb-6">
+          <div class="bg-gray-50 rounded-lg p-4 mb-4">
+            <p class="text-sm text-gray-600 mb-2">${i18n.t('orderSummary') || '订单摘要'}:</p>
+            ${items.map(item => `
+              <div class="flex justify-between text-sm mb-1">
+                <span>${i18n.getCurrentLanguage() === 'en' && item.description_en ? item.description_en : item.description}</span>
+                <span class="font-semibold">$${item.price_usd}</span>
+              </div>
+            `).join('')}
+            <div class="border-t border-gray-300 mt-3 pt-3 flex justify-between font-bold text-lg">
+              <span>${i18n.t('total') || '总计'}:</span>
+              <span class="text-indigo-600">$${total.toFixed(2)}</span>
+            </div>
+          </div>
+          
+          <div id="paypal-checkout-button" class="mb-4"></div>
+        </div>
+        
+        <button onclick="closeCheckout()" class="w-full px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+          ${i18n.t('cancel') || '取消'}
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(checkoutModal);
+    
+    // Initialize PayPal button
+    if (window.paypal) {
+      paypal.Buttons({
+        createOrder: async () => {
+          try {
+            // Create order with cart items
+            const orderResponse = await axios.post('/api/payment/cart/create-order', {
+              items: items.map(item => ({
+                id: item.id,
+                tier: item.subscription_tier,
+                item_type: item.item_type,
+                price_usd: item.price_usd,
+                duration_days: item.duration_days
+              }))
+            });
+            return orderResponse.data.orderId;
+          } catch (error) {
+            console.error('Create order error:', error);
+            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+            throw error;
+          }
+        },
+        onApprove: async (data) => {
+          try {
+            showNotification(i18n.t('processingPayment') || '正在处理支付...', 'info');
+            
+            // Capture payment
+            const captureResponse = await axios.post('/api/payment/cart/capture-order', {
+              orderId: data.orderID
+            });
+            
+            showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
+            closeCheckout();
+            
+            // Clear cart and reload page
+            await axios.delete('/api/cart');
+            await updateCartCount();
+            
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } catch (error) {
+            console.error('Capture order error:', error);
+            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+          }
+        },
+        onError: (err) => {
+          console.error('PayPal error:', err);
+          showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+        }
+      }).render('#paypal-checkout-button');
+    }
+    
+  } catch (error) {
+    console.error('Checkout error:', error);
+    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+  }
+}
+
+// Close checkout modal
+function closeCheckout() {
+  const modal = document.getElementById('checkout-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Initialize cart count on page load
+if (currentUser && authToken) {
+  updateCartCount();
 }

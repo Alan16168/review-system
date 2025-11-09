@@ -11,6 +11,7 @@ import templates from './routes/templates';
 import testimonials from './routes/testimonials';
 import payment from './routes/payment';
 import cron from './routes/cron';
+import cart from './routes/cart';
 
 type Bindings = {
   DB: D1Database;
@@ -45,6 +46,7 @@ app.route('/api/templates', templates);
 app.route('/api/testimonials', testimonials);
 app.route('/api/payment', payment);
 app.route('/api/cron', cron);
+app.route('/api/cart', cart);
 
 // Main page - Login/Dashboard
 app.get('/', (c) => {
