@@ -397,7 +397,10 @@ auth.get('/settings', authMiddleware, async (c) => {
     return c.json({
       username: dbUser.username,
       email: dbUser.email,
-      language: dbUser.language || 'zh'
+      language: dbUser.language || 'zh',
+      role: dbUser.role,
+      subscription_tier: (dbUser as any).subscription_tier || 'free',
+      subscription_expires_at: (dbUser as any).subscription_expires_at || null
     });
   } catch (error) {
     console.error('Get settings error:', error);

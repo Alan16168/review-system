@@ -50,9 +50,13 @@ export async function getUserById(db: D1Database, id: number): Promise<User | nu
 }
 
 export async function createUser(db: D1Database, email: string, passwordHash: string, username: string, role: string = 'user'): Promise<number> {
+  // Set subscription tier and expiry based on role
+  const subscriptionTier = role === 'premium' ? 'premium' : 'free';
+  const subscriptionExpiry = role === 'user' ? '9999-12-31 23:59:59' : null;
+  
   const result = await db.prepare(
-    'INSERT INTO users (email, password_hash, username, role) VALUES (?, ?, ?, ?)'
-  ).bind(email, passwordHash, username, role).run();
+    'INSERT INTO users (email, password_hash, username, role, subscription_tier, subscription_expires_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(email, passwordHash, username, role, subscriptionTier, subscriptionExpiry).run();
   
   return result.meta.last_row_id as number;
 }

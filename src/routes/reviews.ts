@@ -330,7 +330,7 @@ reviews.put('/:id', async (c) => {
       WHERE r.id = ? AND (
         r.user_id = ?
         OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
-        OR (r.owner_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
+        OR (r.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
       )
     `;
     const review: any = await c.env.DB.prepare(reviewQuery)

@@ -5796,11 +5796,11 @@ async function showUserSettings() {
                     <div>
                       <p class="text-sm text-gray-600 mb-1">${i18n.t('expiryDate') || '有效期'}</p>
                       <p class="text-xl font-semibold text-gray-800">
-                        ${settings.role === 'premium' && settings.subscription_expires_at 
+                        ${settings.subscription_expires_at 
                           ? new Date(settings.subscription_expires_at).toLocaleDateString() 
                           : (i18n.t('forever') || '永久')}
                       </p>
-                      ${settings.role === 'premium' && settings.subscription_expires_at ? `
+                      ${settings.role === 'premium' && settings.subscription_expires_at && settings.subscription_expires_at !== '9999-12-31 23:59:59' ? `
                         <p class="text-xs text-gray-500 mt-1">
                           ${(() => {
                             const daysLeft = Math.ceil((new Date(settings.subscription_expires_at) - new Date()) / (1000 * 60 * 60 * 24));
