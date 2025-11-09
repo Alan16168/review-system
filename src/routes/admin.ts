@@ -65,18 +65,34 @@ admin.get('/users', async (c) => {
   try {
     const users = await getAllUsers(c.env.DB);
     
-    // Remove password hashes from response
-    const safeUsers = users.map(u => ({
-      id: u.id,
-      email: u.email,
-      username: u.username,
-      role: u.role,
-      language: u.language,
-      created_at: u.created_at,
-      updated_at: u.updated_at
+    // Get statistics for each user
+    const usersWithStats = await Promise.all(users.map(async (u) => {
+      // Count reviews created by this user
+      const reviewCount = await c.env.DB.prepare(
+        'SELECT COUNT(*) as count FROM reviews WHERE user_id = ?'
+      ).bind(u.id).first();
+      
+      // Count templates created by this user
+      const templateCount = await c.env.DB.prepare(
+        'SELECT COUNT(*) as count FROM templates WHERE creator_id = ?'
+      ).bind(u.id).first();
+      
+      return {
+        id: u.id,
+        email: u.email,
+        username: u.username,
+        role: u.role,
+        language: u.language,
+        created_at: u.created_at,
+        updated_at: u.updated_at,
+        last_login_at: u.last_login_at || null,
+        login_count: u.login_count || 0,
+        review_count: reviewCount?.count || 0,
+        template_count: templateCount?.count || 0
+      };
     }));
 
-    return c.json({ users: safeUsers });
+    return c.json({ users: usersWithStats });
   } catch (error) {
     console.error('Get users error:', error);
     return c.json({ error: 'Internal server error' }, 500);

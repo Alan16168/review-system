@@ -79,6 +79,15 @@ auth.post('/login', async (c) => {
       return c.json({ error: 'Invalid credentials' }, 401);
     }
 
+    // Update login tracking
+    await c.env.DB.prepare(`
+      UPDATE users 
+      SET last_login_at = CURRENT_TIMESTAMP,
+          login_count = COALESCE(login_count, 0) + 1,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(user.id).run();
+
     const token = generateToken({
       id: user.id,
       email: user.email,
@@ -146,6 +155,15 @@ auth.post('/google', async (c) => {
         return c.json({ error: 'Failed to create user' }, 500);
       }
     }
+
+    // Update login tracking for Google OAuth
+    await c.env.DB.prepare(`
+      UPDATE users 
+      SET last_login_at = CURRENT_TIMESTAMP,
+          login_count = COALESCE(login_count, 0) + 1,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(user.id).run();
 
     const token = generateToken({
       id: user.id,

@@ -4343,6 +4343,10 @@ function renderUsersTable(users) {
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('username')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('email')}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('role')}</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">${i18n.t('reviewCount') || '复盘数'}</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">${i18n.t('templateCount') || '模板数'}</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">${i18n.t('loginCount') || '登录次数'}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('lastLogin') || '最后登录'}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('createdAt')}</th>
             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">${i18n.t('actions')}</th>
           </tr>
@@ -4370,6 +4374,27 @@ function renderUsersTable(users) {
                 }">
                   ${i18n.t(user.role + 'Role')}
                 </span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <i class="fas fa-clipboard-list mr-1"></i>
+                  ${user.review_count || 0}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <i class="fas fa-file-alt mr-1"></i>
+                  ${user.template_count || 0}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  <i class="fas fa-sign-in-alt mr-1"></i>
+                  ${user.login_count || 0}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-500">
+                ${user.last_login_at ? new Date(user.last_login_at).toLocaleString() : '<span class="text-gray-400">${i18n.t(\'never\') || \'从未\'}</span>'}
               </td>
               <td class="px-6 py-4 text-sm text-gray-500">
                 ${new Date(user.created_at).toLocaleDateString()}
