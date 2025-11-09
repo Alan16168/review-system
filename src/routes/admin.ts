@@ -67,29 +67,47 @@ admin.get('/users', async (c) => {
     
     // Get statistics for each user
     const usersWithStats = await Promise.all(users.map(async (u) => {
-      // Count reviews created by this user
-      const reviewCount = await c.env.DB.prepare(
-        'SELECT COUNT(*) as count FROM reviews WHERE user_id = ?'
-      ).bind(u.id).first();
-      
-      // Count templates created by this user
-      const templateCount = await c.env.DB.prepare(
-        'SELECT COUNT(*) as count FROM templates WHERE creator_id = ?'
-      ).bind(u.id).first();
-      
-      return {
-        id: u.id,
-        email: u.email,
-        username: u.username,
-        role: u.role,
-        language: u.language,
-        created_at: u.created_at,
-        updated_at: u.updated_at,
-        last_login_at: u.last_login_at || null,
-        login_count: u.login_count || 0,
-        review_count: reviewCount?.count || 0,
-        template_count: templateCount?.count || 0
-      };
+      try {
+        // Count reviews created by this user
+        const reviewCount = await c.env.DB.prepare(
+          'SELECT COUNT(*) as count FROM reviews WHERE user_id = ?'
+        ).bind(u.id).first();
+        
+        // Count templates created by this user
+        const templateCount = await c.env.DB.prepare(
+          'SELECT COUNT(*) as count FROM templates WHERE creator_id = ?'
+        ).bind(u.id).first();
+        
+        return {
+          id: u.id || 0,
+          email: u.email || '',
+          username: u.username || '',
+          role: u.role || 'user',
+          language: u.language || 'zh',
+          created_at: u.created_at || new Date().toISOString(),
+          updated_at: u.updated_at || new Date().toISOString(),
+          last_login_at: u.last_login_at || null,
+          login_count: u.login_count || 0,
+          review_count: reviewCount?.count || 0,
+          template_count: templateCount?.count || 0
+        };
+      } catch (err) {
+        console.error('Error getting stats for user', u.id, err);
+        // Return user with zero stats if error
+        return {
+          id: u.id || 0,
+          email: u.email || '',
+          username: u.username || '',
+          role: u.role || 'user',
+          language: u.language || 'zh',
+          created_at: u.created_at || new Date().toISOString(),
+          updated_at: u.updated_at || new Date().toISOString(),
+          last_login_at: null,
+          login_count: 0,
+          review_count: 0,
+          template_count: 0
+        };
+      }
     }));
 
     return c.json({ users: usersWithStats });
