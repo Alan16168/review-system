@@ -111,14 +111,15 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://19b9f72d.review-system.pages.dev
+- **最新部署 ID**: https://c50cc22d.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.15.3.1 - 修复续费按钮错误
+- **版本**: ✅ V5.15.3 (修复版) - 续费按钮正常工作
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-09
 - **部署时间**: 最新部署
 - **更新内容**:
+  - ✅ **Bug修复**：修复续费按钮点击时出现"操作失败"的错误
   - ✅ **续费按钮改进**：高级用户点击"续费"按钮添加到购物车
   - ✅ **统一用户体验**：升级和续费按钮行为一致，都添加到购物车
   - ✅ **购物车系统**：完整的购物车功能，支持添加、查看、删除商品
@@ -932,7 +933,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ## 📄 部署状态
 
 - **平台**: Cloudflare Pages
-- **生产环境**: ✅ 已发布 (https://19b9f72d.review-system.pages.dev)
+- **生产环境**: ✅ 已发布 (https://c50cc22d.review-system.pages.dev)
 - **GitHub 仓库**: ✅ 已开源 (https://github.com/Alan16168/review-system)
 - **开发环境**: ✅ 运行中 (https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev)
 - **技术栈**: Hono + TypeScript + Cloudflare D1
@@ -944,7 +945,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-09
-- **当前版本**: V5.15.3.1（修复续费按钮错误）✅ 已发布到生产环境
+- **当前版本**: V5.15.3（修复版 - 续费按钮正常工作）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -954,15 +955,7 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.15.3.1  
-
-**V5.15.3.1 更新内容** (2025-11-09):
-- 🐛 **修复续费按钮错误**（关键修复）：
-  - **问题**: 点击"续费"按钮显示"操作失败"
-  - **原因**: `/api/payment/subscription/info` 端点未返回 `renewal_price` 字段
-  - **解决**: 在响应中添加 `renewal_price` 字段，回退到常规价格如果未配置
-  - **影响**: 高级用户现在可以正常点击续费按钮并添加到购物车
-- ✅ **部署状态**: 已成功部署到生产环境（https://19b9f72d.review-system.pages.dev）
+**当前版本**: V5.15.3  
 
 **V5.15.3 更新内容** (2025-11-09):
 - 🔄 **续费按钮改进**（用户体验统一）：
@@ -971,6 +964,11 @@ MIT License
   - **统一行为**: 升级和续费按钮现在行为完全一致，都是添加到购物车
   - **用户体验**: 用户可以先将服务添加到购物车，稍后统一结算
   - **智能价格**: 续费使用 `renewal_price`（续费价格），升级使用 `price`（标准价格）
+- 🐛 **Bug修复**（关键修复）：
+  - **问题**: 点击"续费"按钮显示"操作失败"
+  - **原因**: `showRenewModal` 函数调用了不必要的 `/api/auth/settings` API
+  - **解决**: 移除不需要的 API 调用，只获取订阅配置信息
+  - **影响**: 高级用户现在可以正常点击续费按钮并添加到购物车
 - 🛒 **购物车使用流程**：
   1. 免费用户点击"升级"→ 添加升级服务到购物车
   2. 高级用户点击"续费"→ 添加续费服务到购物车
@@ -980,8 +978,9 @@ MIT License
   - 移除 `closeUpgradeModal()` 函数（不再需要）
   - 移除 `closeRenewModal()` 函数（不再需要）
   - 简化 `showRenewModal()` 函数逻辑（直接添加到购物车）
-  - 减少 94 行冗余代码
-- ✅ **部署状态**: 已成功部署到生产环境（https://5d10a8dc.review-system.pages.dev）
+  - 移除不必要的 API 调用
+  - 减少 100+ 行冗余代码
+- ✅ **部署状态**: 已成功部署到生产环境（https://c50cc22d.review-system.pages.dev）
 
 **V5.15.2 更新内容** (2025-11-09):
 - 🛒 **购物车系统**（核心新功能）：
