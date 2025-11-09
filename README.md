@@ -110,18 +110,19 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://ad35b6f0.review-system.pages.dev
+- **最新部署 ID**: https://9b77147c.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.12.0 - 团队成员权限修复
+- **版本**: ✅ V5.13.0 - "我的复盘"显示团队复盘 + 用户升级功能
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-09
 - **部署时间**: 最新部署
 - **更新内容**:
-  - ✅ 删除所有订阅管理功能（用户设置页面不再显示订阅区域）
-  - ✅ 修正团队成员权限：团队成员现在可以编辑、查看和打印团队创建的review
-  - ✅ 后端API增强：GET /api/reviews 和 GET /api/reviews/:id 返回 is_team_member 标志
-  - ✅ 前端权限检查简化：team_id + is_team_member = 可编辑
+  - ✅ 修正"我的复盘"显示逻辑：团队成员现在可以在"我的复盘"中看到所属团队的所有复盘
+  - ✅ 后端查询优化：包含所有有team_id且用户是团队成员的复盘（不限owner_type）
+  - ✅ 用户升级功能：role='user'的用户在设置页面可以看到用户管理区域和升级按钮
+  - ✅ 显示当前用户级别为"免费用户"，提供"升级账户"按钮
+  - ✅ 国际化支持：新增4个翻译键（中英双语）
   - ✅ 已推送到 GitHub 公开仓库
 
 ### 开发环境
@@ -919,7 +920,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-09
-- **当前版本**: V5.12.0（删除订阅管理 + 团队成员权限修复）✅ 已发布到生产环境
+- **当前版本**: V5.13.0（"我的复盘"显示团队复盘 + 用户升级功能）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -929,7 +930,39 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.12.0  
+**当前版本**: V5.13.0  
+
+**V5.13.0 更新内容** (2025-11-09):
+- 📋 **修正"我的复盘"列表显示**（核心Bug修复）：
+  - **问题**: 团队成员在"我的复盘"中看不到所属团队的复盘
+  - **根本原因**: 查询逻辑过于严格，只包含 owner_type='team' 的复盘
+  - **解决方案**: 修改查询逻辑，包含所有满足以下条件的复盘：
+    1. 用户创建的复盘（任何owner_type）
+    2. 有team_id且用户是团队成员的复盘（任何owner_type）
+    3. 用户是协作者的复盘
+  - **修复效果**:
+    - ✅ 团队成员现在可以在"我的复盘"中看到团队的所有复盘
+    - ✅ 可以查看、编辑和打印团队复盘
+    - ✅ 不再遗漏任何团队创建的review
+- 👤 **用户升级功能**（新增功能）：
+  - **用户管理区域**: role='user'的用户在设置页面新增"用户管理"部分
+  - **当前级别显示**: 显示"免费用户"标识和说明
+  - **升级按钮**: 提供"升级账户"按钮，点击后显示联系管理员升级的提示
+  - **UI设计**: 
+    - 渐变紫色背景卡片，醒目的crown图标
+    - 说明升级后的高级功能（创建团队、邀请成员、团队协作）
+    - 悬停动画效果
+  - **权限说明**: 清晰解释升级到高级用户的好处
+- 📊 **后端API优化** (src/routes/reviews.ts):
+  - GET /api/reviews 查询逻辑简化
+  - 使用 `r.team_id IS NOT NULL` 检查团队复盘
+  - 排除 owner_type='public' 的复盘（公开复盘在专用页面显示）
+- 🌐 **国际化增强**:
+  - 新增 'upgradeAccount': '升级账户' / 'Upgrade Account'
+  - 新增 'upgradeToPremiumDesc': 升级功能说明
+  - 新增 'upgradeToPremiumConfirm': 升级确认对话框文本
+  - 新增 'contactAdminForUpgrade': 联系管理员提示
+- ✅ **部署状态**: 已成功部署到生产环境（https://9b77147c.review-system.pages.dev）
 
 **V5.12.0 更新内容** (2025-11-09):
 - 🗑️ **删除订阅管理功能**（用户要求）：
