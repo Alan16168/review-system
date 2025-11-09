@@ -8,7 +8,8 @@
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
-**💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）
+**💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
+**🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务
 
 ## 🌟 项目概述
 
@@ -112,30 +113,34 @@
 - **应用 URL**: https://review-system.pages.dev
 - **最新部署 ID**: https://79acc64f.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.14.0 - 团队复盘访问修复 + 完整PayPal付费系统
+- **版本**: ✅ V5.15.2 - 购物车系统 + PayPal多商品结算
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-09
 - **部署时间**: 最新部署
 - **更新内容**:
-  - ✅ 修复团队成员访问团队复盘的权限问题（GET /api/reviews/:id）
-  - ✅ 完整的用户级别管理系统（升级和续费）
-  - ✅ PayPal支付集成：支持升级到高级用户和续费
-  - ✅ 免费用户显示：当前级别 + 永久有效期 + 升级按钮
-  - ✅ 高级用户显示：当前级别 + 到期日期 + 剩余天数 + 续费按钮
-  - ✅ 管理员不显示用户级别管理（管理员无需升级）
-  - ✅ 国际化支持：新增13个翻译键（中英双语）
-  - ✅ 已推送到 GitHub 公开仓库
+  - ✅ **购物车系统**：完整的购物车功能，支持添加、查看、删除商品
+  - ✅ **购物车图标**：导航栏显示购物车图标和商品数量徽章
+  - ✅ **购物车模态框**：查看购物车内商品，支持单个删除和清空
+  - ✅ **PayPal多商品结算**：支持购物车内所有商品一次性支付
+  - ✅ **升级按钮改进**：点击升级按钮添加到购物车，而非直接支付
+  - ✅ **防止重复添加**：同一商品类型（升级/续费）不能重复加入购物车
+  - ✅ **数据库支持**：新增shopping_cart表存储购物车数据
+  - ✅ **国际化支持**：新增18个购物车相关翻译键（中英双语）
+  - ✅ **已推送到 GitHub 公开仓库**
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
-- **Git Commit**: ✅ V5.10.2 (修复团队成员编辑公开复盘权限)
+- **Git Commit**: ✅ V5.15.2 (购物车系统 + PayPal多商品结算)
 - **本地端口**: 3000 (PM2 管理)
 - **更新内容**: 
-  - ✅ 修复"公开的复盘"页面编辑按钮无响应问题
-  - ✅ 修复管理员面板"公开复盘管理"编辑按钮
-  - ✅ 将不存在的 viewReview() 函数调用改为 showEditReview()
-  - ✅ 编辑按钮现在可以正确导航到复盘编辑页面
+  - ✅ 完整的购物车功能（添加、查看、删除、清空）
+  - ✅ 购物车图标和商品数量徽章
+  - ✅ PayPal多商品一次性结算
+  - ✅ 升级按钮改为添加到购物车
+  - ✅ 防止重复商品添加
+  - ✅ 购物车数据库表（shopping_cart）
+  - ✅ 18个新增国际化翻译键
 
 ### 测试账号
 | 角色 | 邮箱 | 密码 | 权限 |
@@ -221,6 +226,19 @@
 - title: 通知标题
 - message: 通知内容
 - is_read: 已读状态（0/1）
+- created_at: 创建时间
+```
+
+#### 8. Shopping Cart（购物车表）【V5.15.2 新增】
+```sql
+- id: 购物车ID
+- user_id: 用户ID
+- item_type: 商品类型（upgrade/renewal）
+- subscription_tier: 订阅级别（premium）
+- price_usd: 价格（美元）
+- duration_days: 订阅天数
+- description: 商品描述（中文）
+- description_en: 商品描述（英文）
 - created_at: 创建时间
 ```
 
@@ -911,18 +929,19 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ## 📄 部署状态
 
 - **平台**: Cloudflare Pages
-- **生产环境**: ✅ 已发布 (https://54e5be9a.review-system.pages.dev)
+- **生产环境**: ✅ 已发布 (https://6db9e254.review-system.pages.dev)
 - **GitHub 仓库**: ✅ 已开源 (https://github.com/Alan16168/review-system)
 - **开发环境**: ✅ 运行中 (https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev)
 - **技术栈**: Hono + TypeScript + Cloudflare D1
-- **数据库**: ✅ review-system-production (D1)
+- **数据库**: ✅ review-system-production (D1) + shopping_cart表
 - **Google OAuth**: ✅ 已配置并启用
 - **Google API**: ✅ 已配置（YouTube + Custom Search）
+- **PayPal Integration**: ✅ 支持单商品和购物车结算
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-09
-- **当前版本**: V5.14.0（团队复盘访问修复 + 完整PayPal付费系统）✅ 已发布到生产环境
+- **当前版本**: V5.15.2（购物车系统 + PayPal多商品结算）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -932,7 +951,72 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.14.0  
+**当前版本**: V5.15.2  
+
+**V5.15.2 更新内容** (2025-11-09):
+- 🛒 **购物车系统**（核心新功能）：
+  - **完整的购物车CRUD**：创建、查看、删除单个商品、清空购物车
+  - **购物车UI组件**：
+    - 导航栏购物车图标 + 商品数量徽章（红色圆形，显示商品数量）
+    - 购物车模态框显示商品列表（商品名称、价格、天数、删除按钮）
+    - 商品总价计算和显示
+    - "结算"按钮跳转到PayPal支付
+  - **数据库表**：新增 shopping_cart 表（Migration 0022）
+    - 字段：user_id, item_type, subscription_tier, price_usd, duration_days, description
+    - 支持中英双语商品描述（description 和 description_en）
+  - **后端API**：
+    - GET /api/cart - 获取用户购物车
+    - POST /api/cart - 添加商品到购物车（防止重复添加）
+    - DELETE /api/cart/:id - 删除单个商品
+    - DELETE /api/cart - 清空购物车
+    - GET /api/cart/total - 获取购物车总价
+- 💳 **PayPal多商品结算**（核心功能扩展）：
+  - **购物车支付端点**：
+    - POST /api/payment/cart/create-order - 创建购物车订单
+    - POST /api/payment/cart/capture-order - 完成购物车支付
+  - **多商品订单创建**：
+    - 从购物车读取所有商品
+    - 创建包含多个item的PayPal订单
+    - 显示商品明细和总价
+  - **支付成功处理**：
+    - 更新用户 role 为 premium
+    - 计算并设置 subscription_expires_at（从当前到期日期延长，或从今天开始）
+    - 为每个购物车商品创建支付记录
+    - 清空购物车
+    - 显示成功通知并刷新页面
+- 🔄 **升级按钮行为改进**（用户体验优化）：
+  - **旧行为**：点击"升级"按钮直接显示PayPal支付模态框
+  - **新行为**：点击"升级"按钮添加商品到购物车
+  - **智能识别**：
+    - role='user' → 添加 upgrade 商品（使用 premium.price）
+    - role='premium' → 添加 renewal 商品（使用 premium.renewal_price）
+  - **防止重复**：同一类型商品不能重复添加到购物车
+  - **用户反馈**：添加成功显示通知，更新购物车徽章数量
+- 🌐 **国际化支持**：新增18个购物车相关翻译键
+  - shoppingCart（购物车）
+  - addToCart（添加到购物车）
+  - removeFromCart（从购物车移除）
+  - clearCart（清空购物车）
+  - cartEmpty（购物车是空的）
+  - checkout（结算）
+  - itemAlreadyInCart（该商品已在购物车中）
+  - addedToCart（已添加到购物车）
+  - removedFromCart（已从购物车移除）
+  - cartCleared（购物车已清空）
+  - viewCart（查看购物车）
+  - proceedToCheckout（前往结算）
+  - checkoutProcessing（正在处理支付）
+  - emptyCartMessage（您的购物车是空的...）
+  - continueShopping（继续购物）
+  - upgradeService（升级服务）
+  - renewalService（续费服务）
+  - cartPaymentSuccess（购物车支付成功）
+- 🐛 **Bug修复**：
+  - 修复 showUpgradeModal 函数的重复 try-catch 块
+  - 确保购物车徽章只在有商品时显示
+  - 优化购物车数据同步逻辑
+- 📊 **数据库迁移**：0022_create_shopping_cart.sql
+- ✅ **部署状态**: 已成功部署到生产环境（https://6db9e254.review-system.pages.dev）
 
 **V5.14.0 更新内容** (2025-11-09):
 - 🔧 **修复团队复盘访问权限**（核心Bug修复）：
