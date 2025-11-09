@@ -7221,111 +7221,50 @@ async function showUpgradeModal() {
   }
 }
 
-function closeUpgradeModal() {
-  if (window.currentUpgradeModal) {
-    window.currentUpgradeModal.remove();
-    window.currentUpgradeModal = null;
-  }
-}
+// closeUpgradeModal function removed - no longer needed as we add to cart directly
 
-// Show renew subscription modal for premium users
+// Show renew subscription modal for premium users - Add to cart
 async function showRenewModal() {
   try {
-    // Get subscription info
-    const response = await axios.get('/api/payment/subscription/info');
-    const { premium, expiresAt } = response.data;
+    // Get current user info and subscription config
+    const [userResponse, configResponse] = await Promise.all([
+      axios.get('/api/auth/settings'),
+      axios.get('/api/payment/subscription/info')
+    ]);
     
-    const expiryDate = expiresAt ? new Date(expiresAt).toLocaleDateString() : 'N/A';
+    const user = userResponse.data;
+    const { premium } = configResponse.data;
     
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-sync-alt text-blue-500 mr-2"></i>
-          ${i18n.t('renewSubscription') || '续费订阅'}
-        </h2>
-        <div class="mb-6">
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <p class="text-sm text-gray-700 mb-2">
-              <strong>${i18n.t('subscriptionExpires') || '订阅到期'}:</strong> ${expiryDate}
-            </p>
-          </div>
-          <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-6 mb-4">
-            <div class="text-center mb-4">
-              <div class="text-4xl font-bold text-gray-800">
-                $${premium.price}
-              </div>
-              <div class="text-sm text-gray-600">${i18n.t('pricePerYear') || '每年'}</div>
-            </div>
-            <div class="text-xs text-gray-600 text-center">
-              ${i18n.t('renewDescription') || '续费将延长您的高级会员资格一年'}
-            </div>
-          </div>
-          <div id="paypal-button-container-renew" class="mb-4"></div>
-        </div>
-        <button onclick="closeRenewModal()" class="w-full px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-          ${i18n.t('cancel') || '取消'}
-        </button>
-      </div>
-    `;
+    // For renewal, use renewal_price (or fallback to regular price)
+    const price = premium.renewal_price || premium.price;
+    const serviceTitle = i18n.t('renewalService') || '续费服务';
     
-    document.body.appendChild(modal);
-    window.currentRenewModal = modal;
+    // Add renewal service to cart
+    await axios.post('/api/cart', {
+      item_type: 'renewal',
+      subscription_tier: 'premium',
+      price_usd: price,
+      duration_days: 365,
+      description: serviceTitle,
+      description_en: 'Renewal Service'
+    });
     
-    // Initialize PayPal button
-    if (window.paypal) {
-      paypal.Buttons({
-        createOrder: async () => {
-          try {
-            const orderResponse = await axios.post('/api/payment/subscription/create-order', {
-              tier: 'premium'
-            });
-            return orderResponse.data.orderId;
-          } catch (error) {
-            console.error('Create order error:', error);
-            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
-            throw error;
-          }
-        },
-        onApprove: async (data) => {
-          try {
-            showNotification(i18n.t('processingPayment') || '正在处理支付...', 'info');
-            
-            const captureResponse = await axios.post('/api/payment/subscription/capture-order', {
-              orderId: data.orderID
-            });
-            
-            showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
-            closeRenewModal();
-            
-            // Reload page to update subscription status
-            setTimeout(() => {
-              window.location.reload();
-            }, 1500);
-          } catch (error) {
-            console.error('Capture order error:', error);
-            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
-          }
-        },
-        onError: (err) => {
-          console.error('PayPal error:', err);
-          showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
-        }
-      }).render('#paypal-button-container-renew');
-    }
+    showNotification(i18n.t('addedToCart') || '已添加到购物车', 'success');
+    
+    // Update cart count
+    await updateCartCount();
+    
   } catch (error) {
-    console.error('Show renew modal error:', error);
-    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+    console.error('Add renewal to cart error:', error);
+    if (error.response?.data?.error === 'Item already in cart') {
+      showNotification(i18n.t('itemAlreadyInCart') || '该商品已在购物车中', 'info');
+    } else {
+      showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+    }
   }
 }
 
-function closeRenewModal() {
-  if (window.currentRenewModal) {
-    window.currentRenewModal.remove();
-    window.currentRenewModal = null;
-  }
-}
+// closeRenewModal function removed - no longer needed as we add to cart directly
 
 // Show subscription management page (in admin panel for subscription settings)
 async function showSubscriptionManagement(container) {
