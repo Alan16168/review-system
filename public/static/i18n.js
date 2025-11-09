@@ -236,6 +236,13 @@ const translations = {
     'itemAlreadyInCart': '该商品已在购物车中',
     'confirmClearCart': '确定要清空购物车吗？',
     'proceedToCheckout': '前往结算',
+    'confirmPayment': '确认支付',
+    'loadingPayPal': '正在加载PayPal...',
+    'processing': '处理中...',
+    'redirectingToPayPal': '正在跳转到PayPal...',
+    'pleaseUsePayPalButton': '请使用PayPal按钮完成支付',
+    'paypalNotLoaded': 'PayPal未加载，请刷新页面',
+    'orderSummary': '订单摘要',
     
     // Admin Panel
     'adminPanel': '管理面板',
@@ -792,6 +799,13 @@ const translations = {
     'itemAlreadyInCart': 'Item already in cart',
     'confirmClearCart': 'Are you sure you want to clear the cart?',
     'proceedToCheckout': 'Proceed to Checkout',
+    'confirmPayment': 'Confirm Payment',
+    'loadingPayPal': 'Loading PayPal...',
+    'processing': 'Processing...',
+    'redirectingToPayPal': 'Redirecting to PayPal...',
+    'pleaseUsePayPalButton': 'Please use PayPal button to complete payment',
+    'paypalNotLoaded': 'PayPal not loaded, please refresh the page',
+    'orderSummary': 'Order Summary',
     
     'pricingSettings': 'Pricing Settings',
     'updatePricing': 'Update Pricing',

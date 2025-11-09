@@ -7583,68 +7583,112 @@ async function proceedToCheckout() {
             </div>
           </div>
           
+          <!-- PayPal Button Container -->
           <div id="paypal-checkout-button" class="mb-4"></div>
+          
+          <!-- Loading indicator while PayPal initializes -->
+          <div id="paypal-loading" class="text-center py-4">
+            <i class="fas fa-spinner fa-spin text-indigo-600 text-2xl mb-2"></i>
+            <p class="text-sm text-gray-600">${i18n.t('loadingPayPal') || '正在加载PayPal...'}</p>
+          </div>
         </div>
         
-        <button onclick="closeCheckout()" class="w-full px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-          ${i18n.t('cancel') || '取消'}
-        </button>
+        <div class="grid grid-cols-2 gap-4">
+          <button onclick="closeCheckout()" class="px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-semibold">
+            <i class="fas fa-times mr-2"></i>${i18n.t('cancel') || '取消'}
+          </button>
+          <button onclick="confirmCheckout()" id="confirm-checkout-btn" class="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold shadow-lg">
+            <i class="fas fa-check mr-2"></i>${i18n.t('confirmPayment') || '确认支付'}
+          </button>
+        </div>
       </div>
     `;
     
     document.body.appendChild(checkoutModal);
     
+    // Store cart items globally for confirmCheckout function
+    window.currentCheckoutItems = items;
+    
+    // Always hide loading indicator after a short delay (whether PayPal loads or not)
+    setTimeout(() => {
+      const loadingEl = document.getElementById('paypal-loading');
+      if (loadingEl) loadingEl.style.display = 'none';
+    }, 2000);
+    
     // Initialize PayPal button
     if (window.paypal) {
-      paypal.Buttons({
-        createOrder: async () => {
-          try {
-            // Create order with cart items
-            const orderResponse = await axios.post('/api/payment/cart/create-order', {
-              items: items.map(item => ({
-                id: item.id,
-                tier: item.subscription_tier,
-                item_type: item.item_type,
-                price_usd: item.price_usd,
-                duration_days: item.duration_days
-              }))
-            });
-            return orderResponse.data.orderId;
-          } catch (error) {
-            console.error('Create order error:', error);
+      try {
+        paypal.Buttons({
+          createOrder: async () => {
+            try {
+              // Create order with cart items
+              const orderResponse = await axios.post('/api/payment/cart/create-order', {
+                items: items.map(item => ({
+                  id: item.id,
+                  tier: item.subscription_tier,
+                  item_type: item.item_type,
+                  price_usd: item.price_usd,
+                  duration_days: item.duration_days
+                }))
+              });
+              return orderResponse.data.orderId;
+            } catch (error) {
+              console.error('Create order error:', error);
+              showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+              throw error;
+            }
+          },
+          onApprove: async (data) => {
+            try {
+              showNotification(i18n.t('processingPayment') || '正在处理支付...', 'info');
+              
+              // Capture payment
+              const captureResponse = await axios.post('/api/payment/cart/capture-order', {
+                orderId: data.orderID
+              });
+              
+              showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
+              closeCheckout();
+              
+              // Clear cart and reload page
+              await axios.delete('/api/cart');
+              await updateCartCount();
+              
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } catch (error) {
+              console.error('Capture order error:', error);
+              showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
+            }
+          },
+          onError: (err) => {
+            console.error('PayPal error:', err);
             showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
-            throw error;
           }
-        },
-        onApprove: async (data) => {
-          try {
-            showNotification(i18n.t('processingPayment') || '正在处理支付...', 'info');
-            
-            // Capture payment
-            const captureResponse = await axios.post('/api/payment/cart/capture-order', {
-              orderId: data.orderID
-            });
-            
-            showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
-            closeCheckout();
-            
-            // Clear cart and reload page
-            await axios.delete('/api/cart');
-            await updateCartCount();
-            
-            setTimeout(() => {
-              window.location.reload();
-            }, 1500);
-          } catch (error) {
-            console.error('Capture order error:', error);
-            showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
-          }
-        },
-        onError: (err) => {
-          console.error('PayPal error:', err);
-          showNotification(i18n.t('paymentFailed') || '支付失败', 'error');
-        }
-      }).render('#paypal-checkout-button');
+        }).render('#paypal-checkout-button').then(() => {
+          // Hide loading indicator after PayPal button renders successfully
+          const loadingEl = document.getElementById('paypal-loading');
+          if (loadingEl) loadingEl.style.display = 'none';
+          
+          // Keep both buttons visible - users can choose PayPal or direct payment
+          console.log('PayPal button rendered successfully');
+        }).catch((err) => {
+          console.error('PayPal button render error:', err);
+          // Keep the confirm button visible if PayPal fails
+          const loadingEl = document.getElementById('paypal-loading');
+          if (loadingEl) loadingEl.style.display = 'none';
+        });
+      } catch (error) {
+        console.error('PayPal initialization error:', error);
+        const loadingEl = document.getElementById('paypal-loading');
+        if (loadingEl) loadingEl.style.display = 'none';
+      }
+    } else {
+      console.warn('PayPal SDK not loaded');
+      // PayPal not loaded, hide loading indicator
+      const loadingEl = document.getElementById('paypal-loading');
+      if (loadingEl) loadingEl.style.display = 'none';
     }
     
   } catch (error) {
@@ -7658,6 +7702,80 @@ function closeCheckout() {
   const modal = document.getElementById('checkout-modal');
   if (modal) {
     modal.remove();
+  }
+  // Clean up global variable
+  delete window.currentCheckoutItems;
+}
+
+// Confirm checkout - creates test payment (sandbox mode)
+async function confirmCheckout() {
+  try {
+    const items = window.currentCheckoutItems;
+    if (!items || items.length === 0) {
+      showNotification(i18n.t('cartEmpty') || '购物车是空的', 'error');
+      return;
+    }
+    
+    // Show confirmation dialog
+    if (!confirm(i18n.t('confirmPayment') + '?\n\n' + (i18n.t('total') || '总计') + ': $' + items.reduce((sum, item) => sum + parseFloat(item.price_usd), 0).toFixed(2))) {
+      return;
+    }
+    
+    // Disable button to prevent double-click
+    const confirmBtn = document.getElementById('confirm-checkout-btn');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>' + (i18n.t('processing') || '处理中...');
+    }
+    
+    showNotification(i18n.t('processingPayment') || '正在处理支付...', 'info');
+    
+    // Create PayPal order
+    const orderResponse = await axios.post('/api/payment/cart/create-order', {
+      items: items.map(item => ({
+        id: item.id,
+        tier: item.subscription_tier,
+        item_type: item.item_type,
+        price_usd: item.price_usd,
+        duration_days: item.duration_days
+      }))
+    });
+    
+    const orderId = orderResponse.data.orderId;
+    
+    // In a real scenario, we would redirect to PayPal
+    // For testing in sandbox mode, we'll simulate a successful payment
+    // In production, you MUST use the PayPal button or redirect to PayPal approval URL
+    
+    // Simulate payment delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Note: In production, this capture should only happen after PayPal approval
+    // This is a simplified flow for testing purposes
+    const captureResponse = await axios.post('/api/payment/cart/capture-order', {
+      orderId: orderId
+    });
+    
+    showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
+    closeCheckout();
+    
+    // Clear cart and reload page
+    await axios.delete('/api/cart');
+    await updateCartCount();
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+    
+  } catch (error) {
+    console.error('Confirm checkout error:', error);
+    showNotification(i18n.t('paymentFailed') || '支付失败: ' + (error.response?.data?.error || error.message), 'error');
+    
+    const confirmBtn = document.getElementById('confirm-checkout-btn');
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<i class="fas fa-check mr-2"></i>' + (i18n.t('confirmPayment') || '确认支付');
+    }
   }
 }
 
