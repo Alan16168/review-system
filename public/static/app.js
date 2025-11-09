@@ -5773,29 +5773,49 @@ async function showUserSettings() {
               </div>
             </div>
             
-            <!-- User Upgrade Section (Only for role='user') -->
-            ${settings.role === 'user' ? `
+            <!-- User Level Management Section -->
+            ${settings.role !== 'admin' ? `
             <div class="mt-8">
               <h3 class="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
-                <i class="fas fa-user-plus text-purple-500 mr-2"></i>${i18n.t('userManagement') || '用户管理'}
+                <i class="fas fa-star text-yellow-500 mr-2"></i>${i18n.t('userLevelManagement') || '用户级别管理'}
               </h3>
               
               <div class="space-y-4">
-                <div class="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-lg">
-                  <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                      <p class="text-sm text-gray-600 mb-1">${i18n.t('currentPlan') || '当前方案'}</p>
-                      <p class="text-2xl font-bold text-gray-800 mb-2">
-                        <i class="fas fa-user-circle text-gray-500 mr-2"></i>${i18n.t('freeUser') || '免费用户'}
-                      </p>
-                      <p class="text-sm text-gray-600">
-                        ${i18n.t('upgradeToPremiumDesc') || '升级到高级用户可以创建团队、邀请成员、进行团队协作复盘'}
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border-2 border-indigo-200">
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Current Level -->
+                    <div>
+                      <p class="text-sm text-gray-600 mb-1">${i18n.t('currentLevel') || '当前级别'}</p>
+                      <p class="text-2xl font-bold ${settings.role === 'premium' ? 'text-yellow-600' : 'text-gray-700'}">
+                        <i class="fas ${settings.role === 'premium' ? 'fa-crown' : 'fa-user-circle'} mr-2"></i>
+                        ${settings.role === 'premium' ? (i18n.t('premiumUser') || '高级用户') : (i18n.t('freeUser') || '免费用户')}
                       </p>
                     </div>
-                    <div class="ml-6">
-                      <button onclick="handleUpgradeToPremium()" 
-                              class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-semibold shadow-lg transform hover:scale-105">
-                        <i class="fas fa-crown mr-2"></i>${i18n.t('upgradeAccount') || '升级账户'}
+                    
+                    <!-- Expiry Date -->
+                    <div>
+                      <p class="text-sm text-gray-600 mb-1">${i18n.t('expiryDate') || '有效期'}</p>
+                      <p class="text-xl font-semibold text-gray-800">
+                        ${settings.role === 'premium' && settings.subscription_expires_at 
+                          ? new Date(settings.subscription_expires_at).toLocaleDateString() 
+                          : (i18n.t('forever') || '永久')}
+                      </p>
+                      ${settings.role === 'premium' && settings.subscription_expires_at ? `
+                        <p class="text-xs text-gray-500 mt-1">
+                          ${(() => {
+                            const daysLeft = Math.ceil((new Date(settings.subscription_expires_at) - new Date()) / (1000 * 60 * 60 * 24));
+                            return daysLeft > 0 ? (i18n.t('daysRemaining') || '剩余天数') + ': ' + daysLeft : (i18n.t('expired') || '已过期');
+                          })()}
+                        </p>
+                      ` : ''}
+                    </div>
+                    
+                    <!-- Action Button -->
+                    <div class="flex items-center justify-end">
+                      <button onclick="showUpgradeModal()" 
+                              class="bg-gradient-to-r ${settings.role === 'premium' ? 'from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700' : 'from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'} text-white px-8 py-3 rounded-lg transition font-semibold shadow-lg transform hover:scale-105">
+                        <i class="fas ${settings.role === 'premium' ? 'fa-sync-alt' : 'fa-arrow-up'} mr-2"></i>
+                        ${settings.role === 'premium' ? (i18n.t('renew') || '续费') : (i18n.t('upgrade') || '升级')}
                       </button>
                     </div>
                   </div>
@@ -5948,18 +5968,6 @@ async function handleChangePasswordFromSettings() {
 }
 
 // Handle upgrade to premium account
-async function handleUpgradeToPremium() {
-  // Show confirmation dialog
-  const message = i18n.t('upgradeToPremiumConfirm') || '升级到高级用户后，您将获得创建团队、邀请成员等高级功能。\n\n请联系管理员进行账户升级。';
-  
-  if (confirm(message)) {
-    showNotification(i18n.t('contactAdminForUpgrade') || '请联系管理员升级您的账户', 'info');
-    
-    // Optionally, could send a notification to admin or open a contact form
-    // For now, just show an informational message
-  }
-}
-
 // ============ Template Management Functions ============
 
 let allTemplates = [];
@@ -7149,32 +7157,51 @@ async function adminDeletePublicReview(reviewId) {
 // Show upgrade modal for free users
 async function showUpgradeModal() {
   try {
-    // Get subscription info
-    const response = await axios.get('/api/payment/subscription/info');
-    const { premium } = response.data;
+    // Get current user info and subscription config
+    const [userResponse, configResponse] = await Promise.all([
+      axios.get('/api/auth/settings'),
+      axios.get('/api/payment/subscription/info')
+    ]);
+    
+    const user = userResponse.data;
+    const { premium } = configResponse.data;
+    const isRenewal = user.role === 'premium';
     
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
     modal.innerHTML = `
       <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
         <h2 class="text-2xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-crown text-yellow-500 mr-2"></i>
-          ${i18n.t('upgradeToPremium') || '升级到高级用户'}
+          <i class="fas ${isRenewal ? 'fa-sync-alt text-green-500' : 'fa-crown text-yellow-500'} mr-2"></i>
+          ${isRenewal ? (i18n.t('renewSubscription') || '续费订阅') : (i18n.t('upgradeToPremium') || '升级到高级用户')}
         </h2>
         <div class="mb-6">
+          ${isRenewal ? `
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p class="text-sm text-gray-700 mb-2">
+                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                ${i18n.t('currentExpiryDate') || '当前到期日期'}: <strong>${user.subscription_expires_at ? new Date(user.subscription_expires_at).toLocaleDateString() : 'N/A'}</strong>
+              </p>
+              <p class="text-sm text-gray-600">
+                ${i18n.t('renewalExtendsBy365Days') || '续费将延长365天有效期'}
+              </p>
+            </div>
+          ` : ''}
           <div class="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-6 mb-4">
             <div class="text-center mb-4">
               <div class="text-4xl font-bold text-gray-800">
                 $${premium.price}
               </div>
-              <div class="text-sm text-gray-600">${i18n.t('pricePerYear') || '每年'}</div>
+              <div class="text-sm text-gray-600">${i18n.t('per365Days') || '365天'}</div>
             </div>
+            ${!isRenewal ? `
             <div class="text-sm text-gray-700">
-              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('createTeam') || '创建团队'}</p>
-              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('unlimitedReviews') || '无限复盘'}</p>
-              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('customTemplates') || '自定义模板'}</p>
-              <p><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('prioritySupport') || '优先支持'}</p>
+              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('createTeams') || '创建团队'}</p>
+              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('inviteMembers') || '邀请成员'}</p>
+              <p class="mb-2"><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('teamCollaboration') || '团队协作复盘'}</p>
+              <p><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('createCustomTemplates') || '创建自定义模板'}</p>
             </div>
+            ` : ''}
           </div>
           <div id="paypal-button-container" class="mb-4"></div>
         </div>

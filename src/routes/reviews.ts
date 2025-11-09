@@ -147,8 +147,8 @@ reviews.get('/:id', async (c) => {
       LEFT JOIN teams t ON r.team_id = t.id
       LEFT JOIN templates tp ON r.template_id = tp.id
       WHERE r.id = ? AND (
-        (r.owner_type = 'private' AND r.user_id = ?)
-        OR (r.owner_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
+        r.user_id = ?
+        OR (r.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
         OR (r.owner_type = 'public')
         OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
       )
