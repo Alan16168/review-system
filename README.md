@@ -111,26 +111,24 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://c50cc22d.review-system.pages.dev
+- **最新部署 ID**: https://ec91d0ed.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.15.3 (修复版) - 续费按钮正常工作
+- **版本**: ✅ V5.16.0 (完整版) - 购物车结算确认按钮
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-09
 - **部署时间**: 最新部署
 - **更新内容**:
-  - ✅ **Bug修复**：修复续费按钮点击时出现"操作失败"的错误
-  - ✅ **续费按钮改进**：高级用户点击"续费"按钮添加到购物车
-  - ✅ **统一用户体验**：升级和续费按钮行为一致，都添加到购物车
-  - ✅ **购物车系统**：完整的购物车功能，支持添加、查看、删除商品
-  - ✅ **购物车图标**：导航栏显示购物车图标和商品数量徽章
-  - ✅ **购物车模态框**：查看购物车内商品，支持单个删除和清空
-  - ✅ **PayPal多商品结算**：支持购物车内所有商品一次性支付
-  - ✅ **智能价格识别**：续费使用 renewal_price，升级使用 price
-  - ✅ **防止重复添加**：同一商品类型（升级/续费）不能重复加入购物车
-  - ✅ **数据库支持**：新增shopping_cart表存储购物车数据
-  - ✅ **国际化支持**：新增18个购物车相关翻译键（中英双语）
-  - ✅ **已推送到 GitHub 公开仓库**
+  - ✅ **结算确认按钮**：购物车结算界面新增"确认支付"按钮
+  - ✅ **PayPal加载优化**：添加加载指示器，改进用户体验
+  - ✅ **支付流程增强**：支持PayPal按钮和直接支付两种方式
+  - ✅ **智能按钮管理**：PayPal加载成功时两种按钮都可见，用户可选择
+  - ✅ **防止重复支付**：添加按钮禁用和加载状态，防止双击
+  - ✅ **新增7个翻译键**：confirmPayment、loadingPayPal、processing等
+  - ✅ **完整购物车系统**：添加、查看、删除、结算一体化流程
+  - ✅ **PayPal环境变量**：生产环境已配置PayPal凭据
+  - ✅ **代码已提交到Git**：本地commit完成
+  - ✅ **项目备份完成**：已上传到CDN（review-system-shopping-cart-complete.tar.gz）
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -955,7 +953,50 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.15.3  
+**当前版本**: V5.16.0  
+
+**V5.16.0 更新内容** (2025-11-09):
+- 🛒 **购物车结算确认按钮**（核心功能完善）：
+  - **新增"确认支付"按钮**：结算界面右下角蓝色按钮
+  - **支付方式选择**：
+    - PayPal按钮：标准的PayPal支付流程（推荐）
+    - 确认支付按钮：备用的直接支付方式（测试环境）
+  - **加载体验优化**：
+    - 显示"正在加载PayPal..."加载指示器
+    - PayPal加载成功后自动隐藏加载指示器
+    - 2秒超时确保加载指示器不会一直显示
+  - **防止重复操作**：
+    - 点击确认按钮后自动禁用，显示"处理中..."
+    - 防止用户重复点击导致多次支付
+  - **智能支付流程**：
+    - 点击确认支付显示确认对话框（显示总金额）
+    - 创建PayPal订单
+    - 捕获支付并更新用户订阅
+    - 清空购物车并刷新页面
+  - **按钮布局优化**：
+    - 左侧：取消按钮（灰色）
+    - 右侧：确认支付按钮（蓝色）
+    - 两个按钮并排显示，操作更直观
+- 🌐 **新增7个国际化翻译**：
+  - confirmPayment: 确认支付 / Confirm Payment
+  - loadingPayPal: 正在加载PayPal... / Loading PayPal...
+  - processing: 处理中... / Processing...
+  - redirectingToPayPal: 正在跳转到PayPal... / Redirecting to PayPal...
+  - pleaseUsePayPalButton: 请使用PayPal按钮完成支付
+  - paypalNotLoaded: PayPal未加载，请刷新页面
+  - orderSummary: 订单摘要 / Order Summary
+- 🔧 **代码优化**：
+  - 改进PayPal按钮初始化逻辑
+  - 增强错误处理和日志记录
+  - 简化按钮显示/隐藏逻辑
+  - 添加全局 currentCheckoutItems 变量管理购物车数据
+- 💳 **PayPal配置**：
+  - 生产环境已配置 PAYPAL_CLIENT_ID
+  - 生产环境已配置 PAYPAL_CLIENT_SECRET
+  - 生产环境已配置 PAYPAL_MODE=sandbox
+  - PayPal SDK正确加载并显示Client ID
+- ✅ **部署状态**: 已成功部署到生产环境（https://ec91d0ed.review-system.pages.dev）
+- 💾 **备份完成**: 项目备份已上传（review-system-shopping-cart-complete.tar.gz）
 
 **V5.15.3 更新内容** (2025-11-09):
 - 🔄 **续费按钮改进**（用户体验统一）：
