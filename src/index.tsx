@@ -10,6 +10,7 @@ import resources from './routes/resources';
 import templates from './routes/templates';
 import testimonials from './routes/testimonials';
 import payment from './routes/payment';
+import cron from './routes/cron';
 
 type Bindings = {
   DB: D1Database;
@@ -43,6 +44,7 @@ app.route('/api/resources', resources);
 app.route('/api/templates', templates);
 app.route('/api/testimonials', testimonials);
 app.route('/api/payment', payment);
+app.route('/api/cron', cron);
 
 // Main page - Login/Dashboard
 app.get('/', (c) => {
