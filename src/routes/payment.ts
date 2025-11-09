@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import type { D1Database } from '@cloudflare/workers-types';
+import { authMiddleware } from '../middleware/auth';
+import { UserPayload } from '../utils/auth';
 
 type Bindings = {
   DB: D1Database;
@@ -40,30 +42,22 @@ async function getSubscriptionConfig(db: D1Database, tier: string) {
   return result;
 }
 
-// Middleware to check authentication
-payment.use('/*', async (c, next) => {
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
-  
-  const token = authHeader.substring(7);
-  const userResult = await c.env.DB.prepare(
-    'SELECT id, email, role, subscription_tier, subscription_expires_at FROM users WHERE id = ?'
-  ).bind(parseInt(token)).first();
-  
-  if (!userResult) {
-    return c.json({ error: 'Invalid token' }, 401);
-  }
-  
-  c.set('user', userResult);
-  await next();
-});
+// Apply authentication to all payment routes
+payment.use('/*', authMiddleware);
 
 // Get subscription info and pricing
 payment.get('/subscription/info', async (c) => {
   try {
-    const user = c.get('user');
+    const tokenUser = c.get('user') as UserPayload;
+    
+    // Get full user info from database including subscription fields
+    const user = await c.env.DB.prepare(
+      'SELECT id, email, role, subscription_tier, subscription_expires_at FROM users WHERE id = ?'
+    ).bind(tokenUser.id).first();
+    
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
     
     // Get premium subscription config
     const config = await getSubscriptionConfig(c.env.DB, 'premium');
@@ -91,7 +85,7 @@ payment.get('/subscription/info', async (c) => {
 // Create PayPal order for subscription
 payment.post('/subscription/create-order', async (c) => {
   try {
-    const user = c.get('user');
+    const tokenUser = c.get('user') as UserPayload;
     const { tier } = await c.req.json();
     
     if (tier !== 'premium') {
@@ -155,7 +149,7 @@ payment.post('/subscription/create-order', async (c) => {
         subscription_tier, subscription_duration_days, transaction_data
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      user.id,
+      tokenUser.id,
       config.price_usd,
       'pending',
       orderData.id,
@@ -177,23 +171,32 @@ payment.post('/subscription/create-order', async (c) => {
 // Capture PayPal payment and activate subscription
 payment.post('/subscription/capture-order', async (c) => {
   try {
-    const user = c.get('user');
+    const tokenUser = c.get('user') as UserPayload;
     const { orderId } = await c.req.json();
     
     if (!orderId) {
       return c.json({ error: 'Order ID is required' }, 400);
     }
     
+    // Get full user info from database
+    const user = await c.env.DB.prepare(
+      'SELECT id, email, role, subscription_tier, subscription_expires_at FROM users WHERE id = ?'
+    ).bind(tokenUser.id).first();
+    
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+    
     // Get payment record
-    const payment = await c.env.DB.prepare(
+    const paymentRecord = await c.env.DB.prepare(
       'SELECT * FROM payments WHERE paypal_order_id = ? AND user_id = ?'
     ).bind(orderId, user.id).first();
     
-    if (!payment) {
+    if (!paymentRecord) {
       return c.json({ error: 'Payment record not found' }, 404);
     }
     
-    if (payment.payment_status === 'completed') {
+    if (paymentRecord.payment_status === 'completed') {
       return c.json({ error: 'Payment already processed' }, 400);
     }
     
@@ -240,7 +243,7 @@ payment.post('/subscription/capture-order', async (c) => {
     // If current subscription is still valid, extend from expiry date
     // Otherwise, start from now
     const startDate = currentExpiry > new Date() ? currentExpiry : new Date();
-    const expiryDate = new Date(startDate.getTime() + payment.subscription_duration_days * 24 * 60 * 60 * 1000);
+    const expiryDate = new Date(startDate.getTime() + paymentRecord.subscription_duration_days * 24 * 60 * 60 * 1000);
     
     // Update user subscription
     await c.env.DB.prepare(`
@@ -251,7 +254,7 @@ payment.post('/subscription/capture-order', async (c) => {
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
-      payment.subscription_tier,
+      paymentRecord.subscription_tier,
       expiryDate.toISOString(),
       'premium',
       user.id
@@ -275,7 +278,7 @@ payment.post('/subscription/capture-order', async (c) => {
     return c.json({
       success: true,
       subscription: {
-        tier: payment.subscription_tier,
+        tier: paymentRecord.subscription_tier,
         expiresAt: expiryDate.toISOString(),
       }
     });
@@ -288,7 +291,7 @@ payment.post('/subscription/capture-order', async (c) => {
 // Get payment history for current user
 payment.get('/history', async (c) => {
   try {
-    const user = c.get('user');
+    const tokenUser = c.get('user') as UserPayload;
     
     const payments = await c.env.DB.prepare(`
       SELECT 
@@ -298,7 +301,7 @@ payment.get('/history', async (c) => {
       FROM payments
       WHERE user_id = ?
       ORDER BY created_at DESC
-    `).bind(user.id).all();
+    `).bind(tokenUser.id).all();
     
     return c.json({ payments: payments.results || [] });
   } catch (error) {

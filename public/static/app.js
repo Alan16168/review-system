@@ -272,15 +272,6 @@ async function showHomePage() {
                   <i class="fas fa-user mr-1"></i>${escapeHtml(currentUser.username)}
                   <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
                 </button>
-                ${currentUser.role === 'user' ? `
-                  <button onclick="showUpgradeModal()" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition">
-                    <i class="fas fa-crown mr-1"></i>${i18n.t('upgrade') || '升级'}
-                  </button>
-                ` : currentUser.role === 'premium' ? `
-                  <button onclick="showRenewModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
-                    <i class="fas fa-sync-alt mr-1"></i>${i18n.t('renewSubscription') || '续费'}
-                  </button>
-                ` : ''}
                 <button onclick="logout()" class="text-red-600 hover:text-red-800">
                   <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
                 </button>
@@ -5780,6 +5771,47 @@ async function showUserSettings() {
                         class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-semibold">
                   <i class="fas fa-save mr-2"></i>${i18n.t('saveChanges')}
                 </button>
+              </div>
+            </div>
+            
+            <!-- Subscription Section -->
+            <div class="mt-8">
+              <h3 class="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                <i class="fas fa-crown text-yellow-500 mr-2"></i>${i18n.t('subscriptionManagement') || '订阅管理'}
+              </h3>
+              
+              <div class="space-y-4">
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-sm text-gray-600">${i18n.t('currentPlan') || '当前方案'}</p>
+                      <p class="text-xl font-bold text-gray-800">
+                        ${settings.role === 'admin' ? i18n.t('admin') || '管理员' : 
+                          settings.role === 'premium' ? i18n.t('premiumPlan') || '高级用户' : 
+                          i18n.t('freePlan') || '免费用户'}
+                      </p>
+                      ${settings.subscription_expires_at ? `
+                        <p class="text-sm text-gray-600 mt-1">
+                          ${i18n.t('subscriptionExpires') || '到期日期'}: 
+                          <span class="font-semibold">${new Date(settings.subscription_expires_at).toLocaleDateString()}</span>
+                        </p>
+                      ` : ''}
+                    </div>
+                    <div>
+                      ${settings.role === 'user' ? `
+                        <button onclick="showUpgradeModal()" 
+                                class="bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition font-semibold">
+                          <i class="fas fa-crown mr-2"></i>${i18n.t('upgradeToPremium') || '升级到高级用户'}
+                        </button>
+                      ` : settings.role === 'premium' ? `
+                        <button onclick="showRenewModal()" 
+                                class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition font-semibold">
+                          <i class="fas fa-sync-alt mr-2"></i>${i18n.t('renewSubscription') || '续费订阅'}
+                        </button>
+                      ` : ''}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
