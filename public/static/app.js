@@ -174,9 +174,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkAuth() {
-  // Check if URL contains password reset token
+  // Check if URL contains password reset token or invitation token
   const urlParams = new URLSearchParams(window.location.search);
   const resetToken = urlParams.get('token');
+  const inviteToken = urlParams.get('invite');
+  
+  // Check invitation token first (highest priority)
+  if (inviteToken) {
+    showInvitationLandingPage(inviteToken);
+    return;
+  }
   
   if (resetToken) {
     // Show password reset page with token
@@ -7966,16 +7973,6 @@ async function sendInvitationEmails() {
   }
 }
 
-// Check for invitation token on page load
-function checkInvitationToken() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const inviteToken = urlParams.get('invite');
-  
-  if (inviteToken) {
-    showInvitationLandingPage(inviteToken);
-  }
-}
-
 async function showInvitationLandingPage(token) {
   try {
     const response = await axios.get(`/api/invitations/verify/${token}`);
@@ -8151,11 +8148,3 @@ async function handleReferralRegister(e) {
     showNotification(i18n.t('registerFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
-
-// Initialize on page load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', checkInvitationToken);
-} else {
-  checkInvitationToken();
-}
-

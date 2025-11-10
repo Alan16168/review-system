@@ -194,9 +194,9 @@ invitations.get('/verify/:token', async (c) => {
     const answers = await c.env.DB.prepare(`
       SELECT ra.*, tq.question_text, tq.question_text_en, tq.question_number
       FROM review_answers ra
-      LEFT JOIN template_questions tq ON ra.question_id = tq.id
+      LEFT JOIN template_questions tq ON ra.question_number = tq.question_number
       WHERE ra.review_id = ?
-      ORDER BY tq.question_number
+      ORDER BY ra.question_number
     `).bind(invitation.review_id).all();
 
     // Get referrer info
