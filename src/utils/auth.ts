@@ -1,7 +1,12 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = 'your-secret-key-change-in-production';
+// JWT_SECRET should come from environment variable, with fallback for development
+const getJwtSecret = (): string => {
+  // In Cloudflare Workers, env is passed as parameter, so we use a global default
+  // The actual secret will be accessed from context in auth routes
+  return 'your-secret-key-change-in-production';
+};
 
 export interface UserPayload {
   id: number;
@@ -18,13 +23,15 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash);
 }
 
-export function generateToken(user: UserPayload): string {
-  return jwt.sign(user, JWT_SECRET, { expiresIn: '7d' });
+export function generateToken(user: UserPayload, jwtSecret?: string): string {
+  const secret = jwtSecret || getJwtSecret();
+  return jwt.sign(user, secret, { expiresIn: '7d' });
 }
 
-export function verifyToken(token: string): UserPayload | null {
+export function verifyToken(token: string, jwtSecret?: string): UserPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as UserPayload;
+    const secret = jwtSecret || getJwtSecret();
+    return jwt.verify(token, secret) as UserPayload;
   } catch (error) {
     return null;
   }

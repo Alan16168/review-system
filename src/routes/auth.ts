@@ -10,6 +10,7 @@ type Bindings = {
   GOOGLE_CLIENT_SECRET?: string;
   RESEND_API_KEY?: string;
   APP_URL?: string;
+  JWT_SECRET?: string;
 };
 
 const auth = new Hono<{ Bindings: Bindings }>();
@@ -76,7 +77,7 @@ auth.post('/register', async (c) => {
       email: user.email,
       username: user.username,
       role: user.role
-    });
+    }, c.env.JWT_SECRET);
 
     return c.json({
       token,
@@ -127,7 +128,7 @@ auth.post('/login', async (c) => {
       email: user.email,
       username: user.username,
       role: user.role
-    });
+    }, c.env.JWT_SECRET);
 
     return c.json({
       token,
@@ -204,7 +205,7 @@ auth.post('/google', async (c) => {
       email: user.email,
       username: user.username,
       role: user.role
-    });
+    }, c.env.JWT_SECRET);
 
     return c.json({
       token,

@@ -9,7 +9,8 @@ export async function authMiddleware(c: Context, next: Next) {
   }
 
   const token = authHeader.substring(7);
-  const user = verifyToken(token);
+  const jwtSecret = c.env.JWT_SECRET;
+  const user = verifyToken(token, jwtSecret);
 
   if (!user) {
     return c.json({ error: 'Invalid token' }, 401);
