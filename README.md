@@ -117,14 +117,26 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://4486c377.review-system.pages.dev
+- **最新部署 ID**: https://9efcf71a.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.23.1 - 编辑复盘界面支持选择题
+- **版本**: ✅ V5.23.2 - 修复生产环境登录问题
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-10
 - **部署时间**: 最新部署
 - **更新内容**:
+  - ✅ **V5.23.2 - 修复生产环境登录问题**（关键修复）：
+    - **问题**: 生产环境无法登录，所有用户返回"Invalid credentials"错误
+    - **根本原因**: 
+      1. JWT_SECRET 硬编码在代码中，未从环境变量读取
+      2. 生产数据库密码哈希被shell截断
+    - **解决方案**:
+      1. ✅ 修改 utils/auth.ts 支持从环境变量读取 JWT_SECRET
+      2. ✅ 更新所有调用 generateToken 的地方传递 JWT_SECRET
+      3. ✅ 更新 authMiddleware 使用环境变量中的 JWT_SECRET
+      4. ✅ 添加 JWT_SECRET 到 Cloudflare Pages secrets
+      5. ✅ 修复生产数据库中的密码哈希
+    - **修复效果**: ✅ 所有用户现在可以成功登录生产环境
   - ✅ **V5.23.1 - 编辑复盘界面支持选择题**（用户体验改进）：
     - 修复"我的复盘"→"编辑"功能，现在可以正确识别单选题和多选题
     - 单选题：显示 Radio 按钮，可以选择一个答案，自动预选用户之前的答案
