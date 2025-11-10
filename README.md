@@ -111,7 +111,7 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://5ea43fc4.review-system.pages.dev
+- **最新部署 ID**: https://4f642b6c.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ V5.17.0 (新功能) - 管理后台用户列表新增有效期限列
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
@@ -951,18 +951,20 @@ MIT License
 - 📊 **管理后台用户列表增强**（新增功能）：
   - **新增"有效期限"列**：显示用户订阅到期日期（subscription_expires_at）
   - **列位置**：插入在"最后登录"和"创建时间"列之间
-  - **显示逻辑**：
-    - ✅ 有订阅用户：显示到期日期（如：2025-12-09，黑色加粗字体）
-    - ✅ 非订阅用户：显示"永久"（灰色字体）
+  - **智能显示逻辑**：
+    - ✅ Premium 用户：显示实际到期日期（如：2026-10-09，黑色加粗字体）
+    - ✅ Admin 用户（年份=9999）：显示"永久"（灰色字体）
+    - ✅ 未订阅用户（NULL）：显示"永久"（灰色字体）
   - **国际化支持**：
     - 中文：有效期限、永久
     - 英文：Expiry Date、Forever
   - **数据来源**：users 表的 subscription_expires_at 字段
 - 🎨 **用户体验改进**：
-  - 管理员可以清晰看到每个用户的订阅状态
+  - 管理员可以清晰看到每个用户的实际订阅到期日期
   - 便于管理和追踪订阅到期时间
   - 与用户设置页面的订阅信息保持一致
-- ✅ **部署状态**: 本地测试成功，待部署到生产环境
+- 🐛 **修复问题**：修复所有用户都显示"永久"的bug，现在正确显示实际到期日期
+- ✅ **部署状态**: 已成功部署到生产环境（https://4f642b6c.review-system.pages.dev）
 
 **V5.16.1 更新内容** (2025-11-09):
 - 🐛 **关键Bug修复**（用户权限刷新问题）：
