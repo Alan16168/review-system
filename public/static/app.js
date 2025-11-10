@@ -6441,7 +6441,7 @@ function renderTemplatesTable(templates) {
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           ${templates.map(template => `
-            <tr>
+            <tr class="${!template.is_active ? 'bg-gray-100' : ''}">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">${escapeHtml(template.name)}</div>
                 ${template.name_en ? `<div class="text-xs text-gray-500">${escapeHtml(template.name_en)}</div>` : ''}
@@ -6723,15 +6723,18 @@ async function deleteTemplate(templateId) {
 
   try {
     const response = await axios.delete(`/api/templates/${templateId}`);
+    const disabled = response.data.disabled || false;
     const affectedReviews = response.data.affected_reviews || 0;
     
-    if (affectedReviews > 0) {
+    if (disabled) {
+      // Template was disabled (soft delete)
       showNotification(
-        (i18n.t('templateDeletedWithReassign') || '模板已删除，{count}个复盘已重新分配到默认模板')
+        (i18n.t('templateDisabledDueToUsage') || '模板已禁用（被{count}个复盘使用），可在列表中重新启用')
           .replace('{count}', affectedReviews), 
-        'success'
+        'warning'
       );
     } else {
+      // Template was permanently deleted
       showNotification(i18n.t('templateDeleted'), 'success');
     }
     await loadTemplatesTable();

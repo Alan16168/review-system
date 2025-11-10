@@ -152,7 +152,8 @@ templates.get('/admin/all', premiumOrAdmin, async (c) => {
       query += ` WHERE t.created_by = ?`;
     }
     
-    query += ` ORDER BY t.is_default DESC, t.created_at DESC`;
+    // Sort by: is_active DESC (active first), is_default DESC, created_at DESC
+    query += ` ORDER BY t.is_active DESC, t.is_default DESC, t.created_at DESC`;
     
     const statement = c.env.DB.prepare(query);
     const templatesResult = user.role === 'premium' 
@@ -378,14 +379,20 @@ templates.delete('/:id', premiumOrAdmin, async (c) => {
       SELECT COUNT(*) as count FROM reviews WHERE template_id = ?
     `).bind(templateId).first<any>();
 
-    // If template is being used, reassign those reviews to default template (id=1)
+    // If template is being used, only disable it (soft delete)
     if (usageCheck && usageCheck.count > 0) {
       await c.env.DB.prepare(`
-        UPDATE reviews SET template_id = 1 WHERE template_id = ?
+        UPDATE templates SET is_active = 0 WHERE id = ?
       `).bind(templateId).run();
+      
+      return c.json({ 
+        message: 'Template has been disabled because it is being used by reviews',
+        disabled: true,
+        affected_reviews: usageCheck.count
+      });
     }
 
-    // Hard delete - remove template and its questions
+    // If template is not being used, hard delete it
     await c.env.DB.prepare(`
       DELETE FROM template_questions WHERE template_id = ?
     `).bind(templateId).run();
@@ -395,10 +402,9 @@ templates.delete('/:id', premiumOrAdmin, async (c) => {
     `).bind(templateId).run();
     
     return c.json({ 
-      message: usageCheck && usageCheck.count > 0 
-        ? `Template deleted successfully. ${usageCheck.count} review(s) were reassigned to the default template.`
-        : 'Template deleted successfully',
-      affected_reviews: usageCheck ? usageCheck.count : 0
+      message: 'Template deleted successfully',
+      disabled: false,
+      affected_reviews: 0
     });
   } catch (error) {
     console.error('Delete template error:', error);
