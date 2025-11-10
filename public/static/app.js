@@ -8212,10 +8212,10 @@ async function showInvitationLandingPage(token) {
               <i class="fas fa-user-plus mr-2"></i>${i18n.t('register')}
             </button>
             <div class="mt-6 flex justify-center">
-              <button onclick="showLoginWithReferral('${token}')" 
-                      class="inline-block bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-indigo-50 transition transform hover:scale-105 shadow">
+              <a href="https://review-system.pages.dev/" 
+                 class="inline-block bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-indigo-50 transition transform hover:scale-105 shadow">
                 <i class="fas fa-sign-in-alt mr-2"></i>${i18n.t('login')}
-              </button>
+              </a>
             </div>
             <p class="mt-4 text-xs text-gray-400">
               ${i18n.t('haveAccount')} 
