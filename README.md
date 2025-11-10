@@ -111,30 +111,34 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://519cada7.review-system.pages.dev
+- **最新部署 ID**: https://be8529a4.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.17.0 (新功能) - 管理后台用户列表新增有效期限列
+- **版本**: ✅ V5.18.0 (重大新功能) - 完整的邀请系统
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-10
 - **部署时间**: 最新部署
 - **更新内容**:
-  - ✅ **新增功能**：管理后台用户列表显示订阅到期日期
-  - ✅ **有效期限列**：显示每个用户的 subscription_expires_at
-  - ✅ **智能显示**：有订阅显示日期，无订阅显示"永久"
-  - ✅ **国际化支持**：中英双语（有效期限/Expiry Date，永久/Forever）
-  - ✅ **管理便利性**：管理员可清晰追踪所有用户的订阅状态
+  - ✅ **邀请系统**：用户可邀请他人加入Review System并查看复盘
+  - ✅ **邀请按钮**：复盘列表每行新增"邀请"按钮（紫色图标）
+  - ✅ **邀请链接**：生成30天有效期的邀请链接，可复制分享
+  - ✅ **二维码**：自动生成邀请二维码，方便移动端扫描
+  - ✅ **邮件邀请**：支持发送邀请到多个email地址（逗号分隔）
+  - ✅ **邀请落地页**：精美的邀请页面，展示复盘内容预览
+  - ✅ **介绍人追踪**：users表新增referred_by字段，记录每个用户的介绍人
+  - ✅ **默认介绍人**：所有现有用户默认由dengalan@gmail.com介绍
+  - ✅ **注册集成**：通过邀请链接注册自动设置介绍人关系
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
-- **Git Commit**: ✅ V5.17.0 (管理后台用户列表新增有效期限列)
+- **Git Commit**: ✅ V5.18.0 (完整的邀请系统)
 - **本地端口**: 3000 (PM2 管理)
 - **更新内容**: 
-  - ✅ 管理后台用户列表新增"有效期限"列
-  - ✅ 显示每个用户的订阅到期日期
-  - ✅ 非订阅用户显示"永久"标识
-  - ✅ 国际化支持（中文：有效期限、永久；英文：Expiry Date、Forever）
-  - ✅ 列位置：在"最后登录"列之前插入
+  - ✅ 完整的邀请系统（后端API + 前端UI）
+  - ✅ 邀请链接生成、二维码、邮件发送
+  - ✅ 邀请落地页和注册集成
+  - ✅ 介绍人追踪系统（referred_by字段）
+  - ✅ 20+个新增国际化翻译键
 
 ### 测试账号
 | 角色 | 邮箱 | 密码 | 权限 |
@@ -935,7 +939,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-10
-- **当前版本**: V5.17.0（新功能 - 管理后台用户列表新增有效期限列）✅ 已发布到生产环境
+- **当前版本**: V5.18.0（重大新功能 - 完整的邀请系统）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -945,7 +949,44 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.17.0  
+**当前版本**: V5.18.0  
+
+**V5.18.0 更新内容** (2025-11-10):
+- 🎁 **完整的邀请系统**（重大新功能）：
+  - **核心功能**：用户可邀请他人加入Review System并分享复盘内容
+  - **邀请按钮**：在复盘列表（工作台、我的复盘）每行添加紫色"邀请"按钮
+  - **邀请模态框**：点击邀请按钮打开模态框，提供三种分享方式：
+    - ✅ 邀请链接：生成唯一邀请URL，30天有效期，一键复制
+    - ✅ 二维码：自动生成QR Code，方便移动端扫描分享
+    - ✅ 邮件邀请：支持发送到多个email地址（逗号分隔）
+  - **邀请落地页**：精美的邀请页面，包含：
+    - 复盘内容预览（显示前3个问题）
+    - 邀请人信息展示
+    - 注册CTA按钮（渐变紫色）
+  - **介绍人追踪系统**：
+    - users表新增 `referred_by` 字段（存储介绍人user_id）
+    - 所有现有用户默认介绍人：dengalan@gmail.com (user_id=4)
+    - 新用户注册时自动记录介绍人
+  - **注册集成**：
+    - 通过邀请链接注册自动设置介绍人关系
+    - 邀请token验证和使用追踪
+    - sessionStorage存储referral_token
+- 📊 **数据库架构**：
+  - 新增 `invitations` 表：token, review_id, referrer_id, expires_at, used_at等
+  - users表新增 `referred_by` 列
+  - 创建索引优化查询性能
+- 🔌 **后端API**（3个新端点）：
+  - POST /api/invitations/create - 生成邀请链接
+  - POST /api/invitations/send-email - 发送邀请邮件
+  - GET /api/invitations/verify/:token - 验证邀请并返回复盘内容
+  - 修改 POST /api/auth/register 支持 referral_token 参数
+- 🌐 **国际化**：新增20+个翻译键（invite, invitationLink, qrCode, sendByEmail等）
+- 🎨 **UI/UX优化**：
+  - 邀请按钮使用紫色主题，与删除红色、编辑蓝色区分
+  - 二维码使用QRCode.js CDN库生成
+  - 邀请落地页使用渐变背景和卡片设计
+  - 精美的HTML邮件模板
+- ✅ **部署状态**: 已成功部署到生产环境（https://be8529a4.review-system.pages.dev）
 
 **V5.17.0 更新内容** (2025-11-10):
 - 📊 **管理后台用户列表增强**（新增功能）：
