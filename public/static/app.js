@@ -2893,43 +2893,77 @@ async function showReviewDetail(id, readOnly = false) {
           ` : ''}
 
           <!-- Dynamic Questions Display -->
-          <div class="bg-white rounded-lg shadow-md p-6 space-y-6">
-            <h2 class="text-xl font-bold text-gray-800 border-b pb-3">
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-800 border-b pb-3 mb-4">
               <i class="fas fa-question-circle mr-2"></i>${review.template_name ? escapeHtml(review.template_name) : i18n.t('nineQuestions')}
             </h2>
             
             ${questions.length > 0 ? questions.map(q => {
               const userAnswers = answersByQuestion[q.question_number] || [];
               const myAnswer = userAnswers.find(a => a.user_id === currentUser.id);
+              const questionId = `question-${q.question_number}`;
               
               return `
-                <div class="border-l-4 border-indigo-500 pl-4 py-2 bg-gray-50 rounded mb-3">
-                  <h3 class="text-sm font-semibold text-gray-700 mb-2">
-                    ${q.question_number}. ${escapeHtml(q.question_text)}
-                  </h3>
-                  ${userAnswers.length > 0 ? userAnswers.map(ans => `
-                    <div class="text-gray-800 whitespace-pre-wrap bg-white p-3 rounded border ${
-                      ans.is_mine ? 'border-indigo-300' : 'border-gray-200'
-                    } mb-2">
-                      <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs text-gray-600">
-                          <i class="fas fa-user-circle mr-1"></i>${escapeHtml(ans.username)}${ans.is_mine ? ` (${i18n.t('myAnswer') || '我'})` : ''}
-                        </span>
-                        <span class="text-xs text-gray-500">
-                          <i class="fas fa-clock mr-1"></i>${new Date(ans.updated_at).toLocaleString()}
-                        </span>
+                <div class="border-b border-gray-200 py-3 last:border-b-0">
+                  <div class="flex justify-between items-start">
+                    <h3 class="text-sm font-semibold text-gray-700 flex-1">
+                      ${q.question_number}. ${escapeHtml(q.question_text)}
+                    </h3>
+                    <button 
+                      onclick="toggleAnswer('${questionId}')"
+                      class="ml-3 px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition flex items-center"
+                      id="toggle-btn-${questionId}"
+                    >
+                      <i class="fas fa-chevron-down mr-1" id="icon-${questionId}"></i>
+                      <span id="text-${questionId}">${i18n.t('expand') || '展开'}</span>
+                    </button>
+                  </div>
+                  
+                  <div id="${questionId}" class="hidden mt-2">
+                    ${userAnswers.length > 0 ? userAnswers.map(ans => `
+                      <div class="text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded border ${
+                        ans.is_mine ? 'border-indigo-200' : 'border-gray-200'
+                      } mt-2">
+                        <div class="flex justify-between items-center mb-1">
+                          <span class="text-xs text-gray-600 font-medium">
+                            <i class="fas fa-user-circle mr-1"></i>${escapeHtml(ans.username)}${ans.is_mine ? ` <span class="text-indigo-600">(${i18n.t('myAnswer') || '我'})</span>` : ''}
+                          </span>
+                          <span class="text-xs text-gray-500">
+                            <i class="fas fa-clock mr-1"></i>${new Date(ans.updated_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <div class="text-sm leading-relaxed">${escapeHtml(ans.answer)}</div>
                       </div>
-                      ${escapeHtml(ans.answer)}
-                    </div>
-                  `).join('') : `
-                    <div class="text-gray-500 bg-white p-3 rounded border border-gray-200">
-                      ${i18n.t('noAnswer') || '未填写'}
-                    </div>
-                  `}
+                    `).join('') : `
+                      <div class="text-gray-500 text-sm bg-gray-50 p-2 rounded border border-gray-200 mt-2">
+                        ${i18n.t('noAnswer') || '未填写'}
+                      </div>
+                    `}
+                  </div>
                 </div>
               `;
             }).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
           </div>
+          
+          <script>
+            function toggleAnswer(questionId) {
+              const answerDiv = document.getElementById(questionId);
+              const icon = document.getElementById('icon-' + questionId);
+              const text = document.getElementById('text-' + questionId);
+              
+              if (answerDiv.classList.contains('hidden')) {
+                answerDiv.classList.remove('hidden');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                text.textContent = '${i18n.t('collapse') || '收起'}';
+              } else {
+                answerDiv.classList.add('hidden');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                text.textContent = '${i18n.t('expand') || '展开'}';
+              }
+            }
+          </script>
 
           ${(collaborators && collaborators.length > 0) ? `
           <div class="mt-6 bg-white rounded-lg shadow-md p-6">
