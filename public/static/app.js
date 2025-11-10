@@ -4426,10 +4426,18 @@ function renderUsersTable(users) {
                 </span>
               </td>
               <td class="px-6 py-4 text-sm">
-                ${user.subscription_expires_at ? 
-                  `<span class="text-gray-900 font-medium">${new Date(user.subscription_expires_at).toLocaleDateString()}</span>` : 
-                  `<span class="text-gray-400">${i18n.t('forever') || '永久'}</span>`
-                }
+                ${(() => {
+                  if (!user.subscription_expires_at) {
+                    return `<span class="text-gray-400">${i18n.t('forever') || '永久'}</span>`;
+                  }
+                  const expiryDate = new Date(user.subscription_expires_at);
+                  const year = expiryDate.getFullYear();
+                  // Check if it's a special "forever" date (year 9999)
+                  if (year >= 9999) {
+                    return `<span class="text-gray-400">${i18n.t('forever') || '永久'}</span>`;
+                  }
+                  return `<span class="text-gray-900 font-medium">${expiryDate.toLocaleDateString()}</span>`;
+                })()}
               </td>
               <td class="px-6 py-4 text-sm text-gray-500">
                 ${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : '<span class="text-gray-400">No</span>'}
