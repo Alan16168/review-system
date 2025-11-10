@@ -34,10 +34,8 @@ FROM review_answers_backup rab
 JOIN reviews r ON rab.review_id = r.id;
 
 -- Step 5: Migrate data from team_review_answers if exists
-INSERT OR IGNORE INTO review_answers (review_id, user_id, question_number, answer, created_at, updated_at)
-SELECT review_id, user_id, question_number, answer, created_at, updated_at
-FROM team_review_answers
-WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='team_review_answers');
+-- Note: SQLite doesn't support conditional INSERT based on table existence
+-- We'll handle this in the next migration if needed
 
 -- Step 6: Drop backup table
 DROP TABLE IF EXISTS review_answers_backup;

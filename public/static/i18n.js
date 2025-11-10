@@ -195,6 +195,20 @@ const translations = {
     'viewerPermissions': '仅查看权限',
     'operatorPermissions': '查看和修改权限',
     
+    // Team Invitations
+    'teamInvitation': '团队邀请',
+    'invitedEmail': '受邀邮箱',
+    'yourRole': '您的角色',
+    'teamMemberBenefits': '团队成员权益',
+    'accessTeamReviews': '访问团队复盘内容',
+    'collaborateWithMembers': '与团队成员协作',
+    'shareYourReviews': '分享您的复盘',
+    'participateDiscussions': '参与团队讨论',
+    'readyToJoin': '准备加入团队？',
+    'loginOrRegisterToAccept': '登录或注册以接受邀请',
+    'teamJoinSuccess': '成功加入团队！',
+    'teamJoinFailed': '加入团队失败',
+    
     // Subscription & Payment
     'upgrade': '升级',
     'upgradeToPremium': '升级到高级用户',
@@ -794,6 +808,20 @@ const translations = {
     'creatorPermissions': 'All permissions (view/edit/delete)',
     'viewerPermissions': 'View only',
     'operatorPermissions': 'View and edit permissions',
+    
+    // Team Invitations
+    'teamInvitation': 'Team Invitation',
+    'invitedEmail': 'Invited Email',
+    'yourRole': 'Your Role',
+    'teamMemberBenefits': 'Team Member Benefits',
+    'accessTeamReviews': 'Access team reviews',
+    'collaborateWithMembers': 'Collaborate with team members',
+    'shareYourReviews': 'Share your reviews',
+    'participateDiscussions': 'Participate in team discussions',
+    'readyToJoin': 'Ready to Join?',
+    'loginOrRegisterToAccept': 'Login or register to accept the invitation',
+    'teamJoinSuccess': 'Successfully joined the team!',
+    'teamJoinFailed': 'Failed to join team',
     
     // Subscription & Payment
     'upgrade': 'Upgrade',

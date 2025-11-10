@@ -188,6 +188,16 @@ teams.delete('/:id', async (c) => {
   }
 });
 
+// Helper function to generate random token
+function generateInvitationToken(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let token = '';
+  for (let i = 0; i < 32; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
 // Add member to team (by user_id or email)
 teams.post('/:id/members', async (c) => {
   try {
@@ -196,7 +206,7 @@ teams.post('/:id/members', async (c) => {
     const { user_id, email, role = 'viewer' } = await c.req.json();
 
     // Check if current user is the owner
-    const team = await c.env.DB.prepare(
+    const team: any = await c.env.DB.prepare(
       'SELECT * FROM teams WHERE id = ? AND owner_id = ?'
     ).bind(teamId, user.id).first();
 
@@ -204,8 +214,13 @@ teams.post('/:id/members', async (c) => {
       return c.json({ error: 'Only owner can add members' }, 403);
     }
 
+    // Validate role
+    if (!['creator', 'viewer', 'operator'].includes(role)) {
+      return c.json({ error: 'Invalid role. Must be creator, viewer, or operator' }, 400);
+    }
+
     // Find target user by ID or email
-    let targetUser;
+    let targetUser: any;
     if (user_id) {
       targetUser = await c.env.DB.prepare(
         'SELECT * FROM users WHERE id = ?'
@@ -218,8 +233,76 @@ teams.post('/:id/members', async (c) => {
       return c.json({ error: 'User ID or email is required' }, 400);
     }
 
+    // If user not found, create an invitation for non-member
     if (!targetUser) {
-      return c.json({ error: 'User not found' }, 404);
+      // Create team invitation token
+      const token = generateInvitationToken();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30); // 30 days validity
+
+      await c.env.DB.prepare(`
+        INSERT INTO team_invitations (token, team_id, inviter_id, invitee_email, role, expires_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(token, teamId, user.id, email, role, expiresAt.toISOString()).run();
+
+      // Send invitation email for non-member
+      const baseUrl = new URL(c.req.url).origin;
+      const invitationUrl = `${baseUrl}/?team_invite=${token}`;
+
+      try {
+        await sendEmail(c.env.RESEND_API_KEY || '', {
+          to: email,
+          subject: `${user.username} invites you to join team "${team.name}" on Review System`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #4f46e5;">🎉 You're Invited to Join a Team!</h2>
+              <p>Hi there,</p>
+              
+              <p><strong>${user.username}</strong> has invited you to join the team <strong>"${team.name}"</strong> on Review System.</p>
+              
+              <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #1f2937;">Team Information:</h3>
+                <p><strong>Team Name:</strong> ${team.name}</p>
+                <p><strong>Your Role:</strong> ${role}</p>
+                ${team.description ? `<p><strong>Description:</strong> ${team.description}</p>` : ''}
+                <p><strong>Invited By:</strong> ${user.username}</p>
+              </div>
+
+              <p>As a team member, you'll be able to:</p>
+              <ul style="line-height: 1.8;">
+                <li>Access team reviews and collaborate with other members</li>
+                <li>Create and share reviews within the team</li>
+                <li>Participate in team discussions</li>
+              </ul>
+
+              <p style="text-align: center; margin: 30px 0;">
+                <a href="${invitationUrl}" 
+                   style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                  Accept Invitation & Join
+                </a>
+              </p>
+
+              <p style="color: #6b7280; font-size: 14px;">
+                This invitation link will expire in 30 days.
+              </p>
+
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+              <p style="color: #9ca3af; font-size: 12px;">
+                If you don't have an account yet, you can register for free when you click the link above.
+              </p>
+            </div>
+          `,
+          text: `${user.username} invites you to join team "${team.name}" on Review System.\n\nYour role: ${role}\n\nAccept invitation: ${invitationUrl}\n\nThis link will expire in 30 days.`
+        });
+      } catch (emailError) {
+        console.error('Failed to send team invitation email:', emailError);
+      }
+
+      return c.json({ 
+        message: 'Invitation sent successfully',
+        invitation_sent: true,
+        email: email
+      });
     }
 
     // Check if user is already a member
@@ -515,6 +598,102 @@ teams.post('/:id/applications/:applicationId/review', async (c) => {
     });
   } catch (error) {
     console.error('Review application error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Verify team invitation token (public endpoint - no auth required)
+teams.get('/invitations/verify/:token', async (c) => {
+  try {
+    const token = c.req.param('token');
+    
+    const invitation: any = await c.env.DB.prepare(`
+      SELECT ti.*, t.name as team_name, t.description as team_description, 
+             u.username as inviter_name
+      FROM team_invitations ti
+      JOIN teams t ON ti.team_id = t.id
+      JOIN users u ON ti.inviter_id = u.id
+      WHERE ti.token = ? AND ti.status = 'pending'
+    `).bind(token).first();
+
+    if (!invitation) {
+      return c.json({ error: 'Invalid or expired invitation' }, 404);
+    }
+
+    // Check if invitation expired
+    const now = new Date();
+    const expiresAt = new Date(invitation.expires_at);
+    if (now > expiresAt) {
+      return c.json({ error: 'Invitation has expired' }, 400);
+    }
+
+    return c.json({
+      team_id: invitation.team_id,
+      team_name: invitation.team_name,
+      team_description: invitation.team_description,
+      invitee_email: invitation.invitee_email,
+      role: invitation.role,
+      inviter_name: invitation.inviter_name,
+      expires_at: invitation.expires_at
+    });
+  } catch (error) {
+    console.error('Verify invitation error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Accept team invitation (requires authentication)
+teams.post('/invitations/accept/:token', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const token = c.req.param('token');
+
+    const invitation: any = await c.env.DB.prepare(`
+      SELECT * FROM team_invitations
+      WHERE token = ? AND status = 'pending'
+    `).bind(token).first();
+
+    if (!invitation) {
+      return c.json({ error: 'Invalid or expired invitation' }, 404);
+    }
+
+    // Check if invitation expired
+    const now = new Date();
+    const expiresAt = new Date(invitation.expires_at);
+    if (now > expiresAt) {
+      return c.json({ error: 'Invitation has expired' }, 400);
+    }
+
+    // Check if user is already a member
+    const existingMember = await c.env.DB.prepare(
+      'SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ?'
+    ).bind(invitation.team_id, user.id).first();
+
+    if (existingMember) {
+      return c.json({ error: 'You are already a member of this team' }, 400);
+    }
+
+    // Add user to team
+    await c.env.DB.prepare(
+      'INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)'
+    ).bind(invitation.team_id, user.id, invitation.role).run();
+
+    // Update invitation status
+    await c.env.DB.prepare(`
+      UPDATE team_invitations 
+      SET status = 'accepted', 
+          accepted_at = datetime('now'), 
+          accepted_by_user_id = ?
+      WHERE id = ?
+    `).bind(user.id, invitation.id).run();
+
+    return c.json({ 
+      message: 'Successfully joined the team',
+      team_id: invitation.team_id,
+      role: invitation.role
+    });
+  } catch (error) {
+    console.error('Accept invitation error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });

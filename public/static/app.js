@@ -178,8 +178,15 @@ function checkAuth() {
   const urlParams = new URLSearchParams(window.location.search);
   const resetToken = urlParams.get('token');
   const inviteToken = urlParams.get('invite');
+  const teamInviteToken = urlParams.get('team_invite');
   
-  // Check invitation token first (highest priority)
+  // Check team invitation token first (highest priority)
+  if (teamInviteToken) {
+    showTeamInvitationLandingPage(teamInviteToken);
+    return;
+  }
+  
+  // Check review invitation token
   if (inviteToken) {
     showInvitationLandingPage(inviteToken);
     return;
@@ -1260,7 +1267,14 @@ async function handleLogin() {
       i18n.setLanguage(currentUser.language);
     }
     
-    showDashboard();
+    // Check if there's a pending team invitation to accept
+    const teamInviteToken = sessionStorage.getItem('team_invite_token');
+    if (teamInviteToken) {
+      sessionStorage.removeItem('team_invite_token');
+      await acceptTeamInvitation(teamInviteToken);
+    } else {
+      showDashboard();
+    }
   } catch (error) {
     alert(i18n.t('loginFailed') + ': ' + (error.response?.data?.error || error.message));
   }
@@ -1304,7 +1318,14 @@ async function handleRegister() {
       i18n.setLanguage(currentUser.language);
     }
     
-    showDashboard();
+    // Check if there's a pending team invitation to accept
+    const teamInviteToken = sessionStorage.getItem('team_invite_token');
+    if (teamInviteToken) {
+      sessionStorage.removeItem('team_invite_token');
+      await acceptTeamInvitation(teamInviteToken);
+    } else {
+      showDashboard();
+    }
   } catch (error) {
     alert(i18n.t('registerFailed') + ': ' + (error.response?.data?.error || error.message));
   }
@@ -8170,5 +8191,135 @@ async function handleReferralRegister(e) {
   } catch (error) {
     console.error('Register error:', error);
     showNotification(i18n.t('registerFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Team Invitation Landing Page
+async function showTeamInvitationLandingPage(token) {
+  try {
+    const response = await axios.get(`/api/teams/invitations/verify/${token}`);
+    const { team_id, team_name, team_description, role, inviter_name, invitee_email } = response.data;
+
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+        <div class="max-w-3xl mx-auto">
+          <!-- Header -->
+          <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+              <i class="fas fa-users mr-3 text-blue-600"></i>${i18n.t('teamInvitation') || '团队邀请'}
+            </h1>
+            <p class="text-gray-600">
+              <i class="fas fa-user-circle mr-2"></i>
+              ${i18n.t('invitedBy') || '邀请人'}: <strong>${escapeHtml(inviter_name)}</strong>
+            </p>
+          </div>
+
+          <!-- Team Info Card -->
+          <div class="bg-white rounded-lg shadow-xl p-8 mb-6">
+            <div class="text-center mb-6">
+              <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
+                <i class="fas fa-users text-4xl text-blue-600"></i>
+              </div>
+              <h2 class="text-3xl font-bold text-gray-800 mb-2">${escapeHtml(team_name)}</h2>
+              ${team_description ? `
+                <p class="text-gray-600 mt-4">${escapeHtml(team_description)}</p>
+              ` : ''}
+            </div>
+
+            <div class="border-t border-gray-200 pt-6 mt-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-center p-4 bg-blue-50 rounded-lg">
+                  <i class="fas fa-envelope text-blue-600 text-2xl mr-3"></i>
+                  <div>
+                    <p class="text-sm text-gray-600">${i18n.t('invitedEmail') || '受邀邮箱'}</p>
+                    <p class="font-medium text-gray-800">${escapeHtml(invitee_email)}</p>
+                  </div>
+                </div>
+                <div class="flex items-center p-4 bg-indigo-50 rounded-lg">
+                  <i class="fas fa-user-tag text-indigo-600 text-2xl mr-3"></i>
+                  <div>
+                    <p class="text-sm text-gray-600">${i18n.t('yourRole') || '您的角色'}</p>
+                    <p class="font-medium text-gray-800">${escapeHtml(role)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h3 class="font-semibold text-gray-800 mb-3">
+                <i class="fas fa-check-circle text-green-600 mr-2"></i>${i18n.t('teamMemberBenefits') || '团队成员权益'}
+              </h3>
+              <ul class="space-y-2 text-gray-700">
+                <li><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('accessTeamReviews') || '访问团队复盘内容'}</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('collaborateWithMembers') || '与团队成员协作'}</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('shareYourReviews') || '分享您的复盘'}</li>
+                <li><i class="fas fa-check text-green-500 mr-2"></i>${i18n.t('participateDiscussions') || '参与团队讨论'}</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- CTA Card -->
+          <div class="bg-white rounded-lg shadow-xl p-8 text-center">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">
+              ${i18n.t('readyToJoin') || '准备加入团队？'}
+            </h3>
+            <p class="text-gray-600 mb-6">
+              ${i18n.t('loginOrRegisterToAccept') || '登录或注册以接受邀请'}
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+              <button onclick="showLoginForTeamInvite('${token}')" 
+                      class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition transform hover:scale-105 shadow-lg">
+                <i class="fas fa-sign-in-alt mr-2"></i>${i18n.t('login') || '登录'}
+              </button>
+              <button onclick="showRegisterForTeamInvite('${token}')" 
+                      class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition transform hover:scale-105 shadow-lg">
+                <i class="fas fa-user-plus mr-2"></i>${i18n.t('register') || '注册'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Failed to verify team invitation:', error);
+    showNotification(i18n.t('invitationInvalid') || '邀请链接无效或已过期', 'error');
+    setTimeout(() => showHomePage(), 2000);
+  }
+}
+
+// Show login page and store team invitation token
+function showLoginForTeamInvite(token) {
+  sessionStorage.setItem('team_invite_token', token);
+  showLogin();
+}
+
+// Show register page and store team invitation token
+function showRegisterForTeamInvite(token) {
+  sessionStorage.setItem('team_invite_token', token);
+  showRegister();
+}
+
+// Accept team invitation after login/register
+async function acceptTeamInvitation(token) {
+  try {
+    const response = await axios.post(`/api/teams/invitations/accept/${token}`);
+    const { team_id, role } = response.data;
+    
+    showNotification(i18n.t('teamJoinSuccess') || '成功加入团队！', 'success');
+    
+    // Redirect to teams page after 1.5 seconds
+    setTimeout(() => {
+      showTeamsManagement();
+    }, 1500);
+  } catch (error) {
+    console.error('Failed to accept team invitation:', error);
+    showNotification(
+      i18n.t('teamJoinFailed') || '加入团队失败：' + (error.response?.data?.error || error.message), 
+      'error'
+    );
+    // Still show dashboard even if invitation acceptance fails
+    setTimeout(() => showDashboard(), 2000);
   }
 }
