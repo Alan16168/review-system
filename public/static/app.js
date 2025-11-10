@@ -1272,9 +1272,22 @@ async function handleLogin() {
     if (teamInviteToken) {
       sessionStorage.removeItem('team_invite_token');
       await acceptTeamInvitation(teamInviteToken);
-    } else {
-      showDashboard();
+      return;
     }
+    
+    // Check if there's a pending review invitation (referral)
+    const referralToken = sessionStorage.getItem('referral_token');
+    if (referralToken) {
+      // Keep the token and view the shared review
+      showNotification(i18n.t('loginSuccess') || '登录成功', 'success');
+      setTimeout(() => {
+        // The referral token handler will be processed by the invitation system
+        window.location.href = `/?invite=${referralToken}`;
+      }, 1000);
+      return;
+    }
+    
+    showDashboard();
   } catch (error) {
     alert(i18n.t('loginFailed') + ': ' + (error.response?.data?.error || error.message));
   }
@@ -8199,10 +8212,10 @@ async function showInvitationLandingPage(token) {
               <i class="fas fa-user-plus mr-2"></i>${i18n.t('register')}
             </button>
             <div class="mt-6 flex justify-center">
-              <a href="https://ireviewsystem.com" 
-                 class="inline-block bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-indigo-50 transition transform hover:scale-105 shadow">
+              <button onclick="showLoginWithReferral('${token}')" 
+                      class="inline-block bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-indigo-50 transition transform hover:scale-105 shadow">
                 <i class="fas fa-sign-in-alt mr-2"></i>${i18n.t('login')}
-              </a>
+              </button>
             </div>
             <p class="mt-4 text-xs text-gray-400">
               ${i18n.t('haveAccount')} 
@@ -8265,6 +8278,13 @@ function showRegisterWithReferral(token) {
   `;
 
   document.getElementById('register-form').addEventListener('submit', handleReferralRegister);
+}
+
+function showLoginWithReferral(token) {
+  // Store referral token
+  sessionStorage.setItem('referral_token', token);
+  // Show login page
+  showLogin();
 }
 
 async function handleReferralRegister(e) {
