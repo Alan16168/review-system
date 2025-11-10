@@ -1399,6 +1399,9 @@ function renderRecentReviews(reviews) {
                 <button onclick="printReview(${review.id})" class="text-green-600 hover:text-green-900 mr-3">
                   <i class="fas fa-print"></i> ${i18n.t('print')}
                 </button>
+                <button onclick="showInviteModal(${review.id})" class="text-purple-600 hover:text-purple-900 mr-3">
+                  <i class="fas fa-user-plus"></i> ${i18n.t('invite')}
+                </button>
                 <button onclick="deleteReview(${review.id})" class="text-red-600 hover:text-red-900">
                   <i class="fas fa-trash"></i> ${i18n.t('delete')}
                 </button>
@@ -1902,6 +1905,9 @@ function renderReviewsList(reviews) {
                 </button>
                 <button onclick="printReview(${review.id})" class="text-green-600 hover:text-green-900 mr-3">
                   <i class="fas fa-print"></i> ${i18n.t('print')}
+                </button>
+                <button onclick="showInviteModal(${review.id})" class="text-purple-600 hover:text-purple-900 mr-3">
+                  <i class="fas fa-user-plus"></i> ${i18n.t('invite')}
                 </button>
                 <button onclick="deleteReview(${review.id})" class="text-red-600 hover:text-red-900">
                   <i class="fas fa-trash"></i> ${i18n.t('delete')}
@@ -7824,3 +7830,332 @@ async function confirmCheckout() {
 if (currentUser && authToken) {
   updateCartCount();
 }
+
+// ============ Invitation System ============
+
+let currentInvitation = null;
+
+async function showInviteModal(reviewId) {
+  try {
+    // Create invitation
+    const response = await axios.post('/api/invitations/create', { review_id: reviewId });
+    currentInvitation = response.data;
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'invite-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-user-plus mr-2 text-purple-600"></i>${i18n.t('inviteToReview')}
+            </h2>
+            <button onclick="closeInviteModal()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+
+          <!-- Invitation Link -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('invitationLink')}
+            </label>
+            <div class="flex items-center space-x-2">
+              <input type="text" id="invitation-url" value="${currentInvitation.url}" readonly
+                     class="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
+              <button onclick="copyInvitationLink()" 
+                      class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition whitespace-nowrap">
+                <i class="fas fa-copy mr-2"></i>${i18n.t('copyLink')}
+              </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+              <i class="fas fa-clock mr-1"></i>${i18n.t('invitationExpires')}
+            </p>
+          </div>
+
+          <!-- QR Code -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('qrCode')}
+            </label>
+            <div class="flex justify-center p-4 bg-gray-50 rounded-lg">
+              <div id="qrcode"></div>
+            </div>
+          </div>
+
+          <!-- Email Form -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('sendByEmail')}
+            </label>
+            <textarea id="invitation-emails" rows="3"
+                      placeholder="${i18n.t('emailPlaceholder')}"
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+            <button onclick="sendInvitationEmails()" 
+                    class="mt-3 w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+              <i class="fas fa-paper-plane mr-2"></i>${i18n.t('sendInvitation')}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Generate QR Code using QRCode.js CDN
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+    script.onload = () => {
+      new QRCode(document.getElementById('qrcode'), {
+        text: currentInvitation.url,
+        width: 200,
+        height: 200
+      });
+    };
+    document.head.appendChild(script);
+
+  } catch (error) {
+    console.error('Failed to create invitation:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+function closeInviteModal() {
+  const modal = document.getElementById('invite-modal');
+  if (modal) {
+    modal.remove();
+  }
+  currentInvitation = null;
+}
+
+function copyInvitationLink() {
+  const input = document.getElementById('invitation-url');
+  input.select();
+  document.execCommand('copy');
+  showNotification(i18n.t('linkCopied'), 'success');
+}
+
+async function sendInvitationEmails() {
+  const emailsText = document.getElementById('invitation-emails').value.trim();
+  if (!emailsText) {
+    showNotification(i18n.t('emailAddresses') + ' ' + i18n.t('required'), 'error');
+    return;
+  }
+
+  // Parse emails (split by comma, semicolon, or newline)
+  const emails = emailsText.split(/[,;\n]/).map(e => e.trim()).filter(e => e);
+  
+  if (emails.length === 0) {
+    showNotification(i18n.t('emailAddresses') + ' ' + i18n.t('required'), 'error');
+    return;
+  }
+
+  try {
+    const response = await axios.post('/api/invitations/send-email', {
+      token: currentInvitation.token,
+      emails: emails
+    });
+
+    showNotification(i18n.t('invitationSent') + ` (${response.data.success_count})`, 'success');
+    document.getElementById('invitation-emails').value = '';
+  } catch (error) {
+    console.error('Failed to send invitation emails:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Check for invitation token on page load
+function checkInvitationToken() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const inviteToken = urlParams.get('invite');
+  
+  if (inviteToken) {
+    showInvitationLandingPage(inviteToken);
+  }
+}
+
+async function showInvitationLandingPage(token) {
+  try {
+    const response = await axios.get(`/api/invitations/verify/${token}`);
+    const { review, referrer } = response.data;
+
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 py-12 px-4">
+        <div class="max-w-4xl mx-auto">
+          <!-- Header -->
+          <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+              <i class="fas fa-gift mr-3 text-purple-600"></i>${i18n.t('viewSharedReview')}
+            </h1>
+            <p class="text-gray-600">
+              <i class="fas fa-user-circle mr-2"></i>
+              ${i18n.t('invitedBy')}: <strong>${escapeHtml(referrer?.username || 'Unknown')}</strong>
+            </p>
+          </div>
+
+          <!-- Review Preview Card -->
+          <div class="bg-white rounded-lg shadow-xl p-8 mb-6">
+            <div class="flex items-start justify-between mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">${escapeHtml(review.title)}</h2>
+                <p class="text-sm text-gray-600">
+                  <i class="fas fa-user mr-1"></i> ${escapeHtml(review.creator_name)}
+                  <span class="mx-2">•</span>
+                  <i class="fas fa-calendar mr-1"></i> ${new Date(review.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            ${review.description ? `
+              <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                <p class="text-gray-700">${escapeHtml(review.description)}</p>
+              </div>
+            ` : ''}
+
+            <!-- Review Answers Preview (first 3) -->
+            <div class="space-y-4">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-list-ul mr-2"></i>${i18n.t('reviewContent')} 
+                <span class="text-sm text-gray-500">(${i18n.t('preview')})</span>
+              </h3>
+              ${response.data.answers.slice(0, 3).map((answer, index) => `
+                <div class="border-l-4 border-indigo-500 pl-4 py-2">
+                  <p class="font-medium text-gray-700 mb-1">
+                    ${index + 1}. ${escapeHtml(answer.question_text || answer.question_text_en || 'Question')}
+                  </p>
+                  <p class="text-gray-600">${escapeHtml(answer.answer || '')}</p>
+                </div>
+              `).join('')}
+              ${response.data.answers.length > 3 ? `
+                <p class="text-center text-gray-500 italic">
+                  ... ${i18n.t('andMore')} ${response.data.answers.length - 3} ${i18n.t('questions')}
+                </p>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- CTA Card -->
+          <div class="bg-white rounded-lg shadow-xl p-8 text-center">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">
+              ${i18n.t('joinNow')}
+            </h3>
+            <p class="text-gray-600 mb-6">
+              ${i18n.t('registerToViewFullReview') || '注册账号以查看完整复盘内容'}
+            </p>
+            <button onclick="showRegisterWithReferral('${token}')" 
+                    class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition transform hover:scale-105 shadow-lg">
+              <i class="fas fa-user-plus mr-2"></i>${i18n.t('register')}
+            </button>
+            <p class="mt-4 text-sm text-gray-500">
+              ${i18n.t('haveAccount')} 
+              <a href="#" onclick="showLoginPage(); return false;" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                ${i18n.t('clickLogin')}
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Failed to verify invitation:', error);
+    showNotification(i18n.t('invitationInvalid') || '邀请链接无效或已过期', 'error');
+    setTimeout(() => showHomePage(), 2000);
+  }
+}
+
+function showRegisterWithReferral(token) {
+  // Store referral token
+  sessionStorage.setItem('referral_token', token);
+  // Show register page
+  document.getElementById('app').innerHTML = `
+    <div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+      <div class="max-w-md w-full">
+        <div class="text-center mb-8">
+          <h2 class="text-3xl font-bold text-gray-800">${i18n.t('register')}</h2>
+          <p class="text-gray-600 mt-2">${i18n.t('joinReviewSystem') || '加入复盘系统'}</p>
+        </div>
+        
+        <form id="register-form" class="bg-white p-8 rounded-lg shadow-md space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('username')}</label>
+            <input type="text" id="register-username" required
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('email')}</label>
+            <input type="email" id="register-email" required
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('password')}</label>
+            <input type="password" id="register-password" required
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('confirmPassword')}</label>
+            <input type="password" id="register-confirm-password" required
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+          
+          <button type="submit" 
+                  class="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">
+            ${i18n.t('register')}
+          </button>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('register-form').addEventListener('submit', handleReferralRegister);
+}
+
+async function handleReferralRegister(e) {
+  e.preventDefault();
+  
+  const username = document.getElementById('register-username').value;
+  const email = document.getElementById('register-email').value;
+  const password = document.getElementById('register-password').value;
+  const confirmPassword = document.getElementById('register-confirm-password').value;
+  const referralToken = sessionStorage.getItem('referral_token');
+
+  if (password !== confirmPassword) {
+    showNotification(i18n.t('passwordMismatch') || '密码不匹配', 'error');
+    return;
+  }
+
+  try {
+    const response = await axios.post('/api/auth/register', {
+      email,
+      password,
+      username,
+      referral_token: referralToken
+    });
+
+    localStorage.setItem('authToken', response.data.token);
+    localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+    currentUser = response.data.user;
+    
+    // Clear referral token
+    sessionStorage.removeItem('referral_token');
+    
+    showNotification(i18n.t('registerSuccess') || '注册成功', 'success');
+    setTimeout(() => showDashboard(), 1000);
+  } catch (error) {
+    console.error('Register error:', error);
+    showNotification(i18n.t('registerFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', checkInvitationToken);
+} else {
+  checkInvitationToken();
+}
+

@@ -17,7 +17,7 @@ const auth = new Hono<{ Bindings: Bindings }>();
 // Register
 auth.post('/register', async (c) => {
   try {
-    const { email, password, username, role } = await c.req.json();
+    const { email, password, username, role, referral_token } = await c.req.json();
 
     if (!email || !password || !username) {
       return c.json({ error: 'Email, password and username are required' }, 400);
@@ -28,9 +28,43 @@ auth.post('/register', async (c) => {
       return c.json({ error: 'Email already registered' }, 400);
     }
 
+    // Handle referral token
+    let referrerId = null;
+    if (referral_token) {
+      const invitation: any = await c.env.DB.prepare(
+        'SELECT * FROM invitations WHERE token = ?'
+      ).bind(referral_token).first();
+      
+      if (invitation && new Date(invitation.expires_at) > new Date()) {
+        referrerId = invitation.referrer_id;
+        
+        // Mark invitation as used
+        await c.env.DB.prepare(
+          'UPDATE invitations SET used_at = CURRENT_TIMESTAMP, used_by_user_id = ? WHERE token = ?'
+        ).bind(0, referral_token).run(); // Will update with actual user ID later
+      }
+    }
+    
+    // If no valid referral token, default to dengalan@gmail.com (user_id = 4)
+    if (!referrerId) {
+      referrerId = 4;
+    }
+
     const passwordHash = await hashPassword(password);
     const userRole = role && ['user', 'premium', 'admin'].includes(role) ? role : 'user';
     const userId = await createUser(c.env.DB, email, passwordHash, username, userRole);
+    
+    // Set referred_by
+    await c.env.DB.prepare(
+      'UPDATE users SET referred_by = ? WHERE id = ?'
+    ).bind(referrerId, userId).run();
+    
+    // Update invitation with actual user ID
+    if (referral_token) {
+      await c.env.DB.prepare(
+        'UPDATE invitations SET used_by_user_id = ? WHERE token = ?'
+      ).bind(userId, referral_token).run();
+    }
 
     const user = await getUserById(c.env.DB, userId);
     if (!user) {
