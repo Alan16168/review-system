@@ -111,24 +111,22 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://ec91d0ed.review-system.pages.dev
+- **最新部署 ID**: https://d184c872.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.16.0 (完整版) - 购物车结算确认按钮
+- **版本**: ✅ V5.16.1 (修复版) - 用户权限刷新修复
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-09
 - **部署时间**: 最新部署
 - **更新内容**:
-  - ✅ **结算确认按钮**：购物车结算界面新增"确认支付"按钮
-  - ✅ **PayPal加载优化**：添加加载指示器，改进用户体验
-  - ✅ **支付流程增强**：支持PayPal按钮和直接支付两种方式
-  - ✅ **智能按钮管理**：PayPal加载成功时两种按钮都可见，用户可选择
-  - ✅ **防止重复支付**：添加按钮禁用和加载状态，防止双击
-  - ✅ **新增7个翻译键**：confirmPayment、loadingPayPal、processing等
+  - ✅ **关键修复**：支付成功后自动刷新用户权限信息
+  - ✅ **即时权限更新**：升级后立即显示"团队"菜单，无需手动刷新
+  - ✅ **用户体验优化**：支付完成后自动获取最新用户角色和订阅状态
+  - ✅ **localStorage同步**：确保前端用户信息与后端数据库保持一致
+  - ✅ **PayPal Live环境**：已切换到真实支付环境，支持真实PayPal账号
   - ✅ **完整购物车系统**：添加、查看、删除、结算一体化流程
-  - ✅ **PayPal环境变量**：生产环境已配置PayPal凭据
-  - ✅ **代码已提交到Git**：本地commit完成
-  - ✅ **项目备份完成**：已上传到CDN（review-system-shopping-cart-complete.tar.gz）
+  - ✅ **结算确认按钮**：购物车结算界面提供多种支付方式
+  - ✅ **项目备份完成**：review-system-v5.16.1-permission-fix.tar.gz
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -953,7 +951,18 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.16.0  
+**当前版本**: V5.16.1  
+
+**V5.16.1 更新内容** (2025-11-09):
+- 🐛 **关键Bug修复**（用户权限刷新问题）：
+  - **问题**: 用户升级或续费后，虽然数据库角色已更新，但前端菜单没有显示高级用户功能
+  - **症状**: 升级后看不到"团队"菜单，需要手动刷新页面
+  - **根本原因**: localStorage中的currentUser没有更新
+  - **解决方案**: 支付成功后自动调用 /api/auth/settings 刷新用户信息
+  - **修复效果**: ✅ 升级后立即显示所有高级用户功能，无需手动刷新
+- 🔄 **PayPal环境切换**: 从Sandbox测试环境切换到Live生产环境，支持真实支付
+- 📝 **新增文档**: USER_UPGRADE_PERMISSION_FIX.md、PAYPAL_LIVE_DEPLOYMENT.md等4份文档
+- ✅ **部署状态**: 已成功部署（https://d184c872.review-system.pages.dev）
 
 **V5.16.0 更新内容** (2025-11-09):
 - 🛒 **购物车结算确认按钮**（核心功能完善）：
