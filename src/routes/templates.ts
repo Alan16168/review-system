@@ -378,31 +378,28 @@ templates.delete('/:id', premiumOrAdmin, async (c) => {
       SELECT COUNT(*) as count FROM reviews WHERE template_id = ?
     `).bind(templateId).first<any>();
 
+    // If template is being used, reassign those reviews to default template (id=1)
     if (usageCheck && usageCheck.count > 0) {
-      // Soft delete - just mark as inactive
       await c.env.DB.prepare(`
-        UPDATE templates SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+        UPDATE reviews SET template_id = 1 WHERE template_id = ?
       `).bind(templateId).run();
-      
-      return c.json({ 
-        message: 'Template deactivated (it is being used by existing reviews)',
-        soft_deleted: true
-      });
-    } else {
-      // Hard delete - remove template and its questions
-      await c.env.DB.prepare(`
-        DELETE FROM template_questions WHERE template_id = ?
-      `).bind(templateId).run();
-      
-      await c.env.DB.prepare(`
-        DELETE FROM templates WHERE id = ?
-      `).bind(templateId).run();
-      
-      return c.json({ 
-        message: 'Template deleted successfully',
-        soft_deleted: false
-      });
     }
+
+    // Hard delete - remove template and its questions
+    await c.env.DB.prepare(`
+      DELETE FROM template_questions WHERE template_id = ?
+    `).bind(templateId).run();
+    
+    await c.env.DB.prepare(`
+      DELETE FROM templates WHERE id = ?
+    `).bind(templateId).run();
+    
+    return c.json({ 
+      message: usageCheck && usageCheck.count > 0 
+        ? `Template deleted successfully. ${usageCheck.count} review(s) were reassigned to the default template.`
+        : 'Template deleted successfully',
+      affected_reviews: usageCheck ? usageCheck.count : 0
+    });
   } catch (error) {
     console.error('Delete template error:', error);
     return c.json({ error: 'Internal server error' }, 500);

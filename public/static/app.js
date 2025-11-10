@@ -6723,8 +6723,14 @@ async function deleteTemplate(templateId) {
 
   try {
     const response = await axios.delete(`/api/templates/${templateId}`);
-    if (response.data.soft_deleted) {
-      showNotification(i18n.t('templateInUse'), 'warning');
+    const affectedReviews = response.data.affected_reviews || 0;
+    
+    if (affectedReviews > 0) {
+      showNotification(
+        (i18n.t('templateDeletedWithReassign') || '模板已删除，{count}个复盘已重新分配到默认模板')
+          .replace('{count}', affectedReviews), 
+        'success'
+      );
     } else {
       showNotification(i18n.t('templateDeleted'), 'success');
     }
