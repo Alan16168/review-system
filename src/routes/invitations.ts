@@ -105,11 +105,10 @@ invitations.post('/send-email', authMiddleware, async (c) => {
 
     for (const email of emails) {
       try {
-        await sendEmail(
-          c.env.RESEND_API_KEY || '',
-          email,
-          `${user.username} invites you to join Review System`,
-          `
+        await sendEmail(c.env.RESEND_API_KEY || '', {
+          to: email,
+          subject: `${user.username} invites you to join Review System`,
+          html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #4f46e5;">You're invited to Review System!</h2>
               <p><strong>${user.username}</strong> has shared a review with you and invites you to join Review System.</p>
@@ -133,12 +132,12 @@ invitations.post('/send-email', authMiddleware, async (c) => {
 
               <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
               <p style="color: #9ca3af; font-size: 12px;">
-                If you have any questions, please contact us at support@review-system.com
+                If you have any questions, please contact us at support@ireviewsystem.com
               </p>
             </div>
           `,
-          `${user.username} invites you to join Review System\n\nView the shared review and create your account: ${invitationUrl}\n\nThis link will expire in 30 days.`
-        );
+          text: `${user.username} invites you to join Review System\n\nView the shared review and create your account: ${invitationUrl}\n\nThis link will expire in 30 days.`
+        });
         successCount++;
       } catch (emailError) {
         console.error(`Failed to send email to ${email}:`, emailError);

@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 import { authMiddleware, premiumOrAdmin } from '../middleware/auth';
 import { UserPayload } from '../utils/auth';
+import { sendEmail } from '../utils/email';
 
 type Bindings = {
   DB: D1Database;
+  RESEND_API_KEY?: string;
 };
 
 const teams = new Hono<{ Bindings: Bindings }>();
@@ -237,6 +239,56 @@ teams.post('/:id/members', async (c) => {
     await c.env.DB.prepare(
       'INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)'
     ).bind(teamId, targetUser.id, role).run();
+
+    // Send invitation email to the new member
+    try {
+      const baseUrl = new URL(c.req.url).origin;
+      const teamUrl = `${baseUrl}/#teams`;
+      
+      await sendEmail(c.env.RESEND_API_KEY || '', {
+        to: targetUser.email,
+        subject: `You've been added to team "${team.name}" on Review System`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #4f46e5;">🎉 Welcome to the Team!</h2>
+            <p>Hi <strong>${targetUser.username}</strong>,</p>
+            
+            <p><strong>${user.username}</strong> has added you as a member of the team <strong>"${team.name}"</strong> on Review System.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #1f2937;">Team Information:</h3>
+              <p><strong>Team Name:</strong> ${team.name}</p>
+              <p><strong>Your Role:</strong> ${role}</p>
+              ${team.description ? `<p><strong>Description:</strong> ${team.description}</p>` : ''}
+            </div>
+
+            <p>You can now:</p>
+            <ul style="line-height: 1.8;">
+              <li>Access team reviews and collaborate with other members</li>
+              <li>Create and share reviews within the team</li>
+              <li>Participate in team discussions</li>
+            </ul>
+
+            <p style="text-align: center; margin: 30px 0;">
+              <a href="${teamUrl}" 
+                 style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                View Team
+              </a>
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            <p style="color: #9ca3af; font-size: 12px;">
+              If you have any questions, please contact us at support@ireviewsystem.com
+            </p>
+          </div>
+        `,
+        text: `Welcome to the Team!\\n\\n${user.username} has added you as a member of the team "${team.name}" on Review System.\\n\\nYour role: ${role}\\n\\nView your team: ${teamUrl}`
+      });
+      console.log(`✅ Team invitation email sent to ${targetUser.email}`);
+    } catch (emailError) {
+      console.error('Failed to send team invitation email:', emailError);
+      // Don't fail the request if email fails
+    }
 
     return c.json({ message: 'Member added successfully' });
   } catch (error) {

@@ -1237,7 +1237,7 @@ async function showDashboard() {
     </div>
   `;
   
-  loadDashboardData();
+  await loadDashboardData();
 }
 
 // ============ API Handlers ============
@@ -1317,11 +1317,18 @@ const dashboardItemsPerPage = 5;
 async function loadDashboardData() {
   try {
     const reviewsRes = await axios.get('/api/reviews');
-    dashboardReviews = reviewsRes.data.reviews;
+    dashboardReviews = reviewsRes.data.reviews || [];
     
-    document.getElementById('review-count').textContent = dashboardReviews.length;
-    document.getElementById('completed-count').textContent = 
-      dashboardReviews.filter(r => r.status === 'completed').length;
+    const reviewCountEl = document.getElementById('review-count');
+    const completedCountEl = document.getElementById('completed-count');
+    const teamCountEl = document.getElementById('team-count');
+    
+    if (reviewCountEl) {
+      reviewCountEl.textContent = dashboardReviews.length;
+    }
+    if (completedCountEl) {
+      completedCountEl.textContent = dashboardReviews.filter(r => r.status === 'completed').length;
+    }
     
     dashboardCurrentPage = 1; // Reset to first page
     renderRecentReviews(dashboardReviews);
@@ -1330,13 +1337,27 @@ async function loadDashboardData() {
     try {
       const teamsRes = await axios.get('/api/teams');
       const myTeamsCount = teamsRes.data.myTeams ? teamsRes.data.myTeams.length : 0;
-      document.getElementById('team-count').textContent = myTeamsCount;
+      if (teamCountEl) {
+        teamCountEl.textContent = myTeamsCount;
+      }
     } catch (error) {
       console.error('Load teams error:', error);
-      document.getElementById('team-count').textContent = '0';
+      if (teamCountEl) {
+        teamCountEl.textContent = '0';
+      }
     }
   } catch (error) {
     console.error('Load dashboard error:', error);
+    // Set defaults on error
+    const reviewCountEl = document.getElementById('review-count');
+    const completedCountEl = document.getElementById('completed-count');
+    const teamCountEl = document.getElementById('team-count');
+    if (reviewCountEl) reviewCountEl.textContent = '0';
+    if (completedCountEl) completedCountEl.textContent = '0';
+    if (teamCountEl) teamCountEl.textContent = '0';
+    // Still render empty reviews list
+    dashboardReviews = [];
+    renderRecentReviews(dashboardReviews);
   }
 }
 
