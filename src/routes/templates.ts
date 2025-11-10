@@ -51,7 +51,10 @@ templates.get('/', async (c) => {
           SELECT 
             question_number,
             CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text,
-            answer_length
+            answer_length,
+            question_type,
+            options,
+            correct_answer
           FROM template_questions
           WHERE template_id = ?
           ORDER BY question_number ASC
@@ -98,7 +101,10 @@ templates.get('/:id', async (c) => {
       SELECT 
         question_number,
         CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text,
-        answer_length
+        answer_length,
+        question_type,
+        options,
+        correct_answer
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
@@ -210,7 +216,10 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
         question_number,
         question_text,
         question_text_en,
-        answer_length
+        answer_length,
+        question_type,
+        options,
+        correct_answer
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
@@ -399,10 +408,44 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
   try {
     const user = c.get('user') as any;
     const templateId = c.req.param('id');
-    const { question_text, question_text_en, question_number, answer_length } = await c.req.json();
+    const { 
+      question_text, 
+      question_text_en, 
+      question_number, 
+      answer_length,
+      question_type = 'text',
+      options = null,
+      correct_answer = null
+    } = await c.req.json();
 
     if (!question_text) {
       return c.json({ error: 'Question text is required' }, 400);
+    }
+
+    // Validate question type
+    if (!['text', 'single_choice', 'multiple_choice'].includes(question_type)) {
+      return c.json({ error: 'Invalid question type' }, 400);
+    }
+
+    // Validate choice questions
+    if (question_type === 'single_choice' || question_type === 'multiple_choice') {
+      if (!options) {
+        return c.json({ error: 'Options are required for choice questions' }, 400);
+      }
+      
+      // Validate options format
+      try {
+        const parsedOptions = JSON.parse(options);
+        if (!Array.isArray(parsedOptions) || parsedOptions.length === 0) {
+          return c.json({ error: 'Options must be a non-empty array' }, 400);
+        }
+      } catch (e) {
+        return c.json({ error: 'Invalid options format' }, 400);
+      }
+      
+      if (!correct_answer) {
+        return c.json({ error: 'Correct answer is required for choice questions' }, 400);
+      }
     }
 
     // Check if template exists and get creator
@@ -433,9 +476,18 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
 
     // Insert question
     const result = await c.env.DB.prepare(`
-      INSERT INTO template_questions (template_id, question_number, question_text, question_text_en, answer_length)
-      VALUES (?, ?, ?, ?, ?)
-    `).bind(templateId, nextNumber, question_text, question_text_en || null, finalAnswerLength).run();
+      INSERT INTO template_questions (template_id, question_number, question_text, question_text_en, answer_length, question_type, options, correct_answer)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      templateId, 
+      nextNumber, 
+      question_text, 
+      question_text_en || null, 
+      finalAnswerLength,
+      question_type,
+      options,
+      correct_answer
+    ).run();
 
     return c.json({ 
       message: 'Question added successfully',
@@ -453,10 +505,43 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
     const user = c.get('user') as any;
     const templateId = c.req.param('templateId');
     const questionId = c.req.param('questionId');
-    const { question_text, question_text_en, question_number, answer_length } = await c.req.json();
+    const { 
+      question_text, 
+      question_text_en, 
+      question_number, 
+      answer_length,
+      question_type = 'text',
+      options = null,
+      correct_answer = null
+    } = await c.req.json();
 
     if (!question_text) {
       return c.json({ error: 'Question text is required' }, 400);
+    }
+
+    // Validate question type
+    if (!['text', 'single_choice', 'multiple_choice'].includes(question_type)) {
+      return c.json({ error: 'Invalid question type' }, 400);
+    }
+
+    // Validate choice questions
+    if (question_type === 'single_choice' || question_type === 'multiple_choice') {
+      if (!options) {
+        return c.json({ error: 'Options are required for choice questions' }, 400);
+      }
+      
+      try {
+        const parsedOptions = JSON.parse(options);
+        if (!Array.isArray(parsedOptions) || parsedOptions.length === 0) {
+          return c.json({ error: 'Options must be a non-empty array' }, 400);
+        }
+      } catch (e) {
+        return c.json({ error: 'Invalid options format' }, 400);
+      }
+      
+      if (!correct_answer) {
+        return c.json({ error: 'Correct answer is required for choice questions' }, 400);
+      }
     }
 
     // Check template ownership
@@ -482,13 +567,19 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
       SET question_text = ?,
           question_text_en = ?,
           question_number = ?,
-          answer_length = ?
+          answer_length = ?,
+          question_type = ?,
+          options = ?,
+          correct_answer = ?
       WHERE id = ? AND template_id = ?
     `).bind(
       question_text,
       question_text_en || null,
       question_number,
       finalAnswerLength,
+      question_type,
+      options,
+      correct_answer,
       questionId,
       templateId
     ).run();
