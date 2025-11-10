@@ -117,15 +117,21 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://28537bb4.review-system.pages.dev
+- **最新部署 ID**: https://4486c377.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.23 - 三种问题类型支持（文字型/单选型/多选型）
+- **版本**: ✅ V5.23.1 - 编辑复盘界面支持选择题
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-10
 - **部署时间**: 最新部署
 - **更新内容**:
-  - ✅ **三种问题类型支持**（V5.23 重大新功能）：
+  - ✅ **V5.23.1 - 编辑复盘界面支持选择题**（用户体验改进）：
+    - 修复"我的复盘"→"编辑"功能，现在可以正确识别单选题和多选题
+    - 单选题：显示 Radio 按钮，可以选择一个答案，自动预选用户之前的答案
+    - 多选题：显示 Checkbox，可以选择多个答案，自动预选用户之前的答案
+    - 文字题：显示文本框（原有功能）
+    - 适用范围：✅ "我的复盘" → "编辑"
+  - ✅ **V5.23 - 三种问题类型支持**（重大新功能）：
     - **文字型（Text Type）**：传统的自由文本输入
     - **单选型（Single Choice）**：从A/B/C/D选项中选择一个正确答案
     - **多选型（Multiple Choice）**：从A/B/C/D选项中选择多个正确答案
