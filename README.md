@@ -117,9 +117,9 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://07f88720.review-system.pages.dev
+- **最新部署 ID**: https://b6026eea.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.22 - 复盘查看页面折叠/展开优化
+- **版本**: ✅ V5.22.1 - 修复折叠/展开功能
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-10
@@ -959,7 +959,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-10
-- **当前版本**: V5.22（复盘查看页面折叠/展开优化）✅ 已发布到生产环境
+- **当前版本**: V5.22.1（修复折叠/展开功能）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -969,7 +969,26 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.22  
+**当前版本**: V5.22.1  
+
+**V5.22.1 更新内容** (2025-11-10):
+- 🐛 **修复折叠/展开功能不工作的Bug**（关键修复）：
+  - **问题**: 点击"展开"按钮没有反应，答案无法显示
+  - **根本原因**: toggleAnswer函数被定义在HTML模板内的`<script>`标签中
+    - 函数在模板字符串内部，导致作用域问题
+    - 无法正确访问i18n对象
+    - 每次渲染页面时重复定义
+  - **解决方案**:
+    - ✅ 将toggleAnswer函数移到全局作用域
+    - ✅ 在showReviewDetail函数之前定义
+    - ✅ 添加DOM元素null检查，提高健壮性
+    - ✅ 移除HTML模板中的`<script>`标签
+  - **修复效果**:
+    - ✅ 点击"展开"按钮正常显示答案
+    - ✅ 点击"收起"按钮正常隐藏答案
+    - ✅ 图标正确切换（↓ ⇄ ↑）
+    - ✅ 按钮文字正确更新（展开 ⇄ 收起）
+- ✅ **部署状态**: 已成功部署到生产环境（https://b6026eea.review-system.pages.dev）
 
 **V5.22 更新内容** (2025-11-10):
 - 📁 **复盘查看页面折叠/展开功能**（用户体验重大改进）：
