@@ -117,14 +117,33 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://6597a6b9.review-system.pages.dev
+- **最新部署 ID**: https://b7322d48.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.23.4 - 修复编辑功能的字段名错误
+- **版本**: ✅ V5.23.5 - 模板硬删除功能
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-10
 - **部署时间**: 最新部署
 - **更新内容**:
+  - ✅ **V5.23.5 - 模板硬删除功能**（用户需求实现）：
+    - **问题**: 删除模板时只是标记为禁用（soft delete），数据库中仍然保留
+    - **用户需求**: 希望删除模板时真正从数据库中删除（hard delete）
+    - **解决方案**: 
+      - 修改 DELETE /api/templates/:id 端点，始终执行硬删除
+      - 删除前检查是否有复盘在使用该模板
+      - 如果有复盘使用：先将这些复盘重新分配到默认模板（id=1）
+      - 然后删除模板的所有问题（template_questions）
+      - 最后删除模板本身（templates）
+      - 返回受影响的复盘数量
+    - **前端优化**: 
+      - 更新 deleteTemplate 函数处理新的响应格式
+      - 显示受影响复盘数量的友好提示消息
+    - **国际化支持**: 新增 'templateDeletedWithReassign' 翻译键
+    - **测试验证**:
+      - ✅ 无复盘使用的模板：直接删除，affected_reviews=0
+      - ✅ 有复盘使用的模板：复盘重新分配到默认模板，然后删除，返回受影响数量
+      - ✅ 模板和问题都从数据库中完全删除
+    - **修复效果**: ✅ 模板现在会真正从数据库中删除，不再只是标记为禁用
   - ✅ **V5.23.4 - 修复编辑功能的字段名错误**（关键修复）：
     - **问题**: 点击"编辑"按钮显示"操作失败: Internal server error"
     - **根本原因**: GET /api/reviews/:id 查询使用了错误的字段名 `max_length`，实际字段名是 `answer_length`
@@ -989,7 +1008,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-10
-- **当前版本**: V5.22.1（修复折叠/展开功能）✅ 已发布到生产环境
+- **当前版本**: V5.23.5（模板硬删除功能）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -999,7 +1018,7 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.22.1  
+**当前版本**: V5.23.5  
 
 **V5.22.1 更新内容** (2025-11-10):
 - 🐛 **修复折叠/展开功能不工作的Bug**（关键修复）：
