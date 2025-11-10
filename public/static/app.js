@@ -4377,6 +4377,7 @@ function renderUsersTable(users) {
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">${i18n.t('reviewCount') || '复盘数'}</th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">${i18n.t('templateCount') || '模板数'}</th>
             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">${i18n.t('loginCount') || '登录次数'}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('expiryDate') || '有效期限'}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('lastLogin') || '最后登录'}</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('createdAt')}</th>
             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">${i18n.t('actions')}</th>
@@ -4423,6 +4424,12 @@ function renderUsersTable(users) {
                   <i class="fas fa-sign-in-alt mr-1"></i>
                   ${user.login_count || 0}
                 </span>
+              </td>
+              <td class="px-6 py-4 text-sm">
+                ${user.subscription_expires_at ? 
+                  `<span class="text-gray-900 font-medium">${new Date(user.subscription_expires_at).toLocaleDateString()}</span>` : 
+                  `<span class="text-gray-400">${i18n.t('forever') || '永久'}</span>`
+                }
               </td>
               <td class="px-6 py-4 text-sm text-gray-500">
                 ${user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : '<span class="text-gray-400">No</span>'}
