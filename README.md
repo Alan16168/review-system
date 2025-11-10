@@ -117,14 +117,25 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://9efcf71a.review-system.pages.dev
+- **最新部署 ID**: https://6597a6b9.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.23.2 - 修复生产环境登录问题
+- **版本**: ✅ V5.23.4 - 修复编辑功能的字段名错误
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-10
 - **部署时间**: 最新部署
 - **更新内容**:
+  - ✅ **V5.23.4 - 修复编辑功能的字段名错误**（关键修复）：
+    - **问题**: 点击"编辑"按钮显示"操作失败: Internal server error"
+    - **根本原因**: GET /api/reviews/:id 查询使用了错误的字段名 `max_length`，实际字段名是 `answer_length`
+    - **错误**: `D1_ERROR: no such column: max_length`
+    - **解决方案**: 将SQL查询中的 `max_length` 改为 `answer_length`
+    - **修复效果**: ✅ 编辑功能现在可以正常工作，正确显示单选题/多选题/文字题
+  - ✅ **V5.23.3 - 修复查看/编辑时的问题类型JOIN查询**（功能完善）：
+    - **问题**: 编辑复盘时无法识别问题类型（单选/多选/文字）
+    - **根本原因**: GET /api/reviews/:id 只查询了 question_number 和 question_text，没有查询 question_type、options、correct_answer
+    - **解决方案**: 在SQL查询中添加 question_type、options、correct_answer、answer_length 字段
+    - **修复效果**: ✅ 查看/编辑复盘时正确通过JOIN获取问题类型和参数，显示对应的UI
   - ✅ **V5.23.2 - 修复生产环境登录问题**（关键修复）：
     - **问题**: 生产环境无法登录，所有用户返回"Invalid credentials"错误
     - **根本原因**: 
