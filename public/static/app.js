@@ -2806,6 +2806,29 @@ async function printReview(reviewId) {
 
 // ============ Review Detail & Edit ============
 
+// Toggle answer visibility in review detail page
+function toggleAnswer(questionId) {
+  const answerDiv = document.getElementById(questionId);
+  const icon = document.getElementById('icon-' + questionId);
+  const text = document.getElementById('text-' + questionId);
+  
+  if (answerDiv && icon && text) {
+    if (answerDiv.classList.contains('hidden')) {
+      // Expand
+      answerDiv.classList.remove('hidden');
+      icon.classList.remove('fa-chevron-down');
+      icon.classList.add('fa-chevron-up');
+      text.textContent = i18n.t('collapse') || '收起';
+    } else {
+      // Collapse
+      answerDiv.classList.add('hidden');
+      icon.classList.remove('fa-chevron-up');
+      icon.classList.add('fa-chevron-down');
+      text.textContent = i18n.t('expand') || '展开';
+    }
+  }
+}
+
 async function showReviewDetail(id, readOnly = false) {
   try {
     const response = await axios.get(`/api/reviews/${id}`);
@@ -2944,26 +2967,6 @@ async function showReviewDetail(id, readOnly = false) {
               `;
             }).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
           </div>
-          
-          <script>
-            function toggleAnswer(questionId) {
-              const answerDiv = document.getElementById(questionId);
-              const icon = document.getElementById('icon-' + questionId);
-              const text = document.getElementById('text-' + questionId);
-              
-              if (answerDiv.classList.contains('hidden')) {
-                answerDiv.classList.remove('hidden');
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-                text.textContent = '${i18n.t('collapse') || '收起'}';
-              } else {
-                answerDiv.classList.add('hidden');
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
-                text.textContent = '${i18n.t('expand') || '展开'}';
-              }
-            }
-          </script>
 
           ${(collaborators && collaborators.length > 0) ? `
           <div class="mt-6 bg-white rounded-lg shadow-md p-6">
