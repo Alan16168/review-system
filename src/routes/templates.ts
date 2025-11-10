@@ -241,6 +241,12 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
 templates.post('/', premiumOrAdmin, async (c) => {
   try {
     const user = c.get('user') as any;
+    
+    // Check if user is properly authenticated
+    if (!user || !user.id) {
+      return c.json({ error: 'User not authenticated' }, 401);
+    }
+    
     const { name, name_en, description, description_en, is_default } = await c.req.json();
 
     if (!name) {
