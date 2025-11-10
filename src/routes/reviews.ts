@@ -160,11 +160,15 @@ reviews.get('/:id', async (c) => {
       return c.json({ error: 'Review not found or access denied' }, 404);
     }
 
-    // Get template questions with language-specific text
+    // Get template questions with language-specific text and question type info
     const questionsResult = await c.env.DB.prepare(`
       SELECT 
         question_number,
-        CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text
+        CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text,
+        question_type,
+        options,
+        correct_answer,
+        max_length
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
