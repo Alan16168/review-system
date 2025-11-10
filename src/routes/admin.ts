@@ -123,11 +123,22 @@ admin.get('/users', async (c) => {
 admin.put('/users/:id', async (c) => {
   try {
     const userId = parseInt(c.req.param('id'));
-    const { email, username, role } = await c.req.json();
+    const { 
+      email, 
+      username, 
+      role, 
+      language, 
+      subscription_tier, 
+      subscription_expires_at,
+      referred_by,
+      login_count
+    } = await c.req.json();
 
-    // Validate inputs
-    if (!email && !username && !role) {
-      return c.json({ error: 'At least one field (email, username, role) is required' }, 400);
+    // Validate inputs - at least one field should be provided
+    if (!email && !username && !role && !language && 
+        subscription_tier === undefined && subscription_expires_at === undefined && 
+        referred_by === undefined && login_count === undefined) {
+      return c.json({ error: 'At least one field is required' }, 400);
     }
 
     // Check if user exists
@@ -139,6 +150,16 @@ admin.put('/users/:id', async (c) => {
     // Validate role if provided
     if (role && !['user', 'premium', 'admin'].includes(role)) {
       return c.json({ error: 'Invalid role' }, 400);
+    }
+
+    // Validate language if provided
+    if (language && !['zh', 'en'].includes(language)) {
+      return c.json({ error: 'Invalid language' }, 400);
+    }
+
+    // Validate subscription_tier if provided
+    if (subscription_tier && !['free', 'premium'].includes(subscription_tier)) {
+      return c.json({ error: 'Invalid subscription tier' }, 400);
     }
 
     // Check if email already exists (for other users)
@@ -168,6 +189,31 @@ admin.put('/users/:id', async (c) => {
       values.push(role);
     }
 
+    if (language && language !== user.language) {
+      updates.push('language = ?');
+      values.push(language);
+    }
+
+    if (subscription_tier !== undefined && subscription_tier !== user.subscription_tier) {
+      updates.push('subscription_tier = ?');
+      values.push(subscription_tier);
+    }
+
+    if (subscription_expires_at !== undefined) {
+      updates.push('subscription_expires_at = ?');
+      values.push(subscription_expires_at);
+    }
+
+    if (referred_by !== undefined) {
+      updates.push('referred_by = ?');
+      values.push(referred_by);
+    }
+
+    if (login_count !== undefined) {
+      updates.push('login_count = ?');
+      values.push(login_count);
+    }
+
     if (updates.length === 0) {
       return c.json({ message: 'No changes made' });
     }
@@ -183,12 +229,7 @@ admin.put('/users/:id', async (c) => {
 
     return c.json({ 
       message: 'User updated successfully',
-      user: {
-        id: updatedUser?.id,
-        email: updatedUser?.email,
-        username: updatedUser?.username,
-        role: updatedUser?.role
-      }
+      user: updatedUser
     });
   } catch (error) {
     console.error('Update user error:', error);

@@ -6798,11 +6798,17 @@ async function showEditUserModal(userId) {
       return;
     }
     
+    // Format dates for display
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      return new Date(dateStr).toISOString().slice(0, 16);
+    };
+    
     const modal = document.createElement('div');
     modal.id = 'user-modal';
-    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto';
     modal.innerHTML = `
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full my-8">
         <div class="p-6">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-xl font-bold text-gray-800">
@@ -6813,7 +6819,8 @@ async function showEditUserModal(userId) {
             </button>
           </div>
           <form id="user-form" onsubmit="handleUpdateUser(event, ${userId})">
-            <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Username -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   ${i18n.t('username')} *
@@ -6821,6 +6828,8 @@ async function showEditUserModal(userId) {
                 <input type="text" id="user-username" required value="${escapeHtml(user.username)}"
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               </div>
+              
+              <!-- Email -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   ${i18n.t('email')} *
@@ -6828,6 +6837,8 @@ async function showEditUserModal(userId) {
                 <input type="email" id="user-email" required value="${escapeHtml(user.email)}"
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               </div>
+              
+              <!-- Role -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   ${i18n.t('role')} *
@@ -6839,8 +6850,98 @@ async function showEditUserModal(userId) {
                   <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>${i18n.t('adminRole')}</option>
                 </select>
               </div>
+              
+              <!-- Language -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('language')}
+                </label>
+                <select id="user-language"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="zh" ${user.language === 'zh' ? 'selected' : ''}>中文</option>
+                  <option value="en" ${user.language === 'en' ? 'selected' : ''}>English</option>
+                </select>
+              </div>
+              
+              <!-- Subscription Tier -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('subscriptionTier') || '订阅等级'}
+                </label>
+                <select id="user-subscription-tier"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="free" ${(user.subscription_tier || 'free') === 'free' ? 'selected' : ''}>${i18n.t('freePlan')}</option>
+                  <option value="premium" ${user.subscription_tier === 'premium' ? 'selected' : ''}>${i18n.t('premiumPlan')}</option>
+                </select>
+              </div>
+              
+              <!-- Subscription Expires At -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('subscriptionExpires') || '订阅到期时间'}
+                </label>
+                <input type="datetime-local" id="user-subscription-expires" 
+                       value="${formatDate(user.subscription_expires_at)}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-500 mt-1">${i18n.t('leaveEmptyForNever') || '留空表示永不过期'}</p>
+              </div>
+              
+              <!-- Referred By -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('referredBy') || '介绍人ID'}
+                </label>
+                <input type="number" id="user-referred-by" 
+                       value="${user.referred_by || ''}"
+                       placeholder="${i18n.t('enterReferrerUserId') || '输入介绍人的用户ID'}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              </div>
+              
+              <!-- Login Count (Read-only display) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('loginCount') || '登录次数'}
+                </label>
+                <input type="number" id="user-login-count" 
+                       value="${user.login_count || 0}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-gray-50">
+              </div>
+              
+              <!-- Last Login At (Read-only) -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('lastLoginAt') || '最后登录时间'}
+                </label>
+                <input type="text" 
+                       value="${user.last_login_at ? new Date(user.last_login_at).toLocaleString() : i18n.t('never') || '从未登录'}"
+                       readonly
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
+              </div>
+              
+              <!-- Created At (Read-only) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('createdAt') || '创建时间'}
+                </label>
+                <input type="text" 
+                       value="${new Date(user.created_at).toLocaleString()}"
+                       readonly
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
+              </div>
+              
+              <!-- Updated At (Read-only) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('updatedAt') || '更新时间'}
+                </label>
+                <input type="text" 
+                       value="${new Date(user.updated_at).toLocaleString()}"
+                       readonly
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
+              </div>
             </div>
-            <div class="flex justify-end space-x-3 mt-6">
+            
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t">
               <button type="button" onclick="closeUserModal()"
                       class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                 ${i18n.t('cancel')}
@@ -6863,10 +6964,19 @@ async function showEditUserModal(userId) {
 async function handleUpdateUser(e, userId) {
   e.preventDefault();
   
+  const subscriptionExpiresValue = document.getElementById('user-subscription-expires').value;
+  const referredByValue = document.getElementById('user-referred-by').value;
+  const loginCountValue = document.getElementById('user-login-count').value;
+  
   const data = {
     username: document.getElementById('user-username').value,
     email: document.getElementById('user-email').value,
-    role: document.getElementById('user-role').value
+    role: document.getElementById('user-role').value,
+    language: document.getElementById('user-language').value,
+    subscription_tier: document.getElementById('user-subscription-tier').value,
+    subscription_expires_at: subscriptionExpiresValue ? new Date(subscriptionExpiresValue).toISOString() : null,
+    referred_by: referredByValue ? parseInt(referredByValue) : null,
+    login_count: loginCountValue ? parseInt(loginCountValue) : 0
   };
 
   try {
@@ -8027,7 +8137,7 @@ async function showInvitationLandingPage(token) {
           <!-- Header -->
           <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">
-              <i class="fas fa-gift mr-3 text-purple-600"></i>${i18n.t('viewSharedReview')}
+              <i class="fas fa-gift mr-3 text-purple-600"></i>${i18n.t('joinSharedReview')}
             </h1>
             <p class="text-gray-600">
               <i class="fas fa-user-circle mr-2"></i>
@@ -8088,11 +8198,14 @@ async function showInvitationLandingPage(token) {
                     class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition transform hover:scale-105 shadow-lg">
               <i class="fas fa-user-plus mr-2"></i>${i18n.t('register')}
             </button>
-            <p class="mt-4 text-sm text-gray-500">
-              ${i18n.t('haveAccount')} 
-              <a href="#" onclick="showLoginPage(); return false;" class="text-indigo-600 hover:text-indigo-800 font-medium">
-                ${i18n.t('clickLogin')}
+            <div class="mt-6 flex justify-center">
+              <a href="https://ireviewsystem.com" 
+                 class="inline-block bg-white text-indigo-600 border-2 border-indigo-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-indigo-50 transition transform hover:scale-105 shadow">
+                <i class="fas fa-sign-in-alt mr-2"></i>${i18n.t('login')}
               </a>
+            </div>
+            <p class="mt-4 text-xs text-gray-400">
+              ${i18n.t('haveAccount')} 
             </p>
           </div>
         </div>
