@@ -8155,15 +8155,18 @@ async function handleReferralRegister(e) {
       referral_token: referralToken
     });
 
-    localStorage.setItem('authToken', response.data.token);
-    localStorage.setItem('currentUser', JSON.stringify(response.data.user));
-    currentUser = response.data.user;
-    
     // Clear referral token
     sessionStorage.removeItem('referral_token');
     
-    showNotification(i18n.t('registerSuccess') || '注册成功', 'success');
-    setTimeout(() => showDashboard(), 1000);
+    // Clear any stored auth data - user should login manually
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
+    currentUser = null;
+    authToken = null;
+    axios.defaults.headers.common['Authorization'] = '';
+    
+    showNotification(i18n.t('registerSuccess'), 'success');
+    setTimeout(() => showLogin(), 1500);
   } catch (error) {
     console.error('Register error:', error);
     showNotification(i18n.t('registerFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
