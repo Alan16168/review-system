@@ -3540,19 +3540,82 @@ async function showEditReview(id) {
                 <i class="fas fa-question-circle mr-2"></i>${review.template_name ? escapeHtml(review.template_name) : i18n.t('nineQuestions')}
               </h2>
               
-              ${questions.length > 0 ? questions.map(q => `
-                <div class="mb-6">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    ${q.question_number}. ${escapeHtml(q.question_text)}
-                  </label>
-                  <textarea id="question${q.question_number}" rows="3"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                            placeholder="${escapeHtml(q.question_text)}">${escapeHtml(myAnswers[q.question_number] || '')}</textarea>
-                  <p class="mt-1 text-xs text-gray-500">
-                    <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
-                  </p>
-                </div>
-              `).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
+              ${questions.length > 0 ? questions.map(q => {
+                // Render based on question type
+                if (q.question_type === 'single_choice' && q.options) {
+                  const options = JSON.parse(q.options);
+                  const myAnswer = myAnswers[q.question_number] || '';
+                  return `
+                    <div class="mb-6">
+                      <label class="block text-sm font-medium text-gray-700 mb-3">
+                        ${q.question_number}. ${escapeHtml(q.question_text)}
+                        ${q.question_text_en ? `<span class="text-xs text-gray-500 block mt-1">${escapeHtml(q.question_text_en)}</span>` : ''}
+                      </label>
+                      <div class="space-y-2">
+                        ${options.map((opt, idx) => {
+                          const letter = String.fromCharCode(65 + idx);
+                          return `
+                            <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                              <input type="radio" name="question${q.question_number}" value="${letter}" 
+                                     ${myAnswer === letter ? 'checked' : ''}
+                                     class="mt-1 mr-3 flex-shrink-0">
+                              <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
+                            </label>
+                          `;
+                        }).join('')}
+                      </div>
+                      <p class="mt-1 text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
+                      </p>
+                    </div>
+                  `;
+                } else if (q.question_type === 'multiple_choice' && q.options) {
+                  const options = JSON.parse(q.options);
+                  const myAnswer = myAnswers[q.question_number] || '';
+                  const selectedLetters = myAnswer.split(',').map(a => a.trim());
+                  return `
+                    <div class="mb-6">
+                      <label class="block text-sm font-medium text-gray-700 mb-3">
+                        ${q.question_number}. ${escapeHtml(q.question_text)}
+                        ${q.question_text_en ? `<span class="text-xs text-gray-500 block mt-1">${escapeHtml(q.question_text_en)}</span>` : ''}
+                        <span class="text-xs text-indigo-600 block mt-1">${i18n.t('multipleChoiceHint')}</span>
+                      </label>
+                      <div class="space-y-2">
+                        ${options.map((opt, idx) => {
+                          const letter = String.fromCharCode(65 + idx);
+                          return `
+                            <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                              <input type="checkbox" name="question${q.question_number}" value="${letter}" 
+                                     ${selectedLetters.includes(letter) ? 'checked' : ''}
+                                     class="mt-1 mr-3 flex-shrink-0">
+                              <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
+                            </label>
+                          `;
+                        }).join('')}
+                      </div>
+                      <p class="mt-1 text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
+                      </p>
+                    </div>
+                  `;
+                } else {
+                  // Default text type
+                  return `
+                    <div class="mb-6">
+                      <label class="block text-sm font-medium text-gray-700 mb-2">
+                        ${q.question_number}. ${escapeHtml(q.question_text)}
+                        ${q.question_text_en ? `<span class="text-xs text-gray-500 block mt-1">${escapeHtml(q.question_text_en)}</span>` : ''}
+                      </label>
+                      <textarea id="question${q.question_number}" rows="3"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                                placeholder="${escapeHtml(q.question_text)}">${escapeHtml(myAnswers[q.question_number] || '')}</textarea>
+                      <p class="mt-1 text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
+                      </p>
+                    </div>
+                  `;
+                }
+              }).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
             </div>
 
             <!-- Status -->
@@ -3619,10 +3682,26 @@ async function handleEditReview(e) {
   const questions = window.currentEditQuestions || [];
   if (questions.length > 0) {
     questions.forEach(q => {
-      const answerElem = document.getElementById(`question${q.question_number}`);
-      if (answerElem) {
-        const value = answerElem.value.trim();
-        answers[q.question_number] = value || null;
+      if (q.question_type === 'single_choice') {
+        // Get selected radio button
+        const selected = document.querySelector(`input[name="question${q.question_number}"]:checked`);
+        if (selected) {
+          answers[q.question_number] = selected.value; // "A" or "B" etc.
+        }
+      } else if (q.question_type === 'multiple_choice') {
+        // Get all checked checkboxes
+        const checked = document.querySelectorAll(`input[name="question${q.question_number}"]:checked`);
+        if (checked.length > 0) {
+          const selectedValues = Array.from(checked).map(cb => cb.value);
+          answers[q.question_number] = selectedValues.join(','); // "A,B,C"
+        }
+      } else {
+        // Text type
+        const answerElem = document.getElementById(`question${q.question_number}`);
+        if (answerElem) {
+          const value = answerElem.value.trim();
+          answers[q.question_number] = value || null;
+        }
       }
     });
   }
