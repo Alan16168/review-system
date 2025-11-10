@@ -10,7 +10,48 @@ type Bindings = {
 
 const teams = new Hono<{ Bindings: Bindings }>();
 
-// All routes require authentication
+// Public endpoints (no auth required) must be defined before authMiddleware
+// Verify team invitation token - public endpoint
+teams.get('/invitations/verify/:token', async (c) => {
+  try {
+    const token = c.req.param('token');
+    
+    const invitation: any = await c.env.DB.prepare(`
+      SELECT ti.*, t.name as team_name, t.description as team_description, 
+             u.username as inviter_name
+      FROM team_invitations ti
+      JOIN teams t ON ti.team_id = t.id
+      JOIN users u ON ti.inviter_id = u.id
+      WHERE ti.token = ? AND ti.status = 'pending'
+    `).bind(token).first();
+
+    if (!invitation) {
+      return c.json({ error: 'Invalid or expired invitation' }, 404);
+    }
+
+    // Check if invitation expired
+    const now = new Date();
+    const expiresAt = new Date(invitation.expires_at);
+    if (now > expiresAt) {
+      return c.json({ error: 'Invitation has expired' }, 400);
+    }
+
+    return c.json({
+      team_id: invitation.team_id,
+      team_name: invitation.team_name,
+      team_description: invitation.team_description,
+      invitee_email: invitation.invitee_email,
+      role: invitation.role,
+      inviter_name: invitation.inviter_name,
+      expires_at: invitation.expires_at
+    });
+  } catch (error) {
+    console.error('Verify invitation error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// All other routes require authentication
 teams.use('/*', authMiddleware);
 
 // Get all teams user is member of + public teams
@@ -600,46 +641,6 @@ teams.post('/:id/applications/:applicationId/review', async (c) => {
     });
   } catch (error) {
     console.error('Review application error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
-// Verify team invitation token (public endpoint - no auth required)
-teams.get('/invitations/verify/:token', async (c) => {
-  try {
-    const token = c.req.param('token');
-    
-    const invitation: any = await c.env.DB.prepare(`
-      SELECT ti.*, t.name as team_name, t.description as team_description, 
-             u.username as inviter_name
-      FROM team_invitations ti
-      JOIN teams t ON ti.team_id = t.id
-      JOIN users u ON ti.inviter_id = u.id
-      WHERE ti.token = ? AND ti.status = 'pending'
-    `).bind(token).first();
-
-    if (!invitation) {
-      return c.json({ error: 'Invalid or expired invitation' }, 404);
-    }
-
-    // Check if invitation expired
-    const now = new Date();
-    const expiresAt = new Date(invitation.expires_at);
-    if (now > expiresAt) {
-      return c.json({ error: 'Invitation has expired' }, 400);
-    }
-
-    return c.json({
-      team_id: invitation.team_id,
-      team_name: invitation.team_name,
-      team_description: invitation.team_description,
-      invitee_email: invitation.invitee_email,
-      role: invitation.role,
-      inviter_name: invitation.inviter_name,
-      expires_at: invitation.expires_at
-    });
-  } catch (error) {
-    console.error('Verify invitation error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
