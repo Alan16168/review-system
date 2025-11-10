@@ -7650,10 +7650,23 @@ async function proceedToCheckout() {
               showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
               closeCheckout();
               
-              // Clear cart and reload page
+              // Clear cart
               await axios.delete('/api/cart');
               await updateCartCount();
               
+              // IMPORTANT: Refresh user info from server before reload
+              // This updates the user role and subscription status in localStorage
+              try {
+                const userResponse = await axios.get('/api/auth/settings');
+                const updatedUser = userResponse.data;
+                // Update localStorage with new user info
+                localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                currentUser = updatedUser;
+              } catch (err) {
+                console.error('Failed to refresh user info:', err);
+              }
+              
+              // Reload page to show updated menu and permissions
               setTimeout(() => {
                 window.location.reload();
               }, 1500);
@@ -7759,10 +7772,23 @@ async function confirmCheckout() {
     showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
     closeCheckout();
     
-    // Clear cart and reload page
+    // Clear cart
     await axios.delete('/api/cart');
     await updateCartCount();
     
+    // IMPORTANT: Refresh user info from server before reload
+    // This updates the user role and subscription status in localStorage
+    try {
+      const userResponse = await axios.get('/api/auth/settings');
+      const updatedUser = userResponse.data;
+      // Update localStorage with new user info
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      currentUser = updatedUser;
+    } catch (err) {
+      console.error('Failed to refresh user info:', err);
+    }
+    
+    // Reload page to show updated menu and permissions
     setTimeout(() => {
       window.location.reload();
     }, 1500);
