@@ -168,7 +168,7 @@ reviews.get('/:id', async (c) => {
         question_type,
         options,
         correct_answer,
-        max_length
+        answer_length
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
