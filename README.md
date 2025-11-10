@@ -117,19 +117,22 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://5bd14541.review-system.pages.dev
+- **最新部署 ID**: https://ddd815d0.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.18.3 - 邀请注册流程优化
+- **版本**: ✅ V5.21 - 团队邀请验证端点修复
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-10
 - **部署时间**: 最新部署
 - **更新内容**:
+  - ✅ **团队邀请链接修复**：修复点击邮件中"Accept Invitation & Join"链接显示"Invitation link is invalid or expired"错误
+  - ✅ **API端点优化**：将公开验证端点移到authMiddleware之前，解除认证限制
+  - ✅ **重复代码清理**：删除重复的验证端点定义，优化代码结构
+  - ✅ **测试验证**：邀请链接现在正常工作，成功返回团队详细信息
   - ✅ **邀请注册流程优化**：注册后跳转到登录界面而非自动登录
   - ✅ **注册Bug修复**：修复新用户注册后显示"Operation failed"的问题
   - ✅ **邀请邮件修复**：修复邀请邮件发送功能，现在可以正常发送
   - ✅ **团队邀请邮件**：新增团队成员邀请通知邮件功能
-  - ✅ **邀请链接Bug修复**：修复"invalid or expired"错误，邀请链接现在正常工作
   - ✅ **邀请系统**：用户可邀请他人加入Review System并查看复盘
   - ✅ **邀请按钮**：复盘列表每行新增"邀请"按钮（紫色图标）
   - ✅ **邀请链接**：生成30天有效期的邀请链接，可复制分享
@@ -950,7 +953,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-10
-- **当前版本**: V5.18.3（邀请注册流程优化）✅ 已发布到生产环境
+- **当前版本**: V5.21（团队邀请验证端点修复）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -960,7 +963,31 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.18.0  
+**当前版本**: V5.21  
+
+**V5.21 更新内容** (2025-11-10):
+- 🔧 **修复团队邀请验证端点**（关键修复）：
+  - **问题**: 点击邮件中的"Accept Invitation & Join"链接显示"Invitation link is invalid or expired"错误
+  - **根本原因**: 验证端点 `/api/teams/invitations/verify/:token` 被authMiddleware保护，需要登录才能访问
+  - **解决方案**:
+    - 将公开验证端点定义移到 `teams.use('/*', authMiddleware)` 之前
+    - 删除重复的验证端点定义（原在line 648-686）
+    - 确保未登录用户可以验证邀请链接
+  - **修复效果**:
+    - ✅ 邀请链接现在正常工作
+    - ✅ 返回团队详细信息（team_name, inviter_name, role等）
+    - ✅ 用户可以看到团队邀请落地页
+    - ✅ 登录/注册后自动加入团队
+- 🧹 **代码优化**:
+  - 删除重复的验证端点代码
+  - 清理冗余逻辑
+  - 改进端点注释和文档
+- 📊 **测试验证**:
+  - ✅ 测试token: K4vck3Q2ithmw78Wu7wyr9QUkRF8FfHf
+  - ✅ API响应成功返回团队信息
+  - ✅ 邀请邮件链接格式: `/?team_invite={token}`
+  - ✅ 完整流程已验证（从邮件→验证→登录→加入团队）
+- ✅ **部署状态**: 已成功部署到生产环境（https://ddd815d0.review-system.pages.dev）
 
 **V5.18.3 更新内容** (2025-11-10):
 - 🔄 **邀请注册流程优化**（用户体验改进）：
