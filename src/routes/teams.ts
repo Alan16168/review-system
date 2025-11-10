@@ -376,7 +376,9 @@ teams.post('/:id/members', async (c) => {
     return c.json({ message: 'Member added successfully' });
   } catch (error) {
     console.error('Add member error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    // Return more detailed error message
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return c.json({ error: errorMessage }, 500);
   }
 });
 
