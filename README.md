@@ -111,22 +111,19 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://d184c872.review-system.pages.dev
+- **最新部署 ID**: https://5ea43fc4.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.16.1 (修复版) - 用户权限刷新修复
+- **版本**: ✅ V5.17.0 (新功能) - 管理后台用户列表新增有效期限列
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
-- **部署日期**: 2025-11-09
+- **部署日期**: 2025-11-10
 - **部署时间**: 最新部署
 - **更新内容**:
-  - ✅ **关键修复**：支付成功后自动刷新用户权限信息
-  - ✅ **即时权限更新**：升级后立即显示"团队"菜单，无需手动刷新
-  - ✅ **用户体验优化**：支付完成后自动获取最新用户角色和订阅状态
-  - ✅ **localStorage同步**：确保前端用户信息与后端数据库保持一致
-  - ✅ **PayPal Live环境**：已切换到真实支付环境，支持真实PayPal账号
-  - ✅ **完整购物车系统**：添加、查看、删除、结算一体化流程
-  - ✅ **结算确认按钮**：购物车结算界面提供多种支付方式
-  - ✅ **项目备份完成**：review-system-v5.16.1-permission-fix.tar.gz
+  - ✅ **新增功能**：管理后台用户列表显示订阅到期日期
+  - ✅ **有效期限列**：显示每个用户的 subscription_expires_at
+  - ✅ **智能显示**：有订阅显示日期，无订阅显示"永久"
+  - ✅ **国际化支持**：中英双语（有效期限/Expiry Date，永久/Forever）
+  - ✅ **管理便利性**：管理员可清晰追踪所有用户的订阅状态
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
@@ -937,8 +934,8 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
-- **最后更新**: 2025-11-09
-- **当前版本**: V5.15.3（修复版 - 续费按钮正常工作）✅ 已发布到生产环境
+- **最后更新**: 2025-11-10
+- **当前版本**: V5.17.0（新功能 - 管理后台用户列表新增有效期限列）✅ 已发布到生产环境
 
 ## 📝 许可证
 
