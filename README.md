@@ -111,14 +111,17 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://adb591f0.review-system.pages.dev
+- **最新部署 ID**: https://2e1446aa.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.18.1 - 邀请链接Bug修复
+- **版本**: ✅ V5.18.2 - 三个关键Bug修复
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-10
 - **部署时间**: 最新部署
 - **更新内容**:
+  - ✅ **注册Bug修复**：修复新用户注册后显示"Operation failed"的问题
+  - ✅ **邀请邮件修复**：修复邀请邮件发送功能，现在可以正常发送
+  - ✅ **团队邀请邮件**：新增团队成员邀请通知邮件功能
   - ✅ **邀请链接Bug修复**：修复"invalid or expired"错误，邀请链接现在正常工作
   - ✅ **邀请系统**：用户可邀请他人加入Review System并查看复盘
   - ✅ **邀请按钮**：复盘列表每行新增"邀请"按钮（紫色图标）
@@ -940,7 +943,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-10
-- **当前版本**: V5.18.1（邀请链接Bug修复）✅ 已发布到生产环境
+- **当前版本**: V5.18.2（三个关键Bug修复）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -951,6 +954,33 @@ MIT License
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
 **当前版本**: V5.18.0  
+
+**V5.18.2 更新内容** (2025-11-10):
+- 🐛 **修复三个关键Bug**（重要修复）：
+  1. **注册后页面显示"Operation failed"错误**：
+     - **问题**: 新用户注册后，工作台页面显示"Operation failed"
+     - **根本原因**: `loadDashboardData()` 异步调用未被await，且元素可能不存在时访问导致错误
+     - **解决方案**: 
+       - 在 `showDashboard()` 中使用 `await loadDashboardData()`
+       - 为所有DOM元素访问添加null检查
+       - 为空数据设置默认值（显示0而不是错误）
+     - **修复效果**: ✅ 新用户注册后正常显示工作台，统计数据显示0
+  
+  2. **邀请邮件发送失败**：
+     - **问题**: 点击"发送邮件"按钮后邮件未发送
+     - **根本原因**: `sendEmail()` 函数签名不匹配，传入参数格式错误
+     - **解决方案**: 修改 `src/routes/invitations.ts` 中的邮件发送调用，使用正确的对象参数格式
+     - **修复效果**: ✅ 邀请邮件现在能够成功发送到指定邮箱
+  
+  3. **团队成员邀请邮件未发送**：
+     - **问题**: 在团队中添加成员时，成员未收到通知邮件
+     - **根本原因**: 该功能完全不存在
+     - **解决方案**: 
+       - 在 `src/routes/teams.ts` 中添加 `sendEmail` 导入
+       - 在添加成员后发送精美的HTML欢迎邮件
+       - 邮件包含团队信息、成员角色和访问链接
+     - **修复效果**: ✅ 新成员现在会收到团队邀请通知邮件
+- ✅ **部署状态**: 已成功部署到生产环境（https://2e1446aa.review-system.pages.dev）
 
 **V5.18.1 更新内容** (2025-11-10):
 - 🐛 **修复邀请链接显示错误**（关键Bug修复）：
