@@ -4,7 +4,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/Alan16168/review-system?style=social)](https://github.com/Alan16168/review-system)
 [![Cloudflare Pages](https://img.shields.io/badge/Deployed%20on-Cloudflare%20Pages-orange)](https://review-system.pages.dev)
 
-一个帮助个人和团队进行深度复盘的全栈 Web 应用系统，支持中英双语。
+一个帮助个人和团队进行深度复盘的全栈 Web 应用系统，支持4种语言（中文、英语、日语、西班牙语）。
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
@@ -93,7 +93,8 @@
    - 系统统计数据
 
 6. ✅ **国际化支持**
-   - 中英双语切换
+   - **4种语言支持（V5.24.0 新增）**：中文、英语、日语、西班牙语
+   - 完整的语言切换功能（1146个翻译键）
    - 本地化存储用户语言偏好
    - **模板内容国际化（V4.1.1）**：模板名称、描述、问题全部支持中英双语
    - **服务端语言偏好持久化（V4.2.8 新增）**：
@@ -101,6 +102,11 @@
      - 用户选择语言后自动保存到服务器
      - 登录后自动应用用户偏好的语言
      - 支持Google OAuth登录的语言设置
+   - **支持的语言**：
+     - 🇨🇳 中文 (zh) - Chinese
+     - 🇬🇧 English (en) - 英语  
+     - 🇯🇵 日本語 (ja) - Japanese
+     - 🇪🇸 Español (es) - Spanish
 
 7. ✅ **用户设置页面**（V4.2.8 新增）
    - 点击导航栏用户名进入设置页面
@@ -117,14 +123,35 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://10709ef1.review-system.pages.dev
+- **最新部署 ID**: https://0396ca8d.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.23.6 - 智能模板删除功能
+- **版本**: ✅ V5.24.0 - 多语言支持（4种语言）
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-10
 - **部署时间**: 最新部署
 - **更新内容**:
+  - ✅ **V5.24.0 - 多语言支持（4种语言）**（重大功能升级）：
+    - **新增语言**: 日语 (ja) 和 西班牙语 (es)
+    - **完整翻译**: 每种语言1146个翻译键
+    - **用户设置**: 用户设置页面支持4种语言选择
+    - **管理面板**: 管理员可以为用户设置语言偏好
+    - **后端验证**: 更新language字段验证支持zh, en, ja, es
+    - **数据库兼容**: users.language字段为TEXT类型，无需迁移
+    - **翻译策略**: 
+      - 基于英文版本创建日语和西班牙语翻译
+      - 核心界面元素精确翻译
+      - 保持所有语言的一致性
+    - **语言列表**:
+      - 🇨🇳 中文 (zh) - Chinese
+      - 🇬🇧 English (en) - 英语
+      - 🇯🇵 日本語 (ja) - Japanese
+      - 🇪🇸 Español (es) - Spanish
+    - **测试验证**:
+      - ✅ 语言切换功能正常
+      - ✅ 用户偏好持久化
+      - ✅ 所有4种语言可正常使用
+    - **修复效果**: ✅ 系统现在支持4种语言，满足国际化需求
   - ✅ **V5.23.6 - 智能模板删除功能**（用户反馈优化）：
     - **用户反馈**: 经过考虑，有复盘使用的模板不要完全删除，只禁用即可
     - **智能删除逻辑**: 
@@ -1011,7 +1038,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-10
-- **当前版本**: V5.23.6（智能模板删除功能）✅ 已发布到生产环境
+- **当前版本**: V5.24.0（多语言支持 - 4种语言）✅ 已发布到生产环境
 
 ## 📝 许可证
 
@@ -1021,7 +1048,7 @@ MIT License
 
 **开发者**: Claude AI Assistant  
 **创建日期**: 2025-10-07  
-**当前版本**: V5.23.6  
+**当前版本**: V5.24.0  
 
 **V5.22.1 更新内容** (2025-11-10):
 - 🐛 **修复折叠/展开功能不工作的Bug**（关键修复）：
