@@ -283,9 +283,9 @@ async function showHomePage() {
                   <i class="fas fa-language mr-2"></i>
                   <span class="font-medium">${
                     i18n.getCurrentLanguage() === 'zh' ? '中文' :
-                    i18n.getCurrentLanguage() === 'en' ? 'EN' :
+                    i18n.getCurrentLanguage() === 'en' ? 'English' :
                     i18n.getCurrentLanguage() === 'ja' ? '日本語' :
-                    'ES'
+                    'Español'
                   }</span>
                   <i class="fas fa-chevron-down ml-1 text-xs"></i>
                 </button>
@@ -3996,6 +3996,8 @@ async function handleLanguageSwitch(newLang, menuId = 'language-menu') {
   // Small delay to show notification
   setTimeout(() => {
     i18n.switchLanguage(newLang);
+    // Note: i18n.switchLanguage() will reload the page, which updates everything
+    // No need to manually update navigation here as page reload handles it
   }, 500);
 }
 
