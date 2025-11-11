@@ -6130,6 +6130,8 @@ async function showUserSettings() {
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     <option value="zh" ${settings.language === 'zh' ? 'selected' : ''}>${i18n.t('chinese')}</option>
                     <option value="en" ${settings.language === 'en' ? 'selected' : ''}>${i18n.t('english')}</option>
+                    <option value="ja" ${settings.language === 'ja' ? 'selected' : ''}>${i18n.t('japanese')}</option>
+                    <option value="es" ${settings.language === 'es' ? 'selected' : ''}>${i18n.t('spanish')}</option>
                   </select>
                 </div>
               </div>
@@ -7465,6 +7467,8 @@ async function showEditUserModal(userId) {
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                   <option value="zh" ${user.language === 'zh' ? 'selected' : ''}>中文</option>
                   <option value="en" ${user.language === 'en' ? 'selected' : ''}>English</option>
+                  <option value="ja" ${user.language === 'ja' ? 'selected' : ''}>日本語</option>
+                  <option value="es" ${user.language === 'es' ? 'selected' : ''}>Español</option>
                 </select>
               </div>
               
