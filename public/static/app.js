@@ -1181,51 +1181,7 @@ async function showDashboard() {
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="min-h-screen">
-      <!-- Navigation -->
-      <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-          <div class="flex justify-between items-center py-4">
-            <div class="flex items-center space-x-8">
-              <h1 class="text-2xl font-bold text-indigo-600 cursor-pointer" onclick="showHomePage()">
-                <i class="fas fa-brain mr-2"></i>${i18n.t('systemTitle')}
-              </h1>
-              <div class="hidden md:flex space-x-4">
-                <button onclick="showDashboard()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
-                  <i class="fas fa-home mr-1"></i>${i18n.t('dashboard')}
-                </button>
-                <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
-                  <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
-                </button>
-                <button onclick="showPublicReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
-                  <i class="fas fa-globe mr-1"></i>${i18n.t('publicReviews')}
-                </button>
-                <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
-                  <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
-                </button>
-                ${currentUser.role === 'admin' ? `
-                  <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
-                    <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
-                  </button>
-                ` : ''}
-              </div>
-            </div>
-            <div class="flex items-center space-x-4">
-              <button onclick="handleLanguageSwitch()" 
-                      class="text-gray-700 hover:text-indigo-600">
-                <i class="fas fa-language mr-1"></i>
-                ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
-              </button>
-              <button onclick="showUserSettings()" class="text-gray-700 hover:text-indigo-600 cursor-pointer">
-                <i class="fas fa-user mr-1"></i>${currentUser.username}
-                <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
-              </button>
-              <button onclick="logout()" class="text-red-600 hover:text-red-800">
-                <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      ${renderNavigation()}
 
       <!-- Content -->
       <div class="max-w-7xl mx-auto px-4 py-8">
