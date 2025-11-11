@@ -276,11 +276,42 @@ async function showHomePage() {
               `}
             </div>
             <div class="flex items-center space-x-4">
-              <button onclick="handleLanguageSwitch()" 
-                      class="text-sm text-gray-600 hover:text-indigo-600">
-                <i class="fas fa-language mr-1"></i>
-                ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
-              </button>
+              <!-- Language Switcher Dropdown -->
+              <div class="relative inline-block">
+                <button onclick="toggleLanguageMenu('language-menu-home')" 
+                        class="text-gray-600 hover:text-indigo-600 flex items-center px-2 py-1 rounded-lg hover:bg-gray-100 text-sm">
+                  <i class="fas fa-language mr-2"></i>
+                  <span class="font-medium">${
+                    i18n.getCurrentLanguage() === 'zh' ? '中文' :
+                    i18n.getCurrentLanguage() === 'en' ? 'EN' :
+                    i18n.getCurrentLanguage() === 'ja' ? '日本語' :
+                    'ES'
+                  }</span>
+                  <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                </button>
+                <div id="language-menu-home" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
+                  <button onclick="handleLanguageSwitch('zh', 'language-menu-home')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'zh' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                    <span class="mr-2">🇨🇳</span>
+                    <span>中文</span>
+                    ${i18n.getCurrentLanguage() === 'zh' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                  </button>
+                  <button onclick="handleLanguageSwitch('en', 'language-menu-home')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'en' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                    <span class="mr-2">🇬🇧</span>
+                    <span>English</span>
+                    ${i18n.getCurrentLanguage() === 'en' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                  </button>
+                  <button onclick="handleLanguageSwitch('ja', 'language-menu-home')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'ja' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                    <span class="mr-2">🇯🇵</span>
+                    <span>日本語</span>
+                    ${i18n.getCurrentLanguage() === 'ja' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                  </button>
+                  <button onclick="handleLanguageSwitch('es', 'language-menu-home')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'es' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                    <span class="mr-2">🇪🇸</span>
+                    <span>Español</span>
+                    ${i18n.getCurrentLanguage() === 'es' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                  </button>
+                </div>
+              </div>
               ${currentUser ? `
                 <button onclick="showUserSettings()" class="text-gray-700 hover:text-indigo-600">
                   <i class="fas fa-user mr-1"></i>${escapeHtml(currentUser.username)}
@@ -2055,12 +2086,12 @@ async function showCreateReview(preservedData = null) {
       const response = await axios.get('/api/templates');
       templates = response.data.templates;
       if (!templates || templates.length === 0) {
-        showNotification('No templates available. Please contact administrator.', 'error');
+        showNotification(i18n.t('noTemplates') + '. ' + i18n.t('contactAdminForUpgrade'), 'error');
         return;
       }
     } catch (error) {
       console.error('Load templates error:', error);
-      showNotification(i18n.t('operationFailed') + ': Cannot load templates', 'error');
+      showNotification(i18n.t('operationFailed') + ': ' + i18n.t('noTemplates'), 'error');
       return;
     }
     
@@ -3322,7 +3353,7 @@ async function handleSaveTeamAnswer(reviewId, questionNumber) {
     const answer = document.getElementById(`my-answer-${questionNumber}`).value;
     
     if (!answer || answer.trim() === '') {
-      showNotification(i18n.t('operationFailed') + ': Answer cannot be empty', 'error');
+      showNotification(i18n.t('operationFailed') + ': ' + i18n.t('answerCannotBeEmpty'), 'error');
       return;
     }
     
@@ -3775,11 +3806,41 @@ function renderNavigation() {
             </div>
           </div>
           <div class="flex items-center space-x-4">
-            <button onclick="handleLanguageSwitch()" 
-                    class="text-gray-700 hover:text-indigo-600">
-              <i class="fas fa-language mr-1"></i>
-              ${i18n.getCurrentLanguage() === 'zh' ? 'EN' : '中文'}
-            </button>
+            <div class="relative inline-block">
+              <button onclick="toggleLanguageMenu()" 
+                      class="text-gray-700 hover:text-indigo-600 flex items-center px-3 py-2 rounded-lg hover:bg-gray-100">
+                <i class="fas fa-language mr-2"></i>
+                <span class="font-medium">${
+                  i18n.getCurrentLanguage() === 'zh' ? '中文' :
+                  i18n.getCurrentLanguage() === 'en' ? 'English' :
+                  i18n.getCurrentLanguage() === 'ja' ? '日本語' :
+                  'Español'
+                }</span>
+                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+              </button>
+              <div id="language-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
+                <button onclick="handleLanguageSwitch('zh', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center ${i18n.getCurrentLanguage() === 'zh' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                  <span class="mr-2">🇨🇳</span>
+                  <span>中文</span>
+                  ${i18n.getCurrentLanguage() === 'zh' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                </button>
+                <button onclick="handleLanguageSwitch('en', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center ${i18n.getCurrentLanguage() === 'en' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                  <span class="mr-2">🇬🇧</span>
+                  <span>English</span>
+                  ${i18n.getCurrentLanguage() === 'en' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                </button>
+                <button onclick="handleLanguageSwitch('ja', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center ${i18n.getCurrentLanguage() === 'ja' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                  <span class="mr-2">🇯🇵</span>
+                  <span>日本語</span>
+                  ${i18n.getCurrentLanguage() === 'ja' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                </button>
+                <button onclick="handleLanguageSwitch('es', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center ${i18n.getCurrentLanguage() === 'es' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                  <span class="mr-2">🇪🇸</span>
+                  <span>Español</span>
+                  ${i18n.getCurrentLanguage() === 'es' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                </button>
+              </div>
+            </div>
             <button onclick="showCart()" class="relative text-gray-700 hover:text-indigo-600">
               <i class="fas fa-shopping-cart text-xl"></i>
               <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
@@ -3859,8 +3920,40 @@ function showNotification(message, type = 'info') {
 }
 
 // Handle language switch with data preservation
-async function handleLanguageSwitch() {
-  const newLang = i18n.getCurrentLanguage() === 'zh' ? 'en' : 'zh';
+function toggleLanguageMenu(menuId = 'language-menu') {
+  const menu = document.getElementById(menuId);
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
+}
+
+// Close language menu when clicking outside
+document.addEventListener('click', function(event) {
+  // Handle both navigation and home page language menus
+  const menus = ['language-menu', 'language-menu-home'];
+  
+  menus.forEach(menuId => {
+    const menu = document.getElementById(menuId);
+    if (menu && !menu.classList.contains('hidden')) {
+      const button = event.target.closest(`button[onclick*="${menuId}"]`);
+      if (!menu.contains(event.target) && !button) {
+        menu.classList.add('hidden');
+      }
+    }
+  });
+});
+
+async function handleLanguageSwitch(newLang, menuId = 'language-menu') {
+  // Hide language menu
+  const menu = document.getElementById(menuId);
+  if (menu) {
+    menu.classList.add('hidden');
+  }
+  
+  // Don't switch if already on this language
+  if (newLang === i18n.getCurrentLanguage()) {
+    return;
+  }
   
   // Check if user is in the middle of creating a review
   if (currentView === 'create-review-step1' || currentView === 'create-review-step2') {

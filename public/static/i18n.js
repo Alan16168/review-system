@@ -643,6 +643,7 @@ const translations = {
     'type': '类型',
     'updateArticles': '更新文章',
     'updateVideos': '更新视频',
+    'answerCannotBeEmpty': '答案不能为空',
   },
   en: {
     // Auth
@@ -1280,6 +1281,7 @@ const translations = {
     'type': 'Type',
     'updateArticles': 'Update Articles',
     'updateVideos': 'Update Videos',
+    'answerCannotBeEmpty': 'Answer cannot be empty',
   },
   ja: {
     // Auth
@@ -1917,6 +1919,7 @@ const translations = {
     'type': 'Type',
     'updateArticles': 'Update Articles',
     'updateVideos': 'Update Videos',
+    'answerCannotBeEmpty': '回答は空にできません',
   },
   es: {
     // Auth
@@ -2554,6 +2557,7 @@ const translations = {
     'type': 'Type',
     'updateArticles': 'Update Articles',
     'updateVideos': 'Update Videos',
+    'answerCannotBeEmpty': 'La respuesta no puede estar vacía',
   }
 };
 
