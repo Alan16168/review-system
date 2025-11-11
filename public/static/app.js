@@ -3919,15 +3919,15 @@ async function showTeams() {
           <nav class="flex space-x-8">
             <button onclick="switchTeamsTab('my')" id="tab-my" 
                     class="teams-tab py-4 px-1 border-b-2 border-indigo-600 font-medium text-indigo-600">
-              我的团队
+              ${i18n.t('myTeams')}
             </button>
             <button onclick="switchTeamsTab('public')" id="tab-public" 
                     class="teams-tab py-4 px-1 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700">
-              公开团队
+              ${i18n.t('publicTeams')}
             </button>
             <button onclick="switchTeamsTab('applications')" id="tab-applications" 
                     class="teams-tab py-4 px-1 border-b-2 border-transparent font-medium text-gray-500 hover:text-gray-700">
-              待审批 <span id="pending-count" class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1"></span>
+              ${i18n.t('pendingApplications')} <span id="pending-count" class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1"></span>
             </button>
           </nav>
         </div>
@@ -4081,7 +4081,7 @@ function renderPublicTeamsList(teams) {
     container.innerHTML = `
       <div class="col-span-full text-center py-12">
         <i class="fas fa-users text-6xl text-gray-300 mb-4"></i>
-        <p class="text-gray-500 text-lg">暂无公开团队</p>
+        <p class="text-gray-500 text-lg">${i18n.t('noPublicTeams')}</p>
       </div>
     `;
     return;
@@ -4208,7 +4208,7 @@ async function showCreateTeam() {
           <div>
             <label class="flex items-center">
               <input type="checkbox" id="team-is-public" class="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-              <span class="text-sm font-medium text-gray-700">公开团队（其他用户可申请加入）</span>
+              <span class="text-sm font-medium text-gray-700">${i18n.t('isPublic')}</span>
             </label>
           </div>
 
