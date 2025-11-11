@@ -123,16 +123,13 @@ const translations = {
     'teamCannotChange': '团队归属不可更改',
     
     // Review Types
-    'groupType': '群体类型',
-    'groupTypePersonal': '个人',
-    'groupTypeProject': '项目',
-    'groupTypeTeam': '团队',
     'timeType': '时间类型',
     'timeTypeDaily': '日复盘',
     'timeTypeWeekly': '周复盘',
     'timeTypeMonthly': '月复盘',
     'timeTypeQuarterly': '季复盘',
     'timeTypeYearly': '年复盘',
+    'timeTypeFree': '自由复盘',
     
     // Owner Type (Access Control)
     'ownerType': '主人',
@@ -775,16 +772,13 @@ const translations = {
     'teamCannotChange': 'Team affiliation cannot be changed',
     
     // Review Types
-    'groupType': 'Group Type',
-    'groupTypePersonal': 'Personal',
-    'groupTypeProject': 'Project',
-    'groupTypeTeam': 'Team',
     'timeType': 'Time Type',
     'timeTypeDaily': 'Daily Review',
     'timeTypeWeekly': 'Weekly Review',
     'timeTypeMonthly': 'Monthly Review',
     'timeTypeQuarterly': 'Quarterly Review',
     'timeTypeYearly': 'Yearly Review',
+    'timeTypeFree': 'Free Review',
     
     // Owner Type (Access Control)
     'ownerType': 'Owner',
@@ -1420,16 +1414,13 @@ const translations = {
     'teamCannotChange': 'Team affiliation cannot be changed',
     
     // Review Types
-    'groupType': 'Group Type',
-    'groupTypePersonal': 'Personal',
-    'groupTypeProject': 'Project',
-    'groupTypeTeam': 'Team',
     'timeType': 'Time Type',
     'timeTypeDaily': 'Daily Review',
     'timeTypeWeekly': 'Weekly Review',
     'timeTypeMonthly': 'Monthly Review',
     'timeTypeQuarterly': 'Quarterly Review',
     'timeTypeYearly': 'Yearly Review',
+    'timeTypeFree': '自由レビュー',
     
     // Owner Type (Access Control)
     'ownerType': 'Owner',
@@ -2065,16 +2056,13 @@ const translations = {
     'teamCannotChange': 'Team affiliation cannot be changed',
     
     // Review Types
-    'groupType': 'Group Type',
-    'groupTypePersonal': 'Personal',
-    'groupTypeProject': 'Project',
-    'groupTypeTeam': 'Team',
     'timeType': 'Time Type',
     'timeTypeDaily': 'Daily Review',
     'timeTypeWeekly': 'Weekly Review',
     'timeTypeMonthly': 'Monthly Review',
     'timeTypeQuarterly': 'Quarterly Review',
     'timeTypeYearly': 'Yearly Review',
+    'timeTypeFree': 'Revisión Libre',
     
     // Owner Type (Access Control)
     'ownerType': 'Owner',

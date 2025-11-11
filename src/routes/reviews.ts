@@ -238,7 +238,7 @@ reviews.post('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const body = await c.req.json();
-    const { title, description, team_id, group_type, time_type, template_id, answers, status, owner_type } = body;
+    const { title, description, team_id, time_type, template_id, answers, status, owner_type } = body;
 
     if (!title) {
       return c.json({ error: 'Title is required' }, 400);
@@ -278,12 +278,11 @@ reviews.post('/', async (c) => {
     // Create review with template_id and owner_type
     const result = await c.env.DB.prepare(`
       INSERT INTO reviews (
-        title, description, user_id, team_id, group_type, time_type,
+        title, description, user_id, team_id, time_type,
         template_id, status, owner_type
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       title, description || null, user.id, team_id || null,
-      group_type || 'personal',
       time_type || 'daily',
       templateIdToUse,
       status || 'draft',
@@ -330,7 +329,7 @@ reviews.put('/:id', async (c) => {
 
     // Check if user has access to this review
     const reviewQuery = `
-      SELECT r.user_id, r.owner_type, r.group_type, r.team_id FROM reviews r
+      SELECT r.user_id, r.owner_type, r.team_id FROM reviews r
       WHERE r.id = ? AND (
         r.user_id = ?
         OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
@@ -344,7 +343,7 @@ reviews.put('/:id', async (c) => {
       return c.json({ error: 'Access denied. You do not have permission to access this review.' }, 403);
     }
 
-    const { title, description, group_type, time_type, answers, status, owner_type } = body;
+    const { title, description, time_type, answers, status, owner_type } = body;
     
     // Check if user is the creator or admin
     const isCreator = review.user_id === user.id;
@@ -352,7 +351,7 @@ reviews.put('/:id', async (c) => {
     const canModifyBasicProperties = isCreator || isAdmin;
 
     // Update basic properties if user is creator or admin
-    if (canModifyBasicProperties && (title || description || group_type || time_type || status || owner_type)) {
+    if (canModifyBasicProperties && (title || description || time_type || status || owner_type)) {
       // Validate owner_type if provided
       let validOwnerType = null;
       if (owner_type) {
@@ -365,7 +364,6 @@ reviews.put('/:id', async (c) => {
         UPDATE reviews SET
           title = COALESCE(?, title),
           description = COALESCE(?, description),
-          group_type = COALESCE(?, group_type),
           time_type = COALESCE(?, time_type),
           status = COALESCE(?, status),
           owner_type = COALESCE(?, owner_type),
@@ -374,7 +372,6 @@ reviews.put('/:id', async (c) => {
       `).bind(
         title || null,
         description || null,
-        group_type || null,
         time_type || null,
         status || null,
         validOwnerType,
@@ -573,7 +570,7 @@ reviews.put('/:id/my-answer/:questionNumber', async (c) => {
 
     // Check if user has access to this review and can contribute
     const accessQuery = `
-      SELECT r.owner_type, r.group_type, r.team_id, r.user_id FROM reviews r
+      SELECT r.owner_type, r.team_id, r.user_id FROM reviews r
       WHERE r.id = ? AND (
         r.user_id = ?
         OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)

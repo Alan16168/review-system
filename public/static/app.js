@@ -27,8 +27,7 @@ window.saveCurrentReviewDraft = async function() {
     const titleElem = document.getElementById('review-title');
     const descriptionElem = document.getElementById('review-description');
     const templateElem = document.getElementById('review-template');
-    const groupTypeElem = document.getElementById('review-group-type');
-    const timeTypeElem = document.getElementById('review-time-type');
+      const timeTypeElem = document.getElementById('review-time-type');
     const statusElems = document.querySelectorAll('input[name="status"]');
     
     // Check if title is filled
@@ -40,14 +39,10 @@ window.saveCurrentReviewDraft = async function() {
     const title = titleElem.value.trim();
     const description = descriptionElem ? descriptionElem.value.trim() : '';
     const template_id = templateElem ? parseInt(templateElem.value) : 1;
-    const group_type = groupTypeElem ? groupTypeElem.value : 'personal';
-    
+      
     // Get team ID based on group type
     let team_id = null;
-    if (group_type === 'team') {
-      const groupTeamElem = document.getElementById('review-group-team');
-      team_id = groupTeamElem && groupTeamElem.value ? parseInt(groupTeamElem.value) : null;
-    } else {
+     else {
       const teamElem = document.getElementById('review-team');
       team_id = teamElem && teamElem.value ? parseInt(teamElem.value) : null;
     }
@@ -64,8 +59,6 @@ window.saveCurrentReviewDraft = async function() {
       const data = {
         title,
         description: description || null,
-        group_type,
-        time_type,
         status: 'draft',
         answers: {}
       };
@@ -84,8 +77,6 @@ window.saveCurrentReviewDraft = async function() {
         description: description || null,
         template_id,
         team_id,
-        group_type,
-        time_type,
         status: 'draft',
         answers: {}
       };
@@ -126,9 +117,7 @@ window.saveCurrentReviewDraft = async function() {
       // Update existing draft
       const data = {
         title: reviewData.title,
-        description: reviewData.description || null,
-        group_type: reviewData.group_type,
-        time_type: reviewData.time_type,
+        description: reviewData.description || null.: reviewData.time_type,
         status: 'draft',
         answers
       };
@@ -811,686 +800,7 @@ async function loadTestimonials() {
                 `<i class="fas fa-user ${textColor}"></i>`
               }
             </div>
-            <div class="flex-1">
-              <div class="font-bold text-gray-900">${escapeHtml(testimonial.name)}</div>
-              <div class="text-sm text-gray-600">${escapeHtml(testimonial.role)}</div>
-              <div class="text-xs text-gray-500 mt-1">
-                <i class="far fa-clock mr-1"></i>${formatTestimonialTime(testimonial.created_at)}
-              </div>
-            </div>
-          </div>
-          <div class="text-yellow-400 mb-2" style="letter-spacing: 2px;">
-            ${stars}
-          </div>
-          <p class="text-gray-600">${escapeHtml(testimonial.content)}</p>
-        </div>
-      `;
-    }).join('');
-    
-  } catch (error) {
-    console.error('Failed to load testimonials:', error);
-    testimonialsContainer.innerHTML = `
-      <div class="col-span-3 text-center py-8 text-red-500">
-        <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
-        <p>${i18n.t('loadError') || 'Failed to load testimonials'}</p>
-      </div>
-    `;
-  }
-}
-
-// Show Terms of Service
-function showTerms() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="min-h-screen bg-gray-50 py-12">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-white rounded-xl shadow-lg p-8">
-          <button onclick="showHomePage()" class="mb-6 text-indigo-600 hover:text-indigo-800">
-            <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
-          </button>
-          <h1 class="text-4xl font-bold text-gray-900 mb-8">${i18n.t('termsOfService')}</h1>
-          <div class="prose prose-lg max-w-none">
-            <p class="text-gray-600 mb-4">${i18n.t('lastUpdated')}: 2024-10-08</p>
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('terms1Title')}</h2>
-            <p class="text-gray-600 mb-6">${i18n.t('terms1Text')}</p>
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('terms2Title')}</h2>
-            <p class="text-gray-600 mb-6">${i18n.t('terms2Text')}</p>
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('terms3Title')}</h2>
-            <p class="text-gray-600 mb-6">${i18n.t('terms3Text')}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-// Show Privacy Policy
-function showPrivacy() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="min-h-screen bg-gray-50 py-12">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-white rounded-xl shadow-lg p-8">
-          <button onclick="showHomePage()" class="mb-6 text-indigo-600 hover:text-indigo-800">
-            <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
-          </button>
-          <h1 class="text-4xl font-bold text-gray-900 mb-8">${i18n.t('privacyPolicy')}</h1>
-          <div class="prose prose-lg max-w-none">
-            <p class="text-gray-600 mb-4">${i18n.t('lastUpdated')}: 2024-10-08</p>
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('privacy1Title')}</h2>
-            <p class="text-gray-600 mb-6">${i18n.t('privacy1Text')}</p>
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('privacy2Title')}</h2>
-            <p class="text-gray-600 mb-6">${i18n.t('privacy2Text')}</p>
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('privacy3Title')}</h2>
-            <p class="text-gray-600 mb-6">${i18n.t('privacy3Text')}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function showLogin() {
-  currentView = 'login';
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <button onclick="showHomePage()" class="mb-4 text-indigo-600 hover:text-indigo-800 text-sm">
-          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
-        </button>
-        
-        <div class="text-center mb-8">
-          <h1 class="text-3xl font-bold text-gray-800 mb-2">
-            <i class="fas fa-brain text-indigo-600 mr-2"></i>
-            ${i18n.t('systemTitle')}
-          </h1>
-          <p class="text-gray-600">${i18n.t('systemSubtitle')}</p>
-        </div>
-        
-        <div class="mb-6">
-          <button onclick="i18n.setLanguage(i18n.getCurrentLanguage() === 'zh' ? 'en' : 'zh')" 
-                  class="text-sm text-indigo-600 hover:text-indigo-800">
-            <i class="fas fa-language mr-1"></i>
-            ${i18n.getCurrentLanguage() === 'zh' ? 'English' : '中文'}
-          </button>
-        </div>
-
-        <div id="auth-form">
-          <!-- Google Sign-In Button -->
-          <div class="mb-6">
-            <div id="google-signin-button"></div>
-          </div>
-          
-          <!-- Divider -->
-          <div class="relative mb-6">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-gray-300"></div>
-            </div>
-            <div class="relative flex justify-center text-sm">
-              <span class="px-2 bg-white text-gray-500">${i18n.t('orDivider')}</span>
-            </div>
-          </div>
-          
-          <!-- Email/Password Login -->
-          <div class="mb-4">
-            <label class="block text-gray-700 mb-2">${i18n.t('email')}</label>
-            <input type="email" id="login-email" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                   placeholder="${i18n.t('email')}">
-          </div>
-          
-          <div class="mb-6">
-            <label class="block text-gray-700 mb-2">${i18n.t('password')}</label>
-            <input type="password" id="login-password" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                   placeholder="${i18n.t('password')}">
-          </div>
-          
-          <button onclick="handleLogin()" 
-                  class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition mb-4">
-            ${i18n.t('login')}
-          </button>
-          
-          <div class="text-center space-y-2">
-            <div>
-              <a href="#" onclick="showForgotPassword(); return false;" class="text-sm text-gray-600 hover:text-indigo-600">
-                ${i18n.t('forgotPassword')}
-              </a>
-            </div>
-            <div>
-              <a href="#" onclick="showRegister(); return false;" class="text-indigo-600 hover:text-indigo-800">
-                ${i18n.t('noAccount')} ${i18n.t('clickRegister')}
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // Initialize Google Sign-In button after DOM is ready
-  setTimeout(() => {
-    if (typeof google !== 'undefined' && google.accounts) {
-      google.accounts.id.initialize({
-        client_id: '78785931273-pse627aasv4h50mcc1cschj5cvtqr88f.apps.googleusercontent.com',
-        callback: handleGoogleLogin
-      });
-      google.accounts.id.renderButton(
-        document.getElementById('google-signin-button'),
-        { 
-          theme: 'outline', 
-          size: 'large',
-          width: 400,
-          text: 'continue_with'
-        }
-      );
-    }
-  }, 100);
-}
-
-function showRegister() {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <button onclick="showHomePage()" class="mb-4 text-indigo-600 hover:text-indigo-800 text-sm">
-          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
-        </button>
-        
-        <div class="text-center mb-8">
-          <h1 class="text-3xl font-bold text-gray-800 mb-2">
-            <i class="fas fa-user-plus text-indigo-600 mr-2"></i>
-            ${i18n.t('register')}
-          </h1>
-        </div>
-
-        <div id="register-form">
-          <!-- Google Sign-In Button -->
-          <div class="mb-6">
-            <div id="google-register-button"></div>
-          </div>
-          
-          <!-- Divider -->
-          <div class="relative mb-6">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-gray-300"></div>
-            </div>
-            <div class="relative flex justify-center text-sm">
-              <span class="px-2 bg-white text-gray-500">${i18n.t('orDivider')}</span>
-            </div>
-          </div>
-          
-          <!-- Email/Password Registration -->
-          <div class="mb-4">
-            <label class="block text-gray-700 mb-2">${i18n.t('username')}</label>
-            <input type="text" id="register-username" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                   placeholder="${i18n.t('username')}">
-          </div>
-          
-          <div class="mb-4">
-            <label class="block text-gray-700 mb-2">${i18n.t('email')}</label>
-            <input type="email" id="register-email" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                   placeholder="${i18n.t('email')}">
-          </div>
-          
-          <div class="mb-4">
-            <label class="block text-gray-700 mb-2">${i18n.t('password')}</label>
-            <input type="password" id="register-password" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                   placeholder="${i18n.t('password')}">
-          </div>
-          
-          <div class="mb-4">
-            <label class="block text-gray-700 mb-2">${i18n.t('confirmPassword')}</label>
-            <input type="password" id="register-confirm-password" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                   placeholder="${i18n.t('confirmPassword')}">
-          </div>
-          
-          <button onclick="handleRegister()" 
-                  class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition mb-4">
-            ${i18n.t('register')}
-          </button>
-          
-          <div class="text-center">
-            <a href="#" onclick="showLogin(); return false;" class="text-indigo-600 hover:text-indigo-800">
-              ${i18n.t('haveAccount')} ${i18n.t('clickLogin')}
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // Initialize Google Sign-In button after DOM is ready
-  setTimeout(() => {
-    if (typeof google !== 'undefined' && google.accounts) {
-      google.accounts.id.initialize({
-        client_id: '78785931273-pse627aasv4h50mcc1cschj5cvtqr88f.apps.googleusercontent.com',
-        callback: handleGoogleLogin
-      });
-      google.accounts.id.renderButton(
-        document.getElementById('google-register-button'),
-        { 
-          theme: 'outline', 
-          size: 'large',
-          width: 400,
-          text: 'signup_with'
-        }
-      );
-    }
-  }, 100);
-}
-
-async function showDashboard() {
-  // Auto-save draft before leaving create review page
-  await autoSaveDraftBeforeNavigation();
-  
-  currentView = 'dashboard';
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="min-h-screen">
-      ${renderNavigation()}
-
-      <!-- Content -->
-      <div class="max-w-7xl mx-auto px-4 py-8">
-        <div id="dashboard-content">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition" onclick="showReviews()">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-gray-500 mb-1">${i18n.t('myReviews')}</p>
-                  <p class="text-3xl font-bold text-indigo-600" id="review-count">-</p>
-                </div>
-                <i class="fas fa-clipboard-list text-4xl text-indigo-200"></i>
-              </div>
-            </div>
             
-            <div class="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition" onclick="showTeams()">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-gray-500 mb-1">${i18n.t('teams')}</p>
-                  <p class="text-3xl font-bold text-green-600" id="team-count">-</p>
-                </div>
-                <i class="fas fa-users text-4xl text-green-200"></i>
-              </div>
-            </div>
-            
-            <div class="bg-white rounded-lg shadow-lg p-6">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-gray-500 mb-1">${i18n.t('completed')}</p>
-                  <p class="text-3xl font-bold text-purple-600" id="completed-count">-</p>
-                </div>
-                <i class="fas fa-check-circle text-4xl text-purple-200"></i>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">${i18n.t('myReviews')}</h2>
-            <button onclick="showCreateReview()" 
-                    class="mb-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
-              <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
-            </button>
-            <div id="recent-reviews"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  await loadDashboardData();
-}
-
-// ============ API Handlers ============
-
-async function handleLogin() {
-  const email = document.getElementById('login-email').value;
-  const password = document.getElementById('login-password').value;
-
-  try {
-    const response = await axios.post('/api/auth/login', { email, password });
-    authToken = response.data.token;
-    currentUser = response.data.user;
-    
-    localStorage.setItem('authToken', authToken);
-    localStorage.setItem('user', JSON.stringify(currentUser));
-    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
-    
-    // Set user's preferred language
-    if (currentUser.language) {
-      i18n.setLanguage(currentUser.language);
-    }
-    
-    // Check if there's a pending team invitation to accept
-    const teamInviteToken = sessionStorage.getItem('team_invite_token');
-    if (teamInviteToken) {
-      sessionStorage.removeItem('team_invite_token');
-      await acceptTeamInvitation(teamInviteToken);
-      return;
-    }
-    
-    // Check if there's a pending review invitation (referral)
-    const referralToken = sessionStorage.getItem('referral_token');
-    if (referralToken) {
-      // Keep the token and view the shared review
-      showNotification(i18n.t('loginSuccess') || '登录成功', 'success');
-      setTimeout(() => {
-        // The referral token handler will be processed by the invitation system
-        window.location.href = `/?invite=${referralToken}`;
-      }, 1000);
-      return;
-    }
-    
-    showDashboard();
-  } catch (error) {
-    alert(i18n.t('loginFailed') + ': ' + (error.response?.data?.error || error.message));
-  }
-}
-
-async function handleRegister() {
-  const username = document.getElementById('register-username').value;
-  const email = document.getElementById('register-email').value;
-  const password = document.getElementById('register-password').value;
-  const confirmPassword = document.getElementById('register-confirm-password').value;
-
-  // Validate inputs
-  if (!username || !email || !password || !confirmPassword) {
-    alert(i18n.t('fillAllFields'));
-    return;
-  }
-
-  // Check if passwords match
-  if (password !== confirmPassword) {
-    alert(i18n.t('passwordMismatch'));
-    return;
-  }
-
-  // Check password length
-  if (password.length < 6) {
-    alert(i18n.t('passwordTooShort'));
-    return;
-  }
-
-  try {
-    const response = await axios.post('/api/auth/register', { email, password, username });
-    authToken = response.data.token;
-    currentUser = response.data.user;
-    
-    localStorage.setItem('authToken', authToken);
-    localStorage.setItem('user', JSON.stringify(currentUser));
-    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
-    
-    // Set user's preferred language
-    if (currentUser.language) {
-      i18n.setLanguage(currentUser.language);
-    }
-    
-    // Check if there's a pending team invitation to accept
-    const teamInviteToken = sessionStorage.getItem('team_invite_token');
-    if (teamInviteToken) {
-      sessionStorage.removeItem('team_invite_token');
-      await acceptTeamInvitation(teamInviteToken);
-    } else {
-      showDashboard();
-    }
-  } catch (error) {
-    alert(i18n.t('registerFailed') + ': ' + (error.response?.data?.error || error.message));
-  }
-}
-
-let dashboardReviews = [];
-let dashboardCurrentPage = 1;
-const dashboardItemsPerPage = 5;
-
-async function loadDashboardData() {
-  try {
-    const reviewsRes = await axios.get('/api/reviews');
-    dashboardReviews = reviewsRes.data.reviews || [];
-    
-    const reviewCountEl = document.getElementById('review-count');
-    const completedCountEl = document.getElementById('completed-count');
-    const teamCountEl = document.getElementById('team-count');
-    
-    if (reviewCountEl) {
-      reviewCountEl.textContent = dashboardReviews.length;
-    }
-    if (completedCountEl) {
-      completedCountEl.textContent = dashboardReviews.filter(r => r.status === 'completed').length;
-    }
-    
-    dashboardCurrentPage = 1; // Reset to first page
-    renderRecentReviews(dashboardReviews);
-    
-    // Load teams data for all users
-    try {
-      const teamsRes = await axios.get('/api/teams');
-      const myTeamsCount = teamsRes.data.myTeams ? teamsRes.data.myTeams.length : 0;
-      if (teamCountEl) {
-        teamCountEl.textContent = myTeamsCount;
-      }
-    } catch (error) {
-      console.error('Load teams error:', error);
-      if (teamCountEl) {
-        teamCountEl.textContent = '0';
-      }
-    }
-  } catch (error) {
-    console.error('Load dashboard error:', error);
-    // Set defaults on error
-    const reviewCountEl = document.getElementById('review-count');
-    const completedCountEl = document.getElementById('completed-count');
-    const teamCountEl = document.getElementById('team-count');
-    if (reviewCountEl) reviewCountEl.textContent = '0';
-    if (completedCountEl) completedCountEl.textContent = '0';
-    if (teamCountEl) teamCountEl.textContent = '0';
-    // Still render empty reviews list
-    dashboardReviews = [];
-    renderRecentReviews(dashboardReviews);
-  }
-}
-
-function changeDashboardPage(newPage) {
-  dashboardCurrentPage = newPage;
-  renderRecentReviews(dashboardReviews);
-}
-
-function renderRecentReviews(reviews) {
-  const container = document.getElementById('recent-reviews');
-  
-  if (reviews.length === 0) {
-    container.innerHTML = `<p class="text-gray-500 text-center py-4">${i18n.t('noData')}</p>`;
-    return;
-  }
-  
-  // Calculate pagination
-  const totalPages = Math.ceil(reviews.length / dashboardItemsPerPage);
-  const startIndex = (dashboardCurrentPage - 1) * dashboardItemsPerPage;
-  const endIndex = startIndex + dashboardItemsPerPage;
-  const paginatedReviews = reviews.slice(startIndex, endIndex);
-  
-  container.innerHTML = `
-    <div class="overflow-x-auto">
-      <table class="min-w-full">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('reviewTitle')}</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('creator') || '创建者'}</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('ownerType')}</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('status')}</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('updatedAt')}</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('actions')}</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          ${paginatedReviews.map(review => `
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">${escapeHtml(review.title)}</div>
-                ${review.team_name ? `<div class="text-xs text-gray-500"><i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}</div>` : ''}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <i class="fas fa-user-circle text-gray-400 mr-2"></i>
-                  <span class="text-sm text-gray-700">${escapeHtml(review.creator_name || 'Unknown')}</span>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                ${renderOwnerTypeBadge(review.owner_type)}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 py-1 text-xs rounded-full ${review.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                  ${i18n.t(review.status)}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${new Date(review.updated_at).toLocaleDateString()}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button onclick="showReviewDetail(${review.id}, true)" class="text-indigo-600 hover:text-indigo-900 mr-3">
-                  <i class="fas fa-eye"></i> ${i18n.t('view')}
-                </button>
-                <button onclick="showEditReview(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
-                  <i class="fas fa-edit"></i> ${i18n.t('edit')}
-                </button>
-                <button onclick="printReview(${review.id})" class="text-green-600 hover:text-green-900 mr-3">
-                  <i class="fas fa-print"></i> ${i18n.t('print')}
-                </button>
-                <button onclick="showInviteModal(${review.id})" class="text-purple-600 hover:text-purple-900 mr-3">
-                  <i class="fas fa-user-plus"></i> ${i18n.t('invite')}
-                </button>
-                <button onclick="deleteReview(${review.id})" class="text-red-600 hover:text-red-900">
-                  <i class="fas fa-trash"></i> ${i18n.t('delete')}
-                </button>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-    
-    <!-- Pagination -->
-    ${totalPages > 1 ? `
-      <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-        <div class="flex-1 flex justify-between sm:hidden">
-          <button onclick="changeDashboardPage(${dashboardCurrentPage - 1})" 
-                  ${dashboardCurrentPage === 1 ? 'disabled' : ''}
-                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${dashboardCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">
-            ${i18n.t('previousPage') || '上一页'}
-          </button>
-          <button onclick="changeDashboardPage(${dashboardCurrentPage + 1})" 
-                  ${dashboardCurrentPage === totalPages ? 'disabled' : ''}
-                  class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${dashboardCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">
-            ${i18n.t('nextPage') || '下一页'}
-          </button>
-        </div>
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm text-gray-700">
-              ${i18n.t('showing') || '显示'} 
-              <span class="font-medium">${startIndex + 1}</span>
-              ${i18n.t('to') || '到'}
-              <span class="font-medium">${Math.min(endIndex, reviews.length)}</span>
-              ${i18n.t('of') || '共'}
-              <span class="font-medium">${reviews.length}</span>
-              ${i18n.t('results') || '条结果'}
-            </p>
-          </div>
-          <div>
-            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <button onclick="changeDashboardPage(${dashboardCurrentPage - 1})" 
-                      ${dashboardCurrentPage === 1 ? 'disabled' : ''}
-                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${dashboardCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">
-                <i class="fas fa-chevron-left"></i>
-              </button>
-              ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
-                <button onclick="changeDashboardPage(${page})"
-                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
-                          page === dashboardCurrentPage 
-                            ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' 
-                            : 'bg-white text-gray-700 hover:bg-gray-50'
-                        }">
-                  ${page}
-                </button>
-              `).join('')}
-              <button onclick="changeDashboardPage(${dashboardCurrentPage + 1})" 
-                      ${dashboardCurrentPage === totalPages ? 'disabled' : ''}
-                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${dashboardCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">
-                <i class="fas fa-chevron-right"></i>
-              </button>
-            </nav>
-          </div>
-        </div>
-      </div>
-    ` : ''}
-  `;
-}
-
-// ============ Reviews Page ============
-
-async function showReviews() {
-  // Only auto-save if coming from create review page AND not just completed a save
-  // Skip auto-save if currentView is already changed (e.g., 'completing-review')
-  if (currentView === 'create-review-step1' || currentView === 'create-review-step2') {
-    await autoSaveDraftBeforeNavigation();
-  }
-  
-  currentView = 'reviews';
-  const app = document.getElementById('app');
-  
-  app.innerHTML = `
-    <div class="min-h-screen bg-gray-50">
-      ${renderNavigation()}
-      
-      <div class="max-w-7xl mx-auto px-4 py-8">
-        <div class="mb-6 flex justify-between items-center">
-          <h1 class="text-3xl font-bold text-gray-800">
-            <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('myReviews')}
-          </h1>
-          <button onclick="showCreateReview()" 
-                  class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition shadow-lg">
-            <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
-          </button>
-        </div>
-
-        <!-- Filters -->
-        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-filter mr-1"></i>${i18n.t('status')}
-              </label>
-              <select id="filter-status" onchange="filterReviews()" 
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                <option value="all">${i18n.t('all') || '全部'}</option>
-                <option value="draft">${i18n.t('draft')}</option>
-                <option value="completed">${i18n.t('completed')}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-search mr-1"></i>${i18n.t('search')}
-              </label>
-              <input type="text" id="search-input" oninput="filterReviews()" 
-                     placeholder="${i18n.t('reviewTitle')}"
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-layer-group mr-1"></i>${i18n.t('groupType')}
-              </label>
-              <select id="filter-group-type" onchange="filterReviews()" 
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                <option value="all">${i18n.t('all') || '全部'}</option>
-                <option value="personal">${i18n.t('groupTypePersonal')}</option>
-                <option value="project">${i18n.t('groupTypeProject')}</option>
-                <option value="team">${i18n.t('groupTypeTeam')}</option>
-              </select>
-            </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-calendar-alt mr-1"></i>${i18n.t('timeType')}
@@ -1503,6 +813,7 @@ async function showReviews() {
                 <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
                 <option value="quarterly">${i18n.t('timeTypeQuarterly')}</option>
                 <option value="yearly">${i18n.t('timeTypeYearly')}</option>
+              <option value="free">${i18n.t(\'timeTypeFree\')}</option>
               </select>
             </div>
             <div>
@@ -1762,7 +1073,6 @@ async function loadAllReviews() {
 function filterReviews() {
   const statusFilter = document.getElementById('filter-status').value;
   const searchText = document.getElementById('search-input').value.toLowerCase();
-  const groupTypeFilter = document.getElementById('filter-group-type').value;
   const timeTypeFilter = document.getElementById('filter-time-type').value;
   const ownerTypeFilter = document.getElementById('filter-owner-type').value;
 
@@ -1774,8 +1084,7 @@ function filterReviews() {
     if (searchText && !review.title.toLowerCase().includes(searchText)) return false;
     
     // Group type filter
-    if (groupTypeFilter !== 'all' && review.group_type !== groupTypeFilter) return false;
-    
+      
     // Time type filter
     if (timeTypeFilter !== 'all' && review.time_type !== timeTypeFilter) return false;
     
@@ -2029,26 +1338,51 @@ async function showCreateReview(preservedData = null) {
             </div>
           </div>
 
-          <!-- Group Type -->
+
+
+          <!-- Time Type -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              ${i18n.t('groupType')} <span class="text-red-500">*</span>
+              ${i18n.t('timeType')} <span class="text-red-500">*</span>
             </label>
-            <select id="review-group-type" required onchange="handleGroupTypeChange()"
+            <select id="review-time-type" required
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="personal">${i18n.t('groupTypePersonal')}</option>
-              <option value="project">${i18n.t('groupTypeProject')}</option>
-              <option value="team">${i18n.t('groupTypeTeam')}</option>
+              <option value="daily">${i18n.t('timeTypeDaily')}</option>
+              <option value="weekly">${i18n.t('timeTypeWeekly')}</option>
+              <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
+              <option value="quarterly">${i18n.t('timeTypeQuarterly')}</option>
+              <option value="yearly">${i18n.t('timeTypeYearly')}</option>
+              <option value="free">${i18n.t(\'timeTypeFree\')}</option>
             </select>
           </div>
 
-          <!-- Team Selection (shown when group type is 'team') -->
-          <div id="group-team-selector" style="display: none;">
+          <!-- Owner Type (Access Control) -->
+          <div class="border-t pt-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('ownerType')} <span class="text-red-500">*</span>
+            </label>
+            <select id="review-owner-type" required onchange="handleOwnerTypeChange()"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="private">${i18n.t('ownerTypePrivate')}</option>
+              <option value="team">${i18n.t('ownerTypeTeam')}</option>
+              <option value="public">${i18n.t('ownerTypePublic')}</option>
+            </select>
+            <div class="mt-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+              <p class="text-xs text-gray-700 space-y-1">
+                <span class="block"><strong>${i18n.t('ownerTypePrivate')}:</strong> ${i18n.t('ownerTypePrivateDesc')}</span>
+                <span class="block"><strong>${i18n.t('ownerTypeTeam')}:</strong> ${i18n.t('ownerTypeTeamDesc')}</span>
+                <span class="block"><strong>${i18n.t('ownerTypePublic')}:</strong> ${i18n.t('ownerTypePublicDesc')}</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Team Selection (shown when owner type is 'team') -->
+          <div id="owner-team-selector" style="display: none;">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               ${i18n.t('selectTeam')} <span class="text-red-500">*</span>
             </label>
             ${teams.length > 0 ? `
-              <select id="review-group-team"
+              <select id="review-team"
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 <option value="">${i18n.t('selectTeam')}</option>
                 ${teams.map(team => `<option value="${team.id}">${escapeHtml(team.name)}</option>`).join('')}
@@ -2066,41 +1400,6 @@ async function showCreateReview(preservedData = null) {
                 </p>
               </div>
             `}
-          </div>
-
-          <!-- Time Type -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              ${i18n.t('timeType')} <span class="text-red-500">*</span>
-            </label>
-            <select id="review-time-type" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="daily">${i18n.t('timeTypeDaily')}</option>
-              <option value="weekly">${i18n.t('timeTypeWeekly')}</option>
-              <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
-              <option value="quarterly">${i18n.t('timeTypeQuarterly')}</option>
-              <option value="yearly">${i18n.t('timeTypeYearly')}</option>
-            </select>
-          </div>
-
-          <!-- Owner Type (Access Control) -->
-          <div class="border-t pt-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              ${i18n.t('ownerType')} <span class="text-red-500">*</span>
-            </label>
-            <select id="review-owner-type" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="private">${i18n.t('ownerTypePrivate')}</option>
-              <option value="team">${i18n.t('ownerTypeTeam')}</option>
-              <option value="public">${i18n.t('ownerTypePublic')}</option>
-            </select>
-            <div class="mt-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
-              <p class="text-xs text-gray-700 space-y-1">
-                <span class="block"><strong>${i18n.t('ownerTypePrivate')}:</strong> ${i18n.t('ownerTypePrivateDesc')}</span>
-                <span class="block"><strong>${i18n.t('ownerTypeTeam')}:</strong> ${i18n.t('ownerTypeTeamDesc')}</span>
-                <span class="block"><strong>${i18n.t('ownerTypePublic')}:</strong> ${i18n.t('ownerTypePublicDesc')}</span>
-              </p>
-            </div>
           </div>
 
           <!-- Status -->
@@ -2164,12 +1463,12 @@ async function showCreateReview(preservedData = null) {
       document.getElementById('review-template').value = preservedData.template_id;
       handleTemplateChangeStep1(); // Update template info
     }
-    if (preservedData.group_type) {
-      document.getElementById('review-group-type').value = preservedData.group_type;
-      handleGroupTypeChange(); // Show/hide team selector
+    if (preservedData.owner_type) {
+      document.getElementById('review-owner-type').value = preservedData.owner_type;
+      handleOwnerTypeChange(); // Show/hide team selector
     }
-    if (preservedData.team_id && preservedData.group_type === 'team') {
-      const teamSelect = document.getElementById('review-group-team');
+    if (preservedData.team_id && preservedData.owner_type === 'team') {
+      const teamSelect = document.getElementById('review-team');
       if (teamSelect) {
         teamSelect.value = preservedData.team_id;
       }
@@ -2199,22 +1498,22 @@ async function showCreateReview(preservedData = null) {
 }
 
 // Handle template selection change in step 1
-function handleGroupTypeChange() {
-  const groupType = document.getElementById('review-group-type').value;
-  const teamSelector = document.getElementById('group-team-selector');
+function handleOwnerTypeChange() {
+  const ownerType = document.getElementById('review-owner-type').value;
+  const teamSelector = document.getElementById('owner-team-selector');
   
   if (teamSelector) {
-    if (groupType === 'team') {
+    if (ownerType === 'team') {
       teamSelector.style.display = 'block';
       // Make team selection required
-      const teamSelect = document.getElementById('review-group-team');
+      const teamSelect = document.getElementById('review-team');
       if (teamSelect) {
         teamSelect.setAttribute('required', 'required');
       }
     } else {
       teamSelector.style.display = 'none';
       // Remove required attribute
-      const teamSelect = document.getElementById('review-group-team');
+      const teamSelect = document.getElementById('review-team');
       if (teamSelect) {
         teamSelect.removeAttribute('required');
         teamSelect.value = ''; // Clear selection
@@ -2259,30 +1558,21 @@ async function handleStep1Submit(e) {
   const title = document.getElementById('review-title').value;
   const description = document.getElementById('review-description').value;
   const templateId = parseInt(document.getElementById('review-template').value);
-  const groupType = document.getElementById('review-group-type').value;
   
-  // Get team ID based on group type
+  // Get team ID based on owner type
   let teamId = null;
-  if (groupType === 'team') {
-    teamId = document.getElementById('review-group-team')?.value || null;
+  const ownerType = document.getElementById('review-owner-type').value;
+  
+  if (ownerType === 'team') {
+    teamId = document.getElementById('review-team')?.value || null;
     if (!teamId) {
       showNotification(i18n.t('pleaseSelectTeam') || '请选择团队', 'error');
       return;
     }
-  } else {
-    teamId = document.getElementById('review-team')?.value || null;
   }
   
   const timeType = document.getElementById('review-time-type').value;
-  const ownerType = document.getElementById('review-owner-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
-  
-  // Validation: If owner_type is 'team' but no team selected, force to 'private'
-  let finalOwnerType = ownerType;
-  if (ownerType === 'team' && !teamId) {
-    finalOwnerType = 'private';
-    showNotification(i18n.t('ownerTypeTeam') + ' ' + i18n.t('requiresTeam') || '团队主人需要选择团队，已自动改为私有', 'warning');
-  }
   
   // Store data for step 2
   window.createReviewData = {
@@ -2290,9 +1580,8 @@ async function handleStep1Submit(e) {
     description,
     template_id: templateId,
     team_id: teamId || null,
-    group_type: groupType,
     time_type: timeType,
-    owner_type: finalOwnerType,
+    owner_type: ownerType,
     status
   };
   
@@ -2724,7 +2013,7 @@ async function printReview(reviewId) {
           </div>
           <div class="meta-item">
             <span class="meta-label">${i18n.t('type')}:</span>
-            <span>${review.group_type ? i18n.t(review.group_type) : 'undefined'}</span>
+            <span></span>
           </div>
           <div class="meta-item">
             <span class="meta-label">${i18n.t('createdAt')}:</span>
@@ -2872,9 +2161,7 @@ async function showReviewDetail(id, readOnly = false) {
                   }">
                     ${i18n.t(review.status)}
                   </span>
-                  ${review.group_type ? `
-                    <span class="px-3 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
-                      <i class="fas fa-layer-group mr-1"></i>${i18n.t('groupType' + review.group_type.charAt(0).toUpperCase() + review.group_type.slice(1))}
+                  
                     </span>
                   ` : ''}
                   ${review.time_type ? `
@@ -3377,21 +2664,6 @@ async function showEditReview(id) {
             </div>
             ` : ''}
 
-            <!-- Group Type -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('groupType')} <span class="text-red-500">*</span>
-              </label>
-              <select id="review-group-type" required
-                      ${!isCreator ? 'disabled' : ''}
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
-                <option value="personal" ${review.group_type === 'personal' ? 'selected' : ''}>${i18n.t('groupTypePersonal')}</option>
-                <option value="project" ${review.group_type === 'project' ? 'selected' : ''}>${i18n.t('groupTypeProject')}</option>
-                <option value="team" ${review.group_type === 'team' ? 'selected' : ''}>${i18n.t('groupTypeTeam')}</option>
-              </select>
-              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
-            </div>
-
             <!-- Time Type -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -3405,6 +2677,7 @@ async function showEditReview(id) {
                 <option value="monthly" ${review.time_type === 'monthly' ? 'selected' : ''}>${i18n.t('timeTypeMonthly')}</option>
                 <option value="quarterly" ${review.time_type === 'quarterly' ? 'selected' : ''}>${i18n.t('timeTypeQuarterly')}</option>
                 <option value="yearly" ${review.time_type === 'yearly' ? 'selected' : ''}>${i18n.t('timeTypeYearly')}</option>
+                <option value="free" ${review.time_type === 'free' ? 'selected' : ''}>${i18n.t('timeTypeFree')}</option>
               </select>
               ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
@@ -3611,15 +2884,13 @@ async function handleEditReview(e) {
     // Creator can edit everything
     const title = document.getElementById('review-title').value;
     const description = document.getElementById('review-description').value;
-    const groupType = document.getElementById('review-group-type').value;
-    const timeType = document.getElementById('review-time-type').value;
+      const timeType = document.getElementById('review-time-type').value;
     const ownerType = document.getElementById('review-owner-type').value;
     const status = document.querySelector('input[name="status"]:checked').value;
     
     data = {
       title,
       description: description || null,
-      group_type: groupType,
       time_type: timeType,
       owner_type: ownerType,
       status,
