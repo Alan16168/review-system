@@ -241,95 +241,7 @@ async function showHomePage() {
   
   app.innerHTML = `
     <div class="min-h-screen bg-white">
-      <!-- Navigation -->
-      <nav class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-center h-16">
-            <div class="flex items-center cursor-pointer" onclick="showHomePage()">
-              <i class="fas fa-brain text-indigo-600 text-2xl mr-2"></i>
-              <span class="text-xl font-bold text-gray-800">${i18n.t('systemTitle')}</span>
-            </div>
-            <div class="hidden md:flex space-x-8">
-              ${currentUser ? `
-                <button onclick="showDashboard()" class="text-gray-700 hover:text-indigo-600 transition">
-                  <i class="fas fa-home mr-1"></i>${i18n.t('dashboard')}
-                </button>
-                <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 transition">
-                  <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
-                </button>
-                <button onclick="showPublicReviews()" class="text-gray-700 hover:text-indigo-600 transition">
-                  <i class="fas fa-globe mr-1"></i>${i18n.t('publicReviews')}
-                </button>
-                <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 transition">
-                  <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
-                </button>
-                ${currentUser.role === 'premium' || currentUser.role === 'admin' ? `
-                  <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 transition">
-                    <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
-                  </button>
-                ` : ''}
-              ` : `
-                <a href="#resources" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('resources')}</a>
-                <a href="#about" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('aboutUs')}</a>
-                <a href="#testimonials" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('testimonials')}</a>
-                <a href="#contact" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('contact')}</a>
-              `}
-            </div>
-            <div class="flex items-center space-x-4">
-              <!-- Language Switcher Dropdown -->
-              <div class="relative inline-block">
-                <button onclick="toggleLanguageMenu('language-menu-home')" 
-                        class="text-gray-600 hover:text-indigo-600 flex items-center px-2 py-1 rounded-lg hover:bg-gray-100 text-sm">
-                  <i class="fas fa-language mr-2"></i>
-                  <span class="font-medium">${
-                    i18n.getCurrentLanguage() === 'zh' ? '中文' :
-                    i18n.getCurrentLanguage() === 'en' ? 'English' :
-                    i18n.getCurrentLanguage() === 'ja' ? '日本語' :
-                    'Español'
-                  }</span>
-                  <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                </button>
-                <div id="language-menu-home" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
-                  <button onclick="handleLanguageSwitch('zh', 'language-menu-home')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'zh' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
-                    <span class="mr-2">🇨🇳</span>
-                    <span>中文</span>
-                    ${i18n.getCurrentLanguage() === 'zh' ? '<i class="fas fa-check ml-auto"></i>' : ''}
-                  </button>
-                  <button onclick="handleLanguageSwitch('en', 'language-menu-home')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'en' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
-                    <span class="mr-2">🇬🇧</span>
-                    <span>English</span>
-                    ${i18n.getCurrentLanguage() === 'en' ? '<i class="fas fa-check ml-auto"></i>' : ''}
-                  </button>
-                  <button onclick="handleLanguageSwitch('ja', 'language-menu-home')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'ja' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
-                    <span class="mr-2">🇯🇵</span>
-                    <span>日本語</span>
-                    ${i18n.getCurrentLanguage() === 'ja' ? '<i class="fas fa-check ml-auto"></i>' : ''}
-                  </button>
-                  <button onclick="handleLanguageSwitch('es', 'language-menu-home')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'es' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
-                    <span class="mr-2">🇪🇸</span>
-                    <span>Español</span>
-                    ${i18n.getCurrentLanguage() === 'es' ? '<i class="fas fa-check ml-auto"></i>' : ''}
-                  </button>
-                </div>
-              </div>
-              ${currentUser ? `
-                <button onclick="showUserSettings()" class="text-gray-700 hover:text-indigo-600">
-                  <i class="fas fa-user mr-1"></i>${escapeHtml(currentUser.username)}
-                  <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
-                </button>
-                <button onclick="logout()" class="text-red-600 hover:text-red-800">
-                  <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
-                </button>
-              ` : `
-                <button onclick="showLogin()" 
-                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-                  <i class="fas fa-sign-in-alt mr-2"></i>${i18n.t('login')}
-                </button>
-              `}
-            </div>
-          </div>
-        </div>
-      </nav>
+      ${renderNavigation()}
 
       <!-- Hero Section with Carousel -->
       <section class="bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-20">
@@ -3732,39 +3644,47 @@ async function handleEditReview(e) {
 
 // ============ Helper Functions ============
 
+// Unified navigation bar for all pages (logged in and logged out)
 function renderNavigation() {
   return `
-    <nav class="bg-white shadow-lg">
-      <div class="max-w-7xl mx-auto px-4">
-        <div class="flex justify-between items-center py-4">
-          <div class="flex items-center space-x-8">
-            <h1 class="text-2xl font-bold text-indigo-600 cursor-pointer" onclick="showHomePage()">
-              <i class="fas fa-brain mr-2"></i>${i18n.t('systemTitle')}
-            </h1>
-            <div class="hidden md:flex space-x-4">
-              <button onclick="showDashboard()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex items-center cursor-pointer" onclick="showHomePage()">
+            <i class="fas fa-brain text-indigo-600 text-2xl mr-2"></i>
+            <span class="text-xl font-bold text-gray-800">${i18n.t('systemTitle')}</span>
+          </div>
+          <div class="hidden md:flex space-x-8">
+            ${currentUser ? `
+              <button onclick="showDashboard()" class="text-gray-700 hover:text-indigo-600 transition">
                 <i class="fas fa-home mr-1"></i>${i18n.t('dashboard')}
               </button>
-              <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+              <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 transition">
                 <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
               </button>
-              <button onclick="showPublicReviews()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+              <button onclick="showPublicReviews()" class="text-gray-700 hover:text-indigo-600 transition">
                 <i class="fas fa-globe mr-1"></i>${i18n.t('publicReviews')}
               </button>
-              <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+              <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 transition">
                 <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
               </button>
               ${currentUser.role === 'premium' || currentUser.role === 'admin' ? `
-                <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 px-3 py-2">
+                <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 transition">
                   <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
                 </button>
               ` : ''}
-            </div>
+            ` : `
+              <a href="#resources" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('resources')}</a>
+              <a href="#about" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('aboutUs')}</a>
+              <a href="#testimonials" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('testimonials')}</a>
+              <a href="#contact" class="text-gray-700 hover:text-indigo-600 transition">${i18n.t('contact')}</a>
+            `}
           </div>
           <div class="flex items-center space-x-4">
+            <!-- Language Switcher Dropdown -->
             <div class="relative inline-block">
-              <button onclick="toggleLanguageMenu()" 
-                      class="text-gray-700 hover:text-indigo-600 flex items-center px-3 py-2 rounded-lg hover:bg-gray-100">
+              <button onclick="toggleLanguageMenu('language-menu')" 
+                      class="text-gray-600 hover:text-indigo-600 flex items-center px-2 py-1 rounded-lg hover:bg-gray-100 text-sm">
                 <i class="fas fa-language mr-2"></i>
                 <span class="font-medium">${
                   i18n.getCurrentLanguage() === 'zh' ? '中文' :
@@ -3772,42 +3692,49 @@ function renderNavigation() {
                   i18n.getCurrentLanguage() === 'ja' ? '日本語' :
                   'Español'
                 }</span>
-                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                <i class="fas fa-chevron-down ml-1 text-xs"></i>
               </button>
               <div id="language-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
-                <button onclick="handleLanguageSwitch('zh', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center ${i18n.getCurrentLanguage() === 'zh' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                <button onclick="handleLanguageSwitch('zh', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'zh' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
                   <span class="mr-2">🇨🇳</span>
                   <span>中文</span>
                   ${i18n.getCurrentLanguage() === 'zh' ? '<i class="fas fa-check ml-auto"></i>' : ''}
                 </button>
-                <button onclick="handleLanguageSwitch('en', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center ${i18n.getCurrentLanguage() === 'en' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                <button onclick="handleLanguageSwitch('en', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'en' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
                   <span class="mr-2">🇬🇧</span>
                   <span>English</span>
                   ${i18n.getCurrentLanguage() === 'en' ? '<i class="fas fa-check ml-auto"></i>' : ''}
                 </button>
-                <button onclick="handleLanguageSwitch('ja', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center ${i18n.getCurrentLanguage() === 'ja' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                <button onclick="handleLanguageSwitch('ja', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'ja' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
                   <span class="mr-2">🇯🇵</span>
                   <span>日本語</span>
                   ${i18n.getCurrentLanguage() === 'ja' ? '<i class="fas fa-check ml-auto"></i>' : ''}
                 </button>
-                <button onclick="handleLanguageSwitch('es', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center ${i18n.getCurrentLanguage() === 'es' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                <button onclick="handleLanguageSwitch('es', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'es' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
                   <span class="mr-2">🇪🇸</span>
                   <span>Español</span>
                   ${i18n.getCurrentLanguage() === 'es' ? '<i class="fas fa-check ml-auto"></i>' : ''}
                 </button>
               </div>
             </div>
-            <button onclick="showCart()" class="relative text-gray-700 hover:text-indigo-600">
-              <i class="fas fa-shopping-cart text-xl"></i>
-              <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
-            </button>
-            <button onclick="showUserSettings()" class="text-gray-700 hover:text-indigo-600 cursor-pointer">
-              <i class="fas fa-user mr-1"></i>${currentUser.username}
-              <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
-            </button>
-            <button onclick="logout()" class="text-red-600 hover:text-red-800">
-              <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
-            </button>
+            ${currentUser ? `
+              <button onclick="showCart()" class="relative text-gray-700 hover:text-indigo-600">
+                <i class="fas fa-shopping-cart text-xl"></i>
+                <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+              </button>
+              <button onclick="showUserSettings()" class="text-gray-700 hover:text-indigo-600 cursor-pointer">
+                <i class="fas fa-user mr-1"></i>${escapeHtml(currentUser.username)}
+                <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">${currentUser.role}</span>
+              </button>
+              <button onclick="logout()" class="text-red-600 hover:text-red-800">
+                <i class="fas fa-sign-out-alt mr-1"></i>${i18n.t('logout')}
+              </button>
+            ` : `
+              <button onclick="showLogin()" 
+                      class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                <i class="fas fa-sign-in-alt mr-2"></i>${i18n.t('login')}
+              </button>
+            `}
           </div>
         </div>
       </div>
@@ -3885,18 +3812,15 @@ function toggleLanguageMenu(menuId = 'language-menu') {
 
 // Close language menu when clicking outside
 document.addEventListener('click', function(event) {
-  // Handle both navigation and home page language menus
-  const menus = ['language-menu', 'language-menu-home'];
+  // All pages now use unified navigation with single 'language-menu' ID
+  const menu = document.getElementById('language-menu');
   
-  menus.forEach(menuId => {
-    const menu = document.getElementById(menuId);
-    if (menu && !menu.classList.contains('hidden')) {
-      const button = event.target.closest(`button[onclick*="${menuId}"]`);
-      if (!menu.contains(event.target) && !button) {
-        menu.classList.add('hidden');
-      }
+  if (menu && !menu.classList.contains('hidden')) {
+    const button = event.target.closest(`button[onclick*="language-menu"]`);
+    if (!menu.contains(event.target) && !button) {
+      menu.classList.add('hidden');
     }
-  });
+  }
 });
 
 async function handleLanguageSwitch(newLang, menuId = 'language-menu') {
