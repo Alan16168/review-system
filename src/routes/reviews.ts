@@ -295,9 +295,22 @@ reviews.post('/', async (c) => {
     const reviewId = result.meta.last_row_id;
 
     // Save answers if provided (with user_id)
+    // Support both single answers (string) and multiple answers (array)
     if (answers && typeof answers === 'object') {
       for (const [questionNumber, answer] of Object.entries(answers)) {
-        if (answer && String(answer).trim()) {
+        // Handle array of answers (multiple text answers for same question)
+        if (Array.isArray(answer)) {
+          for (const singleAnswer of answer) {
+            const answerText = String(singleAnswer).trim();
+            if (answerText) {
+              await c.env.DB.prepare(`
+                INSERT INTO review_answers (review_id, user_id, question_number, answer)
+                VALUES (?, ?, ?, ?)
+              `).bind(reviewId, user.id, parseInt(questionNumber), answerText).run();
+            }
+          }
+        } else if (answer && String(answer).trim()) {
+          // Handle single answer (string)
           await c.env.DB.prepare(`
             INSERT INTO review_answers (review_id, user_id, question_number, answer)
             VALUES (?, ?, ?, ?)
@@ -382,42 +395,65 @@ reviews.put('/:id', async (c) => {
       ).run();
     }
 
-    // Update answers for choice-type questions only
-    // Note: Text-type answers are now managed through POST /my-answer/:questionNumber endpoint
+    // Update answers for choice-type questions and multiple text answers
+    // Note: Single text-type answers in edit mode are managed through POST /my-answer/:questionNumber endpoint
+    // But during creation/draft save, we support multiple text answers as arrays
     if (answers && typeof answers === 'object') {
       for (const [questionNumber, answer] of Object.entries(answers)) {
-        const answerText = answer ? String(answer).trim() : '';
         const qNum = parseInt(questionNumber);
         
-        if (answerText) {
-          // For choice-type questions, update or create a single answer per user
-          // First, check if an answer already exists for this question
-          const existing: any = await c.env.DB.prepare(`
-            SELECT id FROM review_answers 
-            WHERE review_id = ? AND user_id = ? AND question_number = ?
-            LIMIT 1
-          `).bind(reviewId, user.id, qNum).first();
-          
-          if (existing) {
-            // Update existing answer
-            await c.env.DB.prepare(`
-              UPDATE review_answers 
-              SET answer = ?, updated_at = CURRENT_TIMESTAMP
-              WHERE id = ?
-            `).bind(answerText, existing.id).run();
-          } else {
-            // Insert new answer
-            await c.env.DB.prepare(`
-              INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
-              VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            `).bind(reviewId, user.id, qNum, answerText).run();
-          }
-        } else {
-          // Delete all answers for this question if empty (for choice-type questions)
+        // Handle array of answers (multiple text answers for same question)
+        if (Array.isArray(answer)) {
+          // Delete existing answers for this question first
           await c.env.DB.prepare(`
             DELETE FROM review_answers 
             WHERE review_id = ? AND user_id = ? AND question_number = ?
           `).bind(reviewId, user.id, qNum).run();
+          
+          // Insert all new answers
+          for (const singleAnswer of answer) {
+            const answerText = String(singleAnswer).trim();
+            if (answerText) {
+              await c.env.DB.prepare(`
+                INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+              `).bind(reviewId, user.id, qNum, answerText).run();
+            }
+          }
+        } else {
+          // Handle single answer (string) - for choice-type questions
+          const answerText = answer ? String(answer).trim() : '';
+          
+          if (answerText) {
+            // For choice-type questions, update or create a single answer per user
+            // First, check if an answer already exists for this question
+            const existing: any = await c.env.DB.prepare(`
+              SELECT id FROM review_answers 
+              WHERE review_id = ? AND user_id = ? AND question_number = ?
+              LIMIT 1
+            `).bind(reviewId, user.id, qNum).first();
+            
+            if (existing) {
+              // Update existing answer
+              await c.env.DB.prepare(`
+                UPDATE review_answers 
+                SET answer = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `).bind(answerText, existing.id).run();
+            } else {
+              // Insert new answer
+              await c.env.DB.prepare(`
+                INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+              `).bind(reviewId, user.id, qNum, answerText).run();
+            }
+          } else {
+            // Delete all answers for this question if empty (for choice-type questions)
+            await c.env.DB.prepare(`
+              DELETE FROM review_answers 
+              WHERE review_id = ? AND user_id = ? AND question_number = ?
+            `).bind(reviewId, user.id, qNum).run();
+          }
         }
       }
     }

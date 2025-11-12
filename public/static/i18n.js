@@ -195,6 +195,9 @@ const translations = {
     'noAnswersYet': '还没有答案',
     'enterAnswer': '输入答案...',
     'canAddMoreAnswersInEdit': '保存后可在编辑模式中添加更多答案',
+    'addAnotherAnswer': '添加另一个答案',
+    'canAddMultipleAnswers': '您可以为同一问题添加多个答案',
+    'mustKeepOneAnswer': '至少需要保留一个答案输入框',
     
     // Team Roles
     'memberRole': '成员角色',
@@ -850,6 +853,9 @@ const translations = {
     'noAnswersYet': 'No answers yet',
     'enterAnswer': 'Enter answer...',
     'canAddMoreAnswersInEdit': 'You can add more answers in edit mode after saving',
+    'addAnotherAnswer': 'Add Another Answer',
+    'canAddMultipleAnswers': 'You can add multiple answers to the same question',
+    'mustKeepOneAnswer': 'Must keep at least one answer input',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -1498,6 +1504,9 @@ const translations = {
     'noAnswersYet': 'まだ答えがありません',
     'enterAnswer': '答えを入力...',
     'canAddMoreAnswersInEdit': '保存後、編集モードでさらに答えを追加できます',
+    'addAnotherAnswer': '別の答えを追加',
+    'canAddMultipleAnswers': '同じ質問に複数の答えを追加できます',
+    'mustKeepOneAnswer': '少なくとも1つの答え入力を保持する必要があります',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -2146,6 +2155,9 @@ const translations = {
     'noAnswersYet': 'Aún no hay respuestas',
     'enterAnswer': 'Ingrese respuesta...',
     'canAddMoreAnswersInEdit': 'Puede agregar más respuestas en modo de edición después de guardar',
+    'addAnotherAnswer': 'Agregar Otra Respuesta',
+    'canAddMultipleAnswers': 'Puede agregar múltiples respuestas a la misma pregunta',
+    'mustKeepOneAnswer': 'Debe mantener al menos una entrada de respuesta',
     
     // Team Roles
     'memberRole': 'Member Role',

@@ -2252,18 +2252,33 @@ async function showCreateReviewStep2(template) {
                 </div>
               `;
             } else {
-              // Default text type - simplified version for creation (can add more answers after creation in edit mode)
+              // Default text type - support multiple answers during creation
               return `
                 <div class="bg-white rounded-lg shadow-md p-6">
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     ${q.question_number}. ${escapeHtml(q.question_text)}
                     ${q.question_text_en ? `<span class="text-xs text-gray-500 block mt-1">${escapeHtml(q.question_text_en)}</span>` : ''}
                   </label>
-                  <textarea id="question${q.question_number}" rows="4"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                            placeholder="${i18n.t('enterAnswer') || '输入答案...'}"></textarea>
+                  
+                  <!-- Answer inputs container -->
+                  <div id="answers-container-create-${q.question_number}" class="space-y-3 mb-3">
+                    <!-- First answer input (always present) -->
+                    <div class="answer-input-group relative">
+                      <textarea data-question="${q.question_number}" data-answer-index="0" rows="4"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                                placeholder="${i18n.t('enterAnswer') || '输入答案...'}"></textarea>
+                    </div>
+                  </div>
+                  
+                  <!-- Add another answer button -->
+                  <button type="button" 
+                          onclick="addAnswerInputInCreate(${q.question_number})"
+                          class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                    <i class="fas fa-plus-circle mr-2"></i>${i18n.t('addAnotherAnswer') || '添加另一个答案'}
+                  </button>
+                  
                   <p class="mt-2 text-xs text-gray-500">
-                    <i class="fas fa-info-circle mr-1"></i>${i18n.t('canAddMoreAnswersInEdit') || '保存后可在编辑模式中添加更多答案'}
+                    <i class="fas fa-info-circle mr-1"></i>${i18n.t('canAddMultipleAnswers') || '您可以为同一问题添加多个答案'}
                   </p>
                 </div>
               `;
@@ -2290,6 +2305,45 @@ async function showCreateReviewStep2(template) {
   
   // Store template for later use
   window.currentSelectedTemplate = template;
+}
+
+// Helper function: Add another answer input in create mode
+function addAnswerInputInCreate(questionNumber) {
+  const container = document.getElementById(`answers-container-create-${questionNumber}`);
+  const currentInputs = container.querySelectorAll('.answer-input-group');
+  const nextIndex = currentInputs.length;
+  
+  const newInputHtml = `
+    <div class="answer-input-group relative">
+      <div class="flex gap-2">
+        <textarea data-question="${questionNumber}" data-answer-index="${nextIndex}" rows="4"
+                  class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                  placeholder="${i18n.t('enterAnswer') || '输入答案...'}"></textarea>
+        <button type="button" 
+                onclick="removeAnswerInputInCreate(this)"
+                class="self-start px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </div>
+  `;
+  
+  container.insertAdjacentHTML('beforeend', newInputHtml);
+}
+
+// Helper function: Remove answer input in create mode
+function removeAnswerInputInCreate(button) {
+  const inputGroup = button.closest('.answer-input-group');
+  const container = inputGroup.parentElement;
+  
+  // Don't allow removing if it's the last input
+  const remainingInputs = container.querySelectorAll('.answer-input-group');
+  if (remainingInputs.length <= 1) {
+    showNotification(i18n.t('mustKeepOneAnswer') || '至少需要保留一个答案输入框', 'warning');
+    return;
+  }
+  
+  inputGroup.remove();
 }
 
 // Handle step 2 form submission (save review)
@@ -2323,10 +2377,20 @@ async function handleStep2Submit(e) {
           answers[q.question_number] = selectedValues.join(','); // "A,B,C"
         }
       } else {
-        // Text type
-        const answerElem = document.getElementById(`question${q.question_number}`);
-        if (answerElem && answerElem.value.trim()) {
-          answers[q.question_number] = answerElem.value.trim();
+        // Text type - collect all answer inputs for this question
+        const answerInputs = document.querySelectorAll(`textarea[data-question="${q.question_number}"]`);
+        const answerTexts = [];
+        
+        answerInputs.forEach(input => {
+          const text = input.value.trim();
+          if (text) {
+            answerTexts.push(text);
+          }
+        });
+        
+        // Store as array if multiple answers, or single value if one answer
+        if (answerTexts.length > 0) {
+          answers[q.question_number] = answerTexts.length === 1 ? answerTexts[0] : answerTexts;
         }
       }
     });
@@ -2385,11 +2449,15 @@ async function handlePreviousWithConfirmation() {
           break;
         }
       } else {
-        const answerElem = document.getElementById(`question${q.question_number}`);
-        if (answerElem && answerElem.value.trim()) {
-          hasAnswers = true;
-          break;
+        // Text type - check all answer inputs for this question
+        const answerInputs = document.querySelectorAll(`textarea[data-question="${q.question_number}"]`);
+        for (const input of answerInputs) {
+          if (input.value.trim()) {
+            hasAnswers = true;
+            break;
+          }
         }
+        if (hasAnswers) break;
       }
     }
   }
@@ -2419,9 +2487,20 @@ async function handlePreviousWithConfirmation() {
                 answers[q.question_number] = selectedValues.join(',');
               }
             } else {
-              const answerElem = document.getElementById(`question${q.question_number}`);
-              if (answerElem && answerElem.value.trim()) {
-                answers[q.question_number] = answerElem.value.trim();
+              // Text type - collect all answer inputs for this question
+              const answerInputs = document.querySelectorAll(`textarea[data-question="${q.question_number}"]`);
+              const answerTexts = [];
+              
+              answerInputs.forEach(input => {
+                const text = input.value.trim();
+                if (text) {
+                  answerTexts.push(text);
+                }
+              });
+              
+              // Store as array if multiple answers, or single value if one answer
+              if (answerTexts.length > 0) {
+                answers[q.question_number] = answerTexts.length === 1 ? answerTexts[0] : answerTexts;
               }
             }
           });
@@ -2442,6 +2521,13 @@ async function handlePreviousWithConfirmation() {
           currentDraftId = response.data.id;
           showNotification(i18n.t('draftSaved'), 'success');
         }
+        
+        // Important: Return after successful save to prevent immediate navigation
+        // Give user time to see the success notification before going back
+        setTimeout(() => {
+          showCreateReview(window.createReviewData);
+        }, 500);
+        return;
       } catch (error) {
         showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
         return; // Don't go back if save failed
@@ -2449,7 +2535,7 @@ async function handlePreviousWithConfirmation() {
     }
   }
   
-  // Go back to step 1
+  // Go back to step 1 (only if user canceled save or no answers)
   showCreateReview(window.createReviewData);
 }
 
