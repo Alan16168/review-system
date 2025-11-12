@@ -2142,9 +2142,6 @@ async function showReviewDetail(id, readOnly = false) {
                   }">
                     ${i18n.t(review.status)}
                   </span>
-                  
-                    </span>
-                  ` : ''}
                   ${review.time_type ? `
                     <span class="px-3 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
                       <i class="fas fa-calendar-alt mr-1"></i>${i18n.t('timeType' + review.time_type.charAt(0).toUpperCase() + review.time_type.slice(1))}
