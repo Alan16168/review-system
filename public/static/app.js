@@ -826,6 +826,203 @@ async function loadTestimonials() {
   }
 }
 
+// Show Login Page
+function showLogin() {
+  currentView = 'login';
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <button onclick="showHomePage()" class="mb-4 text-indigo-600 hover:text-indigo-800 text-sm">
+          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
+        </button>
+        
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-brain text-indigo-600 mr-2"></i>
+            ${i18n.t('systemTitle')}
+          </h1>
+          <p class="text-gray-600">${i18n.t('systemSubtitle')}</p>
+        </div>
+        
+        <div class="mb-6">
+          <button onclick="i18n.setLanguage(i18n.getCurrentLanguage() === 'zh' ? 'en' : 'zh')" 
+                  class="text-sm text-indigo-600 hover:text-indigo-800">
+            <i class="fas fa-language mr-1"></i>
+            ${i18n.getCurrentLanguage() === 'zh' ? 'English' : '中文'}
+          </button>
+        </div>
+
+        <div id="auth-form">
+          <!-- Google Sign-In Button -->
+          <div class="mb-6">
+            <div id="google-signin-button"></div>
+          </div>
+          
+          <!-- Divider -->
+          <div class="relative mb-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white text-gray-500">${i18n.t('orDivider')}</span>
+            </div>
+          </div>
+          
+          <!-- Email/Password Login -->
+          <div class="mb-4">
+            <label class="block text-gray-700 mb-2">${i18n.t('email')}</label>
+            <input type="email" id="login-email" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('email')}">
+          </div>
+          
+          <div class="mb-6">
+            <label class="block text-gray-700 mb-2">${i18n.t('password')}</label>
+            <input type="password" id="login-password" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('password')}">
+          </div>
+          
+          <button onclick="handleLogin()" 
+                  class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition mb-4">
+            ${i18n.t('login')}
+          </button>
+          
+          <div class="text-center space-y-2">
+            <div>
+              <a href="#" onclick="showForgotPassword(); return false;" class="text-sm text-gray-600 hover:text-indigo-600">
+                ${i18n.t('forgotPassword')}
+              </a>
+            </div>
+            <div>
+              <a href="#" onclick="showRegister(); return false;" class="text-indigo-600 hover:text-indigo-800">
+                ${i18n.t('noAccount')} ${i18n.t('clickRegister')}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Initialize Google Sign-In button after DOM is ready
+  setTimeout(() => {
+    if (typeof google !== 'undefined' && google.accounts) {
+      google.accounts.id.initialize({
+        client_id: '78785931273-pse627aasv4h50mcc1cschj5cvtqr88f.apps.googleusercontent.com',
+        callback: handleGoogleLogin
+      });
+      google.accounts.id.renderButton(
+        document.getElementById('google-signin-button'),
+        { 
+          theme: 'outline', 
+          size: 'large',
+          width: 400,
+          text: 'continue_with'
+        }
+      );
+    }
+  }, 100);
+}
+
+// Show Register Page
+function showRegister() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <button onclick="showHomePage()" class="mb-4 text-indigo-600 hover:text-indigo-800 text-sm">
+          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('backToHome')}
+        </button>
+        
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-user-plus text-indigo-600 mr-2"></i>
+            ${i18n.t('register')}
+          </h1>
+        </div>
+
+        <div id="register-form">
+          <!-- Google Sign-In Button -->
+          <div class="mb-6">
+            <div id="google-register-button"></div>
+          </div>
+          
+          <!-- Divider -->
+          <div class="relative mb-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white text-gray-500">${i18n.t('orDivider')}</span>
+            </div>
+          </div>
+          
+          <!-- Email/Password Registration -->
+          <div class="mb-4">
+            <label class="block text-gray-700 mb-2">${i18n.t('username')}</label>
+            <input type="text" id="register-username" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('username')}">
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-gray-700 mb-2">${i18n.t('email')}</label>
+            <input type="email" id="register-email" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('email')}">
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-gray-700 mb-2">${i18n.t('password')}</label>
+            <input type="password" id="register-password" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('password')}">
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-gray-700 mb-2">${i18n.t('confirmPassword')}</label>
+            <input type="password" id="register-confirm-password" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('confirmPassword')}">
+          </div>
+          
+          <button onclick="handleRegister()" 
+                  class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition mb-4">
+            ${i18n.t('register')}
+          </button>
+          
+          <div class="text-center">
+            <a href="#" onclick="showLogin(); return false;" class="text-indigo-600 hover:text-indigo-800">
+              ${i18n.t('haveAccount')} ${i18n.t('clickLogin')}
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Initialize Google Sign-In button after DOM is ready
+  setTimeout(() => {
+    if (typeof google !== 'undefined' && google.accounts) {
+      google.accounts.id.initialize({
+        client_id: '78785931273-pse627aasv4h50mcc1cschj5cvtqr88f.apps.googleusercontent.com',
+        callback: handleGoogleLogin
+      });
+      google.accounts.id.renderButton(
+        document.getElementById('google-register-button'),
+        { 
+          theme: 'outline', 
+          size: 'large',
+          width: 400,
+          text: 'continue_with'
+        }
+      );
+    }
+  }, 100);
+}
+
 // Show Public Reviews page
 async function showPublicReviews() {
   currentView = 'public-reviews';
