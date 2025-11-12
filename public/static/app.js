@@ -2855,7 +2855,7 @@ async function showReviewDetail(id, readOnly = false) {
                               <i class="fas fa-user-circle mr-1"></i>${escapeHtml(ans.username)}${ans.is_mine ? ` <span class="text-indigo-600">(${i18n.t('myAnswer') || '我'})</span>` : ''}
                             </span>
                             <span class="text-xs text-gray-500">
-                              <i class="fas fa-clock mr-1"></i>${new Date(ans.updated_at).toLocaleString()}
+                              <i class="fas fa-clock mr-1"></i>${i18n.t('answerCreatedAt')}: ${formatDate(ans.created_at || ans.updated_at)}
                             </span>
                           </div>
                           ${answerDisplay}
@@ -3342,16 +3342,67 @@ async function showEditReview(id) {
                     </div>
                   `;
                 } else {
-                  // Default text type
+                  // Default text type - support multiple answers
+                  const userAnswers = answersByQuestion[q.question_number] || [];
+                  const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
+                  
                   return `
                     <div class="mb-6">
                       <label class="block text-sm font-medium text-gray-700 mb-2">
                         ${q.question_number}. ${escapeHtml(q.question_text)}
                         ${q.question_text_en ? `<span class="text-xs text-gray-500 block mt-1">${escapeHtml(q.question_text_en)}</span>` : ''}
                       </label>
-                      <textarea id="question${q.question_number}" rows="3"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                                placeholder="${escapeHtml(q.question_text)}">${escapeHtml(myAnswers[q.question_number] || '')}</textarea>
+                      
+                      <!-- Existing answers -->
+                      <div id="answers-container-${q.question_number}" class="space-y-3 mb-3">
+                        ${myAnswersList.length > 0 ? myAnswersList.map(ans => `
+                          <div class="answer-item relative border border-gray-300 rounded-lg p-3 bg-white" data-answer-id="${ans.id}">
+                            <div class="flex justify-between items-start mb-2">
+                              <span class="text-xs text-gray-500">
+                                <i class="fas fa-clock mr-1"></i>${i18n.t('answerCreatedAt')}: ${formatDate(ans.created_at)}
+                              </span>
+                              <button type="button" 
+                                      onclick="deleteExistingAnswer(${id}, ${ans.id}, ${q.question_number})"
+                                      class="text-red-600 hover:text-red-800 text-sm">
+                                <i class="fas fa-trash-alt mr-1"></i>${i18n.t('delete')}
+                              </button>
+                            </div>
+                            <div class="text-sm text-gray-800 whitespace-pre-wrap">${escapeHtml(ans.answer)}</div>
+                          </div>
+                        `).join('') : `
+                          <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
+                            <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswersYet')}
+                          </div>
+                        `}
+                      </div>
+                      
+                      <!-- Add new answer section -->
+                      <div id="new-answer-section-${q.question_number}" class="hidden space-y-2">
+                        <textarea id="new-answer-${q.question_number}" rows="3"
+                                  class="w-full px-4 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y bg-indigo-50"
+                                  placeholder="${i18n.t('enterNewAnswer')}"></textarea>
+                        <div class="flex justify-end space-x-2">
+                          <button type="button" 
+                                  onclick="cancelNewAnswer(${q.question_number})"
+                                  class="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            ${i18n.t('cancel')}
+                          </button>
+                          <button type="button" 
+                                  onclick="addNewAnswer(${id}, ${q.question_number})"
+                                  class="px-3 py-1 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                            <i class="fas fa-check mr-1"></i>${i18n.t('save')}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <!-- Add answer button -->
+                      <button type="button" 
+                              id="add-answer-btn-${q.question_number}"
+                              onclick="showNewAnswerInput(${q.question_number})"
+                              class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                        <i class="fas fa-plus-circle mr-2"></i>${i18n.t('addNewAnswer')}
+                      </button>
+                      
                       <p class="mt-1 text-xs text-gray-500">
                         <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
                       </p>
@@ -3414,13 +3465,133 @@ async function showEditReview(id) {
   }
 }
 
+// Helper function to show new answer input
+function showNewAnswerInput(questionNumber) {
+  const section = document.getElementById(`new-answer-section-${questionNumber}`);
+  const btn = document.getElementById(`add-answer-btn-${questionNumber}`);
+  
+  if (section && btn) {
+    section.classList.remove('hidden');
+    btn.classList.add('hidden');
+    
+    // Focus on textarea
+    const textarea = document.getElementById(`new-answer-${questionNumber}`);
+    if (textarea) {
+      textarea.focus();
+    }
+  }
+}
+
+// Helper function to cancel new answer input
+function cancelNewAnswer(questionNumber) {
+  const section = document.getElementById(`new-answer-section-${questionNumber}`);
+  const btn = document.getElementById(`add-answer-btn-${questionNumber}`);
+  const textarea = document.getElementById(`new-answer-${questionNumber}`);
+  
+  if (section && btn && textarea) {
+    section.classList.add('hidden');
+    btn.classList.remove('hidden');
+    textarea.value = ''; // Clear textarea
+  }
+}
+
+// Helper function to add new answer
+async function addNewAnswer(reviewId, questionNumber) {
+  try {
+    const textarea = document.getElementById(`new-answer-${questionNumber}`);
+    const answer = textarea ? textarea.value.trim() : '';
+    
+    if (!answer) {
+      showNotification(i18n.t('answerCannotBeEmpty') || '答案不能为空', 'error');
+      return;
+    }
+    
+    // Call API to create new answer (changed from PUT to POST)
+    const response = await axios.post(`/api/reviews/${reviewId}/my-answer/${questionNumber}`, {
+      answer: answer
+    });
+    
+    const newAnswer = response.data.answer;
+    
+    // Add new answer to the UI
+    const container = document.getElementById(`answers-container-${questionNumber}`);
+    if (container) {
+      // Remove "no answers" message if exists
+      const noAnswersMsg = container.querySelector('.text-gray-400');
+      if (noAnswersMsg) {
+        noAnswersMsg.remove();
+      }
+      
+      // Add new answer element
+      const answerHtml = `
+        <div class="answer-item relative border border-gray-300 rounded-lg p-3 bg-white" data-answer-id="${newAnswer.id}">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs text-gray-500">
+              <i class="fas fa-clock mr-1"></i>${i18n.t('answerCreatedAt')}: ${formatDate(newAnswer.created_at)}
+            </span>
+            <button type="button" 
+                    onclick="deleteExistingAnswer(${reviewId}, ${newAnswer.id}, ${questionNumber})"
+                    class="text-red-600 hover:text-red-800 text-sm">
+              <i class="fas fa-trash-alt mr-1"></i>${i18n.t('delete')}
+            </button>
+          </div>
+          <div class="text-sm text-gray-800 whitespace-pre-wrap">${escapeHtml(answer)}</div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', answerHtml);
+    }
+    
+    // Reset form
+    cancelNewAnswer(questionNumber);
+    
+    showNotification(i18n.t('answerSaved') || '答案已保存', 'success');
+  } catch (error) {
+    console.error('Add answer error:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Helper function to delete existing answer
+async function deleteExistingAnswer(reviewId, answerId, questionNumber) {
+  if (!confirm(i18n.t('confirmDeleteAnswer') || '确定要删除这个答案吗？')) {
+    return;
+  }
+  
+  try {
+    // Call new API endpoint to delete by answer ID
+    await axios.delete(`/api/reviews/${reviewId}/answer/${answerId}`);
+    
+    // Remove from UI
+    const answerElement = document.querySelector(`.answer-item[data-answer-id="${answerId}"]`);
+    if (answerElement) {
+      answerElement.remove();
+    }
+    
+    // Check if no answers left, show "no answers" message
+    const container = document.getElementById(`answers-container-${questionNumber}`);
+    if (container && container.children.length === 0) {
+      container.innerHTML = `
+        <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
+          <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswersYet')}
+        </div>
+      `;
+    }
+    
+    showNotification(i18n.t('answerDeleted') || '答案已删除', 'success');
+  } catch (error) {
+    console.error('Delete answer error:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
 async function handleEditReview(e) {
   e.preventDefault();
   
   const id = document.getElementById('review-id').value;
   const isCreator = window.currentEditIsCreator;
   
-  // Collect answers dynamically
+  // Collect answers for choice-type questions only
+  // Note: Text-type answers are now managed through addNewAnswer() function
   const answers = {};
   const questions = window.currentEditQuestions || [];
   if (questions.length > 0) {
@@ -3438,14 +3609,8 @@ async function handleEditReview(e) {
           const selectedValues = Array.from(checked).map(cb => cb.value);
           answers[q.question_number] = selectedValues.join(','); // "A,B,C"
         }
-      } else {
-        // Text type
-        const answerElem = document.getElementById(`question${q.question_number}`);
-        if (answerElem) {
-          const value = answerElem.value.trim();
-          answers[q.question_number] = value || null;
-        }
       }
+      // Skip text type - these are managed through the multiple answers UI
     });
   }
   
@@ -3485,6 +3650,13 @@ async function handleEditReview(e) {
 }
 
 // ============ Helper Functions ============
+
+// Format date to localized string
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleString();
+}
 
 // Unified navigation bar for all pages (logged in and logged out)
 function renderNavigation() {
