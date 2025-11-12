@@ -124,9 +124,9 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://4b51c99f.review-system.pages.dev
+- **最新部署 ID**: https://7d89394b.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.25.0 - 删除群体类型，新增自由复盘（所有核心功能已完全恢复）
+- **版本**: ✅ V5.25.0 - 删除群体类型，新增自由复盘（完整功能+UX优化）
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-12
@@ -235,8 +235,8 @@
   - ✅ **双语支持**：完整的中英文国际化支持
 
 ### 开发环境
-- **应用 URL**: https://4b51c99f.review-system.pages.dev
-- **Git Commit**: ✅ V5.25.0 (删除群体类型，优化团队选择逻辑，完全恢复所有核心功能)
+- **应用 URL**: https://7d89394b.review-system.pages.dev
+- **Git Commit**: ✅ V5.25.0 (删除群体类型，优化团队选择逻辑，完全恢复所有核心功能+用户体验优化)
 - **本地端口**: 3000 (PM2 管理)
 - **数据库状态**: 
   - ✅ 本地数据库：已应用所有迁移（包括0026）
@@ -281,7 +281,10 @@
       - 恢复changeDashboardPage()函数 - 工作台分页功能
       - 恢复showReviews()函数 - "我的复盘"页面
       - 移除group_type过滤器，保留status、search、timeType、ownerType过滤
-    - **修复效果**: ✅ 用户现在可以正常登录、访问工作台、查看"我的复盘"页面，所有核心功能完全恢复 
+    - **用户体验优化**：
+      - 修复编辑复盘后返回页面 - 从工作台改为"我的复盘"页面
+      - 保持用户操作上下文，避免混淆
+    - **修复效果**: ✅ 用户现在可以正常登录、访问工作台、查看"我的复盘"页面，编辑后正确返回"我的复盘"，所有功能完全恢复 
   - ✅ **留言见证翻译修复 (V5.24.6 - 2025-11-11)**：
     - 修复68个留言见证部分翻译键（34日语 + 34西班牙语）
     - **日语翻译修复**：
