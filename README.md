@@ -124,9 +124,9 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://1aef5553.review-system.pages.dev
+- **最新部署 ID**: https://6194e91e.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.27.2 - 修复草稿数据恢复
+- **版本**: ✅ V5.27.3 - 自动保存草稿（无确认）
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-12
@@ -134,6 +134,27 @@
 - **数据库迁移**: ✅ Migration 0028 已应用到生产数据库
 - **关键修复**: ✅ 移除ON CONFLICT子句以支持多答案功能
 - **更新内容**:
+  - ✅ **V5.27.3 - 自动保存草稿（无确认）**（用户体验优化 - 2025-11-12）：
+    - **用户反馈**: "不要问客人是否存盘，请直接存盘"
+    - **核心改进**:
+      - **移除确认对话框**: 点击"上一步"不再弹出"是否保存草稿"提示
+      - **自动保存**: 如果用户填写了任何答案，自动保存为草稿
+      - **即时导航**: 保存后立即返回Step1，无延迟等待
+      - **静默保存**: 显示"草稿已自动保存"提示，不打断用户流程
+      - **容错处理**: 即使保存失败也返回Step1，显示错误提示
+    - **用户体验提升**:
+      - ✅ 无需确认，点击"上一步"自动保存
+      - ✅ 流程更流畅，无对话框打断
+      - ✅ 保存成功显示ID，失败显示错误
+      - ✅ 即使失败也不阻止返回
+    - **国际化支持** (1键 × 4语言):
+      - autoSaveFailed: '自动保存失败' / 'Auto Save Failed' / '自動保存に失敗しました' / 'Error al Guardar Automáticamente'
+    - **技术细节**:
+      - 移除 `confirm()` 对话框
+      - 移除 `setTimeout()` 延迟导航
+      - 使用 `draftAutoSaved` 替代 `draftSaved` 提示
+      - 失败时也返回Step1（之前会停留在Step2）
+    - **部署URL**: https://6194e91e.review-system.pages.dev
   - ✅ **V5.27.2 - 修复草稿数据恢复**（关键功能修复 - 2025-11-12）：
     - **问题描述**: 用户反馈"保存草稿后再次点击'下一步'，表单是空白的，答案全部消失"
     - **根本原因**: 
