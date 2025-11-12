@@ -124,9 +124,9 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://29517d04.review-system.pages.dev
+- **最新部署 ID**: https://1458f110.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.25.0 - 删除群体类型，新增自由复盘
+- **版本**: ✅ V5.25.0 - 删除群体类型，新增自由复盘（登录功能已修复）
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-12
@@ -235,8 +235,8 @@
   - ✅ **双语支持**：完整的中英文国际化支持
 
 ### 开发环境
-- **应用 URL**: https://29517d04.review-system.pages.dev
-- **Git Commit**: ✅ V5.25.0 (删除群体类型，优化团队选择逻辑，修复JavaScript语法错误)
+- **应用 URL**: https://1458f110.review-system.pages.dev
+- **Git Commit**: ✅ V5.25.0 (删除群体类型，优化团队选择逻辑，修复JavaScript语法错误，恢复登录功能)
 - **本地端口**: 3000 (PM2 管理)
 - **数据库状态**: 
   - ✅ 本地数据库：已应用所有迁移（包括0026）
@@ -272,7 +272,11 @@
       - 移除testimonial card中错误插入的filter selector HTML
       - 修复review detail视图中的孤立代码片段（`</span>` + `` ` : ''}`）
       - 所有语法错误已修复，页面正常加载
-    - **修复效果**: ✅ 用户现在可以更直观地创建团队复盘，表单更简洁易用，页面无白屏错误 
+    - **登录功能修复**：
+      - 恢复被意外删除的showLogin()函数
+      - 恢复被意外删除的showRegister()函数
+      - 登录和注册按钮现在正常工作
+    - **修复效果**: ✅ 用户现在可以更直观地创建团队复盘，表单更简洁易用，页面无白屏错误，登录功能正常 
   - ✅ **留言见证翻译修复 (V5.24.6 - 2025-11-11)**：
     - 修复68个留言见证部分翻译键（34日语 + 34西班牙语）
     - **日语翻译修复**：
