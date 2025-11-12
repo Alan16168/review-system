@@ -1023,6 +1023,307 @@ function showRegister() {
   }, 100);
 }
 
+// Show Dashboard
+async function showDashboard() {
+  // Auto-save draft before leaving create review page
+  await autoSaveDraftBeforeNavigation();
+  
+  currentView = 'dashboard';
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="min-h-screen">
+      ${renderNavigation()}
+
+      <!-- Content -->
+      <div class="max-w-7xl mx-auto px-4 py-8">
+        <div id="dashboard-content">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition" onclick="showReviews()">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 mb-1">${i18n.t('myReviews')}</p>
+                  <p class="text-3xl font-bold text-indigo-600" id="review-count">-</p>
+                </div>
+                <i class="fas fa-clipboard-list text-4xl text-indigo-200"></i>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition" onclick="showTeams()">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 mb-1">${i18n.t('teams')}</p>
+                  <p class="text-3xl font-bold text-green-600" id="team-count">-</p>
+                </div>
+                <i class="fas fa-users text-4xl text-green-200"></i>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-gray-500 mb-1">${i18n.t('completed')}</p>
+                  <p class="text-3xl font-bold text-purple-600" id="completed-count">-</p>
+                </div>
+                <i class="fas fa-check-circle text-4xl text-purple-200"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">${i18n.t('myReviews')}</h2>
+            <button onclick="showCreateReview()" 
+                    class="mb-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+              <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
+            </button>
+            <div id="recent-reviews"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  await loadDashboardData();
+}
+
+// Handle Login
+async function handleLogin() {
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+
+  try {
+    const response = await axios.post('/api/auth/login', { email, password });
+    authToken = response.data.token;
+    currentUser = response.data.user;
+    
+    localStorage.setItem('authToken', authToken);
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+    
+    // Set user's preferred language
+    if (currentUser.language) {
+      i18n.setLanguage(currentUser.language);
+    }
+    
+    // Check if there's a pending team invitation to accept
+    const teamInviteToken = sessionStorage.getItem('team_invite_token');
+    if (teamInviteToken) {
+      sessionStorage.removeItem('team_invite_token');
+      await acceptTeamInvitation(teamInviteToken);
+      return;
+    }
+    
+    // Check if there's a pending review invitation (referral)
+    const referralToken = sessionStorage.getItem('referral_token');
+    if (referralToken) {
+      // Keep the token and view the shared review
+      showNotification(i18n.t('loginSuccess') || '登录成功', 'success');
+      setTimeout(() => {
+        // The referral token handler will be processed by the invitation system
+        window.location.href = `/?invite=${referralToken}`;
+      }, 1000);
+      return;
+    }
+    
+    showDashboard();
+  } catch (error) {
+    alert(i18n.t('loginFailed') + ': ' + (error.response?.data?.error || error.message));
+  }
+}
+
+// Handle Register
+async function handleRegister() {
+  const username = document.getElementById('register-username').value;
+  const email = document.getElementById('register-email').value;
+  const password = document.getElementById('register-password').value;
+  const confirmPassword = document.getElementById('register-confirm-password').value;
+
+  // Validate inputs
+  if (!username || !email || !password || !confirmPassword) {
+    alert(i18n.t('fillAllFields'));
+    return;
+  }
+
+  // Check if passwords match
+  if (password !== confirmPassword) {
+    alert(i18n.t('passwordMismatch'));
+    return;
+  }
+
+  // Check password length
+  if (password.length < 6) {
+    alert(i18n.t('passwordTooShort'));
+    return;
+  }
+
+  try {
+    const response = await axios.post('/api/auth/register', { email, password, username });
+    authToken = response.data.token;
+    currentUser = response.data.user;
+    
+    localStorage.setItem('authToken', authToken);
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+    
+    // Set user's preferred language
+    if (currentUser.language) {
+      i18n.setLanguage(currentUser.language);
+    }
+    
+    // Check if there's a pending team invitation to accept
+    const teamInviteToken = sessionStorage.getItem('team_invite_token');
+    if (teamInviteToken) {
+      sessionStorage.removeItem('team_invite_token');
+      await acceptTeamInvitation(teamInviteToken);
+    } else {
+      showDashboard();
+    }
+  } catch (error) {
+    alert(i18n.t('registerFailed') + ': ' + (error.response?.data?.error || error.message));
+  }
+}
+
+// Dashboard Data Management
+let dashboardReviews = [];
+let dashboardCurrentPage = 1;
+const dashboardItemsPerPage = 5;
+
+async function loadDashboardData() {
+  try {
+    const reviewsRes = await axios.get('/api/reviews');
+    dashboardReviews = reviewsRes.data.reviews || [];
+    
+    const reviewCountEl = document.getElementById('review-count');
+    const completedCountEl = document.getElementById('completed-count');
+    const teamCountEl = document.getElementById('team-count');
+    
+    if (reviewCountEl) {
+      reviewCountEl.textContent = dashboardReviews.length;
+    }
+    if (completedCountEl) {
+      completedCountEl.textContent = dashboardReviews.filter(r => r.status === 'completed').length;
+    }
+    
+    dashboardCurrentPage = 1; // Reset to first page
+    renderRecentReviews(dashboardReviews);
+    
+    // Load teams data for all users
+    try {
+      const teamsRes = await axios.get('/api/teams');
+      const myTeamsCount = teamsRes.data.myTeams ? teamsRes.data.myTeams.length : 0;
+      if (teamCountEl) {
+        teamCountEl.textContent = myTeamsCount;
+      }
+    } catch (error) {
+      console.error('Load teams error:', error);
+      if (teamCountEl) {
+        teamCountEl.textContent = '0';
+      }
+    }
+  } catch (error) {
+    console.error('Load dashboard error:', error);
+    // Set defaults on error
+    const reviewCountEl = document.getElementById('review-count');
+    const completedCountEl = document.getElementById('completed-count');
+    const teamCountEl = document.getElementById('team-count');
+    if (reviewCountEl) reviewCountEl.textContent = '0';
+    if (completedCountEl) completedCountEl.textContent = '0';
+    if (teamCountEl) teamCountEl.textContent = '0';
+    // Still render empty reviews list
+    dashboardReviews = [];
+    renderRecentReviews(dashboardReviews);
+  }
+}
+
+function changeDashboardPage(newPage) {
+  dashboardCurrentPage = newPage;
+  renderRecentReviews(dashboardReviews);
+}
+
+function renderRecentReviews(reviews) {
+  const container = document.getElementById('recent-reviews');
+  
+  if (!container) return;
+  
+  if (reviews.length === 0) {
+    container.innerHTML = `<p class="text-gray-500 text-center py-4">${i18n.t('noData')}</p>`;
+    return;
+  }
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(reviews.length / dashboardItemsPerPage);
+  const startIndex = (dashboardCurrentPage - 1) * dashboardItemsPerPage;
+  const endIndex = startIndex + dashboardItemsPerPage;
+  const paginatedReviews = reviews.slice(startIndex, endIndex);
+  
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('reviewTitle')}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('creator') || '创建者'}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('ownerType')}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('status')}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('updatedAt')}</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('actions')}</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${paginatedReviews.map(review => `
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${escapeHtml(review.title)}</div>
+                ${review.team_name ? `<div class="text-xs text-gray-500"><i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}</div>` : ''}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <i class="fas fa-user-circle text-gray-400 mr-2"></i>
+                  <span class="text-sm text-gray-700">${escapeHtml(review.creator_name || 'Unknown')}</span>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${renderOwnerTypeBadge(review.owner_type)}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 text-xs rounded-full ${review.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                  ${i18n.t(review.status)}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${new Date(review.updated_at).toLocaleString()}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                <button onclick="showReviewDetail(${review.id})" class="text-indigo-600 hover:text-indigo-900">
+                  <i class="fas fa-eye"></i> ${i18n.t('view')}
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      
+      <!-- Pagination -->
+      ${totalPages > 1 ? `
+        <div class="flex justify-center items-center mt-4 space-x-2">
+          <button onclick="changeDashboardPage(${dashboardCurrentPage - 1})" 
+                  ${dashboardCurrentPage === 1 ? 'disabled' : ''}
+                  class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+            ${i18n.t('previousPage') || '上一页'}
+          </button>
+          <span class="text-gray-700">
+            ${i18n.t('page') || '第'} ${dashboardCurrentPage} / ${totalPages} ${i18n.t('pages') || '页'}
+          </span>
+          <button onclick="changeDashboardPage(${dashboardCurrentPage + 1})" 
+                  ${dashboardCurrentPage === totalPages ? 'disabled' : ''}
+                  class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+            ${i18n.t('nextPage') || '下一页'}
+          </button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
 // Show Public Reviews page
 async function showPublicReviews() {
   currentView = 'public-reviews';
