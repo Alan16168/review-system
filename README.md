@@ -124,16 +124,39 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://56fe89c0.review-system.pages.dev
+- **最新部署 ID**: https://6fe05488.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.28.1 - 答案自动保存（移除保存按钮）
+- **版本**: ✅ V5.28.2 - 修复团队删除错误
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-12
 - **部署时间**: 刚刚部署（最新）
 - **数据库迁移**: ✅ Migration 0028 已应用到生产数据库
-- **关键修复**: ✅ 移除ON CONFLICT子句以支持多答案功能
+- **关键修复**: ✅ 手动删除外键关联记录以支持团队删除功能
 - **更新内容**:
+  - ✅ **V5.28.2 - 修复团队删除错误**（关键Bug修复 - 2025-11-12）：
+    - **用户反馈**: "团队列表的删除功能出错'操作失败: Internal server error'"
+    - **问题分析**:
+      - 尝试删除有 team_invitations 关联记录的团队时失败
+      - `team_invitations` 表的外键约束未设置 `ON DELETE CASCADE`
+      - SQLite 抛出外键约束违反错误
+    - **解决方案**:
+      - 修改 DELETE /api/teams/:id 端点实现多步删除
+      - **第1步**: 删除 team_invitations 记录（无 CASCADE）
+      - **第2步**: 删除 team_members 记录（显式删除）
+      - **第3步**: 删除 team_applications 记录（有 CASCADE 但显式删除）
+      - **第4步**: 删除 team 本身（自动 CASCADE 到 reviews 等）
+    - **技术细节**:
+      - 在 `src/routes/teams.ts` 的 DELETE 端点添加三条 DELETE 语句
+      - 按正确顺序删除：invitations → members → applications → team
+      - 确保所有外键关联记录都被清理
+    - **修复效果**:
+      - ✅ 团队删除功能现在正常工作
+      - ✅ 有邀请记录的团队可以成功删除
+      - ✅ 有成员的团队可以成功删除
+      - ✅ 有申请记录的团队可以成功删除
+      - ✅ 所有关联数据正确清理
+    - **部署URL**: https://6fe05488.review-system.pages.dev
   - ✅ **V5.28.1 - 答案自动保存（移除保存按钮）**（用户体验优化 - 2025-11-12）：
     - **用户反馈**: "系统应自动保存，不需要客人使用'保存'按钮，请删除此按钮"
     - **核心改进**:
