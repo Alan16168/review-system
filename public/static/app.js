@@ -40,12 +40,10 @@ window.saveCurrentReviewDraft = async function() {
     const description = descriptionElem ? descriptionElem.value.trim() : '';
     const template_id = templateElem ? parseInt(templateElem.value) : 1;
       
-    // Get team ID based on group type
+    // Get team ID
     let team_id = null;
-     else {
-      const teamElem = document.getElementById('review-team');
-      team_id = teamElem && teamElem.value ? parseInt(teamElem.value) : null;
-    }
+    const teamElem = document.getElementById('review-team');
+    team_id = teamElem && teamElem.value ? parseInt(teamElem.value) : null;
     const time_type = timeTypeElem ? timeTypeElem.value : 'daily';
     
     let status = 'draft';
