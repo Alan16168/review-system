@@ -205,6 +205,8 @@ const translations = {
     'autoSaveFailed': '自动保存失败',
     'createAndEdit': '创建并编辑',
     'draftCreated': '草稿已创建',
+    'autoSaveOnBlur': '输入完成后点击其他地方自动保存',
+    'answerAutoSaved': '答案已自动保存',
     
     // Team Roles
     'memberRole': '成员角色',
@@ -870,6 +872,8 @@ const translations = {
     'autoSaveFailed': 'Auto Save Failed',
     'createAndEdit': 'Create & Edit',
     'draftCreated': 'Draft Created',
+    'autoSaveOnBlur': 'Click elsewhere after typing to auto-save',
+    'answerAutoSaved': 'Answer Auto-Saved',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -1528,6 +1532,8 @@ const translations = {
     'autoSaveFailed': '自動保存に失敗しました',
     'createAndEdit': '作成して編集',
     'draftCreated': '下書きが作成されました',
+    'autoSaveOnBlur': '入力後、他の場所をクリックすると自動保存されます',
+    'answerAutoSaved': '回答が自動保存されました',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -2186,6 +2192,8 @@ const translations = {
     'autoSaveFailed': 'Error al Guardar Automáticamente',
     'createAndEdit': 'Crear y Editar',
     'draftCreated': 'Borrador Creado',
+    'autoSaveOnBlur': 'Haga clic en otro lugar después de escribir para guardar automáticamente',
+    'answerAutoSaved': 'Respuesta Guardada Automáticamente',
     
     // Team Roles
     'memberRole': 'Member Role',

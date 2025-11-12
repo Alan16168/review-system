@@ -3599,19 +3599,11 @@ async function showEditReview(id) {
                       <div id="new-answer-section-${q.question_number}" class="hidden space-y-2">
                         <textarea id="new-answer-${q.question_number}" rows="3"
                                   class="w-full px-4 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y bg-indigo-50"
-                                  placeholder="${i18n.t('enterNewAnswer')}"></textarea>
-                        <div class="flex justify-end space-x-2">
-                          <button type="button" 
-                                  onclick="cancelNewAnswer(${q.question_number})"
-                                  class="px-3 py-1 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                            ${i18n.t('cancel')}
-                          </button>
-                          <button type="button" 
-                                  onclick="addNewAnswer(${id}, ${q.question_number})"
-                                  class="px-3 py-1 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                            <i class="fas fa-check mr-1"></i>${i18n.t('save')}
-                          </button>
-                        </div>
+                                  placeholder="${i18n.t('enterNewAnswer')}"
+                                  onblur="autoSaveNewAnswer(${id}, ${q.question_number})"></textarea>
+                        <p class="text-xs text-gray-500">
+                          <i class="fas fa-info-circle mr-1"></i>${i18n.t('autoSaveOnBlur') || '输入完成后点击其他地方自动保存'}
+                        </p>
                       </div>
                       
                       <!-- Add answer button -->
@@ -3715,6 +3707,66 @@ function cancelNewAnswer(questionNumber) {
 }
 
 // Helper function to add new answer
+// Auto-save new answer on blur (when user clicks away)
+async function autoSaveNewAnswer(reviewId, questionNumber) {
+  const textarea = document.getElementById(`new-answer-${questionNumber}`);
+  const answer = textarea ? textarea.value.trim() : '';
+  
+  // If empty, just hide the input section
+  if (!answer) {
+    cancelNewAnswer(questionNumber);
+    return;
+  }
+  
+  // Save the answer automatically
+  try {
+    console.log('自动保存新答案:', questionNumber, answer);
+    
+    // Call API to create new answer
+    const response = await axios.post(`/api/reviews/${reviewId}/my-answer/${questionNumber}`, {
+      answer: answer
+    });
+    
+    const newAnswer = response.data.answer;
+    
+    // Add new answer to the UI
+    const container = document.getElementById(`answers-container-${questionNumber}`);
+    if (container) {
+      // Remove "no answers" message if exists
+      const noAnswersMsg = container.querySelector('.text-gray-400');
+      if (noAnswersMsg) {
+        noAnswersMsg.remove();
+      }
+      
+      // Add new answer element
+      const answerHtml = `
+        <div class="answer-item relative border border-gray-300 rounded-lg p-3 bg-white" data-answer-id="${newAnswer.id}">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs text-gray-500">
+              <i class="fas fa-clock mr-1"></i>${i18n.t('answerCreatedAt')}: ${formatDate(newAnswer.created_at)}
+            </span>
+            <button type="button" 
+                    onclick="deleteExistingAnswer(${reviewId}, ${newAnswer.id}, ${questionNumber})"
+                    class="text-red-600 hover:text-red-800 text-sm">
+              <i class="fas fa-trash-alt mr-1"></i>${i18n.t('delete')}
+            </button>
+          </div>
+          <div class="text-sm text-gray-800 whitespace-pre-wrap">${escapeHtml(answer)}</div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', answerHtml);
+    }
+    
+    // Reset form
+    cancelNewAnswer(questionNumber);
+    
+    showNotification(i18n.t('answerAutoSaved') || '答案已自动保存', 'success');
+  } catch (error) {
+    console.error('自动保存答案失败:', error);
+    showNotification(i18n.t('autoSaveFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
 async function addNewAnswer(reviewId, questionNumber) {
   try {
     const textarea = document.getElementById(`new-answer-${questionNumber}`);
