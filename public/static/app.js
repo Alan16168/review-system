@@ -1324,6 +1324,98 @@ function renderRecentReviews(reviews) {
   `;
 }
 
+// Show My Reviews Page
+async function showReviews() {
+  // Only auto-save if coming from create review page AND not just completed a save
+  // Skip auto-save if currentView is already changed (e.g., 'completing-review')
+  if (currentView === 'create-review-step1' || currentView === 'create-review-step2') {
+    await autoSaveDraftBeforeNavigation();
+  }
+  
+  currentView = 'reviews';
+  const app = document.getElementById('app');
+  
+  app.innerHTML = `
+    <div class="min-h-screen bg-gray-50">
+      ${renderNavigation()}
+      
+      <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="mb-6 flex justify-between items-center">
+          <h1 class="text-3xl font-bold text-gray-800">
+            <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('myReviews')}
+          </h1>
+          <button onclick="showCreateReview()" 
+                  class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition shadow-lg">
+            <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-filter mr-1"></i>${i18n.t('status')}
+              </label>
+              <select id="filter-status" onchange="filterReviews()" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="all">${i18n.t('all') || '全部'}</option>
+                <option value="draft">${i18n.t('draft')}</option>
+                <option value="completed">${i18n.t('completed')}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-search mr-1"></i>${i18n.t('search')}
+              </label>
+              <input type="text" id="search-input" oninput="filterReviews()" 
+                     placeholder="${i18n.t('reviewTitle')}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-calendar-alt mr-1"></i>${i18n.t('timeType')}
+              </label>
+              <select id="filter-time-type" onchange="filterReviews()" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="all">${i18n.t('all') || '全部'}</option>
+                <option value="daily">${i18n.t('timeTypeDaily')}</option>
+                <option value="weekly">${i18n.t('timeTypeWeekly')}</option>
+                <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
+                <option value="quarterly">${i18n.t('timeTypeQuarterly')}</option>
+                <option value="yearly">${i18n.t('timeTypeYearly')}</option>
+                <option value="free">${i18n.t('timeTypeFree')}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-shield-alt mr-1"></i>${i18n.t('ownerType')}
+              </label>
+              <select id="filter-owner-type" onchange="filterReviews()" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="all">${i18n.t('all') || '全部'}</option>
+                <option value="private">${i18n.t('ownerTypePrivate')}</option>
+                <option value="team">${i18n.t('ownerTypeTeam')}</option>
+                <option value="public">${i18n.t('ownerTypePublic')}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reviews List -->
+        <div id="reviews-container" class="bg-white rounded-lg shadow-md">
+          <div class="p-8 text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+            <p class="text-gray-600">${i18n.t('loading')}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await loadAllReviews();
+}
+
 // Show Public Reviews page
 async function showPublicReviews() {
   currentView = 'public-reviews';
