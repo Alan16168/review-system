@@ -198,6 +198,9 @@ const translations = {
     'addAnotherAnswer': '添加另一个答案',
     'canAddMultipleAnswers': '您可以为同一问题添加多个答案',
     'mustKeepOneAnswer': '至少需要保留一个答案输入框',
+    'editingDraft': '正在编辑草稿',
+    'draftAutoSaved': '您的更改会自动保存',
+    'pleaseCompleteBasicInfo': '请先完成基本信息填写',
     
     // Team Roles
     'memberRole': '成员角色',
@@ -856,6 +859,9 @@ const translations = {
     'addAnotherAnswer': 'Add Another Answer',
     'canAddMultipleAnswers': 'You can add multiple answers to the same question',
     'mustKeepOneAnswer': 'Must keep at least one answer input',
+    'editingDraft': 'Editing Draft',
+    'draftAutoSaved': 'Your changes will be automatically saved',
+    'pleaseCompleteBasicInfo': 'Please complete basic information first',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -1507,6 +1513,9 @@ const translations = {
     'addAnotherAnswer': '別の答えを追加',
     'canAddMultipleAnswers': '同じ質問に複数の答えを追加できます',
     'mustKeepOneAnswer': '少なくとも1つの答え入力を保持する必要があります',
+    'editingDraft': '下書きを編集中',
+    'draftAutoSaved': '変更は自動的に保存されます',
+    'pleaseCompleteBasicInfo': '最初に基本情報を入力してください',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -2158,6 +2167,9 @@ const translations = {
     'addAnotherAnswer': 'Agregar Otra Respuesta',
     'canAddMultipleAnswers': 'Puede agregar múltiples respuestas a la misma pregunta',
     'mustKeepOneAnswer': 'Debe mantener al menos una entrada de respuesta',
+    'editingDraft': 'Editando Borrador',
+    'draftAutoSaved': 'Sus cambios se guardarán automáticamente',
+    'pleaseCompleteBasicInfo': 'Por favor complete primero la información básica',
     
     // Team Roles
     'memberRole': 'Member Role',

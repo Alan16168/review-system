@@ -1871,6 +1871,16 @@ async function showCreateReview(preservedData = null) {
           <h1 class="text-3xl font-bold text-gray-800">
             <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createReview')}
           </h1>
+          ${currentDraftId ? `
+            <div class="mt-3 px-4 py-2 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
+              <p class="text-sm text-yellow-800">
+                <i class="fas fa-save mr-2"></i>
+                <strong>${i18n.t('editingDraft') || '正在编辑草稿'}</strong> (ID: ${currentDraftId})
+                <br>
+                <span class="text-xs">${i18n.t('draftAutoSaved') || '您的更改会自动保存'}</span>
+              </p>
+            </div>
+          ` : ''}
         </div>
 
         <form id="review-form" class="bg-white rounded-lg shadow-md p-6 space-y-6">
@@ -2512,21 +2522,33 @@ async function handlePreviousWithConfirmation() {
           answers
         };
         
+        // Validate data before saving
+        console.log('准备保存草稿:', data);
+        
+        if (!data.title || !data.template_id) {
+          showNotification(i18n.t('pleaseCompleteBasicInfo') || '请先完成基本信息填写', 'error');
+          return;
+        }
+        
         // Save or update draft
         if (currentDraftId) {
-          await axios.put(`/api/reviews/${currentDraftId}`, data);
-          showNotification(i18n.t('draftSaved'), 'success');
+          console.log('更新现有草稿 ID:', currentDraftId);
+          const response = await axios.put(`/api/reviews/${currentDraftId}`, data);
+          console.log('草稿更新成功:', response.data);
+          showNotification(i18n.t('draftSaved') + ' (ID: ' + currentDraftId + ')', 'success');
         } else {
+          console.log('创建新草稿');
           const response = await axios.post('/api/reviews', data);
           currentDraftId = response.data.id;
-          showNotification(i18n.t('draftSaved'), 'success');
+          console.log('新草稿创建成功，ID:', currentDraftId);
+          showNotification(i18n.t('draftSaved') + ' (ID: ' + currentDraftId + ')', 'success');
         }
         
         // Important: Return after successful save to prevent immediate navigation
-        // Give user time to see the success notification before going back
+        // Give user MORE time to see the success notification before going back
         setTimeout(() => {
           showCreateReview(window.createReviewData);
-        }, 500);
+        }, 1500); // 增加延迟到1.5秒，让用户充分看到提示
         return;
       } catch (error) {
         showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
