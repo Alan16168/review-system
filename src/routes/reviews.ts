@@ -5,6 +5,7 @@ import {
   getReviewAnswers, 
   saveMyAnswer, 
   deleteAnswer,
+  deleteAnswerById,
   getAnswerCompletionStatus 
 } from '../utils/db';
 
@@ -174,13 +175,13 @@ reviews.get('/:id', async (c) => {
       ORDER BY question_number ASC
     `).bind(lang, review.template_id).all();
 
-    // Get review answers with user information (support multi-user answers)
+    // Get review answers with user information (support multiple answers per question)
     const answersResult = await c.env.DB.prepare(`
-      SELECT ra.question_number, ra.answer, ra.user_id, u.username, u.email, ra.updated_at
+      SELECT ra.id, ra.question_number, ra.answer, ra.user_id, u.username, u.email, ra.created_at, ra.updated_at
       FROM review_answers ra
       JOIN users u ON ra.user_id = u.id
       WHERE ra.review_id = ?
-      ORDER BY ra.question_number ASC, u.username ASC
+      ORDER BY ra.question_number ASC, ra.created_at ASC
     `).bind(reviewId).all();
 
     // Group answers by question number
@@ -190,10 +191,12 @@ reviews.get('/:id', async (c) => {
         answersByQuestion[ans.question_number] = [];
       }
       answersByQuestion[ans.question_number].push({
+        id: ans.id,
         user_id: ans.user_id,
         username: ans.username,
         email: ans.email,
         answer: ans.answer,
+        created_at: ans.created_at,
         updated_at: ans.updated_at,
         is_mine: ans.user_id === user.id
       });
@@ -529,10 +532,12 @@ reviews.get('/:id/all-answers', async (c) => {
 
     answers.forEach(answer => {
       answersByQuestion[answer.question_number].push({
+        id: answer.id,
         user_id: answer.user_id,
         username: answer.username,
         email: answer.email,
         answer: answer.answer,
+        created_at: answer.created_at,
         updated_at: answer.updated_at,
         is_mine: answer.user_id === user.id
       });
@@ -550,10 +555,10 @@ reviews.get('/:id/all-answers', async (c) => {
 });
 
 /**
- * PUT /api/reviews/:id/my-answer/:questionNumber
- * Save or update current user's answer for a specific question
+ * POST /api/reviews/:id/my-answer/:questionNumber
+ * Create a new answer for current user (supports multiple answers per question)
  */
-reviews.put('/:id/my-answer/:questionNumber', async (c) => {
+reviews.post('/:id/my-answer/:questionNumber', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const reviewId = parseInt(c.req.param('id'));
@@ -584,19 +589,88 @@ reviews.put('/:id/my-answer/:questionNumber', async (c) => {
       return c.json({ error: 'Access denied. You cannot contribute to this review.' }, 403);
     }
 
-    // Save the answer
-    await saveMyAnswer(c.env.DB, reviewId, user.id, questionNumber, answer);
+    // Create new answer (always INSERT, never UPDATE)
+    const answerId = await saveMyAnswer(c.env.DB, reviewId, user.id, questionNumber, answer);
 
-    return c.json({ message: 'Answer saved successfully' });
+    // Get the created answer with timestamp
+    const newAnswer: any = await c.env.DB.prepare(`
+      SELECT ra.id, ra.created_at, ra.updated_at, u.username, u.email
+      FROM review_answers ra
+      JOIN users u ON ra.user_id = u.id
+      WHERE ra.id = ?
+    `).bind(answerId).first();
+
+    return c.json({ 
+      message: 'Answer created successfully',
+      answer: {
+        id: newAnswer.id,
+        user_id: user.id,
+        username: newAnswer.username,
+        email: newAnswer.email,
+        answer: answer,
+        created_at: newAnswer.created_at,
+        updated_at: newAnswer.updated_at,
+        is_mine: true
+      }
+    });
   } catch (error) {
-    console.error('Save answer error:', error);
+    console.error('Create answer error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * DELETE /api/reviews/:id/answer/:answerId
+ * Delete a specific answer by ID (user can only delete their own answers)
+ */
+reviews.delete('/:id/answer/:answerId', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const reviewId = parseInt(c.req.param('id'));
+    const answerId = parseInt(c.req.param('answerId'));
+
+    // Check if user has access to this review
+    const accessQuery = `
+      SELECT 1 FROM reviews r
+      WHERE r.id = ? AND (
+        r.user_id = ?
+        OR EXISTS (SELECT 1 FROM review_collaborators WHERE review_id = r.id AND user_id = ?)
+        OR (r.owner_type = 'team' AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
+      )
+    `;
+    const hasAccess = await c.env.DB.prepare(accessQuery)
+      .bind(reviewId, user.id, user.id, user.id).first();
+
+    if (!hasAccess) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Verify the answer belongs to this review
+    const answerCheck: any = await c.env.DB.prepare(
+      'SELECT review_id FROM review_answers WHERE id = ?'
+    ).bind(answerId).first();
+
+    if (!answerCheck || answerCheck.review_id !== reviewId) {
+      return c.json({ error: 'Answer not found in this review' }, 404);
+    }
+
+    // Delete answer by ID (only if it belongs to current user)
+    const deleted = await deleteAnswerById(c.env.DB, answerId, user.id);
+
+    if (!deleted) {
+      return c.json({ error: 'Answer not found or access denied' }, 404);
+    }
+
+    return c.json({ message: 'Answer deleted successfully' });
+  } catch (error) {
+    console.error('Delete answer error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
 
 /**
  * DELETE /api/reviews/:id/my-answer/:questionNumber
- * Delete current user's own answer (each user can only delete their own answers)
+ * Delete current user's own answer (legacy endpoint - kept for backwards compatibility)
  */
 reviews.delete('/:id/my-answer/:questionNumber', async (c) => {
   try {

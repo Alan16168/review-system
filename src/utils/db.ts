@@ -200,7 +200,8 @@ export async function getMyAnswer(
 }
 
 /**
- * Save or update user's answer for a question
+ * Save user's answer for a question (always creates new answer)
+ * Note: After migration 0028, multiple answers per question are allowed
  */
 export async function saveMyAnswer(
   db: D1Database,
@@ -208,13 +209,13 @@ export async function saveMyAnswer(
   userId: number,
   questionNumber: number,
   answer: string
-): Promise<void> {
-  await db.prepare(`
-    INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
-    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(review_id, user_id, question_number) 
-    DO UPDATE SET answer = ?, updated_at = CURRENT_TIMESTAMP
-  `).bind(reviewId, userId, questionNumber, answer, answer).run();
+): Promise<number> {
+  const result = await db.prepare(`
+    INSERT INTO review_answers (review_id, user_id, question_number, answer)
+    VALUES (?, ?, ?, ?)
+  `).bind(reviewId, userId, questionNumber, answer).run();
+  
+  return result.meta.last_row_id as number;
 }
 
 /**
@@ -230,6 +231,23 @@ export async function deleteAnswer(
     DELETE FROM review_answers 
     WHERE review_id = ? AND user_id = ? AND question_number = ?
   `).bind(reviewId, userId, questionNumber).run();
+}
+
+/**
+ * Delete a specific answer by its ID
+ * Used for multiple answers feature where users can delete individual answers
+ */
+export async function deleteAnswerById(
+  db: D1Database,
+  answerId: number,
+  userId: number
+): Promise<boolean> {
+  const result = await db.prepare(`
+    DELETE FROM review_answers 
+    WHERE id = ? AND user_id = ?
+  `).bind(answerId, userId).run();
+  
+  return result.meta.changes > 0;
 }
 
 /**
