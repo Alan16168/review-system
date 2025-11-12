@@ -220,6 +220,17 @@ teams.delete('/:id', async (c) => {
       return c.json({ error: 'Only owner can delete team' }, 403);
     }
 
+    // Delete related records first (those without ON DELETE CASCADE)
+    // Delete team invitations
+    await c.env.DB.prepare('DELETE FROM team_invitations WHERE team_id = ?').bind(teamId).run();
+    
+    // Delete team members (has ON DELETE CASCADE but delete explicitly for safety)
+    await c.env.DB.prepare('DELETE FROM team_members WHERE team_id = ?').bind(teamId).run();
+    
+    // Delete team applications (has ON DELETE CASCADE)
+    await c.env.DB.prepare('DELETE FROM team_applications WHERE team_id = ?').bind(teamId).run();
+    
+    // Finally delete the team (this will cascade delete reviews and other related data)
     await c.env.DB.prepare('DELETE FROM teams WHERE id = ?').bind(teamId).run();
 
     return c.json({ message: 'Team deleted successfully' });
