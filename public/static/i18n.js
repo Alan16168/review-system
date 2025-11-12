@@ -201,6 +201,7 @@ const translations = {
     'editingDraft': '正在编辑草稿',
     'draftAutoSaved': '您的更改会自动保存',
     'pleaseCompleteBasicInfo': '请先完成基本信息填写',
+    'draftRestored': '草稿已恢复',
     
     // Team Roles
     'memberRole': '成员角色',
@@ -862,6 +863,7 @@ const translations = {
     'editingDraft': 'Editing Draft',
     'draftAutoSaved': 'Your changes will be automatically saved',
     'pleaseCompleteBasicInfo': 'Please complete basic information first',
+    'draftRestored': 'Draft Restored',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -1516,6 +1518,7 @@ const translations = {
     'editingDraft': '下書きを編集中',
     'draftAutoSaved': '変更は自動的に保存されます',
     'pleaseCompleteBasicInfo': '最初に基本情報を入力してください',
+    'draftRestored': '下書きが復元されました',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -2170,6 +2173,7 @@ const translations = {
     'editingDraft': 'Editando Borrador',
     'draftAutoSaved': 'Sus cambios se guardarán automáticamente',
     'pleaseCompleteBasicInfo': 'Por favor complete primero la información básica',
+    'draftRestored': 'Borrador Restaurado',
     
     // Team Roles
     'memberRole': 'Member Role',

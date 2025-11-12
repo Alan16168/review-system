@@ -2185,6 +2185,34 @@ async function showCreateReviewStep2(template) {
   
   const reviewData = window.createReviewData;
   
+  // Load draft answers if editing existing draft
+  let draftAnswers = {};
+  if (currentDraftId) {
+    try {
+      console.log('加载草稿数据 ID:', currentDraftId);
+      const response = await axios.get(`/api/reviews/${currentDraftId}`);
+      const answersByQuestion = response.data.answersByQuestion || {};
+      
+      // Get current user
+      const userResponse = await axios.get('/api/auth/me');
+      const currentUser = userResponse.data.user;
+      
+      // Extract user's answers
+      Object.keys(answersByQuestion).forEach(qNum => {
+        const questionAnswers = answersByQuestion[qNum] || [];
+        const myAnswers = questionAnswers.filter(a => a.user_id === currentUser.id);
+        if (myAnswers.length > 0) {
+          draftAnswers[qNum] = myAnswers.map(a => a.answer);
+        }
+      });
+      
+      console.log('草稿答案已加载:', draftAnswers);
+    } catch (error) {
+      console.error('加载草稿失败:', error);
+      // Continue anyway - user can still fill the form
+    }
+  }
+  
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
       ${renderNavigation()}
@@ -2315,6 +2343,75 @@ async function showCreateReviewStep2(template) {
   
   // Store template for later use
   window.currentSelectedTemplate = template;
+  
+  // Restore draft answers if available
+  if (Object.keys(draftAnswers).length > 0) {
+    console.log('恢复草稿答案到表单...');
+    
+    template.questions.forEach(q => {
+      const qNum = q.question_number;
+      const savedAnswers = draftAnswers[qNum];
+      
+      if (!savedAnswers || savedAnswers.length === 0) return;
+      
+      if (q.question_type === 'single_choice') {
+        // Restore single choice answer
+        const answerValue = savedAnswers[0]; // e.g., "A", "B", "C"
+        const radio = document.querySelector(`input[name="question${qNum}"][value="${answerValue}"]`);
+        if (radio) {
+          radio.checked = true;
+          console.log(`恢复单选题 ${qNum}: ${answerValue}`);
+        }
+      } else if (q.question_type === 'multiple_choice') {
+        // Restore multiple choice answers
+        const answerValues = savedAnswers[0].split(','); // e.g., "A,B,C"
+        answerValues.forEach(val => {
+          const checkbox = document.querySelector(`input[name="question${qNum}"][value="${val.trim()}"]`);
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+        });
+        console.log(`恢复多选题 ${qNum}: ${answerValues.join(', ')}`);
+      } else {
+        // Restore text answers (multiple answers supported)
+        const container = document.getElementById(`answers-container-create-${qNum}`);
+        if (!container) return;
+        
+        // Clear existing inputs
+        container.innerHTML = '';
+        
+        // Add input for each saved answer
+        savedAnswers.forEach((answerText, index) => {
+          const isFirst = index === 0;
+          const inputHtml = isFirst ? `
+            <div class="answer-input-group relative">
+              <textarea data-question="${qNum}" data-answer-index="${index}" rows="4"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                        placeholder="${i18n.t('enterAnswer') || '输入答案...'}">${escapeHtml(answerText)}</textarea>
+            </div>
+          ` : `
+            <div class="answer-input-group relative">
+              <div class="flex gap-2">
+                <textarea data-question="${qNum}" data-answer-index="${index}" rows="4"
+                          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                          placeholder="${i18n.t('enterAnswer') || '输入答案...'}">${escapeHtml(answerText)}</textarea>
+                <button type="button" 
+                        onclick="removeAnswerInputInCreate(this)"
+                        class="self-start px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+          `;
+          container.insertAdjacentHTML('beforeend', inputHtml);
+        });
+        
+        console.log(`恢复文字题 ${qNum}: ${savedAnswers.length} 个答案`);
+      }
+    });
+    
+    showNotification(i18n.t('draftRestored') || '草稿已恢复', 'success');
+  }
 }
 
 // Helper function: Add another answer input in create mode
