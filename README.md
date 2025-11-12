@@ -124,9 +124,9 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://f593a3c1.review-system.pages.dev
+- **最新部署 ID**: https://dd2e24b1.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.27.0 - 修复草稿保存 + 支持创建时多答案
+- **版本**: ✅ V5.27.1 - 增强草稿保存可见性
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-12
@@ -134,6 +134,35 @@
 - **数据库迁移**: ✅ Migration 0028 已应用到生产数据库
 - **关键修复**: ✅ 移除ON CONFLICT子句以支持多答案功能
 - **更新内容**:
+  - ✅ **V5.27.1 - 增强草稿保存可见性**（用户体验改进 - 2025-11-12）：
+    - **改进原因**: 用户反馈"点击保存后看不到草稿是否真的保存了"
+    - **核心改进**:
+      - **视觉反馈增强**: 
+        - Step1 顶部显示黄色背景的草稿状态提示框
+        - 明确显示"正在编辑草稿 (ID: xxx)"
+        - 用户返回 Step1 时立即看到草稿状态
+      - **成功提示改进**:
+        - 通知信息包含草稿ID："草稿已保存 (ID: 123)"
+        - 延长显示时间从500ms→1500ms，确保用户看到
+        - 用户有充分时间确认保存成功
+      - **调试能力增强**:
+        - 添加详细控制台日志记录保存流程
+        - 区分"创建新草稿"和"更新现有草稿"
+        - 开发者和用户都能追踪保存状态
+      - **数据验证**:
+        - 保存前检查必需字段(title, template_id)
+        - 数据不完整时显示明确错误提示
+        - 防止无效草稿创建
+    - **国际化支持** (3键 × 4语言 = 12个翻译):
+      - editingDraft: '正在编辑草稿' / 'Editing Draft' / '下書きを編集中' / 'Editando Borrador'
+      - draftAutoSaved: '您的更改会自动保存' / 'Your changes will be automatically saved'
+      - pleaseCompleteBasicInfo: '请先完成基本信息填写' / 'Please complete basic information first'
+    - **用户体验提升**:
+      - ✅ 用户明确知道草稿已保存（看到ID）
+      - ✅ 返回 Step1 时有醒目的状态提示
+      - ✅ 不再怀疑"是否真的保存了"
+      - ✅ 控制台日志帮助诊断问题
+    - **部署URL**: https://dd2e24b1.review-system.pages.dev
   - ✅ **V5.27.0 - 修复草稿保存 + 支持创建时多答案**（功能增强与Bug修复 - 2025-11-12）：
     - **问题1**: 用户在"创建复盘"Step2填写答案后点击"上一步"，确认保存草稿后实际没有保存
     - **根本原因**: 
