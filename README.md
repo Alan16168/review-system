@@ -124,13 +124,14 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://282e25ca.review-system.pages.dev
+- **最新部署 ID**: https://96f399b1.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.25.1 - 翻译完善+导航体验优化
+- **版本**: ✅ V5.26.0 - 多答案功能
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-12
 - **部署时间**: 最新部署
+- **数据库迁移**: ✅ Migration 0028 已应用到生产数据库
 - **更新内容**:
   - ✅ **V5.24.0 - 增强语言切换器（4语言下拉菜单）**（用户体验重大升级）：
     - **核心改进**: 
