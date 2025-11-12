@@ -124,9 +124,9 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://6a1bed3f.review-system.pages.dev
+- **最新部署 ID**: https://f593a3c1.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.26.3 - 修复创建后返回页面
+- **版本**: ✅ V5.27.0 - 修复草稿保存 + 支持创建时多答案
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-12
@@ -134,6 +134,46 @@
 - **数据库迁移**: ✅ Migration 0028 已应用到生产数据库
 - **关键修复**: ✅ 移除ON CONFLICT子句以支持多答案功能
 - **更新内容**:
+  - ✅ **V5.27.0 - 修复草稿保存 + 支持创建时多答案**（功能增强与Bug修复 - 2025-11-12）：
+    - **问题1**: 用户在"创建复盘"Step2填写答案后点击"上一步"，确认保存草稿后实际没有保存
+    - **根本原因**: 
+      - 成功保存后代码继续执行到 `showCreateReview()` 导航语句
+      - 虽然有 `await` 等待API完成，但之后没有 `return` 阻止继续执行
+      - 导致保存成功但立即导航，给用户造成没有保存的错觉
+    - **修复方案**:
+      - 在成功保存后添加显式 `return` 语句
+      - 添加500ms延迟后再导航，让用户看到成功提示
+      - 确保只在取消保存或无答案时才导航
+    - **问题2**: 用户希望在"创建复盘"Step2就能添加多个文字答案，而不是只有编辑模式才能
+    - **解决方案**:
+      - Step2的文字题添加"添加另一个答案"按钮
+      - 用户可以在创建时就为同一问题添加多个答案
+      - 每个答案输入框都有删除按钮（最后一个除外）
+      - 更改提示文字为"您可以为同一问题添加多个答案"
+    - **后端API更新**:
+      - POST /api/reviews: 支持接收答案数组 `{1: ["答案1", "答案2"], 2: "单个答案"}`
+      - PUT /api/reviews/:id: 草稿更新时支持答案数组
+      - 保持向后兼容性：单个答案仍为字符串，多个答案为数组
+    - **前端功能增强**:
+      - 新增 `addAnswerInputInCreate(questionNumber)` 函数：添加答案输入框
+      - 新增 `removeAnswerInputInCreate(button)` 函数：删除答案输入框（至少保留一个）
+      - 更新答案收集逻辑：使用 `data-question` 和 `data-answer-index` 属性
+      - Step2提交和草稿保存都支持收集多个文字答案
+    - **国际化支持**:
+      - 新增3个翻译键 × 4语言 = 12个翻译
+      - addAnotherAnswer: '添加另一个答案' / 'Add Another Answer' / '別の答えを追加' / 'Agregar Otra Respuesta'
+      - canAddMultipleAnswers: '您可以为同一问题添加多个答案' / 'You can add multiple answers...' 等
+      - mustKeepOneAnswer: '至少需要保留一个答案输入框' / 'Must keep at least one...' 等
+    - **用户体验提升**:
+      - ✅ 草稿保存真正生效，用户可以安心返回继续填写
+      - ✅ 创建时就能添加多个答案，与编辑模式功能一致
+      - ✅ UI清晰直观，+/- 按钮操作流畅
+      - ✅ 保持至少一个输入框的约束，防止用户误删所有输入框
+    - **技术细节**:
+      - 使用 `textarea[data-question="${q.question_number}"]` 选择器收集所有答案
+      - 答案数据结构：数组（多个）或字符串（单个）
+      - 后端自动识别数组并循环插入多条记录
+    - **测试验证**: ✅ 已完成创建、草稿保存、多答案添加删除功能测试
   - ✅ **V5.26.3 - 修复创建后返回页面**（用户体验修复 - 2025-11-12）：
     - **问题**: 创建复盘后返回的是工作台，而不是"我的复盘"列表
     - **用户期望**: 创建完成后应该看到"我的复盘"列表，能立即看到新创建的复盘
