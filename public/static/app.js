@@ -2350,13 +2350,13 @@ async function handleStep2Submit(e) {
       showNotification(i18n.t('createSuccess'), 'success');
     }
     
-    // CRITICAL: Clear draft ID and change view BEFORE returning to dashboard
+    // CRITICAL: Clear draft ID and change view BEFORE returning to reviews
     // This prevents autoSaveDraftBeforeNavigation() from saving again
     currentDraftId = null;
     currentView = 'completing-review'; // Temporary state to prevent auto-save
     
-    showDashboard(); // Return to dashboard (main menu)
-    window.scrollTo(0, 0); // Scroll to top to show main menu
+    showReviews(); // Return to My Reviews list
+    window.scrollTo(0, 0); // Scroll to top
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   } finally {
