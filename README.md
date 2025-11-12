@@ -126,14 +126,31 @@
 - **应用 URL**: https://review-system.pages.dev
 - **最新部署 ID**: https://74aa289b.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.26.0 - 多答案功能 + 主页图片更新
+- **版本**: ✅ V5.26.1 - 修复编辑保存错误
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-12
 - **部署时间**: 最新部署
 - **数据库迁移**: ✅ Migration 0028 已应用到生产数据库
-- **主页图片**: ✅ 自定义生成的插画已应用
+- **关键修复**: ✅ 移除ON CONFLICT子句以支持多答案功能
 - **更新内容**:
+  - ✅ **V5.26.1 - 修复编辑保存错误**（关键Bug修复 - 2025-11-12）：
+    - **问题**: 用户点击"编辑"/"保存"按钮时出现"操作失败: Internal server error"
+    - **根本原因**: 
+      - Migration 0028移除了review_answers表的UNIQUE约束以支持多答案功能
+      - 但PUT /api/reviews/:id端点仍使用`ON CONFLICT(review_id, user_id, question_number)`子句
+      - 导致SQL错误：UNIQUE约束不存在
+    - **解决方案**:
+      - 移除ON CONFLICT子句
+      - 实现显式的SELECT-UPDATE-INSERT逻辑
+      - 先检查答案是否存在，存在则UPDATE，不存在则INSERT
+    - **影响范围**: 所有复盘的编辑和保存操作
+    - **测试验证**:
+      - ✅ 编辑复盘基本信息（标题、描述、状态）正常
+      - ✅ 保存选择题答案正常
+      - ✅ 保存文字题答案正常（通过专用API）
+      - ✅ 多答案功能完整支持
+    - **修复效果**: 用户现在可以正常编辑和保存复盘，无任何错误
   - ✅ **V5.24.0 - 增强语言切换器（4语言下拉菜单）**（用户体验重大升级）：
     - **核心改进**: 
       - 首页和导航栏统一使用4语言下拉菜单
@@ -238,11 +255,11 @@
 
 ### 开发环境
 - **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
-- **Git Commit**: ✅ V5.26.0 (多答案功能完成)
+- **Git Commit**: ✅ V5.26.1 (修复编辑保存错误)
 - **本地端口**: 3000 (PM2 管理)
 - **数据库状态**: 
   - ✅ 本地数据库：已应用所有31个迁移（包括0028）
-  - ✅ testimonials表错误已修复
+  - ✅ 编辑/保存功能已修复
   - ✅ 所有功能正常运行
 - **更新内容**: 
   - ✅ **多答案功能 (V5.26.0 - 2025-11-12)**：
