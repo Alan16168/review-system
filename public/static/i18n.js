@@ -189,6 +189,10 @@ const translations = {
     'noMemberAnswers': '暂无成员答案',
     'answerSaved': '答案已保存',
     'answerDeleted': '答案已删除',
+    'enterNewAnswer': '输入新答案...',
+    'addNewAnswer': '添加新答案',
+    'answerCreatedAt': '创建于',
+    'noAnswersYet': '还没有答案',
     
     // Team Roles
     'memberRole': '成员角色',
@@ -838,6 +842,10 @@ const translations = {
     'noMemberAnswers': 'No member answers yet',
     'answerSaved': 'Answer saved',
     'answerDeleted': 'Answer deleted',
+    'enterNewAnswer': 'Enter new answer...',
+    'addNewAnswer': 'Add New Answer',
+    'answerCreatedAt': 'Created at',
+    'noAnswersYet': 'No answers yet',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -1480,6 +1488,10 @@ const translations = {
     'noMemberAnswers': 'No member answers yet',
     'answerSaved': 'Answer saved',
     'answerDeleted': 'Answer deleted',
+    'enterNewAnswer': '新しい答えを入力...',
+    'addNewAnswer': '新しい答えを追加',
+    'answerCreatedAt': '作成日時',
+    'noAnswersYet': 'まだ答えがありません',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -2122,6 +2134,10 @@ const translations = {
     'noMemberAnswers': 'No member answers yet',
     'answerSaved': 'Answer saved',
     'answerDeleted': 'Answer deleted',
+    'enterNewAnswer': 'Ingrese nueva respuesta...',
+    'addNewAnswer': 'Agregar Nueva Respuesta',
+    'answerCreatedAt': 'Creado en',
+    'noAnswersYet': 'Aún no hay respuestas',
     
     // Team Roles
     'memberRole': 'Member Role',
