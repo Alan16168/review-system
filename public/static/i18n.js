@@ -193,6 +193,8 @@ const translations = {
     'addNewAnswer': '添加新答案',
     'answerCreatedAt': '创建于',
     'noAnswersYet': '还没有答案',
+    'enterAnswer': '输入答案...',
+    'canAddMoreAnswersInEdit': '保存后可在编辑模式中添加更多答案',
     
     // Team Roles
     'memberRole': '成员角色',
@@ -846,6 +848,8 @@ const translations = {
     'addNewAnswer': 'Add New Answer',
     'answerCreatedAt': 'Created at',
     'noAnswersYet': 'No answers yet',
+    'enterAnswer': 'Enter answer...',
+    'canAddMoreAnswersInEdit': 'You can add more answers in edit mode after saving',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -1492,6 +1496,8 @@ const translations = {
     'addNewAnswer': '新しい答えを追加',
     'answerCreatedAt': '作成日時',
     'noAnswersYet': 'まだ答えがありません',
+    'enterAnswer': '答えを入力...',
+    'canAddMoreAnswersInEdit': '保存後、編集モードでさらに答えを追加できます',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -2138,6 +2144,8 @@ const translations = {
     'addNewAnswer': 'Agregar Nueva Respuesta',
     'answerCreatedAt': 'Creado en',
     'noAnswersYet': 'Aún no hay respuestas',
+    'enterAnswer': 'Ingrese respuesta...',
+    'canAddMoreAnswersInEdit': 'Puede agregar más respuestas en modo de edición después de guardar',
     
     // Team Roles
     'memberRole': 'Member Role',

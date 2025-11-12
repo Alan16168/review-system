@@ -2252,7 +2252,7 @@ async function showCreateReviewStep2(template) {
                 </div>
               `;
             } else {
-              // Default text type
+              // Default text type - simplified version for creation (can add more answers after creation in edit mode)
               return `
                 <div class="bg-white rounded-lg shadow-md p-6">
                   <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -2261,7 +2261,10 @@ async function showCreateReviewStep2(template) {
                   </label>
                   <textarea id="question${q.question_number}" rows="4"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                            placeholder="${escapeHtml(q.question_text)}"></textarea>
+                            placeholder="${i18n.t('enterAnswer') || '输入答案...'}"></textarea>
+                  <p class="mt-2 text-xs text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>${i18n.t('canAddMoreAnswersInEdit') || '保存后可在编辑模式中添加更多答案'}
+                  </p>
                 </div>
               `;
             }
