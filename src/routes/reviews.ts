@@ -382,25 +382,42 @@ reviews.put('/:id', async (c) => {
       ).run();
     }
 
-    // Update answers - each user can only update their own answers
+    // Update answers for choice-type questions only
+    // Note: Text-type answers are now managed through POST /my-answer/:questionNumber endpoint
     if (answers && typeof answers === 'object') {
       for (const [questionNumber, answer] of Object.entries(answers)) {
         const answerText = answer ? String(answer).trim() : '';
+        const qNum = parseInt(questionNumber);
         
         if (answerText) {
-          // Insert or update answer for current user
-          await c.env.DB.prepare(`
-            INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(review_id, user_id, question_number) 
-            DO UPDATE SET answer = excluded.answer, updated_at = CURRENT_TIMESTAMP
-          `).bind(reviewId, user.id, parseInt(questionNumber), answerText).run();
+          // For choice-type questions, update or create a single answer per user
+          // First, check if an answer already exists for this question
+          const existing: any = await c.env.DB.prepare(`
+            SELECT id FROM review_answers 
+            WHERE review_id = ? AND user_id = ? AND question_number = ?
+            LIMIT 1
+          `).bind(reviewId, user.id, qNum).first();
+          
+          if (existing) {
+            // Update existing answer
+            await c.env.DB.prepare(`
+              UPDATE review_answers 
+              SET answer = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `).bind(answerText, existing.id).run();
+          } else {
+            // Insert new answer
+            await c.env.DB.prepare(`
+              INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
+              VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `).bind(reviewId, user.id, qNum, answerText).run();
+          }
         } else {
-          // Delete current user's answer if empty
+          // Delete all answers for this question if empty (for choice-type questions)
           await c.env.DB.prepare(`
             DELETE FROM review_answers 
             WHERE review_id = ? AND user_id = ? AND question_number = ?
-          `).bind(reviewId, user.id, parseInt(questionNumber)).run();
+          `).bind(reviewId, user.id, qNum).run();
         }
       }
     }
