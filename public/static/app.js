@@ -799,49 +799,31 @@ async function loadTestimonials() {
                 `<i class="fas fa-user ${textColor}"></i>`
               }
             </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-calendar-alt mr-1"></i>${i18n.t('timeType')}
-              </label>
-              <select id="filter-time-type" onchange="filterReviews()" 
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                <option value="all">${i18n.t('all') || '全部'}</option>
-                <option value="daily">${i18n.t('timeTypeDaily')}</option>
-                <option value="weekly">${i18n.t('timeTypeWeekly')}</option>
-                <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
-                <option value="quarterly">${i18n.t('timeTypeQuarterly')}</option>
-                <option value="yearly">${i18n.t('timeTypeYearly')}</option>
-              <option value="free">${i18n.t('timeTypeFree')}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-shield-alt mr-1"></i>${i18n.t('ownerType')}
-              </label>
-              <select id="filter-owner-type" onchange="filterReviews()" 
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                <option value="all">${i18n.t('all') || '全部'}</option>
-                <option value="private">${i18n.t('ownerTypePrivate')}</option>
-                <option value="team">${i18n.t('ownerTypeTeam')}</option>
-                <option value="public">${i18n.t('ownerTypePublic')}</option>
-              </select>
+            <div class="flex-1">
+              <div class="font-bold text-gray-900">${escapeHtml(testimonial.name)}</div>
+              <div class="text-sm text-gray-600">${escapeHtml(testimonial.role)}</div>
+              <div class="text-xs text-gray-500 mt-1">
+                <i class="far fa-clock mr-1"></i>${formatTestimonialTime(testimonial.created_at)}
+              </div>
             </div>
           </div>
-        </div>
-
-        <!-- Reviews List -->
-        <div id="reviews-container" class="bg-white rounded-lg shadow-md">
-          <div class="p-8 text-center">
-            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
-            <p class="text-gray-600">${i18n.t('loading')}</p>
+          <div class="text-yellow-400 mb-2" style="letter-spacing: 2px;">
+            ${stars}
           </div>
+          <p class="text-gray-600">${escapeHtml(testimonial.content)}</p>
         </div>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('Failed to load testimonials:', error);
+    testimonialsContainer.innerHTML = `
+      <div class="col-span-3 text-center py-8 text-red-500">
+        <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+        <p>${i18n.t('loadError') || 'Failed to load testimonials'}</p>
       </div>
-    </div>
-  `;
-
-  await loadAllReviews();
+    `;
+  }
 }
 
 // Show Public Reviews page
