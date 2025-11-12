@@ -203,6 +203,8 @@ const translations = {
     'pleaseCompleteBasicInfo': '请先完成基本信息填写',
     'draftRestored': '草稿已恢复',
     'autoSaveFailed': '自动保存失败',
+    'createAndEdit': '创建并编辑',
+    'draftCreated': '草稿已创建',
     
     // Team Roles
     'memberRole': '成员角色',
@@ -866,6 +868,8 @@ const translations = {
     'pleaseCompleteBasicInfo': 'Please complete basic information first',
     'draftRestored': 'Draft Restored',
     'autoSaveFailed': 'Auto Save Failed',
+    'createAndEdit': 'Create & Edit',
+    'draftCreated': 'Draft Created',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -1522,6 +1526,8 @@ const translations = {
     'pleaseCompleteBasicInfo': '最初に基本情報を入力してください',
     'draftRestored': '下書きが復元されました',
     'autoSaveFailed': '自動保存に失敗しました',
+    'createAndEdit': '作成して編集',
+    'draftCreated': '下書きが作成されました',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -2178,6 +2184,8 @@ const translations = {
     'pleaseCompleteBasicInfo': 'Por favor complete primero la información básica',
     'draftRestored': 'Borrador Restaurado',
     'autoSaveFailed': 'Error al Guardar Automáticamente',
+    'createAndEdit': 'Crear y Editar',
+    'draftCreated': 'Borrador Creado',
     
     // Team Roles
     'memberRole': 'Member Role',

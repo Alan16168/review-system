@@ -2019,7 +2019,7 @@ async function showCreateReview(preservedData = null) {
             </button>
             <button type="submit" 
                     class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
-              <i class="fas fa-arrow-right mr-2"></i>${i18n.t('next') || '下一步'}
+              <i class="fas fa-edit mr-2"></i>${i18n.t('createAndEdit') || '创建并编辑'}
             </button>
           </div>
         </form>
@@ -2160,22 +2160,36 @@ async function handleStep1Submit(e) {
   const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
-  // Store data for step 2
-  window.createReviewData = {
+  // Create draft review first, then open in edit mode
+  const data = {
     title,
     description,
     template_id: templateId,
     team_id: teamId || null,
     time_type: timeType,
     owner_type: ownerType,
-    status
+    status: 'draft' // Always create as draft first
   };
   
-  // Get template
-  const template = window.currentTemplates.find(t => t.id === templateId);
-  
-  // Go to step 2
-  showCreateReviewStep2(template);
+  try {
+    console.log('创建空白草稿复盘:', data);
+    
+    // Create empty draft review
+    const response = await axios.post('/api/reviews', data);
+    const newReviewId = response.data.id;
+    
+    console.log('草稿创建成功，ID:', newReviewId);
+    showNotification(i18n.t('draftCreated') + ' (ID: ' + newReviewId + ')', 'success');
+    
+    // Clear currentDraftId to prevent conflicts
+    currentDraftId = null;
+    
+    // Open in edit mode directly
+    showEditReview(newReviewId);
+  } catch (error) {
+    console.error('创建草稿失败:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
 }
 
 // Step 2: Fill in questions based on template
