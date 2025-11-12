@@ -115,7 +115,8 @@ window.saveCurrentReviewDraft = async function() {
       // Update existing draft
       const data = {
         title: reviewData.title,
-        description: reviewData.description || null.: reviewData.time_type,
+        description: reviewData.description || null,
+        time_type: reviewData.time_type,
         status: 'draft',
         answers
       };
@@ -811,7 +812,7 @@ async function loadTestimonials() {
                 <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
                 <option value="quarterly">${i18n.t('timeTypeQuarterly')}</option>
                 <option value="yearly">${i18n.t('timeTypeYearly')}</option>
-              <option value="free">${i18n.t(\'timeTypeFree\')}</option>
+              <option value="free">${i18n.t('timeTypeFree')}</option>
               </select>
             </div>
             <div>
@@ -1350,7 +1351,7 @@ async function showCreateReview(preservedData = null) {
               <option value="monthly">${i18n.t('timeTypeMonthly')}</option>
               <option value="quarterly">${i18n.t('timeTypeQuarterly')}</option>
               <option value="yearly">${i18n.t('timeTypeYearly')}</option>
-              <option value="free">${i18n.t(\'timeTypeFree\')}</option>
+              <option value="free">${i18n.t('timeTypeFree')}</option>
             </select>
           </div>
 
