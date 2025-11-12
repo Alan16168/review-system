@@ -267,7 +267,7 @@ async function showHomePage() {
               <div id="carousel" class="relative h-96 bg-white rounded-2xl shadow-2xl overflow-hidden">
                 <!-- Carousel slides -->
                 <div class="carousel-slide active">
-                  <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop" 
+                  <img src="https://cdn1.genspark.ai/user-upload-image/5_generated/0d286e2a-265b-45ff-8e44-52c7805f8bcf.jpeg" 
                        alt="Team collaboration" 
                        class="w-full h-full object-cover">
                   <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
@@ -276,7 +276,7 @@ async function showHomePage() {
                   </div>
                 </div>
                 <div class="carousel-slide">
-                  <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&h=600&fit=crop" 
+                  <img src="https://cdn1.genspark.ai/user-upload-image/5_generated/b1529f16-e0ea-4887-a34b-4e85c169db9e.jpeg" 
                        alt="Personal growth" 
                        class="w-full h-full object-cover">
                   <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
@@ -285,7 +285,7 @@ async function showHomePage() {
                   </div>
                 </div>
                 <div class="carousel-slide">
-                  <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop" 
+                  <img src="https://cdn1.genspark.ai/user-upload-image/5_generated/02a827eb-8008-4c6d-9ef5-99223c52a331.jpeg" 
                        alt="Strategy planning" 
                        class="w-full h-full object-cover">
                   <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
@@ -364,8 +364,10 @@ async function showHomePage() {
               <p class="text-lg text-gray-600 mb-4">${i18n.t('aboutCompanyText1')}</p>
               <p class="text-lg text-gray-600 mb-6">${i18n.t('aboutCompanyText2')}</p>
             </div>
-            <div class="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl p-8 h-96 flex items-center justify-center">
-              <i class="fas fa-users text-indigo-600 text-9xl opacity-50"></i>
+            <div class="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl p-8 h-96 flex items-center justify-center overflow-hidden">
+              <img src="https://cdn1.genspark.ai/user-upload-image/5_generated/e3a7c65c-8929-4568-9be3-3920f47db181.jpeg" 
+                   alt="Team collaboration illustration" 
+                   class="w-full h-full object-contain">
             </div>
           </div>
         </div>
