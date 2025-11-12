@@ -3474,8 +3474,8 @@ async function handleEditReview(e) {
   try {
     await axios.put(`/api/reviews/${id}`, data);
     showNotification(i18n.t('updateSuccess'), 'success');
-    showDashboard(); // Return to main menu (dashboard)
-    window.scrollTo(0, 0); // Scroll to top to show main menu
+    showReviews(); // Return to My Reviews page
+    window.scrollTo(0, 0); // Scroll to top
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
