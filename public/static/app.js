@@ -2535,7 +2535,7 @@ async function handleStep2Submit(e) {
   }
 }
 
-// Handle "Previous" button with confirmation dialog
+// Handle "Previous" button - auto save draft without confirmation
 async function handlePreviousWithConfirmation() {
   // Check if user has filled any answers
   const template = window.currentSelectedTemplate;
@@ -2570,12 +2570,8 @@ async function handlePreviousWithConfirmation() {
   }
   
   if (hasAnswers) {
-    // Ask user if they want to save as draft
-    const confirmed = confirm(i18n.t('saveBeforeGoingBack') || '您已填写了一些答案，是否保存为草稿？\n\n点击"确定"保存草稿\n点击"取消"直接返回（不保存）');
-    
-    if (confirmed) {
-      // User wants to save draft
-      try {
+    // Auto save draft without asking
+    try {
         const reviewData = window.createReviewData;
         const answers = {};
         
@@ -2620,7 +2616,7 @@ async function handlePreviousWithConfirmation() {
         };
         
         // Validate data before saving
-        console.log('准备保存草稿:', data);
+        console.log('自动保存草稿:', data);
         
         if (!data.title || !data.template_id) {
           showNotification(i18n.t('pleaseCompleteBasicInfo') || '请先完成基本信息填写', 'error');
@@ -2632,29 +2628,28 @@ async function handlePreviousWithConfirmation() {
           console.log('更新现有草稿 ID:', currentDraftId);
           const response = await axios.put(`/api/reviews/${currentDraftId}`, data);
           console.log('草稿更新成功:', response.data);
-          showNotification(i18n.t('draftSaved') + ' (ID: ' + currentDraftId + ')', 'success');
+          showNotification(i18n.t('draftAutoSaved') + ' (ID: ' + currentDraftId + ')', 'success');
         } else {
           console.log('创建新草稿');
           const response = await axios.post('/api/reviews', data);
           currentDraftId = response.data.id;
           console.log('新草稿创建成功，ID:', currentDraftId);
-          showNotification(i18n.t('draftSaved') + ' (ID: ' + currentDraftId + ')', 'success');
+          showNotification(i18n.t('draftAutoSaved') + ' (ID: ' + currentDraftId + ')', 'success');
         }
         
-        // Important: Return after successful save to prevent immediate navigation
-        // Give user MORE time to see the success notification before going back
-        setTimeout(() => {
-          showCreateReview(window.createReviewData);
-        }, 1500); // 增加延迟到1.5秒，让用户充分看到提示
+        // Navigate back immediately after save
+        showCreateReview(window.createReviewData);
         return;
       } catch (error) {
-        showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
-        return; // Don't go back if save failed
+        console.error('自动保存草稿失败:', error);
+        showNotification(i18n.t('autoSaveFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+        // Still go back even if save failed
+        showCreateReview(window.createReviewData);
+        return;
       }
-    }
   }
   
-  // Go back to step 1 (only if user canceled save or no answers)
+  // Go back to step 1 (if no answers)
   showCreateReview(window.createReviewData);
 }
 
