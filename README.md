@@ -124,9 +124,9 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://1ccab316.review-system.pages.dev
+- **最新部署 ID**: https://4b51c99f.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.25.0 - 删除群体类型，新增自由复盘（完整功能已恢复）
+- **版本**: ✅ V5.25.0 - 删除群体类型，新增自由复盘（所有核心功能已完全恢复）
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-12
@@ -235,8 +235,8 @@
   - ✅ **双语支持**：完整的中英文国际化支持
 
 ### 开发环境
-- **应用 URL**: https://1ccab316.review-system.pages.dev
-- **Git Commit**: ✅ V5.25.0 (删除群体类型，优化团队选择逻辑，修复所有被Python脚本意外删除的函数)
+- **应用 URL**: https://4b51c99f.review-system.pages.dev
+- **Git Commit**: ✅ V5.25.0 (删除群体类型，优化团队选择逻辑，完全恢复所有核心功能)
 - **本地端口**: 3000 (PM2 管理)
 - **数据库状态**: 
   - ✅ 本地数据库：已应用所有迁移（包括0026）
@@ -277,9 +277,11 @@
       - 恢复handleLogin()和handleRegister()函数 - 认证处理逻辑
       - 恢复showDashboard()函数 - 工作台页面
       - 恢复loadDashboardData()函数 - 工作台数据加载
-      - 恢复renderRecentReviews()函数 - 复盘列表渲染
-      - 恢复changeDashboardPage()函数 - 分页功能
-    - **修复效果**: ✅ 用户现在可以正常登录、访问工作台、查看我的复盘，所有核心功能完全恢复 
+      - 恢复renderRecentReviews()函数 - 工作台复盘列表渲染
+      - 恢复changeDashboardPage()函数 - 工作台分页功能
+      - 恢复showReviews()函数 - "我的复盘"页面
+      - 移除group_type过滤器，保留status、search、timeType、ownerType过滤
+    - **修复效果**: ✅ 用户现在可以正常登录、访问工作台、查看"我的复盘"页面，所有核心功能完全恢复 
   - ✅ **留言见证翻译修复 (V5.24.6 - 2025-11-11)**：
     - 修复68个留言见证部分翻译键（34日语 + 34西班牙语）
     - **日语翻译修复**：
