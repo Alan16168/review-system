@@ -235,14 +235,48 @@
   - ✅ **双语支持**：完整的中英文国际化支持
 
 ### 开发环境
-- **应用 URL**: https://282e25ca.review-system.pages.dev
-- **Git Commit**: ✅ V5.25.1 (完整日语和西班牙语翻译+页面导航滚动优化)
+- **应用 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
+- **Git Commit**: ✅ V5.26.0 (多答案功能完成)
 - **本地端口**: 3000 (PM2 管理)
 - **数据库状态**: 
-  - ✅ 本地数据库：已应用所有迁移（包括0026）
-  - ⚠️ 生产数据库：待应用多个迁移（0011-0026）
+  - ✅ 本地数据库：已应用所有迁移（包括0028）
+  - ⚠️ 生产数据库：待应用多个迁移（0011-0028）
   - 💡 提示：当前代码已部署，可兼容生产数据库现有结构
 - **更新内容**: 
+  - ✅ **多答案功能 (V5.26.0 - 2025-11-12)**：
+    - **用户需求**: 
+      1. 为每个"复盘"的每个"问题"的"答案"增加日期时间字段记录答案创建时间
+      2. 在编辑界面显示答案的创建时间
+      3. 增加"+"按钮添加新答案，"-"按钮删除答案
+      4. 支持每个问题多个答案
+    - **数据库变更** (Migration 0028):
+      - 移除 UNIQUE(review_id, user_id, question_number) 约束
+      - 保留现有 created_at 字段（已存在）
+      - 允许同一用户对同一问题创建多个答案
+    - **后端API变更**:
+      - POST /api/reviews/:id/my-answer/:questionNumber - 创建新答案（改为POST，总是INSERT）
+      - DELETE /api/reviews/:id/answer/:answerId - 按答案ID删除
+      - GET /api/reviews/:id - 返回答案时包含id和created_at字段
+      - 新增 deleteAnswerById() 数据库工具函数
+    - **前端UI变更**:
+      - 编辑界面：显示所有已有答案，每个答案显示创建时间和删除按钮
+      - 添加"+"按钮显示新答案输入框
+      - 新答案输入框带有保存/取消按钮
+      - 删除按钮需要确认，删除后立即从UI移除
+      - 查看界面：显示所有答案及其创建时间（created_at）
+    - **新增JavaScript函数**:
+      - showNewAnswerInput() - 显示新答案输入框
+      - cancelNewAnswer() - 取消添加新答案
+      - addNewAnswer() - 调用API创建新答案并更新UI
+      - deleteExistingAnswer() - 调用API删除答案并更新UI
+      - formatDate() - 格式化日期时间显示
+    - **国际化支持**:
+      - 新增4个翻译键 × 4语言 = 16个翻译
+      - enterNewAnswer（输入新答案）
+      - addNewAnswer（添加新答案）
+      - answerCreatedAt（创建于）
+      - noAnswersYet（还没有答案）
+    - **修复效果**: ✅ 用户现在可以为每个问题添加多个答案，每个答案显示创建时间，可以单独删除
   - ✅ **删除群体类型并优化团队选择 (V5.25.0 - 2025-11-12)**：
     - **数据库结构调整**：
       - 删除reviews表的group_type字段（个人/项目/团队分类）
