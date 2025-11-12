@@ -1083,6 +1083,7 @@ async function showDashboard() {
   `;
   
   await loadDashboardData();
+  window.scrollTo(0, 0); // Scroll to top of page
 }
 
 // Handle Login
@@ -1414,6 +1415,7 @@ async function showReviews() {
   `;
 
   await loadAllReviews();
+  window.scrollTo(0, 0); // Scroll to top of page
 }
 
 // Show Public Reviews page
@@ -1447,6 +1449,7 @@ async function showPublicReviews() {
   `;
 
   await loadPublicReviews();
+  window.scrollTo(0, 0); // Scroll to top of page
 }
 
 let publicReviews = [];
