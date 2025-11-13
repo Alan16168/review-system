@@ -7486,6 +7486,7 @@ function showEditQuestionForm(questionId) {
                 <option value="text" ${question.question_type === 'text' ? 'selected' : ''}>${i18n.t('questionTypeText')}</option>
                 <option value="single_choice" ${question.question_type === 'single_choice' ? 'selected' : ''}>${i18n.t('questionTypeSingleChoice')}</option>
                 <option value="multiple_choice" ${question.question_type === 'multiple_choice' ? 'selected' : ''}>${i18n.t('questionTypeMultipleChoice')}</option>
+                <option value="time_with_text" ${question.question_type === 'time_with_text' ? 'selected' : ''}>${i18n.t('questionTypeTimeWithText')}</option>
               </select>
             </div>
             
@@ -7514,6 +7515,49 @@ function showEditQuestionForm(questionId) {
               <input type="number" id="question-answer-length" min="10" max="1000" value="${question.answer_length || 50}"
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: 10-1000 (${i18n.t('defaultValue')}: 50)</p>
+            </div>
+            
+            <!-- Time Type Fields (for time_with_text only) -->
+            <div id="time-type-container" class="${question.question_type === 'time_with_text' ? '' : 'hidden'}">
+              <div class="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p class="text-sm text-blue-800 font-medium">
+                  <i class="fas fa-info-circle mr-1"></i>${i18n.t('timeTypeDescription')}
+                </p>
+                
+                <!-- Default Datetime -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-clock mr-1"></i>${i18n.t('defaultDatetime')}
+                  </label>
+                  <input type="datetime-local" id="question-datetime-value" 
+                         value="${question.datetime_value ? new Date(question.datetime_value).toISOString().slice(0, 16) : ''}"
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <p class="text-xs text-gray-500 mt-1">${i18n.t('defaultDatetimeHint')}</p>
+                </div>
+                
+                <!-- Datetime Title (max 12 chars) -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-tag mr-1"></i>${i18n.t('datetimeTitle')} *
+                  </label>
+                  <input type="text" id="question-datetime-title" maxlength="12" 
+                         value="${escapeHtml(question.datetime_title || '')}"
+                         placeholder="${i18n.t('datetimeTitlePlaceholder')}"
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <p class="text-xs text-gray-500 mt-1">${i18n.t('datetimeTitleHint')}</p>
+                </div>
+                
+                <!-- Answer Max Length -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-text-width mr-1"></i>${i18n.t('answerMaxLength')} *
+                  </label>
+                  <input type="number" id="question-datetime-answer-max-length" min="50" max="500" 
+                         value="${question.datetime_answer_max_length || 200}"
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <p class="text-xs text-gray-500 mt-1">${i18n.t('answerMaxLengthHint')}</p>
+                </div>
+              </div>
             </div>
             
             <!-- Choice Options (for choice types only) -->
@@ -7587,17 +7631,23 @@ function showEditQuestionForm(questionId) {
 function handleQuestionTypeChange() {
   const type = document.getElementById('question-type').value;
   const answerLengthContainer = document.getElementById('answer-length-container');
+  const timeTypeContainer = document.getElementById('time-type-container');
   const optionsContainer = document.getElementById('options-container');
   const correctAnswerContainer = document.getElementById('correct-answer-container');
   const singleChoiceAnswer = document.getElementById('single-choice-answer');
   const multipleChoiceAnswer = document.getElementById('multiple-choice-answer');
   
+  // Hide all type-specific containers first
+  answerLengthContainer.classList.add('hidden');
+  timeTypeContainer.classList.add('hidden');
+  optionsContainer.classList.add('hidden');
+  correctAnswerContainer.classList.add('hidden');
+  
   if (type === 'text') {
     answerLengthContainer.classList.remove('hidden');
-    optionsContainer.classList.add('hidden');
-    correctAnswerContainer.classList.add('hidden');
-  } else {
-    answerLengthContainer.classList.add('hidden');
+  } else if (type === 'time_with_text') {
+    timeTypeContainer.classList.remove('hidden');
+  } else { // single_choice or multiple_choice
     optionsContainer.classList.remove('hidden');
     correctAnswerContainer.classList.remove('hidden');
     
@@ -7716,8 +7766,30 @@ function collectQuestionFormData() {
   
   if (type === 'text') {
     data.answer_length = parseInt(document.getElementById('question-answer-length').value) || 50;
+  } else if (type === 'time_with_text') {
+    // Collect time type fields
+    const datetimeValue = document.getElementById('question-datetime-value').value;
+    const datetimeTitle = document.getElementById('question-datetime-title').value.trim();
+    const answerMaxLength = parseInt(document.getElementById('question-datetime-answer-max-length').value) || 200;
+    
+    // Validate datetime title (required, max 12 chars)
+    if (!datetimeTitle) {
+      throw new Error(i18n.t('datetimeTitle') + ' ' + i18n.t('isRequired'));
+    }
+    if (datetimeTitle.length > 12) {
+      throw new Error(i18n.t('datetimeTitle') + ' ' + i18n.t('maxLength') + ': 12');
+    }
+    
+    // Validate answer max length (50-500)
+    if (answerMaxLength < 50 || answerMaxLength > 500) {
+      throw new Error(i18n.t('answerMaxLength') + ' must be between 50 and 500');
+    }
+    
+    data.datetime_value = datetimeValue || null;
+    data.datetime_title = datetimeTitle;
+    data.datetime_answer_max_length = answerMaxLength;
   } else {
-    // Collect options
+    // Collect options for single_choice and multiple_choice
     const options = currentEditingOptions.filter(opt => {
       const text = opt.substring(opt.indexOf('.') + 1).trim();
       return text.length > 0;
