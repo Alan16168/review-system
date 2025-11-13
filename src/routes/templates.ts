@@ -424,7 +424,10 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
       answer_length,
       question_type = 'text',
       options = null,
-      correct_answer = null
+      correct_answer = null,
+      datetime_value = null,
+      datetime_title = null,
+      datetime_answer_max_length = 200
     } = await c.req.json();
 
     if (!question_text) {
@@ -485,8 +488,12 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
 
     // Insert question
     const result = await c.env.DB.prepare(`
-      INSERT INTO template_questions (template_id, question_number, question_text, question_text_en, answer_length, question_type, options, correct_answer)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO template_questions (
+        template_id, question_number, question_text, question_text_en, 
+        answer_length, question_type, options, correct_answer,
+        datetime_value, datetime_title, datetime_answer_max_length
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       templateId, 
       nextNumber, 
@@ -495,7 +502,10 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
       finalAnswerLength,
       question_type,
       options,
-      correct_answer
+      correct_answer,
+      datetime_value,
+      datetime_title,
+      datetime_answer_max_length
     ).run();
 
     return c.json({ 
@@ -521,7 +531,10 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
       answer_length,
       question_type = 'text',
       options = null,
-      correct_answer = null
+      correct_answer = null,
+      datetime_value = null,
+      datetime_title = null,
+      datetime_answer_max_length = 200
     } = await c.req.json();
 
     if (!question_text) {
@@ -579,7 +592,10 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
           answer_length = ?,
           question_type = ?,
           options = ?,
-          correct_answer = ?
+          correct_answer = ?,
+          datetime_value = ?,
+          datetime_title = ?,
+          datetime_answer_max_length = ?
       WHERE id = ? AND template_id = ?
     `).bind(
       question_text,
@@ -589,6 +605,9 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
       question_type,
       options,
       correct_answer,
+      datetime_value,
+      datetime_title,
+      datetime_answer_max_length,
       questionId,
       templateId
     ).run();

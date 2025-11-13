@@ -169,7 +169,10 @@ reviews.get('/:id', async (c) => {
         question_type,
         options,
         correct_answer,
-        answer_length
+        answer_length,
+        datetime_value,
+        datetime_title,
+        datetime_answer_max_length
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
@@ -179,6 +182,7 @@ reviews.get('/:id', async (c) => {
     // Updated to work with new answer_sets structure
     const answersResult = await c.env.DB.prepare(`
       SELECT ra.id, ra.question_number, ra.answer, 
+             ra.datetime_value, ra.datetime_title, ra.datetime_answer,
              ras.user_id, u.username, u.email, 
              ra.created_at, ra.updated_at
       FROM review_answers ra
