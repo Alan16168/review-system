@@ -2239,6 +2239,9 @@ async function handleStep1Submit(e) {
     // Clear currentDraftId to prevent conflicts
     currentDraftId = null;
     
+    // Mark this as a newly created draft that hasn't been saved yet
+    window.newlyCreatedDraftId = newReviewId;
+    
     // Open in edit mode directly
     showEditReview(newReviewId);
   } catch (error) {
@@ -3427,7 +3430,7 @@ async function showEditReview(id) {
         
         <div class="max-w-4xl mx-auto px-4 py-8">
           <div class="mb-6">
-            <button onclick="showReviews()" class="text-indigo-600 hover:text-indigo-800 mb-4">
+            <button onclick="handleEditReviewCancel(${id})" class="text-indigo-600 hover:text-indigo-800 mb-4">
               <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
             </button>
             <h1 class="text-3xl font-bold text-gray-800">
@@ -3678,6 +3681,66 @@ async function showEditReview(id) {
               }).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
             </div>
 
+            <!-- Calendar Integration Fields -->
+            <div class="border-t pt-6">
+              <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-calendar-plus text-indigo-600 mr-2"></i>
+                  <h3 class="text-lg font-medium text-gray-800">${i18n.t('scheduleReview')} (${i18n.t('optional')})</h3>
+                </div>
+                ${review.scheduled_at ? `
+                <button type="button" onclick="addToGoogleCalendar(${id})" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                  <i class="fas fa-calendar-plus mr-2"></i>${i18n.t('addToGoogleCalendar')}
+                </button>
+                ` : ''}
+              </div>
+              
+              <div class="space-y-4">
+                <!-- Scheduled Time -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-clock mr-1"></i>${i18n.t('scheduledTime')}
+                  </label>
+                  <input type="datetime-local" id="edit-scheduled-at"
+                         value="${review.scheduled_at ? new Date(review.scheduled_at).toISOString().slice(0, 16) : ''}"
+                         ${!isCreator ? 'disabled' : ''}
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
+                  ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
+                </div>
+
+                <!-- Location -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-map-marker-alt mr-1"></i>${i18n.t('location')}
+                  </label>
+                  <input type="text" id="edit-location"
+                         value="${escapeHtml(review.location || '')}"
+                         ${!isCreator ? 'disabled' : ''}
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}"
+                         placeholder="${i18n.t('enterLocation')}">
+                  ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
+                </div>
+
+                <!-- Reminder -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-bell mr-1"></i>${i18n.t('reminderMinutes')}
+                  </label>
+                  <select id="edit-reminder-minutes"
+                          ${!isCreator ? 'disabled' : ''}
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
+                    <option value="15" ${review.reminder_minutes == 15 ? 'selected' : ''}>15 ${i18n.t('minutes')}</option>
+                    <option value="30" ${review.reminder_minutes == 30 ? 'selected' : ''}>30 ${i18n.t('minutes')}</option>
+                    <option value="60" ${review.reminder_minutes == 60 || !review.reminder_minutes ? 'selected' : ''}>60 ${i18n.t('minutes')}</option>
+                    <option value="120" ${review.reminder_minutes == 120 ? 'selected' : ''}>120 ${i18n.t('minutes')}</option>
+                    <option value="1440" ${review.reminder_minutes == 1440 ? 'selected' : ''}>1 ${i18n.t('day')}</option>
+                  </select>
+                  ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
+                </div>
+              </div>
+            </div>
+
             <!-- Status -->
             <div class="border-t pt-6">
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -3706,7 +3769,7 @@ async function showEditReview(id) {
 
             <!-- Actions -->
             <div class="flex justify-end space-x-4 pt-6 border-t">
-              <button type="button" onclick="showReviews()" 
+              <button type="button" onclick="handleEditReviewCancel(${id})" 
                       class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                 ${i18n.t('cancel')}
               </button>
@@ -3950,12 +4013,20 @@ async function handleEditReview(e) {
     const ownerType = document.getElementById('review-owner-type').value;
     const status = document.querySelector('input[name="status"]:checked').value;
     
+    // Get calendar fields
+    const scheduledAt = document.getElementById('edit-scheduled-at').value || null;
+    const location = document.getElementById('edit-location').value || null;
+    const reminderMinutes = parseInt(document.getElementById('edit-reminder-minutes').value) || 60;
+    
     data = {
       title,
       description: description || null,
       time_type: timeType,
       owner_type: ownerType,
       status,
+      scheduled_at: scheduledAt,
+      location: location,
+      reminder_minutes: reminderMinutes,
       answers
     };
   } else {
@@ -3968,11 +4039,34 @@ async function handleEditReview(e) {
   try {
     await axios.put(`/api/reviews/${id}`, data);
     showNotification(i18n.t('updateSuccess'), 'success');
+    
+    // Clear newly created draft flag on successful save
+    if (window.newlyCreatedDraftId == id) {
+      delete window.newlyCreatedDraftId;
+    }
+    
     showReviews(); // Return to My Reviews page
     window.scrollTo(0, 0); // Scroll to top
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
+}
+
+// Handle cancel button in edit review form
+async function handleEditReviewCancel(reviewId) {
+  // If this is a newly created draft that hasn't been saved yet, delete it
+  if (window.newlyCreatedDraftId == reviewId) {
+    try {
+      await axios.delete(`/api/reviews/${reviewId}`);
+      delete window.newlyCreatedDraftId;
+      showNotification(i18n.t('draftDeleted') || '草稿已删除', 'info');
+    } catch (error) {
+      console.error('Failed to delete draft:', error);
+      // Continue to show reviews page even if delete fails
+    }
+  }
+  
+  showReviews();
 }
 
 // ============ Helper Functions ============

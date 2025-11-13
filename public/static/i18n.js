@@ -682,6 +682,7 @@ const translations = {
     'selectDateTime': '选择日期和时间',
     'enterLocation': '输入地点',
     'reminderMinutes': '提醒时间（分钟）',
+    'draftDeleted': '草稿已删除',
   },
   en: {
     // Auth
@@ -1358,6 +1359,7 @@ const translations = {
     'selectDateTime': 'Select Date and Time',
     'enterLocation': 'Enter Location',
     'reminderMinutes': 'Reminder (minutes)',
+    'draftDeleted': 'Draft deleted',
   },
   ja: {
     // Auth
@@ -2034,6 +2036,7 @@ const translations = {
     'selectDateTime': '日時を選択',
     'enterLocation': '場所を入力',
     'reminderMinutes': 'リマインダー（分）',
+    'draftDeleted': '下書きが削除されました',
   },
   es: {
     // Auth
@@ -2710,6 +2713,7 @@ const translations = {
     'selectDateTime': 'Seleccionar Fecha y Hora',
     'enterLocation': 'Ingresar Ubicación',
     'reminderMinutes': 'Recordatorio (minutos)',
+    'draftDeleted': 'Borrador eliminado',
   }
 };
 

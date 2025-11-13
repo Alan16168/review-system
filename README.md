@@ -126,15 +126,62 @@
 - **应用 URL**: https://review-system.pages.dev
 - **最新部署 ID**: https://859ded16.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.29.0 - Google日历集成（Phase 1）+ Bug修复
+- **版本**: ✅ V5.30.0 - Google日历集成完整版 + 重复创建Bug修复
+- **沙箱测试**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-13
 - **部署时间**: 刚刚部署（最新）
 - **数据库迁移**: ✅ Migration 0029 已应用到本地数据库
-- **新功能**: ✅ Google日历集成 - 用户可以将复盘计划添加到Google日历
-- **Bug修复**: ✅ 添加缺失的"day"翻译键，修复创建复盘错误
+- **新功能**: 
+  - ✅ **编辑页面显示日历字段** - 在编辑复盘时可以查看和修改计划时间、地点、提醒时间
+  - ✅ **"添加到Google日历"按钮** - 当设置了计划时间后，在编辑页面顶部显示绿色按钮
+  - ✅ **自动删除未保存草稿** - 点击"创建并编辑"后再点击Cancel/返回，会自动删除未保存的草稿
+- **Bug修复**: 
+  - ✅ 修复点击Cancel后创建重复复盘的问题
+  - ✅ 编辑页面添加完整日历字段显示和编辑功能
 - **更新内容**:
+  - ✅ **V5.30.0 - Google日历集成完整版 + 重复创建Bug修复**（UI增强 + Bug修复 - 2025-11-13）：
+    - **用户反馈问题1**: "我需要在哪里可以找到'添加到Google日历'按钮"
+    - **用户反馈问题2**: "点击'创建和编辑'后，如果按'cancel'按钮或者回退按钮，系统会出现两个一模一样的'复盘'记录"
+    - **解决方案**:
+      - **问题1解决 - 编辑页面添加日历功能**:
+        - ✅ 在 `showEditReview()` 函数中添加完整的日历字段区域
+        - ✅ 显示三个日历字段：计划时间（datetime-local）、地点（text）、提醒时间（select）
+        - ✅ 所有字段使用 `review.scheduled_at`、`review.location`、`review.reminder_minutes` 填充当前值
+        - ✅ 当设置了 `scheduled_at` 时，在字段区域顶部显示绿色"添加到Google日历"按钮
+        - ✅ 按钮调用 `addToGoogleCalendar(reviewId)` 函数打开Google日历
+        - ✅ 非创建者用户看到的日历字段为 disabled 状态（只读）
+        - ✅ 修改 `handleEditReview()` 函数，保存时包含日历字段：
+          - `scheduled_at`: 从 `edit-scheduled-at` input 获取
+          - `location`: 从 `edit-location` input 获取
+          - `reminder_minutes`: 从 `edit-reminder-minutes` select 获取
+      - **问题2解决 - 防止重复创建草稿**:
+        - ✅ 在 `handleStep1Submit()` 中创建草稿后，设置全局标记 `window.newlyCreatedDraftId`
+        - ✅ 创建新函数 `handleEditReviewCancel(reviewId)`:
+          - 检查 `window.newlyCreatedDraftId` 是否等于当前 reviewId
+          - 如果是，调用 `DELETE /api/reviews/:id` 删除未保存的草稿
+          - 显示"草稿已删除"通知
+          - 跳转回复盘列表
+        - ✅ 修改编辑页面的"返回"按钮：从 `showReviews()` 改为 `handleEditReviewCancel(${id})`
+        - ✅ 修改编辑页面的"取消"按钮：从 `showReviews()` 改为 `handleEditReviewCancel(${id})`
+        - ✅ 在 `handleEditReview()` 保存成功后清除 `window.newlyCreatedDraftId` 标记
+    - **国际化支持** (1键 × 4语言 = 4个翻译):
+      - draftDeleted: '草稿已删除' / 'Draft deleted' / '下書きが削除されました' / 'Borrador eliminado'
+    - **用户体验改进**:
+      - ✅ 编辑页面可以查看和修改所有日历字段
+      - ✅ 有计划时间时，绿色按钮醒目提示可以添加到Google日历
+      - ✅ Cancel/返回时不会留下空白草稿记录
+      - ✅ 首次保存后，取消按钮不再删除复盘（已是完整记录）
+    - **技术实现**:
+      - 修改文件：`public/static/app.js`（编辑页面UI + Cancel处理逻辑）
+      - 修改文件：`public/static/i18n.js`（添加 draftDeleted 翻译）
+      - 无需后端API修改（DELETE /api/reviews/:id 已存在）
+    - **测试说明**:
+      - 场景1：创建复盘 → 填写日历字段 → 保存 → 编辑 → 看到日历字段和绿色按钮 ✅
+      - 场景2：创建复盘 → 点击Cancel → 草稿自动删除，不会出现重复记录 ✅
+      - 场景3：编辑已有复盘 → 修改日历字段 → 保存 → 成功更新 ✅
+    - **沙箱测试**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
   - ✅ **V5.29.0 - Google日历集成（Phase 1: 链接生成）**（重大新功能 - 2025-11-13）：
     - **用户需求**: "可否链接用户自己的Google日历，把系统用户设定事件和时间、地点等信息放到用户自己的Google日历中去？"
     - **实现方案**: Phase 1 采用链接生成方式（无需OAuth授权）
