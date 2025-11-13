@@ -130,19 +130,42 @@ answerSets.post('/:reviewId', async (c: Context) => {
     const answers = body.answers || {};
     const insertPromises: Promise<any>[] = [];
 
+    console.log('[answer_sets POST] Processing answers:', JSON.stringify(answers));
+
     for (const [questionNum, answerData] of Object.entries(answers)) {
       const data: any = answerData;
+      const parsedQuestionNum = parseInt(questionNum);
+      
+      if (isNaN(parsedQuestionNum)) {
+        console.error('Invalid question number:', questionNum);
+        continue;
+      }
+      
+      // Ensure all values are either valid or null (not undefined)
+      // D1 doesn't accept undefined, only null
+      const answerValue = (data.answer !== undefined && data.answer !== null && data.answer !== '') ? String(data.answer) : null;
+      const datetimeValue = (data.datetime_value !== undefined && data.datetime_value !== null) ? data.datetime_value : null;
+      const datetimeTitle = (data.datetime_title !== undefined && data.datetime_title !== null) ? data.datetime_title : null;
+      const datetimeAnswer = (data.datetime_answer !== undefined && data.datetime_answer !== null) ? data.datetime_answer : null;
+      
+      console.log(`[answer_sets POST] Inserting Q${parsedQuestionNum}:`, {
+        answer: answerValue,
+        datetime_value: datetimeValue,
+        datetime_title: datetimeTitle,
+        datetime_answer: datetimeAnswer
+      });
+      
       const query = c.env.DB.prepare(`
         INSERT INTO review_answers 
         (answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
         VALUES (?, ?, ?, ?, ?, ?)
       `).bind(
         setId,
-        parseInt(questionNum),
-        data.answer || null,
-        data.datetime_value || null,
-        data.datetime_title || null,
-        data.datetime_answer || null
+        parsedQuestionNum,
+        answerValue,
+        datetimeValue,
+        datetimeTitle,
+        datetimeAnswer
       );
       insertPromises.push(query.run());
     }
