@@ -9624,17 +9624,10 @@ window.currentSetIndex = 0;
  * Load answer sets for a review
  */
 async function loadAnswerSets(reviewId) {
-  try {
-    const response = await axios.get(`/api/answer-sets/${reviewId}`);
-    window.currentAnswerSets = response.data.sets || [];
-    window.currentSetIndex = window.currentAnswerSets.length > 0 ? 0 : -1;
-    return window.currentAnswerSets;
-  } catch (error) {
-    console.error('Failed to load answer sets:', error);
-    window.currentAnswerSets = [];
-    window.currentSetIndex = -1;
-    return [];
-  }
+  const response = await axios.get(`/api/answer-sets/${reviewId}`);
+  window.currentAnswerSets = response.data.sets || [];
+  window.currentSetIndex = window.currentAnswerSets.length > 0 ? 0 : -1;
+  return window.currentAnswerSets;
 }
 
 /**
@@ -9904,12 +9897,19 @@ async function submitNewAnswerSet(reviewId) {
       closeAnswerSetModal();
       showNotification(i18n.t('answerSetCreated') || '答案组已创建', 'success');
       
-      // Reload answer sets
-      await loadAnswerSets(reviewId);
-      
-      // Navigate to the new set (last one)
-      window.currentSetIndex = window.currentAnswerSets.length - 1;
-      renderAnswerSet(reviewId);
+      // Reload answer sets to get the updated list
+      try {
+        await loadAnswerSets(reviewId);
+        
+        // Navigate to the new set (last one)
+        window.currentSetIndex = window.currentAnswerSets.length - 1;
+        renderAnswerSet(reviewId);
+      } catch (loadError) {
+        console.error('Failed to reload answer sets after creation:', loadError);
+        // Answer set was created successfully, but reload failed
+        // Just reload the entire edit page to ensure consistency
+        showEditReview(reviewId);
+      }
     }
   } catch (error) {
     console.error('Failed to create answer set:', error);

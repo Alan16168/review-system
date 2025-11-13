@@ -73,7 +73,16 @@ answerSets.get('/:reviewId', async (c: Context) => {
 
   } catch (error: any) {
     console.error('Error fetching answer sets:', error);
-    return c.json({ error: 'Failed to fetch answer sets' }, 500);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      reviewId: c.req.param('reviewId'),
+      userId: c.get('userId')
+    });
+    return c.json({ 
+      error: 'Failed to fetch answer sets',
+      details: error.message 
+    }, 500);
   }
 });
 
