@@ -253,34 +253,64 @@ answerSets.put('/:reviewId/:setNumber', async (c: Context) => {
     const setId = set.id;
     const answers = body.answers || {};
 
-    // Update or insert answers
-    const updatePromises: Promise<any>[] = [];
+    // Update or insert answers (UPSERT logic)
+    const upsertPromises: Promise<any>[] = [];
 
     for (const [questionNum, answerData] of Object.entries(answers)) {
       const data: any = answerData;
+      const parsedQuestionNum = parseInt(questionNum);
       
-      // Try to update first
-      const updateQuery = c.env.DB.prepare(`
-        UPDATE review_answers
-        SET answer = ?, 
-            datetime_value = ?,
-            datetime_title = ?,
-            datetime_answer = ?,
-            updated_at = CURRENT_TIMESTAMP
+      if (isNaN(parsedQuestionNum)) {
+        console.error('Invalid question number:', questionNum);
+        continue;
+      }
+      
+      // Check if answer already exists
+      const existingAnswer = await c.env.DB.prepare(`
+        SELECT id FROM review_answers
         WHERE answer_set_id = ? AND question_number = ?
-      `).bind(
-        data.answer || null,
-        data.datetime_value || null,
-        data.datetime_title || null,
-        data.datetime_answer || null,
-        setId,
-        parseInt(questionNum)
-      );
-
-      updatePromises.push(updateQuery.run());
+      `).bind(setId, parsedQuestionNum).first();
+      
+      if (existingAnswer) {
+        // UPDATE existing answer
+        const updateQuery = c.env.DB.prepare(`
+          UPDATE review_answers
+          SET answer = ?, 
+              datetime_value = ?,
+              datetime_title = ?,
+              datetime_answer = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE answer_set_id = ? AND question_number = ?
+        `).bind(
+          data.answer || data || null,
+          data.datetime_value || null,
+          data.datetime_title || null,
+          data.datetime_answer || null,
+          setId,
+          parsedQuestionNum
+        );
+        
+        upsertPromises.push(updateQuery.run());
+      } else {
+        // INSERT new answer
+        const insertQuery = c.env.DB.prepare(`
+          INSERT INTO review_answers 
+          (answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(
+          setId,
+          parsedQuestionNum,
+          data.answer || data || null,
+          data.datetime_value || null,
+          data.datetime_title || null,
+          data.datetime_answer || null
+        );
+        
+        upsertPromises.push(insertQuery.run());
+      }
     }
 
-    await Promise.all(updatePromises);
+    await Promise.all(upsertPromises);
 
     // Update set's updated_at
     await c.env.DB.prepare(`
