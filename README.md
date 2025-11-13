@@ -125,17 +125,49 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://db978987.review-system.pages.dev
+- **最新部署 ID**: https://0314b004.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V6.0.0-Phase1-Modal-Fix - Modal预填充修复！
+- **版本**: ✅ V6.0.1-UI-Refinements - UI优化完成！
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-13
-- **部署时间**: 刚刚部署（V6.0.0-Phase1-Modal-Fix - Modal自动预填充）
+- **部署时间**: 刚刚部署（V6.0.1-UI-Refinements - UI布局优化）
 - **数据库迁移**: ✅ Migration 0030 已应用到生产数据库
-- **功能状态**: ✅ 答案集合系统 + Modal预填充完全正常！
-- **最新修复**: ✅ **V6.0.0-Phase1-Modal-Fix - Modal自动预填充答案**（用户体验改进 - 2025-11-13）
+- **功能状态**: ✅ 答案集合系统 + Modal预填充 + UI布局完全优化！
+- **最新更新**: ✅ **V6.0.1-UI-Refinements - UI布局优化**（用户体验改进 - 2025-11-13）
 - **更新内容**:
+  - 🎉 **V6.0.1-UI-Refinements - UI布局优化**（用户体验改进 - 2025-11-13）：
+    - **用户反馈**: 编辑复盘页面UI布局需要优化
+    - **核心改进**:
+      - ✅ **保存按钮移到编辑框内**: 从所有section外部移到Section 1（复盘表头）内部底部
+      - ✅ **Google日历按钮移到字段区域内**: 从section顶部移到日历输入字段下方
+      - ✅ **修改section标题**: "设置计划时间（可选）" → "规划复盘时间（可选）"
+    - **UI改进细节**:
+      - **保存按钮位置优化**:
+        - 之前：在所有可折叠section外部的底部（用户编辑完需要滚动到最下方）
+        - 之后：在Section 1内部底部（编辑表头信息后立即可见）
+        - 好处：更符合用户操作习惯，减少滚动距离
+      - **Google日历按钮位置优化**:
+        - 之前：在Section 3顶部，日历字段上方（用户填写前就看到按钮）
+        - 之后：在日历字段下方，带分隔线（用户填写完后自然看到）
+        - 样式：改为全宽按钮（w-full），居中对齐，更醒目
+        - 好处：按钮紧邻相关输入，操作流程更顺畅
+      - **标题文案优化**:
+        - 中文: "设置计划时间" → "规划复盘时间"（更准确描述功能）
+        - English: "Schedule Review" → "Plan Review Time"
+        - 日本語: "予定時刻を設定" → "レビュー時間を計画する"
+        - Español: "Programar Revisión" → "Planificar Tiempo de Revisión"
+    - **技术实现**:
+      - 修改文件1: `public/static/app.js` (编辑页面UI结构)
+      - 修改文件2: `public/static/i18n.js` (4语言标题翻译)
+      - 保持功能完全一致，仅优化UI布局
+    - **用户体验提升**:
+      - ✅ 编辑流程更直观，按钮位置更合理
+      - ✅ 减少不必要的滚动操作
+      - ✅ 功能分组更清晰，操作更便捷
+      - ✅ 标题文案更准确易懂
+    - **部署URL**: https://0314b004.review-system.pages.dev
+    - **提交commit**: 526e469
   - 🎉 **V6.0.0-Phase1-Modal-Fix - Modal自动预填充答案**（用户体验改进 - 2025-11-13）：
     - **用户反馈**: 编辑复盘时在主页面输入框填写答案，点击"创建新答案组"后modal显示空白
     - **问题分析**:
