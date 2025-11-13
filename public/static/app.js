@@ -9623,10 +9623,20 @@ window.currentSetIndex = 0;
 /**
  * Load answer sets for a review
  */
-async function loadAnswerSets(reviewId) {
+async function loadAnswerSets(reviewId, keepCurrentIndex = false) {
   const response = await axios.get(`/api/answer-sets/${reviewId}`);
+  const oldIndex = window.currentSetIndex || 0;
+  
   window.currentAnswerSets = response.data.sets || [];
-  window.currentSetIndex = window.currentAnswerSets.length > 0 ? 0 : -1;
+  
+  // If keepCurrentIndex is true, maintain the current index (if valid)
+  if (keepCurrentIndex && oldIndex >= 0 && oldIndex < window.currentAnswerSets.length) {
+    window.currentSetIndex = oldIndex;
+  } else {
+    // Otherwise, reset to first set or -1 if no sets
+    window.currentSetIndex = window.currentAnswerSets.length > 0 ? 0 : -1;
+  }
+  
   return window.currentAnswerSets;
 }
 
@@ -9802,8 +9812,8 @@ async function saveInlineAnswer(reviewId, questionNumber) {
     if (response.data) {
       showNotification(i18n.t('answerSaved') || '答案已保存', 'success');
       
-      // Reload answer sets to refresh display
-      await loadAnswerSets(reviewId);
+      // Reload answer sets to refresh display, keep current index
+      await loadAnswerSets(reviewId, true);
       renderAnswerSet(reviewId);
     }
   } catch (error) {
