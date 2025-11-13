@@ -7369,6 +7369,7 @@ function showAddQuestionForm() {
                 <option value="text">${i18n.t('questionTypeText')}</option>
                 <option value="single_choice">${i18n.t('questionTypeSingleChoice')}</option>
                 <option value="multiple_choice">${i18n.t('questionTypeMultipleChoice')}</option>
+                <option value="time_with_text">${i18n.t('questionTypeTimeWithText')}</option>
               </select>
             </div>
             
@@ -7397,6 +7398,46 @@ function showAddQuestionForm() {
               <input type="number" id="question-answer-length" min="10" max="1000" value="50"
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: 10-1000 (${i18n.t('defaultValue')}: 50)</p>
+            </div>
+            
+            <!-- Time Type Fields (for time_with_text only) -->
+            <div id="time-type-container" class="hidden">
+              <div class="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p class="text-sm text-blue-800 font-medium">
+                  <i class="fas fa-info-circle mr-1"></i>${i18n.t('timeTypeDescription')}
+                </p>
+                
+                <!-- Default Datetime -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-clock mr-1"></i>${i18n.t('defaultDatetime')}
+                  </label>
+                  <input type="datetime-local" id="question-datetime-value" 
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <p class="text-xs text-gray-500 mt-1">${i18n.t('defaultDatetimeHint')}</p>
+                </div>
+                
+                <!-- Datetime Title (max 12 chars) -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-tag mr-1"></i>${i18n.t('datetimeTitle')} *
+                  </label>
+                  <input type="text" id="question-datetime-title" maxlength="12" 
+                         placeholder="${i18n.t('datetimeTitlePlaceholder')}"
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <p class="text-xs text-gray-500 mt-1">${i18n.t('datetimeTitleHint')}</p>
+                </div>
+                
+                <!-- Answer Max Length -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-text-width mr-1"></i>${i18n.t('answerMaxLength')} *
+                  </label>
+                  <input type="number" id="question-datetime-answer-max-length" min="50" max="500" value="200"
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <p class="text-xs text-gray-500 mt-1">${i18n.t('answerMaxLengthHint')}</p>
+                </div>
+              </div>
             </div>
             
             <!-- Choice Options (for choice types only) -->
