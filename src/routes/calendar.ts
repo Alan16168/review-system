@@ -27,7 +27,7 @@ calendar.get('/link/:reviewId', async (c: Context) => {
         r.location, r.reminder_minutes, r.user_id, r.team_id
       FROM reviews r
       WHERE r.id = ?
-    `).bind(reviewId).first();
+    `).bind(parseInt(reviewId)).first();
 
     if (!review) {
       return c.json({ error: 'Review not found' }, 404);
@@ -85,13 +85,13 @@ calendar.get('/link/:reviewId', async (c: Context) => {
 async function checkReviewAccess(db: D1Database, reviewId: string, userId: number): Promise<boolean> {
   // Check if user is creator
   const review = await db.prepare('SELECT user_id, team_id FROM reviews WHERE id = ?')
-    .bind(reviewId).first();
+    .bind(parseInt(reviewId)).first();
   
   if (!review) return false;
   if (review.user_id === userId) return true;
 
   // Check if user is team member
-  if (review.team_id) {
+  if (review.team_id !== null && review.team_id !== undefined) {
     const member = await db.prepare(
       'SELECT id FROM team_members WHERE team_id = ? AND user_id = ?'
     ).bind(review.team_id, userId).first();
@@ -101,7 +101,7 @@ async function checkReviewAccess(db: D1Database, reviewId: string, userId: numbe
   // Check if user is collaborator
   const collaborator = await db.prepare(
     'SELECT id FROM review_collaborators WHERE review_id = ? AND user_id = ?'
-  ).bind(reviewId, userId).first();
+  ).bind(parseInt(reviewId), userId).first();
   
   return !!collaborator;
 }
