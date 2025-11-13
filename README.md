@@ -124,19 +124,41 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://205fe950.review-system.pages.dev
+- **最新部署 ID**: https://bf0738d9.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.30.1 - Google日历按钮错误提示改进
+- **版本**: ✅ V5.30.2 - 修复日期格式解析问题
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-13
-- **部署时间**: 刚刚部署（V5.30.1 - 最新）
+- **部署时间**: 刚刚部署（V5.30.2 - 最新）
 - **数据库迁移**: ✅ Migration 0029 已应用到生产数据库
 - **Bug修复**: 
-  - ✅ 改进"添加到Google日历"按钮错误提示
-  - ✅ 点击按钮前验证是否设置了计划时间
-  - ✅ 显示友好错误提示："请先设置计划时间并保存"
+  - ✅ 修复日期格式解析导致的500错误
+  - ✅ 自动标准化datetime-local格式（添加秒数）
+  - ✅ 增强日期验证和错误日志
 - **更新内容**:
+  - ✅ **V5.30.2 - 修复日期格式解析问题**（关键Bug修复 - 2025-11-13）：
+    - **用户反馈问题**: "点击'添加到Google日历'出现'操作失败: Failed to generate calendar link'"（500错误）
+    - **问题分析**:
+      - HTML5 `datetime-local` 输入框返回格式：`YYYY-MM-DDTHH:mm`（无秒数）
+      - 数据库存储格式：`2025-11-14T21:36`（无秒数）
+      - `new Date()` 在某些环境下可能无法正确解析这种格式
+      - 导致 `startDate.getTime()` 返回 `NaN`
+      - Google Calendar URL生成失败，抛出500错误
+    - **解决方案**:
+      - ✅ 自动标准化日期格式：检测格式中冒号数量
+      - ✅ 如果只有1个冒号（HH:mm），自动添加`:00`变成（HH:mm:ss）
+      - ✅ 添加日期有效性验证：`isNaN(startDate.getTime())`
+      - ✅ 增强错误日志：输出原始参数、标准化后的值、完整堆栈
+      - ✅ 添加try-catch包裹整个函数，防止未捕获异常
+    - **技术细节**:
+      - 修改文件：`src/routes/calendar.ts`（generateGoogleCalendarUrl函数）
+      - 日期标准化逻辑：`colonCount === 1 ? normalizedTime + ':00' : normalizedTime`
+      - 错误处理：捕获并记录详细参数信息
+    - **测试建议**:
+      - 使用review ID 88测试（scheduled_at: "2025-11-14T21:36"）
+      - 应该可以正常生成Google Calendar链接
+    - **部署URL**: https://bf0738d9.review-system.pages.dev
   - ✅ **V5.30.1 - Google日历按钮错误提示改进**（用户体验优化 - 2025-11-13）：
     - **用户反馈问题**: "按'add to Google Calendar'出错'Operation failed: Failed to generate calendar link'"
     - **问题分析**:
