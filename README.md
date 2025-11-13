@@ -124,16 +124,81 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://6fe05488.review-system.pages.dev
+- **最新部署 ID**: https://64881902.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.28.2 - 修复团队删除错误
+- **版本**: ✅ V5.29.0 - Google日历集成（Phase 1）
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
-- **部署日期**: 2025-11-12
+- **部署日期**: 2025-11-13
 - **部署时间**: 刚刚部署（最新）
-- **数据库迁移**: ✅ Migration 0028 已应用到生产数据库
-- **关键修复**: ✅ 手动删除外键关联记录以支持团队删除功能
+- **数据库迁移**: ✅ Migration 0029 已应用到本地数据库
+- **新功能**: ✅ Google日历集成 - 用户可以将复盘计划添加到Google日历
 - **更新内容**:
+  - ✅ **V5.29.0 - Google日历集成（Phase 1: 链接生成）**（重大新功能 - 2025-11-13）：
+    - **用户需求**: "可否链接用户自己的Google日历，把系统用户设定事件和时间、地点等信息放到用户自己的Google日历中去？"
+    - **实现方案**: Phase 1 采用链接生成方式（无需OAuth授权）
+    - **数据库变更** (Migration 0029):
+      - 添加 `scheduled_at` 字段：计划时间（DATETIME类型）
+      - 添加 `location` 字段：地点信息（TEXT类型）
+      - 添加 `reminder_minutes` 字段：提前提醒时间（INTEGER，默认60分钟）
+      - 创建索引：`idx_reviews_scheduled_at` 用于查询即将到来的复盘
+    - **后端API新增**:
+      - **GET /api/calendar/link/:reviewId**: 生成Google Calendar添加事件的URL
+      - 权限检查：仅创建者、团队成员、协作者可访问
+      - URL格式：`https://calendar.google.com/calendar/render?action=TEMPLATE&text=...`
+      - 自动计算：事件默认持续1小时
+    - **前端功能**:
+      - **创建复盘表单新增字段**:
+        - 📅 计划时间选择器（datetime-local input）
+        - 📍 地点输入框（text input）
+        - ⏰ 提醒时间下拉框（15/30/60/120/1440分钟）
+      - **JavaScript函数**:
+        - `addToGoogleCalendar(reviewId)`: 调用API获取日历链接并在新标签打开
+      - **用户体验**:
+        - 所有日历字段均为可选
+        - 计划时间未设置时，API返回友好错误提示
+        - 成功添加后显示"打开Google日历"通知
+    - **国际化支持** (13键 × 4语言 = 52个翻译):
+      - scheduledTime: '计划时间' / 'Scheduled Time' / '予定時刻' / 'Hora Programada'
+      - location: '地点' / 'Location' / '場所' / 'Ubicación'
+      - reminderBefore: '提前提醒' / 'Reminder Before' / 'リマインダー' / 'Recordatorio Antes'
+      - addToGoogleCalendar: '添加到Google日历' / 'Add to Google Calendar'
+      - ... 共13个翻译键
+    - **技术实现**:
+      - 新增路由文件：`src/routes/calendar.ts`
+      - 日期格式：ISO 8601转换为Google Calendar格式（YYYYMMDDTHHmmssZ）
+      - 权限复用：使用现有的复盘访问权限检查逻辑
+      - 参数编码：使用URLSearchParams确保正确编码
+    - **Phase 2 计划**（未来增强）:
+      - OAuth 2.0 授权流程
+      - 自动创建日历事件（无需用户手动确认）
+      - 同步修改和删除事件
+      - 批量添加定期复盘
+      - 团队成员日历同步
+    - **部署URL**: https://64881902.review-system.pages.dev
+  - ✅ **V5.28.2 - 修复团队删除错误**（关键Bug修复 - 2025-11-12）：
+    - **用户反馈**: "团队列表的删除功能出错'操作失败: Internal server error'"
+    - **问题分析**:
+      - 尝试删除有 team_invitations 关联记录的团队时失败
+      - `team_invitations` 表的外键约束未设置 `ON DELETE CASCADE`
+      - SQLite 抛出外键约束违反错误
+    - **解决方案**:
+      - 修改 DELETE /api/teams/:id 端点实现多步删除
+      - **第1步**: 删除 team_invitations 记录（无 CASCADE）
+      - **第2步**: 删除 team_members 记录（显式删除）
+      - **第3步**: 删除 team_applications 记录（有 CASCADE 但显式删除）
+      - **第4步**: 删除 team 本身（自动 CASCADE 到 reviews 等）
+    - **技术细节**:
+      - 在 `src/routes/teams.ts` 的 DELETE 端点添加三条 DELETE 语句
+      - 按正确顺序删除：invitations → members → applications → team
+      - 确保所有外键关联记录都被清理
+    - **修复效果**:
+      - ✅ 团队删除功能现在正常工作
+      - ✅ 有邀请记录的团队可以成功删除
+      - ✅ 有成员的团队可以成功删除
+      - ✅ 有申请记录的团队可以成功删除
+      - ✅ 所有关联数据正确清理
+    - **部署URL**: https://6fe05488.review-system.pages.dev
   - ✅ **V5.28.2 - 修复团队删除错误**（关键Bug修复 - 2025-11-12）：
     - **用户反馈**: "团队列表的删除功能出错'操作失败: Internal server error'"
     - **问题分析**:
