@@ -105,12 +105,13 @@ answerSets.post('/:reviewId', async (c: Context) => {
     const setResult = await c.env.DB.prepare(`
       INSERT INTO review_answer_sets (review_id, user_id, set_number)
       VALUES (?, ?, ?)
-      RETURNING id
-    `).bind(reviewId, userId, nextSetNumber).first();
+    `).bind(reviewId, userId, nextSetNumber).run();
 
-    const setId = setResult?.id;
+    // Get the inserted ID from meta.last_row_id
+    const setId = setResult.meta.last_row_id;
 
     if (!setId) {
+      console.error('Failed to get inserted set ID:', setResult);
       return c.json({ error: 'Failed to create answer set' }, 500);
     }
 
@@ -145,7 +146,15 @@ answerSets.post('/:reviewId', async (c: Context) => {
 
   } catch (error: any) {
     console.error('Error creating answer set:', error);
-    return c.json({ error: 'Failed to create answer set' }, 500);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause
+    });
+    return c.json({ 
+      error: 'Failed to create answer set',
+      details: error.message 
+    }, 500);
   }
 });
 
