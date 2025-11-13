@@ -68,7 +68,14 @@ calendar.get('/link/:reviewId', async (c: Context) => {
 
   } catch (error: any) {
     console.error('Error generating calendar link:', error);
-    return c.json({ error: 'Failed to generate calendar link', details: error.message }, 500);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    return c.json({ 
+      error: 'Failed to generate calendar link', 
+      details: error.message,
+      stack: error.stack,
+      type: error.constructor.name
+    }, 500);
   }
 });
 
@@ -112,31 +119,53 @@ function generateGoogleCalendarUrl(params: {
 }): string {
   const baseUrl = 'https://calendar.google.com/calendar/render';
   
-  // Parse scheduled_at (assume ISO format from database)
-  const startDate = new Date(params.startTime);
-  
-  // Default duration: 1 hour
-  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-  
-  // Format dates to Google Calendar format: YYYYMMDDTHHmmssZ
-  const formatDateForGoogle = (date: Date): string => {
-    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-  };
-  
-  const dates = `${formatDateForGoogle(startDate)}/${formatDateForGoogle(endDate)}`;
-  
-  // Build URL parameters
-  const urlParams = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: params.title,
-    dates: dates,
-    details: params.description,
-    location: params.location || '',
-    // Google Calendar reminder format (not officially documented, but works)
-    // Note: Reminders are set by user preferences in Google Calendar
-  });
-  
-  return `${baseUrl}?${urlParams.toString()}`;
+  try {
+    // Normalize the date string - add seconds if missing
+    // Handle both "YYYY-MM-DDTHH:mm" and "YYYY-MM-DDTHH:mm:ss" formats
+    let normalizedTime = params.startTime;
+    
+    // Count colons to determine if seconds are present
+    const colonCount = (normalizedTime.match(/:/g) || []).length;
+    if (colonCount === 1) {
+      // Format is "YYYY-MM-DDTHH:mm", add seconds
+      normalizedTime = normalizedTime + ':00';
+    }
+    
+    // Parse scheduled_at
+    const startDate = new Date(normalizedTime);
+    
+    // Validate date
+    if (isNaN(startDate.getTime())) {
+      throw new Error(`Invalid date format: ${params.startTime} (normalized: ${normalizedTime})`);
+    }
+    
+    // Default duration: 1 hour
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    
+    // Format dates to Google Calendar format: YYYYMMDDTHHmmssZ
+    const formatDateForGoogle = (date: Date): string => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+    
+    const dates = `${formatDateForGoogle(startDate)}/${formatDateForGoogle(endDate)}`;
+    
+    // Build URL parameters
+    const urlParams = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: params.title,
+      dates: dates,
+      details: params.description,
+      location: params.location || '',
+      // Google Calendar reminder format (not officially documented, but works)
+      // Note: Reminders are set by user preferences in Google Calendar
+    });
+    
+    return `${baseUrl}?${urlParams.toString()}`;
+  } catch (error: any) {
+    console.error('Error in generateGoogleCalendarUrl:', error);
+    console.error('Input params:', JSON.stringify(params, null, 2));
+    throw error;
+  }
 }
 
 export default calendar;
