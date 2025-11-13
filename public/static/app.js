@@ -1988,6 +1988,53 @@ async function showCreateReview(preservedData = null) {
             `}
           </div>
 
+          <!-- Calendar Integration (Optional) -->
+          <div class="border-t pt-6">
+            <div class="mb-4 flex items-center">
+              <i class="fas fa-calendar-plus text-indigo-600 mr-2"></i>
+              <h3 class="text-lg font-medium text-gray-800">${i18n.t('scheduleReview')} (${i18n.t('optional')})</h3>
+            </div>
+            
+            <div class="space-y-4">
+              <!-- Scheduled Time -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-clock mr-1"></i>${i18n.t('scheduledTime')}
+                </label>
+                <input type="datetime-local" id="review-scheduled-at"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <p class="mt-1 text-xs text-gray-500">
+                  <i class="fas fa-info-circle mr-1"></i>${i18n.t('selectDateTime')}
+                </p>
+              </div>
+
+              <!-- Location -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-map-marker-alt mr-1"></i>${i18n.t('location')}
+                </label>
+                <input type="text" id="review-location"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="${i18n.t('enterLocation')}">
+              </div>
+
+              <!-- Reminder -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-bell mr-1"></i>${i18n.t('reminderMinutes')}
+                </label>
+                <select id="review-reminder-minutes"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="15">15 ${i18n.t('minutes')}</option>
+                  <option value="30">30 ${i18n.t('minutes')}</option>
+                  <option value="60" selected>60 ${i18n.t('minutes')}</option>
+                  <option value="120">120 ${i18n.t('minutes')}</option>
+                  <option value="1440">1 ${i18n.t('day') || '天'}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <!-- Status -->
           <div class="border-t pt-6">
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -2160,6 +2207,11 @@ async function handleStep1Submit(e) {
   const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
+  // Get calendar fields (optional)
+  const scheduledAt = document.getElementById('review-scheduled-at').value || null;
+  const location = document.getElementById('review-location').value || null;
+  const reminderMinutes = parseInt(document.getElementById('review-reminder-minutes').value) || 60;
+  
   // Create draft review first, then open in edit mode
   const data = {
     title,
@@ -2168,7 +2220,10 @@ async function handleStep1Submit(e) {
     team_id: teamId || null,
     time_type: timeType,
     owner_type: ownerType,
-    status: 'draft' // Always create as draft first
+    status: 'draft', // Always create as draft first
+    scheduled_at: scheduledAt,
+    location: location,
+    reminder_minutes: reminderMinutes
   };
   
   try {
@@ -9310,5 +9365,32 @@ async function acceptTeamInvitation(token) {
     );
     // Still show dashboard even if invitation acceptance fails
     setTimeout(() => showDashboard(), 2000);
+  }
+}
+
+// ========================================
+// Google Calendar Integration
+// ========================================
+
+/**
+ * Add review to Google Calendar
+ * @param {number} reviewId - Review ID
+ */
+async function addToGoogleCalendar(reviewId) {
+  try {
+    console.log('Adding review to Google Calendar:', reviewId);
+    
+    // Get calendar link from backend
+    const response = await axios.get(`/api/calendar/link/${reviewId}`);
+    const calendarUrl = response.data.url;
+    
+    // Open Google Calendar in new tab
+    window.open(calendarUrl, '_blank');
+    
+    showNotification(i18n.t('openGoogleCalendar'), 'success');
+  } catch (error) {
+    console.error('Failed to add to Google Calendar:', error);
+    const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message;
+    showNotification(i18n.t('operationFailed') + ': ' + errorMsg, 'error');
   }
 }

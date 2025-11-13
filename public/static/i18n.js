@@ -666,6 +666,21 @@ const translations = {
     'updateArticles': '更新文章',
     'updateVideos': '更新视频',
     'answerCannotBeEmpty': '答案不能为空',
+    
+    // Calendar Integration
+    'scheduledTime': '计划时间',
+    'location': '地点',
+    'reminderBefore': '提前提醒',
+    'minutes': '分钟',
+    'addToGoogleCalendar': '添加到Google日历',
+    'calendarEventCreated': '日历事件已创建',
+    'openGoogleCalendar': '打开Google日历',
+    'noScheduledTime': '未设置计划时间',
+    'scheduleReview': '设置计划时间',
+    'optional': '可选',
+    'selectDateTime': '选择日期和时间',
+    'enterLocation': '输入地点',
+    'reminderMinutes': '提醒时间（分钟）',
   },
   en: {
     // Auth
@@ -1326,6 +1341,21 @@ const translations = {
     'updateArticles': 'Update Articles',
     'updateVideos': 'Update Videos',
     'answerCannotBeEmpty': 'Answer cannot be empty',
+    
+    // Calendar Integration
+    'scheduledTime': 'Scheduled Time',
+    'location': 'Location',
+    'reminderBefore': 'Reminder Before',
+    'minutes': 'minutes',
+    'addToGoogleCalendar': 'Add to Google Calendar',
+    'calendarEventCreated': 'Calendar Event Created',
+    'openGoogleCalendar': 'Open Google Calendar',
+    'noScheduledTime': 'No Scheduled Time',
+    'scheduleReview': 'Schedule Review',
+    'optional': 'Optional',
+    'selectDateTime': 'Select Date and Time',
+    'enterLocation': 'Enter Location',
+    'reminderMinutes': 'Reminder (minutes)',
   },
   ja: {
     // Auth
@@ -1986,6 +2016,21 @@ const translations = {
     'updateArticles': 'Update Articles',
     'updateVideos': 'Update Videos',
     'answerCannotBeEmpty': '回答は空にできません',
+    
+    // Calendar Integration
+    'scheduledTime': '予定時刻',
+    'location': '場所',
+    'reminderBefore': 'リマインダー',
+    'minutes': '分',
+    'addToGoogleCalendar': 'Googleカレンダーに追加',
+    'calendarEventCreated': 'カレンダーイベントが作成されました',
+    'openGoogleCalendar': 'Googleカレンダーを開く',
+    'noScheduledTime': '予定時刻未設定',
+    'scheduleReview': '予定時刻を設定',
+    'optional': '任意',
+    'selectDateTime': '日時を選択',
+    'enterLocation': '場所を入力',
+    'reminderMinutes': 'リマインダー（分）',
   },
   es: {
     // Auth
@@ -2646,6 +2691,21 @@ const translations = {
     'updateArticles': 'Update Articles',
     'updateVideos': 'Update Videos',
     'answerCannotBeEmpty': 'La respuesta no puede estar vacía',
+    
+    // Calendar Integration
+    'scheduledTime': 'Hora Programada',
+    'location': 'Ubicación',
+    'reminderBefore': 'Recordatorio Antes',
+    'minutes': 'minutos',
+    'addToGoogleCalendar': 'Agregar a Google Calendar',
+    'calendarEventCreated': 'Evento de Calendario Creado',
+    'openGoogleCalendar': 'Abrir Google Calendar',
+    'noScheduledTime': 'Sin Hora Programada',
+    'scheduleReview': 'Programar Revisión',
+    'optional': 'Opcional',
+    'selectDateTime': 'Seleccionar Fecha y Hora',
+    'enterLocation': 'Ingresar Ubicación',
+    'reminderMinutes': 'Recordatorio (minutos)',
   }
 };
 

@@ -241,7 +241,7 @@ reviews.post('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const body = await c.req.json();
-    const { title, description, team_id, time_type, template_id, answers, status, owner_type } = body;
+    const { title, description, team_id, time_type, template_id, answers, status, owner_type, scheduled_at, location, reminder_minutes } = body;
 
     if (!title) {
       return c.json({ error: 'Title is required' }, 400);
@@ -278,18 +278,21 @@ reviews.post('/', async (c) => {
       ownerType = 'private';
     }
 
-    // Create review with template_id and owner_type
+    // Create review with template_id, owner_type, and calendar fields
     const result = await c.env.DB.prepare(`
       INSERT INTO reviews (
         title, description, user_id, team_id, time_type,
-        template_id, status, owner_type
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        template_id, status, owner_type, scheduled_at, location, reminder_minutes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       title, description || null, user.id, team_id || null,
       time_type || 'daily',
       templateIdToUse,
       status || 'draft',
-      ownerType
+      ownerType,
+      scheduled_at || null,
+      location || null,
+      reminder_minutes || 60
     ).run();
 
     const reviewId = result.meta.last_row_id;
@@ -359,7 +362,7 @@ reviews.put('/:id', async (c) => {
       return c.json({ error: 'Access denied. You do not have permission to access this review.' }, 403);
     }
 
-    const { title, description, time_type, answers, status, owner_type } = body;
+    const { title, description, time_type, answers, status, owner_type, scheduled_at, location, reminder_minutes } = body;
     
     // Check if user is the creator or admin
     const isCreator = review.user_id === user.id;
@@ -367,7 +370,7 @@ reviews.put('/:id', async (c) => {
     const canModifyBasicProperties = isCreator || isAdmin;
 
     // Update basic properties if user is creator or admin
-    if (canModifyBasicProperties && (title || description || time_type || status || owner_type)) {
+    if (canModifyBasicProperties && (title || description || time_type || status || owner_type || scheduled_at !== undefined || location !== undefined || reminder_minutes !== undefined)) {
       // Validate owner_type if provided
       let validOwnerType = null;
       if (owner_type) {
@@ -383,6 +386,9 @@ reviews.put('/:id', async (c) => {
           time_type = COALESCE(?, time_type),
           status = COALESCE(?, status),
           owner_type = COALESCE(?, owner_type),
+          scheduled_at = COALESCE(?, scheduled_at),
+          location = COALESCE(?, location),
+          reminder_minutes = COALESCE(?, reminder_minutes),
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(
@@ -391,6 +397,9 @@ reviews.put('/:id', async (c) => {
         time_type || null,
         status || null,
         validOwnerType,
+        scheduled_at !== undefined ? scheduled_at : null,
+        location !== undefined ? location : null,
+        reminder_minutes !== undefined ? reminder_minutes : null,
         reviewId
       ).run();
     }
