@@ -124,22 +124,41 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://a4298365.review-system.pages.dev
+- **最新部署 ID**: https://f6409288.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.30.0 - Google日历集成完整版 + 重复创建Bug修复
+- **版本**: ✅ V5.30.1 - Google日历按钮错误提示改进
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-13
-- **部署时间**: 刚刚部署（V5.30.0 - 最新）
+- **部署时间**: 刚刚部署（V5.30.1 - 最新）
 - **数据库迁移**: ✅ Migration 0029 已应用到生产数据库
-- **新功能**: 
-  - ✅ **编辑页面显示日历字段** - 在编辑复盘时可以查看和修改计划时间、地点、提醒时间
-  - ✅ **"添加到Google日历"按钮** - 当设置了计划时间后，在编辑页面顶部显示绿色按钮
-  - ✅ **自动删除未保存草稿** - 点击"创建并编辑"后再点击Cancel/返回，会自动删除未保存的草稿
 - **Bug修复**: 
-  - ✅ 修复点击Cancel后创建重复复盘的问题
-  - ✅ 编辑页面添加完整日历字段显示和编辑功能
+  - ✅ 改进"添加到Google日历"按钮错误提示
+  - ✅ 点击按钮前验证是否设置了计划时间
+  - ✅ 显示友好错误提示："请先设置计划时间并保存"
 - **更新内容**:
+  - ✅ **V5.30.1 - Google日历按钮错误提示改进**（用户体验优化 - 2025-11-13）：
+    - **用户反馈问题**: "按'add to Google Calendar'出错'Operation failed: Failed to generate calendar link'"
+    - **问题分析**:
+      - 后端API在scheduled_at为null时返回400错误："No scheduled time set for this review"
+      - 前端错误提示不够友好，显示通用错误信息
+      - 用户可能在未保存计划时间的情况下点击按钮
+    - **解决方案**:
+      - ✅ 前端添加验证逻辑：点击按钮前检查`edit-scheduled-at`输入框是否有值
+      - ✅ 改进错误处理：捕获400状态码，显示友好提示
+      - ✅ 新增翻译键`pleaseSetScheduledTime`（4语言）：
+        - 中文：'请先设置计划时间并保存'
+        - English: 'Please set scheduled time and save first'
+        - 日本語: '予定時刻を設定して保存してください'
+        - Español: 'Por favor establezca la hora programada y guarde primero'
+    - **用户体验改进**:
+      - ✅ 点击按钮时立即验证，无需等待API响应
+      - ✅ 错误提示清晰明确，告诉用户具体操作步骤
+      - ✅ 避免显示技术性错误信息
+    - **技术实现**:
+      - 修改文件：`public/static/app.js`（addToGoogleCalendar函数）
+      - 修改文件：`public/static/i18n.js`（添加pleaseSetScheduledTime翻译）
+    - **部署URL**: https://f6409288.review-system.pages.dev
   - ✅ **V5.30.0 - Google日历集成完整版 + 重复创建Bug修复**（UI增强 + Bug修复 - 2025-11-13）：
     - **用户反馈问题1**: "我需要在哪里可以找到'添加到Google日历'按钮"
     - **用户反馈问题2**: "点击'创建和编辑'后，如果按'cancel'按钮或者回退按钮，系统会出现两个一模一样的'复盘'记录"
