@@ -173,6 +173,51 @@
       - ✅ 支持4种语言界面
       - ✅ 所有认证用户均可使用
     - **部署URL**: https://6ac3a43d.review-system.pages.dev
+  - ✅ **V5.30.5 - 修复日历数据同步和时区问题**（重要Bug修复 - 2025-11-13）：
+    - **用户反馈问题1**: "按'Add To Google Calendar'要先存一次盘，目前是修改了日期和时间后，系统传送到Google是修改前已经存在系统的数据"
+    - **问题分析1 - 数据不同步**:
+      - 用户在编辑页面修改了计划时间和地点
+      - 直接点击"添加到Google日历"按钮
+      - 前端调用 `/api/calendar/link/:reviewId` 获取链接
+      - 后端从数据库读取review数据，但用户刚才的修改尚未保存
+      - 导致Google日历收到的是**旧数据**
+    - **解决方案1 - 自动保存**:
+      - ✅ 新增 `saveEditReviewSilently()` 函数：静默保存当前表单数据
+      - ✅ 在 `addToGoogleCalendar()` 中，**先调用静默保存，再获取日历链接**
+      - ✅ 确保Google日历始终使用**最新修改的数据**
+      - ✅ 如果保存失败，提示用户并中断操作
+    - **用户反馈问题2**: "要考虑时区问题，目前有时区转换，错了"
+    - **问题分析2 - 时区错误**:
+      - 用户输入本地时间："2025-11-13T14:00"（本地14:00）
+      - 后端使用 `new Date("2025-11-13T14:00:00")` 解析（被理解为本地时间）
+      - 然后使用 `toISOString()` 转换为UTC时间："2025-11-13T06:00:00Z"
+      - Google日历收到UTC时间，在UTC+8时区显示为14:00（正确），但在其他时区会错误
+      - **双重转换问题**：本地时间 → Date对象（本地） → UTC字符串 → Google解析
+    - **解决方案2 - 使用本地时间格式**:
+      - ✅ **不使用 `new Date()` 和 `toISOString()`**，避免时区转换
+      - ✅ **直接使用字符串操作**格式化时间："2025-11-13T14:00:00" → "20251113T140000"
+      - ✅ **不添加'Z'后缀**（'Z'表示UTC，无'Z'表示本地时间）
+      - ✅ Google日历将时间解释为**用户的本地时区时间**
+    - **技术细节**:
+      - 修改文件1：`public/static/app.js`
+        - 新增 `saveEditReviewSilently()` 函数（91行）
+        - 修改 `addToGoogleCalendar()` 函数，添加自动保存逻辑
+      - 修改文件2：`src/routes/calendar.ts`
+        - 重写 `generateGoogleCalendarUrl()` 函数
+        - 移除 `new Date()` 和 `toISOString()` 调用
+        - 使用纯字符串操作和Date.UTC()计算结束时间
+        - 时间格式：`YYYYMMDDTHHmmss`（无'Z'后缀 = 本地时间）
+    - **时间格式对比**:
+      - ❌ 旧版本：`20251113T140000Z`（UTC时间，会错误转换）
+      - ✅ 新版本：`20251113T140000`（本地时间，正确显示）
+    - **验证步骤**:
+      1. 创建复盘，设置计划时间为14:00
+      2. 保存后，修改时间为15:00（不保存）
+      3. 点击"添加到Google日历"
+      4. 应该看到15:00（最新修改的时间）
+      5. 时区应该正确（不应该减8小时）
+    - **提交commit**: aacbde8
+    - **部署URL**: https://0ed8d9e9.review-system.pages.dev
   - ✅ **V5.30.2 - 修复日期格式解析问题**（关键Bug修复 - 2025-11-13）：
     - **用户反馈问题**: "点击'添加到Google日历'出现'操作失败: Failed to generate calendar link'"（500错误）
     - **问题分析**:
@@ -1634,20 +1679,20 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ## 📄 部署状态
 
 - **平台**: Cloudflare Pages
-- **生产环境**: ✅ 已发布 (https://f1447b77.review-system.pages.dev) - **V5.30.4 最新生产部署**
+- **生产环境**: ✅ 已发布 (https://0ed8d9e9.review-system.pages.dev) - **V5.30.5 最新生产部署**
 - **GitHub 仓库**: ✅ 已开源 (https://github.com/Alan16168/review-system)
 - **开发环境**: ✅ 运行中 (https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev)
 - **技术栈**: Hono + TypeScript + Cloudflare D1
 - **数据库**: ✅ review-system-production (D1) + shopping_cart表 + 日历字段
 - **Google OAuth**: ✅ 已配置并启用
 - **Google API**: ✅ 已配置（YouTube + Custom Search）
-- **Google Calendar Integration**: ✅ 已完成并部署（V5.30.4）
+- **Google Calendar Integration**: ✅ 已完成并部署（V5.30.5 - 修复数据同步和时区问题）
 - **PayPal Integration**: ✅ 升级和续费都添加到购物车，统一结算
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-13
-- **当前版本**: V5.24.0（多语言支持 - 4种语言，增强语言切换器）✅ 已发布到生产环境
+- **当前版本**: V5.30.5（Google日历集成 - 修复数据同步和时区问题）✅ 已发布到生产环境
 
 ## 📝 许可证
 
