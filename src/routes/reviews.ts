@@ -176,12 +176,16 @@ reviews.get('/:id', async (c) => {
     `).bind(lang, review.template_id).all();
 
     // Get review answers with user information (support multiple answers per question)
+    // Updated to work with new answer_sets structure
     const answersResult = await c.env.DB.prepare(`
-      SELECT ra.id, ra.question_number, ra.answer, ra.user_id, u.username, u.email, ra.created_at, ra.updated_at
+      SELECT ra.id, ra.question_number, ra.answer, 
+             ras.user_id, u.username, u.email, 
+             ra.created_at, ra.updated_at
       FROM review_answers ra
-      JOIN users u ON ra.user_id = u.id
-      WHERE ra.review_id = ?
-      ORDER BY ra.question_number ASC, ra.created_at ASC
+      JOIN review_answer_sets ras ON ra.answer_set_id = ras.id
+      JOIN users u ON ras.user_id = u.id
+      WHERE ras.review_id = ?
+      ORDER BY ra.question_number ASC, ras.set_number ASC, ra.created_at ASC
     `).bind(reviewId).all();
 
     // Group answers by question number
