@@ -9684,7 +9684,7 @@ function renderAnswerSet(reviewId) {
              <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
            </p>
          </div>` :
-        `<div onclick="showNewAnswerInput(${q.question_number})" 
+        `<div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
               class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
            <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
          </div>`;
@@ -9723,6 +9723,93 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
       </button>
     </div>
   `;
+}
+
+/**
+ * Show inline editor for empty answer in current set
+ */
+async function editEmptyAnswerInSet(reviewId, questionNumber) {
+  const answerElement = document.getElementById(`answer-display-${questionNumber}`);
+  if (!answerElement) return;
+  
+  // Replace placeholder with inline editor
+  answerElement.innerHTML = `
+    <div class="space-y-2">
+      <textarea id="inline-answer-${questionNumber}" 
+                class="w-full px-4 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                rows="3"
+                placeholder="${i18n.t('enterAnswer')}"
+                autofocus></textarea>
+      <div class="flex justify-end space-x-2">
+        <button type="button" onclick="cancelInlineAnswerEdit(${reviewId}, ${questionNumber})" 
+                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
+          ${i18n.t('cancel')}
+        </button>
+        <button type="button" onclick="saveInlineAnswer(${reviewId}, ${questionNumber})" 
+                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+          <i class="fas fa-save mr-1"></i>${i18n.t('save')}
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // Focus on textarea
+  const textarea = document.getElementById(`inline-answer-${questionNumber}`);
+  if (textarea) {
+    textarea.focus();
+  }
+}
+
+/**
+ * Cancel inline answer edit
+ */
+function cancelInlineAnswerEdit(reviewId, questionNumber) {
+  // Re-render the current answer set to restore original state
+  renderAnswerSet(reviewId);
+}
+
+/**
+ * Save inline answer to current set
+ */
+async function saveInlineAnswer(reviewId, questionNumber) {
+  const textarea = document.getElementById(`inline-answer-${questionNumber}`);
+  const answer = textarea ? textarea.value.trim() : '';
+  
+  if (!answer) {
+    showNotification(i18n.t('answerCannotBeEmpty') || '答案不能为空', 'error');
+    return;
+  }
+  
+  try {
+    const sets = window.currentAnswerSets || [];
+    const index = window.currentSetIndex || 0;
+    
+    if (sets.length === 0) {
+      showNotification('No answer set found', 'error');
+      return;
+    }
+    
+    const currentSet = sets[index];
+    const setNumber = currentSet.set_number;
+    
+    // Call API to update the answer in current set
+    const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
+      answers: {
+        [questionNumber]: answer
+      }
+    });
+    
+    if (response.data) {
+      showNotification(i18n.t('answerSaved') || '答案已保存', 'success');
+      
+      // Reload answer sets to refresh display
+      await loadAnswerSets(reviewId);
+      renderAnswerSet(reviewId);
+    }
+  } catch (error) {
+    console.error('Save inline answer error:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
 }
 
 /**
