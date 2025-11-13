@@ -124,7 +124,7 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://f6409288.review-system.pages.dev
+- **最新部署 ID**: https://205fe950.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ V5.30.1 - Google日历按钮错误提示改进
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
@@ -158,7 +158,7 @@
     - **技术实现**:
       - 修改文件：`public/static/app.js`（addToGoogleCalendar函数）
       - 修改文件：`public/static/i18n.js`（添加pleaseSetScheduledTime翻译）
-    - **部署URL**: https://f6409288.review-system.pages.dev
+    - **部署URL**: https://205fe950.review-system.pages.dev
   - ✅ **V5.30.0 - Google日历集成完整版 + 重复创建Bug修复**（UI增强 + Bug修复 - 2025-11-13）：
     - **用户反馈问题1**: "我需要在哪里可以找到'添加到Google日历'按钮"
     - **用户反馈问题2**: "点击'创建和编辑'后，如果按'cancel'按钮或者回退按钮，系统会出现两个一模一样的'复盘'记录"
