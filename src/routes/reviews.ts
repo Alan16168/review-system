@@ -664,9 +664,10 @@ reviews.post('/:id/my-answer/:questionNumber', async (c) => {
 
     // Get the created answer with timestamp
     const newAnswer: any = await c.env.DB.prepare(`
-      SELECT ra.id, ra.created_at, ra.updated_at, u.username, u.email
+      SELECT ra.id, ra.created_at, ra.updated_at, ras.user_id, u.username, u.email
       FROM review_answers ra
-      JOIN users u ON ra.user_id = u.id
+      JOIN review_answer_sets ras ON ra.answer_set_id = ras.id
+      JOIN users u ON ras.user_id = u.id
       WHERE ra.id = ?
     `).bind(answerId).first();
 
@@ -716,9 +717,12 @@ reviews.delete('/:id/answer/:answerId', async (c) => {
     }
 
     // Verify the answer belongs to this review
-    const answerCheck: any = await c.env.DB.prepare(
-      'SELECT review_id FROM review_answers WHERE id = ?'
-    ).bind(answerId).first();
+    const answerCheck: any = await c.env.DB.prepare(`
+      SELECT ras.review_id
+      FROM review_answers ra
+      JOIN review_answer_sets ras ON ra.answer_set_id = ras.id
+      WHERE ra.id = ?
+    `).bind(answerId).first();
 
     if (!answerCheck || answerCheck.review_id !== reviewId) {
       return c.json({ error: 'Answer not found in this review' }, 404);

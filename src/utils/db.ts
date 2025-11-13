@@ -170,10 +170,11 @@ export async function getReviewAnswers(
   reviewId: number
 ): Promise<ReviewAnswer[]> {
   const result = await db.prepare(`
-    SELECT ra.*, u.username, u.email
+    SELECT ra.*, ras.user_id, u.username, u.email
     FROM review_answers ra
-    JOIN users u ON ra.user_id = u.id
-    WHERE ra.review_id = ?
+    JOIN review_answer_sets ras ON ra.answer_set_id = ras.id
+    JOIN users u ON ras.user_id = u.id
+    WHERE ras.review_id = ?
     ORDER BY ra.question_number, u.username
   `).bind(reviewId).all<ReviewAnswer>();
   
@@ -190,10 +191,11 @@ export async function getMyAnswer(
   questionNumber: number
 ): Promise<ReviewAnswer | null> {
   const result = await db.prepare(`
-    SELECT ra.*, u.username, u.email
+    SELECT ra.*, ras.user_id, u.username, u.email
     FROM review_answers ra
-    JOIN users u ON ra.user_id = u.id
-    WHERE ra.review_id = ? AND ra.user_id = ? AND ra.question_number = ?
+    JOIN review_answer_sets ras ON ra.answer_set_id = ras.id
+    JOIN users u ON ras.user_id = u.id
+    WHERE ras.review_id = ? AND ras.user_id = ? AND ra.question_number = ?
   `).bind(reviewId, userId, questionNumber).first<ReviewAnswer>();
   
   return result || null;
@@ -201,7 +203,7 @@ export async function getMyAnswer(
 
 /**
  * Save user's answer for a question (always creates new answer)
- * Note: After migration 0028, multiple answers per question are allowed
+ * Note: After migration 0030, answers are linked to answer_sets
  */
 export async function saveMyAnswer(
   db: D1Database,
@@ -210,10 +212,32 @@ export async function saveMyAnswer(
   questionNumber: number,
   answer: string
 ): Promise<number> {
+  // Check if user has an answer_set for this review
+  const answerSet: any = await db.prepare(`
+    SELECT id FROM review_answer_sets
+    WHERE review_id = ? AND user_id = ?
+    ORDER BY set_number DESC
+    LIMIT 1
+  `).bind(reviewId, userId).first();
+
+  let answerSetId: number;
+
+  if (!answerSet) {
+    // Create new answer_set with set_number = 1
+    const setResult = await db.prepare(`
+      INSERT INTO review_answer_sets (review_id, user_id, set_number)
+      VALUES (?, ?, 1)
+    `).bind(reviewId, userId).run();
+    answerSetId = setResult.meta.last_row_id as number;
+  } else {
+    answerSetId = answerSet.id;
+  }
+
+  // Insert the answer linked to the answer_set
   const result = await db.prepare(`
-    INSERT INTO review_answers (review_id, user_id, question_number, answer)
-    VALUES (?, ?, ?, ?)
-  `).bind(reviewId, userId, questionNumber, answer).run();
+    INSERT INTO review_answers (answer_set_id, question_number, answer)
+    VALUES (?, ?, ?)
+  `).bind(answerSetId, questionNumber, answer).run();
   
   return result.meta.last_row_id as number;
 }
@@ -229,7 +253,10 @@ export async function deleteAnswer(
 ): Promise<void> {
   await db.prepare(`
     DELETE FROM review_answers 
-    WHERE review_id = ? AND user_id = ? AND question_number = ?
+    WHERE answer_set_id IN (
+      SELECT id FROM review_answer_sets
+      WHERE review_id = ? AND user_id = ?
+    ) AND question_number = ?
   `).bind(reviewId, userId, questionNumber).run();
 }
 
@@ -244,7 +271,9 @@ export async function deleteAnswerById(
 ): Promise<boolean> {
   const result = await db.prepare(`
     DELETE FROM review_answers 
-    WHERE id = ? AND user_id = ?
+    WHERE id = ? AND answer_set_id IN (
+      SELECT id FROM review_answer_sets WHERE user_id = ?
+    )
   `).bind(answerId, userId).run();
   
   return result.meta.changes > 0;
@@ -264,9 +293,10 @@ export async function getAnswerCompletionStatus(
       u.email,
       COUNT(ra.id) as completed_count
     FROM users u
-    LEFT JOIN review_answers ra ON u.id = ra.user_id AND ra.review_id = ?
+    LEFT JOIN review_answer_sets ras ON u.id = ras.user_id AND ras.review_id = ?
+    LEFT JOIN review_answers ra ON ras.id = ra.answer_set_id
     WHERE u.id IN (
-      SELECT DISTINCT user_id FROM review_answers WHERE review_id = ?
+      SELECT DISTINCT user_id FROM review_answer_sets WHERE review_id = ?
       UNION
       SELECT user_id FROM review_collaborators WHERE review_id = ?
       UNION
