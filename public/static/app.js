@@ -7489,6 +7489,9 @@ function showAddQuestionForm() {
   
   // Initialize options display
   renderOptionsInputs();
+  
+  // Initialize form state based on question type
+  handleQuestionTypeChange();
 }
 
 function showEditQuestionForm(questionId) {
