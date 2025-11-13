@@ -14,6 +14,7 @@ import cron from './routes/cron';
 import cart from './routes/cart';
 import invitations from './routes/invitations';
 import calendar from './routes/calendar';
+import answerSets from './routes/answer_sets';
 
 type Bindings = {
   DB: D1Database;
@@ -51,6 +52,7 @@ app.route('/api/cron', cron);
 app.route('/api/cart', cart);
 app.route('/api/invitations', invitations);
 app.route('/api/calendar', calendar);
+app.route('/api/answer-sets', answerSets);
 
 // Main page - Login/Dashboard
 app.get('/', (c) => {

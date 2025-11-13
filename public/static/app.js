@@ -3675,6 +3675,16 @@ async function showEditReview(id) {
                       <p class="mt-1 text-xs text-gray-500">
                         <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
                       </p>
+                      
+                      <!-- Answer Set Display Area (Phase 1) -->
+                      <div id="answer-display-${q.question_number}" class="mt-3 border-t pt-3">
+                        <p class="text-xs text-gray-500 mb-2">
+                          <i class="fas fa-layer-group mr-1"></i>${i18n.t('currentSetAnswer') || '当前答案组的答案：'}
+                        </p>
+                        <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
+                          <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswerSetsYet') || '还没有答案组，点击下方"创建新答案组"按钮开始'}
+                        </div>
+                      </div>
                     </div>
                   `;
                 }
@@ -3767,6 +3777,34 @@ async function showEditReview(id) {
               ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
 
+            <!-- Answer Sets Management (Phase 1) -->
+            <div class="border-t pt-6 mt-6">
+              <div class="mb-4">
+                <h3 class="text-lg font-medium text-gray-800 mb-2">
+                  <i class="fas fa-layer-group mr-2"></i>${i18n.t('answerSetsManagement') || '答案组管理'}
+                </h3>
+                <p class="text-sm text-gray-600">
+                  ${i18n.t('answerSetsDesc') || '您可以为所有问题创建多组答案，使用箭头在不同答案组之间导航'}
+                </p>
+              </div>
+              
+              <!-- Answer Set Navigation -->
+              <div id="answer-set-navigation"></div>
+              
+              <!-- Create New Answer Set Button -->
+              <button type="button" 
+                      onclick="createNewAnswerSet(${id})"
+                      class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors mb-4">
+                <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
+              </button>
+              
+              <div class="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+                <i class="fas fa-info-circle mr-1"></i>
+                <strong>${i18n.t('howToUse') || '使用方法'}:</strong> 
+                ${i18n.t('answerSetsInstructions') || '1. 点击"创建新答案组"会为所有问题创建一组新答案 2. 使用箭头按钮在不同答案组之间切换查看 3. 每个问题的答案数量将保持一致'}
+              </div>
+            </div>
+
             <!-- Actions -->
             <div class="flex justify-end space-x-4 pt-6 border-t">
               <button type="button" onclick="handleEditReviewCancel(${id})" 
@@ -3788,6 +3826,15 @@ async function showEditReview(id) {
     // Store questions and creator status in global variable for access
     window.currentEditQuestions = questions;
     window.currentEditIsCreator = isCreator;
+    
+    // Load and render answer sets (Phase 1)
+    loadAnswerSets(id).then(() => {
+      if (window.currentAnswerSets.length > 0) {
+        renderAnswerSet(id);
+      } else {
+        updateAnswerSetNavigation(id, 0, 0);
+      }
+    });
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     showReviews();
@@ -9568,5 +9615,177 @@ async function saveEditReviewSilently(reviewId) {
   } catch (error) {
     console.error('Silent save failed:', error);
     return false;
+  }
+}
+
+// ============ Answer Sets Management (Phase 1) ============
+
+// Global state for answer sets
+window.currentAnswerSets = [];
+window.currentSetIndex = 0;
+
+/**
+ * Load answer sets for a review
+ */
+async function loadAnswerSets(reviewId) {
+  try {
+    const response = await axios.get(`/api/answer-sets/${reviewId}`);
+    window.currentAnswerSets = response.data.sets || [];
+    window.currentSetIndex = window.currentAnswerSets.length > 0 ? 0 : -1;
+    return window.currentAnswerSets;
+  } catch (error) {
+    console.error('Failed to load answer sets:', error);
+    window.currentAnswerSets = [];
+    window.currentSetIndex = -1;
+    return [];
+  }
+}
+
+/**
+ * Navigate to previous answer set
+ */
+function navigateToPreviousSet(reviewId) {
+  if (window.currentSetIndex > 0) {
+    window.currentSetIndex--;
+    renderAnswerSet(reviewId);
+  }
+}
+
+/**
+ * Navigate to next answer set
+ */
+function navigateToNextSet(reviewId) {
+  if (window.currentSetIndex < window.currentAnswerSets.length - 1) {
+    window.currentSetIndex++;
+    renderAnswerSet(reviewId);
+  }
+}
+
+/**
+ * Render current answer set in the UI
+ */
+function renderAnswerSet(reviewId) {
+  const sets = window.currentAnswerSets;
+  const index = window.currentSetIndex;
+  
+  if (index < 0 || index >= sets.length) {
+    // No sets available - show empty state
+    updateAnswerSetNavigation(reviewId, 0, 0);
+    return;
+  }
+  
+  const currentSet = sets[index];
+  const questions = window.currentEditQuestions || [];
+  
+  // Update navigation display
+  updateAnswerSetNavigation(reviewId, index + 1, sets.length);
+  
+  // Update answer displays for each question
+  questions.forEach(q => {
+    const answer = currentSet.answers.find(a => a.question_number === q.question_number);
+    const answerText = answer ? answer.answer : '';
+    
+    // Update answer display element
+    const answerElement = document.getElementById(`answer-display-${q.question_number}`);
+    if (answerElement) {
+      answerElement.innerHTML = answerText ? 
+        `<div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+           <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
+           <p class="text-xs text-gray-500 mt-2">
+             <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
+           </p>
+         </div>` :
+        `<div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
+           <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswerInThisSet')}
+         </div>`;
+    }
+  });
+}
+
+/**
+ * Update answer set navigation display
+ */
+function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
+  const navElement = document.getElementById('answer-set-navigation');
+  if (!navElement) return;
+  
+  const hasPrev = currentNum > 1;
+  const hasNext = currentNum < totalNum;
+  
+  navElement.innerHTML = `
+    <div class="flex items-center justify-between p-4 bg-indigo-50 rounded-lg mb-4">
+      <button onclick="navigateToPreviousSet(${reviewId})" 
+              ${!hasPrev ? 'disabled' : ''}
+              class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>${i18n.t('previousSet') || '上一组'}
+      </button>
+      
+      <div class="text-center">
+        <p class="text-sm text-gray-600">${i18n.t('answerSet') || '答案组'}</p>
+        <p class="text-xl font-bold text-indigo-600">${currentNum} / ${totalNum}</p>
+        ${totalNum > 0 ? `<p class="text-xs text-gray-500 mt-1">${i18n.t('createdAt')}: ${window.currentAnswerSets[currentNum-1]?.created_at || ''}</p>` : ''}
+      </div>
+      
+      <button onclick="navigateToNextSet(${reviewId})" 
+              ${!hasNext ? 'disabled' : ''}
+              class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        ${i18n.t('nextSet') || '下一组'}<i class="fas fa-arrow-right ml-2"></i>
+      </button>
+    </div>
+  `;
+}
+
+/**
+ * Create a new answer set for all questions
+ */
+async function createNewAnswerSet(reviewId) {
+  try {
+    const questions = window.currentEditQuestions || [];
+    
+    // Collect answers for all questions
+    const answers = {};
+    questions.forEach(q => {
+      if (q.question_type === 'text') {
+        // Get answer from input
+        const input = document.getElementById(`new-answer-${q.question_number}`);
+        answers[q.question_number] = {
+          answer: input ? input.value : ''
+        };
+      } else if (q.question_type === 'single_choice') {
+        const selected = document.querySelector(`input[name="question${q.question_number}"]:checked`);
+        answers[q.question_number] = {
+          answer: selected ? selected.value : ''
+        };
+      } else if (q.question_type === 'multiple_choice') {
+        const checked = document.querySelectorAll(`input[name="question${q.question_number}"]:checked`);
+        const values = Array.from(checked).map(cb => cb.value);
+        answers[q.question_number] = {
+          answer: values.join(',')
+        };
+      }
+    });
+    
+    // Create new answer set
+    const response = await axios.post(`/api/answer-sets/${reviewId}`, { answers });
+    
+    if (response.data.success) {
+      showNotification(i18n.t('answerSetCreated') || '答案组已创建', 'success');
+      
+      // Reload answer sets
+      await loadAnswerSets(reviewId);
+      
+      // Navigate to the new set (last one)
+      window.currentSetIndex = window.currentAnswerSets.length - 1;
+      renderAnswerSet(reviewId);
+      
+      // Clear input fields
+      questions.forEach(q => {
+        const input = document.getElementById(`new-answer-${q.question_number}`);
+        if (input) input.value = '';
+      });
+    }
+  } catch (error) {
+    console.error('Failed to create answer set:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }

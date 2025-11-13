@@ -432,7 +432,7 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
     }
 
     // Validate question type
-    if (!['text', 'single_choice', 'multiple_choice'].includes(question_type)) {
+    if (!['text', 'single_choice', 'multiple_choice', 'time_with_text'].includes(question_type)) {
       return c.json({ error: 'Invalid question type' }, 400);
     }
 
@@ -529,7 +529,7 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
     }
 
     // Validate question type
-    if (!['text', 'single_choice', 'multiple_choice'].includes(question_type)) {
+    if (!['text', 'single_choice', 'multiple_choice', 'time_with_text'].includes(question_type)) {
       return c.json({ error: 'Invalid question type' }, 400);
     }
 
