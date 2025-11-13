@@ -3592,18 +3592,6 @@ async function showEditReview(id) {
               ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
             
-            <!-- Save/Cancel Buttons (Inside Section 1) -->
-            <div class="flex justify-end space-x-4 pt-6 border-t mt-6">
-              <button type="button" onclick="handleEditReviewCancel(${id})" 
-                      class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                ${i18n.t('cancel')}
-              </button>
-              <button type="submit" 
-                      class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
-                <i class="fas fa-save mr-2"></i>${i18n.t('save')}
-              </button>
-            </div>
-            
                 </div>
               </div>
             </div>
@@ -3814,6 +3802,17 @@ async function showEditReview(id) {
             </div>
             <!-- End of Section 3: Calendar -->
 
+            <!-- Save/Cancel Buttons (Outside all sections) -->
+            <div class="flex justify-end space-x-4 pt-6 border-t mt-6">
+              <button type="button" onclick="handleEditReviewCancel(${id})" 
+                      class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                ${i18n.t('cancel')}
+              </button>
+              <button type="submit" 
+                      class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
+                <i class="fas fa-save mr-2"></i>${i18n.t('save')}
+              </button>
+            </div>
 
           </form>
         </div>
