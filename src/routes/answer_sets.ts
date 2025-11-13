@@ -97,10 +97,21 @@ answerSets.post('/:reviewId', async (c: Context) => {
     const userId = c.get('userId');
     const body = await c.req.json();
 
-    console.log('[answer_sets POST] Starting:', { reviewId, userId, answersCount: Object.keys(body.answers || {}).length });
+    console.log('[answer_sets POST] Starting:', { 
+      reviewId, 
+      reviewIdType: typeof reviewId,
+      userId, 
+      userIdType: typeof userId,
+      answersCount: Object.keys(body.answers || {}).length 
+    });
 
     if (isNaN(reviewId)) {
       return c.json({ error: 'Invalid review ID' }, 400);
+    }
+
+    if (!userId || typeof userId !== 'number') {
+      console.error('Invalid userId:', userId, typeof userId);
+      return c.json({ error: 'Invalid user ID' }, 400);
     }
 
     // Get next set_number
@@ -119,12 +130,16 @@ answerSets.post('/:reviewId', async (c: Context) => {
     `).bind(reviewId, userId, nextSetNumber).run();
 
     // Get the inserted ID from meta.last_row_id
+    // D1 returns last_row_id which could be number or undefined
     const setId = setResult.meta.last_row_id;
 
-    if (!setId) {
+    if (!setId || typeof setId !== 'number') {
       console.error('Failed to get inserted set ID:', setResult);
+      console.error('setId type:', typeof setId, 'value:', setId);
       return c.json({ error: 'Failed to create answer set' }, 500);
     }
+
+    console.log('[answer_sets POST] Created set with ID:', setId);
 
     // Insert answers for all questions
     const answers = body.answers || {};
@@ -155,18 +170,32 @@ answerSets.post('/:reviewId', async (c: Context) => {
         datetime_answer: datetimeAnswer
       });
       
-      const query = c.env.DB.prepare(`
-        INSERT INTO review_answers 
-        (answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).bind(
+      // Double check: ensure no undefined values before binding
+      const bindParams = [
         setId,
         parsedQuestionNum,
         answerValue,
         datetimeValue,
         datetimeTitle,
         datetimeAnswer
-      );
+      ];
+      
+      // Validate all parameters
+      const hasUndefined = bindParams.some(p => p === undefined);
+      if (hasUndefined) {
+        console.error('Found undefined in bind params:', bindParams);
+        return c.json({ 
+          error: 'Internal error: undefined parameter detected',
+          details: 'One or more required parameters are undefined'
+        }, 500);
+      }
+      
+      const query = c.env.DB.prepare(`
+        INSERT INTO review_answers 
+        (answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(...bindParams);
+      
       insertPromises.push(query.run());
     }
 
