@@ -124,15 +124,14 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://859ded16.review-system.pages.dev
+- **最新部署 ID**: https://a4298365.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ V5.30.0 - Google日历集成完整版 + 重复创建Bug修复
-- **沙箱测试**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-13
-- **部署时间**: 刚刚部署（最新）
-- **数据库迁移**: ✅ Migration 0029 已应用到本地数据库
+- **部署时间**: 刚刚部署（V5.30.0 - 最新）
+- **数据库迁移**: ✅ Migration 0029 已应用到生产数据库
 - **新功能**: 
   - ✅ **编辑页面显示日历字段** - 在编辑复盘时可以查看和修改计划时间、地点、提醒时间
   - ✅ **"添加到Google日历"按钮** - 当设置了计划时间后，在编辑页面顶部显示绿色按钮
@@ -181,7 +180,7 @@
       - 场景1：创建复盘 → 填写日历字段 → 保存 → 编辑 → 看到日历字段和绿色按钮 ✅
       - 场景2：创建复盘 → 点击Cancel → 草稿自动删除，不会出现重复记录 ✅
       - 场景3：编辑已有复盘 → 修改日历字段 → 保存 → 成功更新 ✅
-    - **沙箱测试**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
+    - **部署URL**: https://a4298365.review-system.pages.dev
   - ✅ **V5.29.0 - Google日历集成（Phase 1: 链接生成）**（重大新功能 - 2025-11-13）：
     - **用户需求**: "可否链接用户自己的Google日历，把系统用户设定事件和时间、地点等信息放到用户自己的Google日历中去？"
     - **实现方案**: Phase 1 采用链接生成方式（无需OAuth授权）
