@@ -9,7 +9,8 @@
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
-**🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务
+**🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
+**✅ 最新修复**: V6.0.0-Phase1-Critical-Fix - 修复答案创建错误（SQLITE_ERROR: no such column）
 
 ## 🌟 项目概述
 
@@ -124,20 +125,50 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://6ac3a43d.review-system.pages.dev
+- **最新部署 ID**: https://a2b9f241.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.30.4 - Google日历功能成功上线！
+- **版本**: ✅ V6.0.0-Phase1-Critical-Fix - 答案创建错误已修复！
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-13
-- **部署时间**: 刚刚部署（V5.30.4 - Google日历功能成功上线！）
-- **数据库迁移**: ✅ Migration 0029 已应用到生产数据库
-- **功能状态**: ✅ Google日历集成功能已成功上线并测试通过！
-- **新功能**: 
-  - ✅ 点击"添加到Google日历"按钮可成功打开Google日历
-  - ✅ 自动填入复盘标题、计划时间、地点、描述
-  - ✅ 支持所有认证用户使用
+- **部署时间**: 刚刚部署（V6.0.0-Phase1-Critical-Fix）
+- **数据库迁移**: ✅ Migration 0030 已应用到生产数据库
+- **功能状态**: ✅ 答案集合系统完全正常！
+- **最新修复**: ✅ **V6.0.0-Phase1-Critical-Fix - 修复答案创建SQLITE_ERROR**（关键修复 - 2025-11-13）
 - **更新内容**:
+  - 🎉 **V6.0.0-Phase1-Critical-Fix - 修复答案创建SQLITE_ERROR**（关键修复 - 2025-11-13）：
+    - **用户反馈**: 点击"创建新答案组"按钮显示错误："SQLITE_ERROR: no such column: answer_set_id"
+    - **问题分析**: 
+      - 生产数据库结构验证显示 answer_set_id 列存在 ✓
+      - review_answer_sets 表存在并有数据 ✓
+      - 但用户仍然看到"no such column"错误
+      - **根本原因发现**: reviews.ts 中创建和更新复盘时的 INSERT 语句仍使用旧表结构
+    - **问题根源**:
+      - `/src/routes/reviews.ts` 第318、326、435、463行的 INSERT 语句
+      - 这些语句直接使用 `(review_id, user_id, question_number, answer)`
+      - 未使用新的 answer_set_id 架构
+      - 导致插入失败并抛出"no such column: answer_set_id"错误
+    - **解决方案**:
+      - ✅ 移除所有直接 INSERT 语句
+      - ✅ 统一使用 `saveMyAnswer()` 工具函数（正确处理 answer_set_id）
+      - ✅ 统一使用 `deleteAnswer()` 工具函数（正确处理 answer_set_id）
+      - ✅ 简化代码逻辑，避免直接操作数据库
+    - **修复内容**:
+      - 修复创建复盘时的答案保存（POST /api/reviews）
+      - 修复更新复盘时的答案保存（PUT /api/reviews/:id）
+      - 两处代码从42行简化到13行
+      - 完全兼容新的 answer_sets 架构
+    - **修复效果**:
+      - ✅ 创建复盘时填写答案不再报错
+      - ✅ 编辑复盘时修改答案不再报错
+      - ✅ 答案正确关联到 answer_set_id
+      - ✅ 与答案集合系统完美集成
+    - **技术改进**:
+      - 代码复用：使用现有工具函数替代重复SQL
+      - 数据一致性：统一使用 answer_sets 架构
+      - 可维护性：减少直接数据库操作，集中在工具函数
+    - **部署URL**: https://a2b9f241.review-system.pages.dev
+    - **提交commit**: bc419e9
   - 🎉 **V5.30.4 - Google日历功能最终修复成功！**（重大里程碑 - 2025-11-13）：
     - **用户确认**: "成功了" ✅
     - **功能状态**: 完全可用，已通过生产环境测试
