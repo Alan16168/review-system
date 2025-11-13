@@ -3438,7 +3438,7 @@ async function showEditReview(id) {
             </h1>
           </div>
 
-          <form id="edit-review-form" class="bg-white rounded-lg shadow-md p-6 space-y-6">
+          <form id="edit-review-form" class="bg-white rounded-lg shadow-md p-6 space-y-4">
             <input type="hidden" id="review-id" value="${id}">
             
             ${!isCreator ? `
@@ -3448,6 +3448,18 @@ async function showEditReview(id) {
               </p>
             </div>
             ` : ''}
+            
+            <!-- ========== Section 1: Review Header (Collapsible) ========== -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+              <button type="button" onclick="toggleSection('header-section')" 
+                      class="w-full flex justify-between items-center p-4 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                <h3 class="text-lg font-semibold text-indigo-900">
+                  <i class="fas fa-heading mr-2"></i>${i18n.t('reviewHeader') || '复盘表头'}
+                </h3>
+                <i class="fas fa-chevron-down text-indigo-600"></i>
+              </button>
+              <div id="header-section" class="hidden">
+                <div class="p-6 space-y-4 bg-white">
             
             <!-- Basic Info -->
             <div>
@@ -9693,22 +9705,128 @@ async function createNewAnswerSet(reviewId) {
   try {
     const questions = window.currentEditQuestions || [];
     
-    // Collect answers for all questions
+    if (questions.length === 0) {
+      showNotification('No questions found', 'error');
+      return;
+    }
+    
+    // Show modal to collect answers for all questions
+    const modalHtml = `
+      <div id="answer-set-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+          <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">
+              <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet') || '创建新答案组'}
+            </h3>
+            <div class="mt-2 space-y-4 max-h-96 overflow-y-auto">
+              ${questions.map(q => `
+                <div class="border-b pb-4">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    ${q.question_number}. ${escapeHtml(q.question_text)}
+                  </label>
+                  ${q.question_type === 'single_choice' && q.options ? `
+                    <div class="space-y-2">
+                      ${JSON.parse(q.options).map((opt, idx) => {
+                        const letter = String.fromCharCode(65 + idx);
+                        return `
+                          <label class="flex items-center p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                            <input type="radio" name="modal-q${q.question_number}" value="${letter}" class="mr-2">
+                            <span class="text-sm">${escapeHtml(opt)}</span>
+                          </label>
+                        `;
+                      }).join('')}
+                    </div>
+                  ` : q.question_type === 'multiple_choice' && q.options ? `
+                    <div class="space-y-2">
+                      ${JSON.parse(q.options).map((opt, idx) => {
+                        const letter = String.fromCharCode(65 + idx);
+                        return `
+                          <label class="flex items-center p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" name="modal-q${q.question_number}" value="${letter}" class="mr-2">
+                            <span class="text-sm">${escapeHtml(opt)}</span>
+                          </label>
+                        `;
+                      }).join('')}
+                    </div>
+                  ` : `
+                    <textarea id="modal-answer-${q.question_number}" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                              placeholder="${i18n.t('enterAnswer') || '输入答案...'}"></textarea>
+                  `}
+                </div>
+              `).join('')}
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+              <button type="button" onclick="closeAnswerSetModal()" 
+                      class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                ${i18n.t('cancel')}
+              </button>
+              <button type="button" onclick="submitNewAnswerSet(${reviewId})" 
+                      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                <i class="fas fa-check mr-2"></i>${i18n.t('create')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  } catch (error) {
+    console.error('Failed to show answer set modal:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + error.message, 'error');
+  }
+}
+
+function closeAnswerSetModal() {
+  const modal = document.getElementById('answer-set-modal');
+  if (modal) modal.remove();
+}
+
+// Toggle section visibility (for collapsible sections)
+function toggleSection(sectionId) {
+  const section = document.getElementById(sectionId);
+  const button = document.querySelector(`[onclick="toggleSection('${sectionId}')"]`);
+  
+  if (section && button) {
+    const isHidden = section.classList.contains('hidden');
+    
+    if (isHidden) {
+      section.classList.remove('hidden');
+      const icon = button.querySelector('i');
+      if (icon) {
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+      }
+    } else {
+      section.classList.add('hidden');
+      const icon = button.querySelector('i');
+      if (icon) {
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+      }
+    }
+  }
+}
+
+async function submitNewAnswerSet(reviewId) {
+  try {
+    const questions = window.currentEditQuestions || [];
     const answers = {};
+    
     questions.forEach(q => {
       if (q.question_type === 'text') {
-        // Get answer from input
-        const input = document.getElementById(`new-answer-${q.question_number}`);
+        const textarea = document.getElementById(`modal-answer-${q.question_number}`);
         answers[q.question_number] = {
-          answer: input ? input.value : ''
+          answer: textarea ? textarea.value.trim() : ''
         };
       } else if (q.question_type === 'single_choice') {
-        const selected = document.querySelector(`input[name="question${q.question_number}"]:checked`);
+        const selected = document.querySelector(`input[name="modal-q${q.question_number}"]:checked`);
         answers[q.question_number] = {
           answer: selected ? selected.value : ''
         };
       } else if (q.question_type === 'multiple_choice') {
-        const checked = document.querySelectorAll(`input[name="question${q.question_number}"]:checked`);
+        const checked = document.querySelectorAll(`input[name="modal-q${q.question_number}"]:checked`);
         const values = Array.from(checked).map(cb => cb.value);
         answers[q.question_number] = {
           answer: values.join(',')
@@ -9720,6 +9838,7 @@ async function createNewAnswerSet(reviewId) {
     const response = await axios.post(`/api/answer-sets/${reviewId}`, { answers });
     
     if (response.data.success) {
+      closeAnswerSetModal();
       showNotification(i18n.t('answerSetCreated') || '答案组已创建', 'success');
       
       // Reload answer sets
@@ -9728,12 +9847,6 @@ async function createNewAnswerSet(reviewId) {
       // Navigate to the new set (last one)
       window.currentSetIndex = window.currentAnswerSets.length - 1;
       renderAnswerSet(reviewId);
-      
-      // Clear input fields
-      questions.forEach(q => {
-        const input = document.getElementById(`new-answer-${q.question_number}`);
-        if (input) input.value = '';
-      });
     }
   } catch (error) {
     console.error('Failed to create answer set:', error);
