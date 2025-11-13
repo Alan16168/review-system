@@ -1634,18 +1634,19 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ## 📄 部署状态
 
 - **平台**: Cloudflare Pages
-- **生产环境**: ✅ 已发布 (https://c50cc22d.review-system.pages.dev)
+- **生产环境**: ✅ 已发布 (https://f1447b77.review-system.pages.dev) - **V5.30.4 最新生产部署**
 - **GitHub 仓库**: ✅ 已开源 (https://github.com/Alan16168/review-system)
 - **开发环境**: ✅ 运行中 (https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev)
 - **技术栈**: Hono + TypeScript + Cloudflare D1
-- **数据库**: ✅ review-system-production (D1) + shopping_cart表
+- **数据库**: ✅ review-system-production (D1) + shopping_cart表 + 日历字段
 - **Google OAuth**: ✅ 已配置并启用
 - **Google API**: ✅ 已配置（YouTube + Custom Search）
+- **Google Calendar Integration**: ✅ 已完成并部署（V5.30.4）
 - **PayPal Integration**: ✅ 升级和续费都添加到购物车，统一结算
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
-- **最后更新**: 2025-11-11
+- **最后更新**: 2025-11-13
 - **当前版本**: V5.24.0（多语言支持 - 4种语言，增强语言切换器）✅ 已发布到生产环境
 
 ## 📝 许可证
