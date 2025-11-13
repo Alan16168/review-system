@@ -223,8 +223,8 @@
     - **数据库迁移文件**:
       - `migrations/0030_add_time_type_and_answer_sets.sql` - 本地开发版本
       - `migrations/0030_add_time_type_and_answer_sets_production.sql` - 生产安全版本
-    - **提交commit**: 737fdf0
-    - **部署URL**: https://1a913847.review-system.pages.dev
+    - **提交commit**: 737fdf0 / 1c5c650
+    - **部署URL**: https://review-system.pages.dev
   - ✅ **V5.30.5 - 修复日历数据同步和时区问题**（重要Bug修复 - 2025-11-13）：
     - **用户反馈问题1**: "按'Add To Google Calendar'要先存一次盘，目前是修改了日期和时间后，系统传送到Google是修改前已经存在系统的数据"
     - **问题分析1 - 数据不同步**:
@@ -1731,7 +1731,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 ## 📄 部署状态
 
 - **平台**: Cloudflare Pages
-- **生产环境**: ✅ 已发布 (https://1a913847.review-system.pages.dev) - **V6.0.0-Phase1 最新生产部署**
+- **生产环境**: ✅ 已发布 (https://review-system.pages.dev) - **V6.0.0-Phase1 最新生产部署**
 - **GitHub 仓库**: ✅ 已开源 (https://github.com/Alan16168/review-system)
 - **开发环境**: ✅ 运行中 (https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev)
 - **技术栈**: Hono + TypeScript + Cloudflare D1
