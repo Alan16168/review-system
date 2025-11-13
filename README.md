@@ -173,6 +173,27 @@
       - ✅ 支持4种语言界面
       - ✅ 所有认证用户均可使用
     - **部署URL**: https://6ac3a43d.review-system.pages.dev
+  - ✅ **V6.0.0-Phase2-Backend - 时间型问题后端支持**（功能更新 - 2025-11-13）：
+    - **功能概述**: 后端API完整支持time_with_text类型问题
+    - **核心改动**:
+      - ✅ **templates.ts更新**:
+        - 支持接收和保存datetime_value（默认时间）、datetime_title（12字符标题）、datetime_answer_max_length字段
+        - INSERT和UPDATE语句包含时间型字段
+        - 允许在创建模板时定义时间型问题
+      - ✅ **reviews.ts更新**:
+        - 查询template_questions时返回datetime字段
+        - 查询review_answers时返回datetime_value, datetime_title, datetime_answer
+        - 前端可以接收完整的时间型问题和答案数据
+      - ✅ **answer_sets.ts兼容**:
+        - 答案集合API已支持时间型字段的存储
+        - POST/PUT操作可以保存datetime相关数据
+    - **待实施（前端）**:
+      - ⏳ 管理后台：时间型问题创建UI
+      - ⏳ 复盘编辑：时间型问题显示和编辑
+      - ⏳ Google日历：时间型问题的日历集成
+      - ⏳ 位置调整：Review级别日历按钮移到问题之前
+    - **提交commit**: f11a07c
+    - **部署URL**: https://review-system.pages.dev
   - ✅ **V6.0.0-Phase1 - 答案集合系统（阶段1）**（重大功能更新 - 2025-11-13）：
     - **功能概述**: 实现统一的答案集合管理系统，所有问题共享相同数量的答案组
     - **核心改动**:
@@ -1745,7 +1766,7 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
 - **最后更新**: 2025-11-13
-- **当前版本**: V6.0.0-Phase1（答案集合系统 - 阶段1：基础导航和统一管理）✅ 已发布到生产环境
+- **当前版本**: V6.0.0-Phase2-Backend（答案集合系统 + 时间型问题后端支持）✅ 已发布到生产环境
 
 ## 📝 许可证
 
