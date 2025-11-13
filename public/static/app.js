@@ -3785,15 +3785,13 @@ async function showEditReview(id) {
                   ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
                 </div>
                 
-                <!-- Add to Google Calendar Button (Inside calendar fields) -->
-                ${review.scheduled_at ? `
+                <!-- Add to Google Calendar Button (Inside calendar fields - Always visible) -->
                 <div class="pt-4 border-t">
                   <button type="button" onclick="addToGoogleCalendar(${id})" 
                           class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
                     <i class="fas fa-calendar-plus mr-2"></i>${i18n.t('addToGoogleCalendar')}
                   </button>
                 </div>
-                ` : ''}
               </div>
             </div>
             
@@ -9686,8 +9684,9 @@ function renderAnswerSet(reviewId) {
              <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
            </p>
          </div>` :
-        `<div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
-           <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswerInThisSet')}
+        `<div onclick="showNewAnswerInput(${q.question_number})" 
+              class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
+           <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
          </div>`;
     }
   });
