@@ -307,6 +307,7 @@ reviews.post('/', async (c) => {
 
     // Save answers if provided (with user_id)
     // Support both single answers (string) and multiple answers (array)
+    // Use saveMyAnswer utility which handles answer_set_id properly
     if (answers && typeof answers === 'object') {
       for (const [questionNumber, answer] of Object.entries(answers)) {
         // Handle array of answers (multiple text answers for same question)
@@ -314,18 +315,12 @@ reviews.post('/', async (c) => {
           for (const singleAnswer of answer) {
             const answerText = String(singleAnswer).trim();
             if (answerText) {
-              await c.env.DB.prepare(`
-                INSERT INTO review_answers (review_id, user_id, question_number, answer)
-                VALUES (?, ?, ?, ?)
-              `).bind(reviewId, user.id, parseInt(questionNumber), answerText).run();
+              await saveMyAnswer(c.env.DB, reviewId as number, user.id, parseInt(questionNumber), answerText);
             }
           }
         } else if (answer && String(answer).trim()) {
           // Handle single answer (string)
-          await c.env.DB.prepare(`
-            INSERT INTO review_answers (review_id, user_id, question_number, answer)
-            VALUES (?, ?, ?, ?)
-          `).bind(reviewId, user.id, parseInt(questionNumber), String(answer)).run();
+          await saveMyAnswer(c.env.DB, reviewId as number, user.id, parseInt(questionNumber), String(answer));
         }
       }
     }
@@ -415,6 +410,7 @@ reviews.put('/:id', async (c) => {
     // Update answers for choice-type questions and multiple text answers
     // Note: Single text-type answers in edit mode are managed through POST /my-answer/:questionNumber endpoint
     // But during creation/draft save, we support multiple text answers as arrays
+    // Use saveMyAnswer and deleteAnswer utilities which handle answer_set_id properly
     if (answers && typeof answers === 'object') {
       for (const [questionNumber, answer] of Object.entries(answers)) {
         const qNum = parseInt(questionNumber);
@@ -422,19 +418,13 @@ reviews.put('/:id', async (c) => {
         // Handle array of answers (multiple text answers for same question)
         if (Array.isArray(answer)) {
           // Delete existing answers for this question first
-          await c.env.DB.prepare(`
-            DELETE FROM review_answers 
-            WHERE review_id = ? AND user_id = ? AND question_number = ?
-          `).bind(reviewId, user.id, qNum).run();
+          await deleteAnswer(c.env.DB, parseInt(reviewId), user.id, qNum);
           
           // Insert all new answers
           for (const singleAnswer of answer) {
             const answerText = String(singleAnswer).trim();
             if (answerText) {
-              await c.env.DB.prepare(`
-                INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-              `).bind(reviewId, user.id, qNum, answerText).run();
+              await saveMyAnswer(c.env.DB, parseInt(reviewId), user.id, qNum, answerText);
             }
           }
         } else {
@@ -442,34 +432,13 @@ reviews.put('/:id', async (c) => {
           const answerText = answer ? String(answer).trim() : '';
           
           if (answerText) {
-            // For choice-type questions, update or create a single answer per user
-            // First, check if an answer already exists for this question
-            const existing: any = await c.env.DB.prepare(`
-              SELECT id FROM review_answers 
-              WHERE review_id = ? AND user_id = ? AND question_number = ?
-              LIMIT 1
-            `).bind(reviewId, user.id, qNum).first();
-            
-            if (existing) {
-              // Update existing answer
-              await c.env.DB.prepare(`
-                UPDATE review_answers 
-                SET answer = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-              `).bind(answerText, existing.id).run();
-            } else {
-              // Insert new answer
-              await c.env.DB.prepare(`
-                INSERT INTO review_answers (review_id, user_id, question_number, answer, updated_at)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-              `).bind(reviewId, user.id, qNum, answerText).run();
-            }
+            // For choice-type questions, delete and recreate the answer
+            // This is simpler than checking existence and updating
+            await deleteAnswer(c.env.DB, parseInt(reviewId), user.id, qNum);
+            await saveMyAnswer(c.env.DB, parseInt(reviewId), user.id, qNum, answerText);
           } else {
             // Delete all answers for this question if empty (for choice-type questions)
-            await c.env.DB.prepare(`
-              DELETE FROM review_answers 
-              WHERE review_id = ? AND user_id = ? AND question_number = ?
-            `).bind(reviewId, user.id, qNum).run();
+            await deleteAnswer(c.env.DB, parseInt(reviewId), user.id, qNum);
           }
         }
       }

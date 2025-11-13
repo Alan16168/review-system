@@ -88,6 +88,8 @@ answerSets.post('/:reviewId', async (c: Context) => {
     const userId = c.get('userId');
     const body = await c.req.json();
 
+    console.log('[answer_sets POST] Starting:', { reviewId, userId, answersCount: Object.keys(body.answers || {}).length });
+
     if (isNaN(reviewId)) {
       return c.json({ error: 'Invalid review ID' }, 400);
     }
