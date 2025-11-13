@@ -9743,6 +9743,28 @@ async function createNewAnswerSet(reviewId) {
       return;
     }
     
+    // Pre-collect current values from the edit page
+    const currentValues = {};
+    questions.forEach(q => {
+      if (q.question_type === 'text') {
+        // Try to get value from new answer input box (if visible)
+        const newAnswerBox = document.getElementById(`new-answer-${q.question_number}`);
+        if (newAnswerBox && newAnswerBox.value.trim()) {
+          currentValues[q.question_number] = newAnswerBox.value.trim();
+        }
+      } else if (q.question_type === 'single_choice') {
+        const selected = document.querySelector(`input[name="question${q.question_number}"]:checked`);
+        if (selected) {
+          currentValues[q.question_number] = selected.value;
+        }
+      } else if (q.question_type === 'multiple_choice') {
+        const checked = document.querySelectorAll(`input[name="question${q.question_number}"]:checked`);
+        if (checked.length > 0) {
+          currentValues[q.question_number] = Array.from(checked).map(cb => cb.value);
+        }
+      }
+    });
+
     // Show modal to collect answers for all questions
     const modalHtml = `
       <div id="answer-set-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -9751,8 +9773,13 @@ async function createNewAnswerSet(reviewId) {
             <h3 class="text-lg font-medium text-gray-900 mb-4">
               <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet') || '创建新答案组'}
             </h3>
+            <p class="text-sm text-gray-600 mb-4">
+              ${i18n.t('pleaseAnswerAllQuestions') || '请回答所有问题以创建新的答案组'}
+            </p>
             <div class="mt-2 space-y-4 max-h-96 overflow-y-auto">
-              ${questions.map(q => `
+              ${questions.map(q => {
+                const currentValue = currentValues[q.question_number];
+                return `
                 <div class="border-b pb-4">
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     ${q.question_number}. ${escapeHtml(q.question_text)}
@@ -9761,9 +9788,10 @@ async function createNewAnswerSet(reviewId) {
                     <div class="space-y-2">
                       ${JSON.parse(q.options).map((opt, idx) => {
                         const letter = String.fromCharCode(65 + idx);
+                        const isChecked = currentValue === letter ? 'checked' : '';
                         return `
                           <label class="flex items-center p-2 border rounded hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="modal-q${q.question_number}" value="${letter}" class="mr-2">
+                            <input type="radio" name="modal-q${q.question_number}" value="${letter}" ${isChecked} class="mr-2">
                             <span class="text-sm">${escapeHtml(opt)}</span>
                           </label>
                         `;
@@ -9773,9 +9801,10 @@ async function createNewAnswerSet(reviewId) {
                     <div class="space-y-2">
                       ${JSON.parse(q.options).map((opt, idx) => {
                         const letter = String.fromCharCode(65 + idx);
+                        const isChecked = currentValue && currentValue.includes(letter) ? 'checked' : '';
                         return `
                           <label class="flex items-center p-2 border rounded hover:bg-gray-50 cursor-pointer">
-                            <input type="checkbox" name="modal-q${q.question_number}" value="${letter}" class="mr-2">
+                            <input type="checkbox" name="modal-q${q.question_number}" value="${letter}" ${isChecked} class="mr-2">
                             <span class="text-sm">${escapeHtml(opt)}</span>
                           </label>
                         `;
@@ -9784,10 +9813,11 @@ async function createNewAnswerSet(reviewId) {
                   ` : `
                     <textarea id="modal-answer-${q.question_number}" rows="3"
                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                              placeholder="${i18n.t('enterAnswer') || '输入答案...'}"></textarea>
+                              placeholder="${i18n.t('enterAnswer') || '输入答案...'}">${escapeHtml(currentValue || '')}</textarea>
                   `}
                 </div>
-              `).join('')}
+              `;
+              }).join('')}
             </div>
             <div class="flex justify-end space-x-3 mt-6">
               <button type="button" onclick="closeAnswerSetModal()" 
