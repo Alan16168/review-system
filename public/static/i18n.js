@@ -49,6 +49,8 @@ const translations = {
     // Review
     'createReview': '创建复盘',
     'reviewTitle': '复盘主题',
+    'reviewHeader': '复盘表头',
+    'basicInfo': '基本信息',
     'reviewDescription': '复盘说明',
     'reviewDescriptionPlaceholder': '请简要描述本次复盘的背景、目的或注意事项...',
     'template': '模版',
@@ -747,6 +749,8 @@ const translations = {
     // Review
     'createReview': 'Create Review',
     'reviewTitle': 'Review Title',
+    'reviewHeader': 'Review Header',
+    'basicInfo': 'Basic Information',
     'reviewDescription': 'Review Description',
     'reviewDescriptionPlaceholder': 'Please briefly describe the background, purpose or notes for this review...',
     'template': 'Template',

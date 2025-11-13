@@ -3566,7 +3566,50 @@ async function showEditReview(id) {
               ` : ''}
             </div>
 
-            <!-- Answer Sets Management (Phase 1) - Moved before questions -->
+            <!-- Status -->
+            <div class="border-t pt-4 mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('status')}
+              </label>
+              <div class="flex space-x-4">
+                <label class="flex items-center ${!isCreator ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
+                  <input type="radio" name="status" value="draft" ${review.status === 'draft' ? 'checked' : ''}
+                         ${!isCreator ? 'disabled' : ''}
+                         class="mr-2 text-indigo-600 focus:ring-indigo-500">
+                  <span class="text-sm text-gray-700">
+                    <i class="fas fa-clock text-yellow-600 mr-1"></i>${i18n.t('draft')}
+                  </span>
+                </label>
+                <label class="flex items-center ${!isCreator ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
+                  <input type="radio" name="status" value="completed" ${review.status === 'completed' ? 'checked' : ''}
+                         ${!isCreator ? 'disabled' : ''}
+                         class="mr-2 text-indigo-600 focus:ring-indigo-500">
+                  <span class="text-sm text-gray-700">
+                    <i class="fas fa-check-circle text-green-600 mr-1"></i>${i18n.t('completed')}
+                  </span>
+                </label>
+              </div>
+              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
+            </div>
+            
+                </div>
+              </div>
+            </div>
+            <!-- End of Section 1: Header -->
+
+            <!-- ========== Section 2: Answer Sets & Questions (Collapsible) ========== -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+              <button type="button" onclick="toggleSection('answers-section')" 
+                      class="w-full flex justify-between items-center p-4 bg-green-50 hover:bg-green-100 transition-colors">
+                <h3 class="text-lg font-semibold text-green-900">
+                  <i class="fas fa-layer-group mr-2"></i>${i18n.t('answerSetsManagement') || '答案组管理'}
+                </h3>
+                <i class="fas fa-chevron-down text-green-600"></i>
+              </button>
+              <div id="answers-section" class="hidden">
+                <div class="p-6 space-y-4 bg-white">
+
+            <!-- Answer Sets Management (Phase 1) -->
             <div class="border-t pt-6 mb-6">
               <div class="mb-4">
                 <h3 class="text-lg font-medium text-gray-800 mb-2">
@@ -3681,14 +3724,25 @@ async function showEditReview(id) {
                 }
               }).join('') : '<p class="text-gray-500 text-center py-4">' + (i18n.t('noQuestions') || '暂无问题') + '</p>'}
             </div>
+            
+                </div>
+              </div>
+            </div>
+            <!-- End of Section 2: Answers -->
+
+            <!-- ========== Section 3: Google Calendar Integration (Collapsible) ========== -->
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+              <button type="button" onclick="toggleSection('calendar-section')" 
+                      class="w-full flex justify-between items-center p-4 bg-blue-50 hover:bg-blue-100 transition-colors">
+                <h3 class="text-lg font-semibold text-blue-900">
+                  <i class="fas fa-calendar-plus mr-2"></i>${i18n.t('scheduleReview')} (${i18n.t('optional')})
+                </h3>
+                <i class="fas fa-chevron-down text-blue-600"></i>
+              </button>
+              <div id="calendar-section" class="hidden">
+                <div class="p-6 space-y-4 bg-white">
 
             <!-- Calendar Integration Fields -->
-            <div class="border-t pt-6">
-              <div class="mb-4 flex items-center justify-between">
-                <div class="flex items-center">
-                  <i class="fas fa-calendar-plus text-indigo-600 mr-2"></i>
-                  <h3 class="text-lg font-medium text-gray-800">${i18n.t('scheduleReview')} (${i18n.t('optional')})</h3>
-                </div>
                 ${review.scheduled_at ? `
                 <button type="button" onclick="addToGoogleCalendar(${id})" 
                         class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
@@ -3741,34 +3795,13 @@ async function showEditReview(id) {
                 </div>
               </div>
             </div>
-
-            <!-- Status -->
-            <div class="border-t pt-6">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('status')}
-              </label>
-              <div class="flex space-x-4">
-                <label class="flex items-center ${!isCreator ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
-                  <input type="radio" name="status" value="draft" ${review.status === 'draft' ? 'checked' : ''}
-                         ${!isCreator ? 'disabled' : ''}
-                         class="mr-2 text-indigo-600 focus:ring-indigo-500">
-                  <span class="text-sm text-gray-700">
-                    <i class="fas fa-clock text-yellow-600 mr-1"></i>${i18n.t('draft')}
-                  </span>
-                </label>
-                <label class="flex items-center ${!isCreator ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
-                  <input type="radio" name="status" value="completed" ${review.status === 'completed' ? 'checked' : ''}
-                         ${!isCreator ? 'disabled' : ''}
-                         class="mr-2 text-indigo-600 focus:ring-indigo-500">
-                  <span class="text-sm text-gray-700">
-                    <i class="fas fa-check-circle text-green-600 mr-1"></i>${i18n.t('completed')}
-                  </span>
-                </label>
+            
+                </div>
               </div>
-              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
+            <!-- End of Section 3: Calendar -->
 
-            <!-- Actions -->
+            <!-- Actions (Outside all collapsible sections) -->
             <div class="flex justify-end space-x-4 pt-6 border-t">
               <button type="button" onclick="handleEditReviewCancel(${id})" 
                       class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
