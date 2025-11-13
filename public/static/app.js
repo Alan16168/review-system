@@ -3554,6 +3554,34 @@ async function showEditReview(id) {
               ` : ''}
             </div>
 
+            <!-- Answer Sets Management (Phase 1) - Moved before questions -->
+            <div class="border-t pt-6 mb-6">
+              <div class="mb-4">
+                <h3 class="text-lg font-medium text-gray-800 mb-2">
+                  <i class="fas fa-layer-group mr-2"></i>${i18n.t('answerSetsManagement') || '答案组管理'}
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                  ${i18n.t('answerSetsDesc') || '您可以为所有问题创建多组答案，使用箭头在不同答案组之间导航'}
+                </p>
+              </div>
+              
+              <!-- Answer Set Navigation -->
+              <div id="answer-set-navigation" class="mb-4"></div>
+              
+              <!-- Create New Answer Set Button -->
+              <button type="button" 
+                      onclick="createNewAnswerSet(${id})"
+                      class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors mb-4">
+                <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
+              </button>
+              
+              <div class="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+                <i class="fas fa-info-circle mr-1"></i>
+                <strong>${i18n.t('howToUse') || '使用方法'}:</strong> 
+                ${i18n.t('answerSetsInstructions') || '1. 点击"创建新答案组"会为所有问题创建一组新答案 2. 使用箭头按钮在不同答案组之间切换查看 3. 每个问题的答案数量将保持一致'}
+              </div>
+            </div>
+
             <!-- Dynamic Questions -->
             <div class="border-t pt-6">
               <h2 class="text-xl font-bold text-gray-800 mb-4">
@@ -3630,57 +3658,8 @@ async function showEditReview(id) {
                         ${q.question_text_en ? `<span class="text-xs text-gray-500 block mt-1">${escapeHtml(q.question_text_en)}</span>` : ''}
                       </label>
                       
-                      <!-- Existing answers -->
-                      <div id="answers-container-${q.question_number}" class="space-y-3 mb-3">
-                        ${myAnswersList.length > 0 ? myAnswersList.map(ans => `
-                          <div class="answer-item relative border border-gray-300 rounded-lg p-3 bg-white" data-answer-id="${ans.id}">
-                            <div class="flex justify-between items-start mb-2">
-                              <span class="text-xs text-gray-500">
-                                <i class="fas fa-clock mr-1"></i>${i18n.t('answerCreatedAt')}: ${formatDate(ans.created_at)}
-                              </span>
-                              <button type="button" 
-                                      onclick="deleteExistingAnswer(${id}, ${ans.id}, ${q.question_number})"
-                                      class="text-red-600 hover:text-red-800 text-sm">
-                                <i class="fas fa-trash-alt mr-1"></i>${i18n.t('delete')}
-                              </button>
-                            </div>
-                            <div class="text-sm text-gray-800 whitespace-pre-wrap">${escapeHtml(ans.answer)}</div>
-                          </div>
-                        `).join('') : `
-                          <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
-                            <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswersYet')}
-                          </div>
-                        `}
-                      </div>
-                      
-                      <!-- Add new answer section -->
-                      <div id="new-answer-section-${q.question_number}" class="hidden space-y-2">
-                        <textarea id="new-answer-${q.question_number}" rows="3"
-                                  class="w-full px-4 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y bg-indigo-50"
-                                  placeholder="${i18n.t('enterNewAnswer')}"
-                                  onblur="autoSaveNewAnswer(${id}, ${q.question_number})"></textarea>
-                        <p class="text-xs text-gray-500">
-                          <i class="fas fa-info-circle mr-1"></i>${i18n.t('autoSaveOnBlur') || '输入完成后点击其他地方自动保存'}
-                        </p>
-                      </div>
-                      
-                      <!-- Add answer button -->
-                      <button type="button" 
-                              id="add-answer-btn-${q.question_number}"
-                              onclick="showNewAnswerInput(${q.question_number})"
-                              class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
-                        <i class="fas fa-plus-circle mr-2"></i>${i18n.t('addNewAnswer')}
-                      </button>
-                      
-                      <p class="mt-1 text-xs text-gray-500">
-                        <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
-                      </p>
-                      
                       <!-- Answer Set Display Area (Phase 1) -->
-                      <div id="answer-display-${q.question_number}" class="mt-3 border-t pt-3">
-                        <p class="text-xs text-gray-500 mb-2">
-                          <i class="fas fa-layer-group mr-1"></i>${i18n.t('currentSetAnswer') || '当前答案组的答案：'}
-                        </p>
+                      <div id="answer-display-${q.question_number}" class="mt-3">
                         <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
                           <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswerSetsYet') || '还没有答案组，点击下方"创建新答案组"按钮开始'}
                         </div>
@@ -3775,34 +3754,6 @@ async function showEditReview(id) {
                 </label>
               </div>
               ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
-            </div>
-
-            <!-- Answer Sets Management (Phase 1) -->
-            <div class="border-t pt-6 mt-6">
-              <div class="mb-4">
-                <h3 class="text-lg font-medium text-gray-800 mb-2">
-                  <i class="fas fa-layer-group mr-2"></i>${i18n.t('answerSetsManagement') || '答案组管理'}
-                </h3>
-                <p class="text-sm text-gray-600">
-                  ${i18n.t('answerSetsDesc') || '您可以为所有问题创建多组答案，使用箭头在不同答案组之间导航'}
-                </p>
-              </div>
-              
-              <!-- Answer Set Navigation -->
-              <div id="answer-set-navigation"></div>
-              
-              <!-- Create New Answer Set Button -->
-              <button type="button" 
-                      onclick="createNewAnswerSet(${id})"
-                      class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors mb-4">
-                <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
-              </button>
-              
-              <div class="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
-                <i class="fas fa-info-circle mr-1"></i>
-                <strong>${i18n.t('howToUse') || '使用方法'}:</strong> 
-                ${i18n.t('answerSetsInstructions') || '1. 点击"创建新答案组"会为所有问题创建一组新答案 2. 使用箭头按钮在不同答案组之间切换查看 3. 每个问题的答案数量将保持一致'}
-              </div>
             </div>
 
             <!-- Actions -->
