@@ -149,23 +149,45 @@ function generateGoogleCalendarUrl(params: {
       normalizedTime = normalizedTime + ':00';
     }
     
-    // Parse scheduled_at
-    const startDate = new Date(normalizedTime);
-    
-    // Validate date
-    if (isNaN(startDate.getTime())) {
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
+    if (!dateRegex.test(normalizedTime)) {
       throw new Error(`Invalid date format: ${params.startTime} (normalized: ${normalizedTime})`);
     }
     
-    // Default duration: 1 hour
-    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    // CRITICAL: DO NOT use new Date() to avoid timezone conversion
+    // User input is local time, we need to keep it as-is for Google Calendar
+    // Google Calendar will interpret the time in user's local timezone
     
-    // Format dates to Google Calendar format: YYYYMMDDTHHmmssZ
-    const formatDateForGoogle = (date: Date): string => {
-      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    // Format: YYYYMMDDTHHmmss (WITHOUT 'Z' suffix - this means local time)
+    const formatLocalTimeForGoogle = (dateTimeStr: string): string => {
+      // Input: "YYYY-MM-DDTHH:mm:ss"
+      // Output: "YYYYMMDDTHHmmss"
+      return dateTimeStr.replace(/[-:]/g, '').replace('T', 'T');
     };
     
-    const dates = `${formatDateForGoogle(startDate)}/${formatDateForGoogle(endDate)}`;
+    const startTimeFormatted = formatLocalTimeForGoogle(normalizedTime);
+    
+    // Calculate end time (1 hour later)
+    // Parse the time components
+    const year = parseInt(normalizedTime.substring(0, 4));
+    const month = parseInt(normalizedTime.substring(5, 7));
+    const day = parseInt(normalizedTime.substring(8, 10));
+    const hour = parseInt(normalizedTime.substring(11, 13));
+    const minute = parseInt(normalizedTime.substring(14, 16));
+    const second = parseInt(normalizedTime.substring(17, 19));
+    
+    // Create date object in UTC to avoid timezone issues during calculation
+    const startDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    
+    // Format end time back to local format
+    const pad = (num: number) => String(num).padStart(2, '0');
+    const endTimeFormatted = 
+      `${endDate.getUTCFullYear()}${pad(endDate.getUTCMonth() + 1)}${pad(endDate.getUTCDate())}` +
+      `T${pad(endDate.getUTCHours())}${pad(endDate.getUTCMinutes())}${pad(endDate.getUTCSeconds())}`;
+    
+    const dates = `${startTimeFormatted}/${endTimeFormatted}`;
     
     // Build URL parameters
     const urlParams = new URLSearchParams({

@@ -9481,11 +9481,18 @@ async function addToGoogleCalendar(reviewId) {
       return;
     }
     
-    // Get calendar link from backend
+    // STEP 1: Save current form data first to ensure data is up-to-date
+    const saveResult = await saveEditReviewSilently(reviewId);
+    if (!saveResult) {
+      showNotification(i18n.t('saveFailed') || '保存失败，请重试', 'error');
+      return;
+    }
+    
+    // STEP 2: Get calendar link from backend (with updated data)
     const response = await axios.get(`/api/calendar/link/${reviewId}`);
     const calendarUrl = response.data.url;
     
-    // Open Google Calendar in new tab
+    // STEP 3: Open Google Calendar in new tab
     window.open(calendarUrl, '_blank');
     
     showNotification(i18n.t('openGoogleCalendar'), 'success');
@@ -9499,5 +9506,67 @@ async function addToGoogleCalendar(reviewId) {
     } else {
       showNotification(i18n.t('operationFailed') + ': ' + errorMsg, 'error');
     }
+  }
+}
+
+// Helper function to save review without showing notification
+async function saveEditReviewSilently(reviewId) {
+  try {
+    const isCreator = window.currentEditIsCreator;
+    
+    // Collect answers for choice-type questions
+    const answers = {};
+    const questions = window.currentEditQuestions || [];
+    if (questions.length > 0) {
+      questions.forEach(q => {
+        if (q.question_type === 'single_choice') {
+          const selected = document.querySelector(`input[name="question${q.question_number}"]:checked`);
+          if (selected) {
+            answers[q.question_number] = selected.value;
+          }
+        } else if (q.question_type === 'multiple_choice') {
+          const checked = document.querySelectorAll(`input[name="question${q.question_number}"]:checked`);
+          if (checked.length > 0) {
+            const selectedValues = Array.from(checked).map(cb => cb.value);
+            answers[q.question_number] = selectedValues.join(',');
+          }
+        }
+      });
+    }
+    
+    // Build data object
+    let data;
+    if (isCreator) {
+      const title = document.getElementById('review-title').value;
+      const description = document.getElementById('review-description').value;
+      const timeType = document.getElementById('review-time-type').value;
+      const ownerType = document.getElementById('review-owner-type').value;
+      const status = document.querySelector('input[name="status"]:checked').value;
+      
+      // Get calendar fields
+      const scheduledAt = document.getElementById('edit-scheduled-at').value || null;
+      const location = document.getElementById('edit-location').value || null;
+      const reminderMinutes = parseInt(document.getElementById('edit-reminder-minutes').value) || 60;
+      
+      data = {
+        title,
+        description: description || null,
+        time_type: timeType,
+        owner_type: ownerType,
+        status,
+        scheduled_at: scheduledAt,
+        location: location,
+        reminder_minutes: reminderMinutes,
+        answers
+      };
+    } else {
+      data = { answers };
+    }
+    
+    await axios.put(`/api/reviews/${reviewId}`, data);
+    return true;
+  } catch (error) {
+    console.error('Silent save failed:', error);
+    return false;
   }
 }
