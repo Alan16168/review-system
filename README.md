@@ -124,15 +124,16 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://64881902.review-system.pages.dev
+- **最新部署 ID**: https://859ded16.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V5.29.0 - Google日历集成（Phase 1）
+- **版本**: ✅ V5.29.0 - Google日历集成（Phase 1）+ Bug修复
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-13
 - **部署时间**: 刚刚部署（最新）
 - **数据库迁移**: ✅ Migration 0029 已应用到本地数据库
 - **新功能**: ✅ Google日历集成 - 用户可以将复盘计划添加到Google日历
+- **Bug修复**: ✅ 添加缺失的"day"翻译键，修复创建复盘错误
 - **更新内容**:
   - ✅ **V5.29.0 - Google日历集成（Phase 1: 链接生成）**（重大新功能 - 2025-11-13）：
     - **用户需求**: "可否链接用户自己的Google日历，把系统用户设定事件和时间、地点等信息放到用户自己的Google日历中去？"
