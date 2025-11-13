@@ -19,7 +19,8 @@ answerSets.use('/*', authMiddleware);
 answerSets.get('/:reviewId', async (c: Context) => {
   try {
     const reviewId = parseInt(c.req.param('reviewId'));
-    const userId = c.get('userId');
+    const user = c.get('user') as any;
+    const userId = user?.id;
 
     if (isNaN(reviewId)) {
       return c.json({ error: 'Invalid review ID' }, 400);
@@ -94,7 +95,8 @@ answerSets.get('/:reviewId', async (c: Context) => {
 answerSets.post('/:reviewId', async (c: Context) => {
   try {
     const reviewId = parseInt(c.req.param('reviewId'));
-    const userId = c.get('userId');
+    const user = c.get('user') as any; // UserPayload from auth middleware
+    const userId = user?.id;
     const body = await c.req.json();
 
     console.log('[answer_sets POST] Starting:', { 
@@ -230,7 +232,8 @@ answerSets.put('/:reviewId/:setNumber', async (c: Context) => {
   try {
     const reviewId = parseInt(c.req.param('reviewId'));
     const setNumber = parseInt(c.req.param('setNumber'));
-    const userId = c.get('userId');
+    const user = c.get('user') as any;
+    const userId = user?.id;
     const body = await c.req.json();
 
     if (isNaN(reviewId) || isNaN(setNumber)) {
@@ -302,7 +305,8 @@ answerSets.delete('/:reviewId/:setNumber', async (c: Context) => {
   try {
     const reviewId = parseInt(c.req.param('reviewId'));
     const setNumber = parseInt(c.req.param('setNumber'));
-    const userId = c.get('userId');
+    const user = c.get('user') as any;
+    const userId = user?.id;
 
     if (isNaN(reviewId) || isNaN(setNumber)) {
       return c.json({ error: 'Invalid parameters' }, 400);
