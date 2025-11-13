@@ -9474,6 +9474,13 @@ async function addToGoogleCalendar(reviewId) {
   try {
     console.log('Adding review to Google Calendar:', reviewId);
     
+    // Check if scheduled_at is set in the form
+    const scheduledAtInput = document.getElementById('edit-scheduled-at');
+    if (scheduledAtInput && !scheduledAtInput.value) {
+      showNotification(i18n.t('pleaseSetScheduledTime') || '请先设置计划时间并保存', 'error');
+      return;
+    }
+    
     // Get calendar link from backend
     const response = await axios.get(`/api/calendar/link/${reviewId}`);
     const calendarUrl = response.data.url;
@@ -9485,6 +9492,12 @@ async function addToGoogleCalendar(reviewId) {
   } catch (error) {
     console.error('Failed to add to Google Calendar:', error);
     const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message;
-    showNotification(i18n.t('operationFailed') + ': ' + errorMsg, 'error');
+    
+    // More user-friendly error message
+    if (error.response?.status === 400) {
+      showNotification(i18n.t('pleaseSetScheduledTime') || '请先设置计划时间并保存', 'error');
+    } else {
+      showNotification(i18n.t('operationFailed') + ': ' + errorMsg, 'error');
+    }
   }
 }

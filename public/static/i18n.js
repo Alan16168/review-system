@@ -683,6 +683,7 @@ const translations = {
     'enterLocation': '输入地点',
     'reminderMinutes': '提醒时间（分钟）',
     'draftDeleted': '草稿已删除',
+    'pleaseSetScheduledTime': '请先设置计划时间并保存',
   },
   en: {
     // Auth
@@ -1360,6 +1361,7 @@ const translations = {
     'enterLocation': 'Enter Location',
     'reminderMinutes': 'Reminder (minutes)',
     'draftDeleted': 'Draft deleted',
+    'pleaseSetScheduledTime': 'Please set scheduled time and save first',
   },
   ja: {
     // Auth
@@ -2037,6 +2039,7 @@ const translations = {
     'enterLocation': '場所を入力',
     'reminderMinutes': 'リマインダー（分）',
     'draftDeleted': '下書きが削除されました',
+    'pleaseSetScheduledTime': '予定時刻を設定して保存してください',
   },
   es: {
     // Auth
@@ -2714,6 +2717,7 @@ const translations = {
     'enterLocation': 'Ingresar Ubicación',
     'reminderMinutes': 'Recordatorio (minutos)',
     'draftDeleted': 'Borrador eliminado',
+    'pleaseSetScheduledTime': 'Por favor establezca la hora programada y guarde primero',
   }
 };
 
