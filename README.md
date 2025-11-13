@@ -125,17 +125,45 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://e630e1b9.review-system.pages.dev
+- **最新部署 ID**: https://895e8e56.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V6.0.1-UI-Fix - 按钮位置优化完成！
+- **版本**: ✅ V6.0.0-Phase2.1 - 时间型问题管理后台完成！
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-13
-- **部署时间**: 刚刚部署（V6.0.1-UI-Fix - 按钮位置最终优化）
+- **部署时间**: 刚刚部署（V6.0.0-Phase2.1 - 管理后台时间型问题支持）
 - **数据库迁移**: ✅ Migration 0030 已应用到生产数据库
-- **功能状态**: ✅ 答案集合系统 + Modal预填充 + 按钮位置完全优化！
-- **最新更新**: ✅ **V6.0.1-UI-Fix - 按钮位置最终优化**（用户体验改进 - 2025-11-13）
+- **功能状态**: ✅ 答案集合系统 + 时间型问题管理后台完成！
+- **最新更新**: ✅ **V6.0.0-Phase2.1 - 时间型问题管理后台**（新功能 - 2025-11-13）
 - **更新内容**:
+  - 🎉 **V6.0.0-Phase2.1 - 时间型问题管理后台**（新功能 - 2025-11-13）：
+    - **功能概述**: 管理后台完整支持创建和编辑 time_with_text 类型问题
+    - **核心实现**:
+      - ✅ **问题类型选择器**: 新增第4个选项"时间+文字型"
+      - ✅ **时间型配置UI**: 包含3个字段：
+        - 默认时间（datetime-local，可选）
+        - 时间标题（text，必填，最多12字符）
+        - 答案最大长度（number，50-500，默认200）
+      - ✅ **动态显示逻辑**: 选择时间型后显示专用配置区域
+      - ✅ **数据验证**: 
+        - 时间标题必填且不超过12字符
+        - 答案长度范围50-500
+      - ✅ **国际化支持**: 新增9个翻译键 × 4语言 = 36个翻译
+    - **技术实现**:
+      - 修改 `handleQuestionTypeChange()` 函数支持时间型
+      - 修改 `collectQuestionFormData()` 收集和验证时间型数据
+      - 数据结构：`{datetime_value, datetime_title, datetime_answer_max_length}`
+    - **翻译键**:
+      - questionTypeTimeWithText: '时间+文字型' / 'Time + Text'
+      - timeTypeDescription: 描述时间型问题的组成
+      - defaultDatetime/datetimeTitle/answerMaxLength 及各自的提示文字
+      - isRequired/maxLength: 验证消息翻译
+    - **待完成（Phase 2.2-2.4）**:
+      - ⏳ 编辑页面UI：显示和编辑时间型问题
+      - ⏳ 答案集合集成：保存时间型答案
+      - ⏳ Google日历：提取时间值并创建多个事件
+    - **部署URL**: https://895e8e56.review-system.pages.dev
+    - **提交commit**: f12d480
   - 🎉 **V6.0.1-UI-Refinements - UI布局优化**（用户体验改进 - 2025-11-13）：
     - **用户反馈**: 编辑复盘页面UI布局需要优化
     - **核心改进**:
