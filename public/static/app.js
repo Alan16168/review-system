@@ -3128,7 +3128,7 @@ async function showReviewDetail(id, readOnly = false) {
                         // For choice questions, show selected options with highlighting
                         if (q.options) {
                           const options = JSON.parse(q.options);
-                          const selectedLetters = ans.answer.split(',').map(a => a.trim());
+                          const selectedLetters = ans.answer ? ans.answer.split(',').map(a => a.trim()) : [];
                           const correctLetters = q.correct_answer ? q.correct_answer.split(',').map(a => a.trim()) : [];
                           
                           answerDisplay = `
@@ -3724,7 +3724,7 @@ async function showEditReview(id) {
                 } else if (q.question_type === 'multiple_choice' && q.options) {
                   const options = JSON.parse(q.options);
                   const myAnswer = myAnswers[q.question_number] || '';
-                  const selectedLetters = myAnswer.split(',').map(a => a.trim());
+                  const selectedLetters = myAnswer ? myAnswer.split(',').map(a => a.trim()) : [];
                   return `
                     <div class="mb-6">
                       <label class="block text-sm font-medium text-gray-700 mb-3">
