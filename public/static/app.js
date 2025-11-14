@@ -10138,6 +10138,20 @@ function renderAnswerSet(reviewId) {
         ` : ''}
       `;
     } else if (q.question_type === 'time_with_text') {
+      // Update the time input field value
+      const timeInput = document.getElementById(`time-input-${q.question_number}`);
+      if (timeInput && answer && answer.datetime_value) {
+        try {
+          // Convert datetime_value to datetime-local format (YYYY-MM-DDTHH:mm)
+          const datetimeValue = new Date(answer.datetime_value).toISOString().slice(0, 16);
+          timeInput.value = datetimeValue;
+        } catch (e) {
+          console.error('Error setting time input value:', e);
+        }
+      } else if (timeInput) {
+        timeInput.value = '';
+      }
+      
       // Render time with text type - no "answer" label, just show the answer
       answerElement.innerHTML = `
         <div class="space-y-3">
