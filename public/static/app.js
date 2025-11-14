@@ -3962,7 +3962,7 @@ async function showEditReview(id) {
               </button>
               <button type="submit" 
                       class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
-                <i class="fas fa-save mr-2"></i>${i18n.t('save')}
+                <i class="fas fa-save mr-2"></i>${i18n.t('saveAndExit')}
               </button>
             </div>
 
