@@ -366,6 +366,8 @@ reviews.put('/:id', async (c) => {
       return c.json({ error: 'Access denied. You do not have permission to access this review.' }, 403);
     }
 
+    // IMPORTANT: Extract fields but NEVER allow template_id to be modified
+    // template_id should only be set during review creation and cannot be changed afterwards
     const { title, description, time_type, answers, status, owner_type, scheduled_at, location, reminder_minutes } = body;
     
     // Check if user is the creator or admin

@@ -4214,6 +4214,9 @@ async function handleEditReview(e) {
     const location = document.getElementById('edit-location').value || null;
     const reminderMinutes = parseInt(document.getElementById('edit-reminder-minutes').value) || 60;
     
+    // IMPORTANT: We do NOT include template_id in the update request
+    // template_id should only be set during review creation and cannot be changed afterwards
+    // This prevents accidental template changes that would lose time-type questions or other template-specific data
     data = {
       title,
       description: description || null,
