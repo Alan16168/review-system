@@ -7605,7 +7605,7 @@ function showEditQuestionForm(questionId) {
             </div>
             
             <!-- Choice Options (for choice types only) -->
-            <div id="options-container" class="${question.question_type === 'text' ? 'hidden' : ''}">
+            <div id="options-container" class="${question.question_type === 'single_choice' || question.question_type === 'multiple_choice' ? '' : 'hidden'}">
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('choiceOptions')} *
               </label>
@@ -7619,7 +7619,7 @@ function showEditQuestionForm(questionId) {
             </div>
             
             <!-- Correct Answer (for choice types only) -->
-            <div id="correct-answer-container" class="${question.question_type === 'text' ? 'hidden' : ''}">
+            <div id="correct-answer-container" class="${question.question_type === 'single_choice' || question.question_type === 'multiple_choice' ? '' : 'hidden'}">
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('correctAnswer')} *
                 <span class="text-xs text-gray-500">(${i18n.t('correctAnswerHint')})</span>
@@ -7669,6 +7669,9 @@ function showEditQuestionForm(questionId) {
       }
     }, 100);
   }
+  
+  // Initialize form state based on question type
+  handleQuestionTypeChange();
 }
 
 // Handle question type change
