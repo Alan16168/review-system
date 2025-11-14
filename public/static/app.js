@@ -10339,7 +10339,7 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     });
     
     if (response.data) {
-      showNotification(i18n.t('answerSaved') || '答案已保存', 'success');
+      showNotification(i18n.t('choiceSaved') || '选项已自动保存', 'success');
       
       // Reload answer sets to refresh display, keep current index
       await loadAnswerSets(reviewId, true);
@@ -10347,7 +10347,7 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     }
   } catch (error) {
     console.error('Update answer error:', error);
-    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    showNotification(i18n.t('autoSaveFailed') || '自动保存失败', 'error');
   }
 }
 
