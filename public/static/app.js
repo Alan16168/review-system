@@ -2585,12 +2585,12 @@ async function handleStep2Submit(e) {
     if (currentDraftId) {
       // Update existing draft instead of creating new one
       await axios.put(`/api/reviews/${currentDraftId}`, data);
-      showNotification(i18n.t('updateSuccess'), 'success');
+      showNotification(i18n.t('reviewSavedSuccessfully') || '复盘保存成功！', 'success');
     } else {
       // Create new review
       const response = await axios.post('/api/reviews', data);
       // Don't set currentDraftId here - we're completing the review, not drafting
-      showNotification(i18n.t('createSuccess'), 'success');
+      showNotification(i18n.t('reviewCreatedSuccessfully') || '复盘创建成功！', 'success');
     }
     
     // CRITICAL: Clear draft ID and change view BEFORE returning to reviews
@@ -2598,8 +2598,11 @@ async function handleStep2Submit(e) {
     currentDraftId = null;
     currentView = 'completing-review'; // Temporary state to prevent auto-save
     
-    showReviews(); // Return to My Reviews list
-    window.scrollTo(0, 0); // Scroll to top
+    // Return to My Reviews list after a short delay to show notification
+    setTimeout(() => {
+      showReviews();
+      window.scrollTo(0, 0);
+    }, 500);
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   } finally {
