@@ -9916,40 +9916,43 @@ async function autoSaveTimeValue(reviewId, questionNumber) {
       return; // Don't save if time is empty
     }
     
-    // Get current review data
-    const response = await axios.get(`/api/reviews/${reviewId}`);
-    const review = response.data;
+    // Get current answer sets
+    let sets = window.currentAnswerSets || [];
+    let index = window.currentSetIndex || 0;
     
-    // Update the review with new datetime_value for this question
-    // We need to update the answer sets with this new time value
-    const sets = window.currentAnswerSets || [];
-    const index = window.currentSetIndex || 0;
-    
-    if (sets.length > 0) {
-      // Update current answer set's datetime_value
-      const currentSet = sets[index];
-      const setNumber = currentSet.set_number;
-      const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
-      
-      // Call API to update the datetime_value in current set
-      await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
-        answers: {
-          [questionNumber]: {
-            answer: currentAnswer?.answer || '',
-            datetime_value: datetimeValue
-          }
-        }
-      });
-      
-      showNotification(i18n.t('timeSaved') || '时间已自动保存', 'success');
-      
-      // Reload answer sets to refresh display, keep current index
-      await loadAnswerSets(reviewId, true);
-      renderAnswerSet(reviewId);
-    } else {
-      // No answer sets yet, just show notification
-      showNotification(i18n.t('timeSaved') || '时间已自动保存', 'success');
+    // If no answer sets exist, create one first
+    if (sets.length === 0) {
+      await createFirstAnswerSetIfNeeded(reviewId);
+      sets = window.currentAnswerSets || [];
+      index = window.currentSetIndex || 0;
     }
+    
+    // If still no answer sets, show error
+    if (sets.length === 0) {
+      showNotification('Failed to create answer set', 'error');
+      return;
+    }
+    
+    // Update current answer set's datetime_value
+    const currentSet = sets[index];
+    const setNumber = currentSet.set_number;
+    const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
+    
+    // Call API to update the datetime_value in current set
+    await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
+      answers: {
+        [questionNumber]: {
+          answer: currentAnswer?.answer || '',
+          datetime_value: datetimeValue
+        }
+      }
+    });
+    
+    showNotification(i18n.t('timeSaved') || '时间已自动保存', 'success');
+    
+    // Reload answer sets to refresh display, keep current index
+    await loadAnswerSets(reviewId, true);
+    renderAnswerSet(reviewId);
   } catch (error) {
     console.error('Auto-save time value error:', error);
     showNotification(i18n.t('autoSaveFailed') || '自动保存失败', 'error');
@@ -10320,12 +10323,21 @@ async function saveInlineAnswer(reviewId, questionNumber) {
  */
 async function updateAnswerInSet(reviewId, questionNumber, value) {
   try {
-    const sets = window.currentAnswerSets || [];
-    const index = window.currentSetIndex || 0;
+    let sets = window.currentAnswerSets || [];
+    let index = window.currentSetIndex || 0;
     
+    // If no answer sets exist, create one first
     if (sets.length === 0) {
-      showNotification('No answer set found', 'error');
-      return;
+      console.log('[updateAnswerInSet] No answer sets found, creating first set...');
+      await createFirstAnswerSetIfNeeded(reviewId);
+      // Reload sets after creation
+      sets = window.currentAnswerSets || [];
+      index = window.currentSetIndex || 0;
+      
+      if (sets.length === 0) {
+        showNotification(i18n.t('autoSaveFailed') || '自动保存失败', 'error');
+        return;
+      }
     }
     
     const currentSet = sets[index];
@@ -10360,11 +10372,19 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     const values = Array.from(checked).map(cb => cb.value);
     const answer = values.join(',');
     
-    const sets = window.currentAnswerSets || [];
-    const index = window.currentSetIndex || 0;
+    let sets = window.currentAnswerSets || [];
+    let index = window.currentSetIndex || 0;
     
+    // If no answer sets exist, create one first
     if (sets.length === 0) {
-      showNotification('No answer set found', 'error');
+      await createFirstAnswerSetIfNeeded(reviewId);
+      sets = window.currentAnswerSets || [];
+      index = window.currentSetIndex || 0;
+    }
+    
+    // Check again after creation attempt
+    if (sets.length === 0) {
+      showNotification('Failed to create answer set', 'error');
       return;
     }
     
@@ -10379,7 +10399,7 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     });
     
     if (response.data) {
-      showNotification(i18n.t('answerSaved') || '答案已保存', 'success');
+      showNotification(i18n.t('choiceSaved') || '选项已自动保存', 'success');
       
       // Reload answer sets to refresh display, keep current index
       await loadAnswerSets(reviewId, true);
@@ -10387,7 +10407,7 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     }
   } catch (error) {
     console.error('Update multiple choice error:', error);
-    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    showNotification(i18n.t('autoSaveFailed') || '自动保存失败', 'error');
   }
 }
 
@@ -10399,11 +10419,19 @@ async function updateTimeValueInSet(reviewId, questionNumber) {
     const timeInput = document.getElementById(`set-time-${questionNumber}`);
     const datetimeValue = timeInput ? timeInput.value : null;
     
-    const sets = window.currentAnswerSets || [];
-    const index = window.currentSetIndex || 0;
+    let sets = window.currentAnswerSets || [];
+    let index = window.currentSetIndex || 0;
     
+    // If no answer sets exist, create one first
     if (sets.length === 0) {
-      showNotification('No answer set found', 'error');
+      await createFirstAnswerSetIfNeeded(reviewId);
+      sets = window.currentAnswerSets || [];
+      index = window.currentSetIndex || 0;
+    }
+    
+    // Check again after creation attempt
+    if (sets.length === 0) {
+      showNotification('Failed to create answer set', 'error');
       return;
     }
     
@@ -10422,7 +10450,7 @@ async function updateTimeValueInSet(reviewId, questionNumber) {
     });
     
     if (response.data) {
-      showNotification(i18n.t('timeSaved') || '时间已保存', 'success');
+      showNotification(i18n.t('timeSaved') || '时间已自动保存', 'success');
       
       // Reload answer sets to refresh display, keep current index
       await loadAnswerSets(reviewId, true);
@@ -10430,7 +10458,7 @@ async function updateTimeValueInSet(reviewId, questionNumber) {
     }
   } catch (error) {
     console.error('Update time value error:', error);
-    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    showNotification(i18n.t('autoSaveFailed') || '自动保存失败', 'error');
   }
 }
 
@@ -10678,6 +10706,56 @@ function toggleSection(sectionId) {
         icon.classList.add('fa-chevron-down');
       }
     }
+  }
+}
+
+/**
+ * Helper function: Create first answer set if none exists
+ * This is called by auto-save functions to ensure there's always an answer set to save to
+ */
+async function createFirstAnswerSetIfNeeded(reviewId) {
+  try {
+    const questions = window.currentEditQuestions || [];
+    
+    if (questions.length === 0) {
+      console.error('No questions found for review');
+      return;
+    }
+    
+    // Build initial empty answers object
+    const answers = {};
+    questions.forEach(q => {
+      if (q.question_type === 'text' || q.question_type === 'single_choice' || q.question_type === 'multiple_choice') {
+        answers[q.question_number] = {
+          answer: ''
+        };
+      } else if (q.question_type === 'time_with_text') {
+        const datetimeTitle = q.datetime_title || q.question_text_en || q.question_text || '时间';
+        answers[q.question_number] = {
+          answer: '',
+          datetime_value: q.datetime_value || null,
+          datetime_title: datetimeTitle,
+          datetime_answer: ''
+        };
+      }
+    });
+    
+    // Create new answer set via API
+    const response = await axios.post(`/api/answer-sets/${reviewId}`, { answers });
+    
+    if (response.data.success) {
+      // Reload answer sets to get the new set
+      await loadAnswerSets(reviewId);
+      
+      // Set current index to the newly created set (should be the only one or the last one)
+      window.currentSetIndex = (window.currentAnswerSets?.length || 1) - 1;
+      
+      console.log('First answer set created successfully');
+      return true;
+    }
+  } catch (error) {
+    console.error('Failed to create first answer set:', error);
+    return false;
   }
 }
 
