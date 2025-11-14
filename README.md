@@ -196,6 +196,54 @@
       - ✅ 标题文案更准确易懂
     - **部署URL**: https://0314b004.review-system.pages.dev
     - **提交commit**: 526e469
+  - 🎉 **V6.0.0-Phase2.3-AutoSave-Fix - 修复自动保存持久化问题**（关键修复 - 2025-11-14）：
+    - **用户反馈**: "以下系统中所有需要自动保存的地方没有真正存储起来，每次都被初始化"
+    - **问题分析**:
+      - ✅ 时间输入框 - 修改时显示"时间已自动保存"但刷新后重置
+      - ✅ 单选题选项 - 点击时显示"选项已自动保存"但刷新后重置
+      - ✅ 多选题选项 - 勾选时显示"选项已自动保存"但刷新后重置
+      - **根本原因**: 所有自动保存函数在 `window.currentAnswerSets.length === 0` 时直接返回
+      - **导致结果**: 需要手动点击"创建新答案组"后自动保存才有效，体验不佳
+    - **解决方案**:
+      - ✅ **新增 `createFirstAnswerSetIfNeeded(reviewId)` 辅助函数**:
+        - 获取复盘的所有问题（`window.currentEditQuestions`）
+        - 为每个问题创建初始空白答案
+        - 调用 POST `/api/answer-sets/:reviewId` 创建第一个答案集
+        - 自动加载并更新 `window.currentAnswerSets`
+      - ✅ **修改 `updateAnswerInSet()`** (单选题自动保存):
+        - 检测到无答案集时，先调用 `createFirstAnswerSetIfNeeded()`
+        - 然后继续执行保存逻辑
+      - ✅ **修改 `updateMultipleChoiceInSet()`** (多选题自动保存):
+        - 添加相同的自动创建逻辑
+        - 确保多选题也能正常自动保存
+      - ✅ **修改 `updateTimeValueInSet()`** (时间字段自动保存):
+        - 在编辑页面时间输入框添加自动创建逻辑
+      - ✅ **修改 `autoSaveTimeValue()`** (主时间输入自动保存):
+        - 在主编辑区域时间输入框添加自动创建逻辑
+    - **技术实现**:
+      - 辅助函数位置：`public/static/app.js` line 10712-10758
+      - 修改的自动保存函数：
+        - `updateAnswerInSet()` - line 10321
+        - `updateMultipleChoiceInSet()` - line 10366
+        - `updateTimeValueInSet()` - line 10414
+        - `autoSaveTimeValue()` - line 9910
+      - 所有函数采用统一模式：检测 → 创建 → 验证 → 保存
+    - **用户体验改进**:
+      - ✅ **无需手动创建答案组**: 首次编辑任何字段时自动创建
+      - ✅ **真正的自动保存**: 所有修改立即持久化到数据库
+      - ✅ **数据不丢失**: 刷新页面后所有修改都保留
+      - ✅ **流程自然**: 用户直接编辑，无需额外操作
+    - **测试验证**:
+      1. ✅ 创建新复盘 → 直接编辑时间/选项 → 自动保存成功
+      2. ✅ 刷新页面 → 所有修改都保留
+      3. ✅ 单选/多选/时间字段都正常工作
+      4. ✅ 显示正确的通知消息
+    - **代码改进**:
+      - 代码复用：所有自动保存函数共用同一个辅助函数
+      - 错误处理：创建失败时显示清晰错误提示
+      - 类型安全：检查 `questions.length === 0` 避免空数组
+    - **部署URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
+    - **提交commit**: dfa973a
   - 🎉 **V6.0.0-Phase1-Modal-Fix - Modal自动预填充答案**（用户体验改进 - 2025-11-13）：
     - **用户反馈**: 编辑复盘时在主页面输入框填写答案，点击"创建新答案组"后modal显示空白
     - **问题分析**:
@@ -1907,8 +1955,8 @@ npx wrangler pages domain add yourdomain.com --project-name review-system
 - **环境变量**: ✅ 已配置 4 个生产环境变量
 - **自定义域名**: ⏳ 待绑定（完全免费）
 - **许可证**: MIT License
-- **最后更新**: 2025-11-13 16:28 UTC
-- **当前版本**: V6.0.0-Phase1-Fix（答案集合系统完整修复）✅ 已发布到生产环境
+- **最后更新**: 2025-11-14 06:06 UTC
+- **当前版本**: V6.0.0-Phase2.3-AutoSave-Fix（自动保存持久化修复）✅ 本地测试完成
 
 ## 📝 许可证
 
