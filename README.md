@@ -125,7 +125,7 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://9a76cf1a.review-system.pages.dev
+- **最新部署 ID**: https://419c2612.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ V6.0.0-Phase2.3-AutoSave-Fix - 自动保存持久化修复完成！
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
