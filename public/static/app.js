@@ -1543,7 +1543,30 @@ function renderPublicReviewsList(reviews) {
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${new Date(review.updated_at).toLocaleString()}
+                <div class="flex flex-col">
+                  <span class="font-medium text-gray-700">
+                    <i class="fas fa-edit text-xs mr-1"></i>
+                    ${new Date(review.updated_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                  ${review.created_at ? `
+                    <span class="text-xs text-gray-400 mt-1">
+                      <i class="fas fa-plus-circle text-xs mr-1"></i>
+                      ${new Date(review.created_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  ` : ''}
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                 <button onclick="showReviewDetail(${review.id}, true)" 
@@ -1740,7 +1763,30 @@ function renderReviewsList(reviews) {
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${new Date(review.updated_at).toLocaleDateString()}
+                <div class="flex flex-col">
+                  <span class="font-medium text-gray-700">
+                    <i class="fas fa-edit text-xs mr-1"></i>
+                    ${new Date(review.updated_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                  ${review.created_at ? `
+                    <span class="text-xs text-gray-400 mt-1">
+                      <i class="fas fa-plus-circle text-xs mr-1"></i>
+                      ${new Date(review.created_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  ` : ''}
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <button onclick="showReviewDetail(${review.id}, true)" class="text-indigo-600 hover:text-indigo-900 mr-3">
@@ -4101,18 +4147,55 @@ async function handleEditReview(e) {
   }
 
   try {
-    await axios.put(`/api/reviews/${id}`, data);
-    showNotification(i18n.t('updateSuccess'), 'success');
+    console.log('开始保存复盘，ID:', id);
+    console.log('保存数据:', JSON.stringify(data, null, 2));
+    
+    const response = await axios.put(`/api/reviews/${id}`, data);
+    
+    console.log('保存成功！服务器响应:', response.data);
+    
+    // Get current timestamp for display
+    const savedTime = new Date().toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    
+    // Show success notification with timestamp
+    showNotification(
+      i18n.t('updateSuccess') + ' - ' + savedTime,
+      'success'
+    );
     
     // Clear newly created draft flag on successful save
     if (window.newlyCreatedDraftId == id) {
       delete window.newlyCreatedDraftId;
+      console.log('已清除新建草稿标记');
     }
     
-    showReviews(); // Return to My Reviews page
-    window.scrollTo(0, 0); // Scroll to top
+    console.log('准备返回复盘列表...');
+    
+    // Delay slightly to ensure notification is visible before navigating
+    setTimeout(() => {
+      showReviews(); // Return to My Reviews page
+      window.scrollTo(0, 0); // Scroll to top
+      console.log('已返回复盘列表');
+    }, 800); // 800ms delay to show success message
+    
   } catch (error) {
-    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    console.error('保存复盘失败！');
+    console.error('错误详情:', error);
+    console.error('错误响应:', error.response);
+    console.error('错误数据:', error.response?.data);
+    
+    const errorMessage = error.response?.data?.error || error.message || '未知错误';
+    showNotification(
+      i18n.t('operationFailed') + ': ' + errorMessage,
+      'error'
+    );
   }
 }
 
