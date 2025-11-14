@@ -1293,11 +1293,46 @@ function renderRecentReviews(reviews) {
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${new Date(review.updated_at).toLocaleString()}
+                <div class="flex flex-col">
+                  <span class="font-medium text-gray-700">
+                    <i class="fas fa-edit text-xs mr-1"></i>
+                    ${new Date(review.updated_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                  ${review.created_at ? `
+                    <span class="text-xs text-gray-400 mt-1">
+                      <i class="fas fa-plus-circle text-xs mr-1"></i>
+                      ${new Date(review.created_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  ` : ''}
+                </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <button onclick="showReviewDetail(${review.id})" class="text-indigo-600 hover:text-indigo-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button onclick="showReviewDetail(${review.id}, true)" class="text-indigo-600 hover:text-indigo-900 mr-3">
                   <i class="fas fa-eye"></i> ${i18n.t('view')}
+                </button>
+                <button onclick="showEditReview(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                  <i class="fas fa-edit"></i> ${i18n.t('edit')}
+                </button>
+                <button onclick="printReview(${review.id})" class="text-green-600 hover:text-green-900 mr-3">
+                  <i class="fas fa-print"></i> ${i18n.t('print')}
+                </button>
+                <button onclick="showInviteModal(${review.id})" class="text-purple-600 hover:text-purple-900 mr-3">
+                  <i class="fas fa-user-plus"></i> ${i18n.t('invite')}
+                </button>
+                <button onclick="deleteReview(${review.id})" class="text-red-600 hover:text-red-900">
+                  <i class="fas fa-trash"></i> ${i18n.t('delete')}
                 </button>
               </td>
             </tr>
