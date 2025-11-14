@@ -10028,18 +10028,134 @@ function renderAnswerSet(reviewId) {
     
     // Update answer display element
     const answerElement = document.getElementById(`answer-display-${q.question_number}`);
-    if (answerElement) {
-      answerElement.innerHTML = answerText ? 
-        `<div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
-           <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
-           <p class="text-xs text-gray-500 mt-2">
-             <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
-           </p>
-         </div>` :
-        `<div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
-              class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
-           <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
-         </div>`;
+    if (!answerElement) return;
+    
+    // Handle different question types
+    if (q.question_type === 'single_choice' && q.options) {
+      // Render single choice with radio buttons
+      const options = JSON.parse(q.options);
+      answerElement.innerHTML = `
+        <div class="space-y-2">
+          ${options.map((opt, idx) => {
+            const letter = String.fromCharCode(65 + idx);
+            const isChecked = answerText === letter;
+            return `
+              <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer ${isChecked ? 'bg-blue-50 border-blue-400' : ''}">
+                <input type="radio" 
+                       name="set-question${q.question_number}" 
+                       value="${letter}" 
+                       ${isChecked ? 'checked' : ''}
+                       onchange="updateAnswerInSet(${reviewId}, ${q.question_number}, this.value)"
+                       class="mt-1 mr-3 flex-shrink-0">
+                <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
+              </label>
+            `;
+          }).join('')}
+        </div>
+        ${answer ? `
+          <p class="text-xs text-gray-500 mt-2">
+            <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
+          </p>
+        ` : ''}
+      `;
+    } else if (q.question_type === 'multiple_choice' && q.options) {
+      // Render multiple choice with checkboxes
+      const options = JSON.parse(q.options);
+      const selectedLetters = answerText ? answerText.split(',').map(a => a.trim()) : [];
+      answerElement.innerHTML = `
+        <div class="space-y-2">
+          ${options.map((opt, idx) => {
+            const letter = String.fromCharCode(65 + idx);
+            const isChecked = selectedLetters.includes(letter);
+            return `
+              <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer ${isChecked ? 'bg-blue-50 border-blue-400' : ''}">
+                <input type="checkbox" 
+                       name="set-question${q.question_number}" 
+                       value="${letter}" 
+                       ${isChecked ? 'checked' : ''}
+                       onchange="updateMultipleChoiceInSet(${reviewId}, ${q.question_number})"
+                       class="mt-1 mr-3 flex-shrink-0">
+                <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
+              </label>
+            `;
+          }).join('')}
+        </div>
+        ${answer ? `
+          <p class="text-xs text-gray-500 mt-2">
+            <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
+          </p>
+        ` : ''}
+      `;
+    } else if (q.question_type === 'time_with_text') {
+      // Render time with text type - editable time and answer
+      const datetimeValue = answer?.datetime_value ? new Date(answer.datetime_value).toISOString().slice(0, 16) : '';
+      answerElement.innerHTML = `
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || '时间')}
+            </label>
+            <input type="datetime-local" 
+                   id="set-time-${q.question_number}"
+                   value="${datetimeValue}"
+                   onchange="updateTimeValueInSet(${reviewId}, ${q.question_number})"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">
+              <i class="fas fa-pen mr-1"></i>${i18n.t('answer') || '答案'}
+            </label>
+            ${answerText ? `
+              <div class="relative group">
+                <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                  <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
+                </div>
+                <button type="button" 
+                        onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
+                        class="absolute top-2 right-2 px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
+                </button>
+              </div>
+            ` : `
+              <div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
+                   class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
+                <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
+              </div>
+            `}
+          </div>
+          ${answer ? `
+            <p class="text-xs text-gray-500">
+              <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
+            </p>
+          ` : ''}
+        </div>
+      `;
+    } else {
+      // Default text type - show answer with edit button
+      if (answerText) {
+        answerElement.innerHTML = `
+          <div class="relative group">
+            <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+              <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
+              <p class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
+              </p>
+            </div>
+            <button type="button" 
+                    onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
+                    class="absolute top-2 right-2 px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity">
+              <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
+            </button>
+          </div>
+        `;
+      } else {
+        answerElement.innerHTML = `
+          <div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
+               class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
+            <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
+          </div>
+        `;
+      }
     }
   });
 }
@@ -10144,6 +10260,99 @@ async function saveInlineAnswer(reviewId, questionNumber) {
     const currentSet = sets[index];
     const setNumber = currentSet.set_number;
     
+    // Check if this is a time_with_text question
+    const questions = window.currentEditQuestions || [];
+    const question = questions.find(q => q.question_number === questionNumber);
+    
+    let answerData = answer;
+    
+    if (question?.question_type === 'time_with_text') {
+      // For time questions, include datetime_value
+      const timeInput = document.getElementById(`set-time-${questionNumber}`);
+      const datetimeValue = timeInput ? timeInput.value : null;
+      
+      answerData = {
+        answer: answer,
+        datetime_value: datetimeValue
+      };
+    }
+    
+    // Call API to update the answer in current set
+    const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
+      answers: {
+        [questionNumber]: answerData
+      }
+    });
+    
+    if (response.data) {
+      showNotification(i18n.t('answerSaved') || '答案已保存', 'success');
+      
+      // Reload answer sets to refresh display, keep current index
+      await loadAnswerSets(reviewId, true);
+      renderAnswerSet(reviewId);
+    }
+  } catch (error) {
+    console.error('Save inline answer error:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+/**
+ * Update single choice answer in current set
+ */
+async function updateAnswerInSet(reviewId, questionNumber, value) {
+  try {
+    const sets = window.currentAnswerSets || [];
+    const index = window.currentSetIndex || 0;
+    
+    if (sets.length === 0) {
+      showNotification('No answer set found', 'error');
+      return;
+    }
+    
+    const currentSet = sets[index];
+    const setNumber = currentSet.set_number;
+    
+    // Call API to update the answer in current set
+    const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
+      answers: {
+        [questionNumber]: value
+      }
+    });
+    
+    if (response.data) {
+      showNotification(i18n.t('answerSaved') || '答案已保存', 'success');
+      
+      // Reload answer sets to refresh display, keep current index
+      await loadAnswerSets(reviewId, true);
+      renderAnswerSet(reviewId);
+    }
+  } catch (error) {
+    console.error('Update answer error:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+/**
+ * Update multiple choice answer in current set
+ */
+async function updateMultipleChoiceInSet(reviewId, questionNumber) {
+  try {
+    const checked = document.querySelectorAll(`input[name="set-question${questionNumber}"]:checked`);
+    const values = Array.from(checked).map(cb => cb.value);
+    const answer = values.join(',');
+    
+    const sets = window.currentAnswerSets || [];
+    const index = window.currentSetIndex || 0;
+    
+    if (sets.length === 0) {
+      showNotification('No answer set found', 'error');
+      return;
+    }
+    
+    const currentSet = sets[index];
+    const setNumber = currentSet.set_number;
+    
     // Call API to update the answer in current set
     const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
       answers: {
@@ -10159,9 +10368,141 @@ async function saveInlineAnswer(reviewId, questionNumber) {
       renderAnswerSet(reviewId);
     }
   } catch (error) {
-    console.error('Save inline answer error:', error);
+    console.error('Update multiple choice error:', error);
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
+}
+
+/**
+ * Update time value in current set (for time_with_text questions)
+ */
+async function updateTimeValueInSet(reviewId, questionNumber) {
+  try {
+    const timeInput = document.getElementById(`set-time-${questionNumber}`);
+    const datetimeValue = timeInput ? timeInput.value : null;
+    
+    const sets = window.currentAnswerSets || [];
+    const index = window.currentSetIndex || 0;
+    
+    if (sets.length === 0) {
+      showNotification('No answer set found', 'error');
+      return;
+    }
+    
+    const currentSet = sets[index];
+    const setNumber = currentSet.set_number;
+    const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
+    
+    // Call API to update the datetime_value in current set
+    const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
+      answers: {
+        [questionNumber]: {
+          answer: currentAnswer?.answer || '',
+          datetime_value: datetimeValue
+        }
+      }
+    });
+    
+    if (response.data) {
+      showNotification(i18n.t('timeSaved') || '时间已保存', 'success');
+      
+      // Reload answer sets to refresh display, keep current index
+      await loadAnswerSets(reviewId, true);
+      renderAnswerSet(reviewId);
+    }
+  } catch (error) {
+    console.error('Update time value error:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+/**
+ * Edit existing answer in set (show inline editor)
+ */
+function editAnswerInSet(reviewId, questionNumber) {
+  const answerElement = document.getElementById(`answer-display-${questionNumber}`);
+  if (!answerElement) return;
+  
+  const sets = window.currentAnswerSets || [];
+  const index = window.currentSetIndex || 0;
+  const currentSet = sets[index];
+  const answer = currentSet.answers.find(a => a.question_number === questionNumber);
+  const currentText = answer ? answer.answer : '';
+  
+  // Check if this is a time_with_text question
+  const questions = window.currentEditQuestions || [];
+  const question = questions.find(q => q.question_number === questionNumber);
+  
+  if (question?.question_type === 'time_with_text') {
+    // For time questions, only edit the answer text part
+    const datetimeValue = answer?.datetime_value ? new Date(answer.datetime_value).toISOString().slice(0, 16) : '';
+    answerElement.innerHTML = `
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">
+            <i class="fas fa-clock mr-1"></i>${escapeHtml(question.datetime_title || '时间')}
+          </label>
+          <input type="datetime-local" 
+                 id="set-time-${questionNumber}"
+                 value="${datetimeValue}"
+                 onchange="updateTimeValueInSet(${reviewId}, ${questionNumber})"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">
+            <i class="fas fa-pen mr-1"></i>${i18n.t('answer') || '答案'}
+          </label>
+          <textarea id="inline-answer-${questionNumber}" 
+                    class="w-full px-4 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                    rows="3"
+                    maxlength="${question.datetime_answer_max_length || 200}"
+                    placeholder="${i18n.t('enterAnswer')}"
+                    autofocus>${escapeHtml(currentText)}</textarea>
+          <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: ${question.datetime_answer_max_length || 200}</p>
+          <div class="flex justify-end space-x-2 mt-2">
+            <button type="button" onclick="cancelInlineAnswerEdit(${reviewId}, ${questionNumber})" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
+              ${i18n.t('cancel')}
+            </button>
+            <button type="button" onclick="saveInlineAnswer(${reviewId}, ${questionNumber})" 
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+              <i class="fas fa-save mr-1"></i>${i18n.t('save')}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    // For regular text questions
+    answerElement.innerHTML = `
+      <div class="space-y-2">
+        <textarea id="inline-answer-${questionNumber}" 
+                  class="w-full px-4 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                  rows="3"
+                  placeholder="${i18n.t('enterAnswer')}"
+                  autofocus>${escapeHtml(currentText)}</textarea>
+        <div class="flex justify-end space-x-2">
+          <button type="button" onclick="cancelInlineAnswerEdit(${reviewId}, ${questionNumber})" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
+            ${i18n.t('cancel')}
+          </button>
+          <button type="button" onclick="saveInlineAnswer(${reviewId}, ${questionNumber})" 
+                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+            <i class="fas fa-save mr-1"></i>${i18n.t('save')}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Focus on textarea
+  setTimeout(() => {
+    const textarea = document.getElementById(`inline-answer-${questionNumber}`);
+    if (textarea) {
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+  }, 100);
 }
 
 /**
