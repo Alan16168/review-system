@@ -2271,7 +2271,8 @@ async function handleStep1Submit(e) {
   
   const title = document.getElementById('review-title').value;
   const description = document.getElementById('review-description').value;
-  const templateId = parseInt(document.getElementById('review-template').value);
+  const templateElem = document.getElementById('review-template');
+  const templateId = templateElem ? parseInt(templateElem.value) || 1 : 1;
   
   // Get team ID based on owner type
   let teamId = null;
@@ -2309,6 +2310,7 @@ async function handleStep1Submit(e) {
   
   try {
     console.log('创建空白草稿复盘:', data);
+    console.log('[TEMPLATE_ID_TRACE] Template ID being sent:', templateId, 'from element value:', templateElem ? templateElem.value : 'NULL');
     
     // Create empty draft review
     const response = await axios.post('/api/reviews', data);

@@ -257,7 +257,9 @@ reviews.post('/', async (c) => {
     }
 
     // Validate template_id - default to 1 if not provided
+    console.log('[TEMPLATE_ID_TRACE] Backend received template_id:', template_id, 'type:', typeof template_id);
     const templateIdToUse = template_id || 1;
+    console.log('[TEMPLATE_ID_TRACE] Using template_id:', templateIdToUse);
     const template = await c.env.DB.prepare(
       'SELECT id FROM templates WHERE id = ? AND is_active = 1'
     ).bind(templateIdToUse).first();
