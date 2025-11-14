@@ -3751,9 +3751,14 @@ async function showEditReview(id) {
                     </div>
                   `;
                 } else if (q.question_type === 'time_with_text') {
-                  // Time with text type - simplified version without time input
+                  // Time with text type - with auto-save time input
                   const userAnswers = answersByQuestion[q.question_number] || [];
                   const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
+                  
+                  // Get datetime value from first answer if exists
+                  const existingDatetime = myAnswersList.length > 0 && myAnswersList[0].datetime_value 
+                    ? new Date(myAnswersList[0].datetime_value).toISOString().slice(0, 16) 
+                    : (q.datetime_value ? new Date(q.datetime_value).toISOString().slice(0, 16) : '');
                   
                   return `
                     <div class="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
@@ -3773,7 +3778,19 @@ async function showEditReview(id) {
                         </div>
                       </div>
                       
-                      <!-- 2. Google日历按钮 -->
+                      <!-- 2. 时间输入框 (可编辑，自动保存) -->
+                      <div class="mb-3">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
+                          <i class="fas fa-clock mr-1"></i>${i18n.t('time') || '时间'}
+                        </label>
+                        <input type="datetime-local" 
+                               id="time-input-${q.question_number}"
+                               value="${existingDatetime}"
+                               onchange="autoSaveTimeValue(${id}, ${q.question_number})"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                      </div>
+                      
+                      <!-- 3. Google日历按钮 -->
                       <div class="mb-3">
                         <button type="button" 
                                 onclick="addTimeQuestionToCalendar(${id}, ${q.question_number})"
@@ -3782,11 +3799,8 @@ async function showEditReview(id) {
                         </button>
                       </div>
                       
-                      <!-- 3. 答案编辑区 (Answer Sets) -->
+                      <!-- 4. 答案编辑区 (Answer Sets) - 不显示"答案"标签 -->
                       <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-2">
-                          <i class="fas fa-pen mr-1"></i>${i18n.t('answers') || '答案'}
-                        </label>
                         <div id="answer-display-${q.question_number}">
                           <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
                             <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswerSetsYet') || '还没有答案组，点击下方"创建新答案组"按钮开始'}
@@ -9892,6 +9906,56 @@ async function saveEditReviewSilently(reviewId) {
   }
 }
 
+// Auto-save time value for time_with_text questions
+async function autoSaveTimeValue(reviewId, questionNumber) {
+  try {
+    const timeInput = document.getElementById(`time-input-${questionNumber}`);
+    const datetimeValue = timeInput ? timeInput.value : null;
+    
+    if (!datetimeValue) {
+      return; // Don't save if time is empty
+    }
+    
+    // Get current review data
+    const response = await axios.get(`/api/reviews/${reviewId}`);
+    const review = response.data;
+    
+    // Update the review with new datetime_value for this question
+    // We need to update the answer sets with this new time value
+    const sets = window.currentAnswerSets || [];
+    const index = window.currentSetIndex || 0;
+    
+    if (sets.length > 0) {
+      // Update current answer set's datetime_value
+      const currentSet = sets[index];
+      const setNumber = currentSet.set_number;
+      const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
+      
+      // Call API to update the datetime_value in current set
+      await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
+        answers: {
+          [questionNumber]: {
+            answer: currentAnswer?.answer || '',
+            datetime_value: datetimeValue
+          }
+        }
+      });
+      
+      showNotification(i18n.t('timeSaved') || '时间已自动保存', 'success');
+      
+      // Reload answer sets to refresh display, keep current index
+      await loadAnswerSets(reviewId, true);
+      renderAnswerSet(reviewId);
+    } else {
+      // No answer sets yet, just show notification
+      showNotification(i18n.t('timeSaved') || '时间已自动保存', 'success');
+    }
+  } catch (error) {
+    console.error('Auto-save time value error:', error);
+    showNotification(i18n.t('autoSaveFailed') || '自动保存失败', 'error');
+  }
+}
+
 // Add time-type question to Google Calendar
 async function addTimeQuestionToCalendar(reviewId, questionNumber) {
   try {
@@ -10071,31 +10135,26 @@ function renderAnswerSet(reviewId) {
         ` : ''}
       `;
     } else if (q.question_type === 'time_with_text') {
-      // Render time with text type - simplified without time input
+      // Render time with text type - no "answer" label, just show the answer
       answerElement.innerHTML = `
         <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">
-              <i class="fas fa-pen mr-1"></i>${i18n.t('answer') || '答案'}
-            </label>
-            ${answerText ? `
-              <div class="relative group">
-                <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
-                  <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
-                </div>
-                <button type="button" 
-                        onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
-                        class="absolute top-2 right-2 px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
-                </button>
+          ${answerText ? `
+            <div class="relative group">
+              <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
               </div>
-            ` : `
-              <div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
-                   class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
-                <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
-              </div>
-            `}
-          </div>
+              <button type="button" 
+                      onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
+                      class="absolute top-2 right-2 px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
+              </button>
+            </div>
+          ` : `
+            <div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
+                 class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
+              <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
+            </div>
+          `}
           ${answer ? `
             <p class="text-xs text-gray-500">
               <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
@@ -10393,30 +10452,25 @@ function editAnswerInSet(reviewId, questionNumber) {
   const question = questions.find(q => q.question_number === questionNumber);
   
   if (question?.question_type === 'time_with_text') {
-    // For time questions, only edit the answer text part (without time input)
+    // For time questions, edit without "answer" label
     answerElement.innerHTML = `
       <div class="space-y-3">
-        <div>
-          <label class="block text-xs font-medium text-gray-700 mb-1">
-            <i class="fas fa-pen mr-1"></i>${i18n.t('answer') || '答案'}
-          </label>
-          <textarea id="inline-answer-${questionNumber}" 
-                    class="w-full px-4 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                    rows="3"
-                    maxlength="${question.datetime_answer_max_length || 200}"
-                    placeholder="${i18n.t('enterAnswer')}"
-                    autofocus>${escapeHtml(currentText)}</textarea>
-          <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: ${question.datetime_answer_max_length || 200}</p>
-          <div class="flex justify-end space-x-2 mt-2">
-            <button type="button" onclick="cancelInlineAnswerEdit(${reviewId}, ${questionNumber})" 
-                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
-              ${i18n.t('cancel')}
-            </button>
-            <button type="button" onclick="saveInlineAnswer(${reviewId}, ${questionNumber})" 
-                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
-              <i class="fas fa-save mr-1"></i>${i18n.t('save')}
-            </button>
-          </div>
+        <textarea id="inline-answer-${questionNumber}" 
+                  class="w-full px-4 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
+                  rows="3"
+                  maxlength="${question.datetime_answer_max_length || 200}"
+                  placeholder="${i18n.t('enterAnswer')}"
+                  autofocus>${escapeHtml(currentText)}</textarea>
+        <p class="text-xs text-gray-500">${i18n.t('maxCharacters')}: ${question.datetime_answer_max_length || 200}</p>
+        <div class="flex justify-end space-x-2">
+          <button type="button" onclick="cancelInlineAnswerEdit(${reviewId}, ${questionNumber})" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm">
+            ${i18n.t('cancel')}
+          </button>
+          <button type="button" onclick="saveInlineAnswer(${reviewId}, ${questionNumber})" 
+                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm">
+            <i class="fas fa-save mr-1"></i>${i18n.t('save')}
+          </button>
         </div>
       </div>
     `;
