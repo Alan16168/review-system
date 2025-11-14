@@ -3751,20 +3751,62 @@ async function showEditReview(id) {
                     </div>
                   `;
                 } else if (q.question_type === 'time_with_text') {
-                  // Time with text type - show only title (no question_text, no datetime_title)
+                  // Time with text type - new order: 时间输入 → 标题 → Google日历按钮 → 答案
                   const userAnswers = answersByQuestion[q.question_number] || [];
                   const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
                   
+                  // Get datetime value from first answer if exists
+                  const existingDatetime = myAnswersList.length > 0 && myAnswersList[0].datetime_value 
+                    ? new Date(myAnswersList[0].datetime_value).toISOString().slice(0, 16) 
+                    : (q.datetime_value ? new Date(q.datetime_value).toISOString().slice(0, 16) : '');
+                  
                   return `
-                    <div class="mb-6">
-                      <label class="block text-sm font-medium text-gray-700 mb-2">
-                        ${q.question_number}. ${i18n.t('title')}: ${q.question_text_en ? escapeHtml(q.question_text_en) : escapeHtml(q.question_text)}
-                      </label>
+                    <div class="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+                      <div class="mb-3">
+                        <span class="text-sm font-semibold text-gray-800">
+                          ${q.question_number}. ${i18n.t('timeTypeQuestion') || '时间型问题'}
+                        </span>
+                      </div>
                       
-                      <!-- Answer Set Display Area (Phase 1) -->
-                      <div id="answer-display-${q.question_number}" class="mt-3">
-                        <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
-                          <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswerSetsYet') || '还没有答案组，点击下方"创建新答案组"按钮开始'}
+                      <!-- 1. 时间输入框 (可编辑) -->
+                      <div class="mb-3">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
+                          <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || '时间')}
+                        </label>
+                        <input type="datetime-local" 
+                               id="time-input-${q.question_number}"
+                               value="${existingDatetime}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                      </div>
+                      
+                      <!-- 2. 标题显示 -->
+                      <div class="mb-3">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
+                          <i class="fas fa-heading mr-1"></i>${i18n.t('title') || '标题'}
+                        </label>
+                        <div class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800">
+                          ${q.question_text_en ? escapeHtml(q.question_text_en) : escapeHtml(q.question_text)}
+                        </div>
+                      </div>
+                      
+                      <!-- 3. Google日历按钮 -->
+                      <div class="mb-3">
+                        <button type="button" 
+                                onclick="addTimeQuestionToCalendar(${id}, ${q.question_number})"
+                                class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
+                          <i class="fas fa-calendar-plus mr-2"></i>${i18n.t('addToGoogleCalendar') || '加入Google日历'}
+                        </button>
+                      </div>
+                      
+                      <!-- 4. 答案编辑区 (Answer Sets) -->
+                      <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-2">
+                          <i class="fas fa-pen mr-1"></i>${i18n.t('answers') || '答案'}
+                        </label>
+                        <div id="answer-display-${q.question_number}">
+                          <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
+                            <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswerSetsYet') || '还没有答案组，点击下方"创建新答案组"按钮开始'}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -3867,11 +3909,11 @@ async function showEditReview(id) {
             </div>
             <!-- End of Section 3: Calendar -->
 
-            <!-- Save/Cancel Buttons (Outside all sections) -->
+            <!-- Save/Exit Buttons (Outside all sections) -->
             <div class="flex justify-end space-x-4 pt-6 border-t mt-6">
               <button type="button" onclick="handleEditReviewCancel(${id})" 
                       class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                ${i18n.t('cancel')}
+                ${i18n.t('exit')}
               </button>
               <button type="submit" 
                       class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
@@ -4093,6 +4135,9 @@ async function handleEditReview(e) {
   // Note: Text-type answers are now managed through addNewAnswer() function
   const answers = {};
   const questions = window.currentEditQuestions || [];
+  
+  console.log('[handleEditReview] 开始收集答案，问题数量:', questions.length);
+  
   if (questions.length > 0) {
     questions.forEach(q => {
       if (q.question_type === 'single_choice') {
@@ -4100,6 +4145,9 @@ async function handleEditReview(e) {
         const selected = document.querySelector(`input[name="question${q.question_number}"]:checked`);
         if (selected) {
           answers[q.question_number] = selected.value; // "A" or "B" etc.
+          console.log(`[handleEditReview] 单选题 ${q.question_number}: ${selected.value}`);
+        } else {
+          console.log(`[handleEditReview] 单选题 ${q.question_number}: 未选择`);
         }
       } else if (q.question_type === 'multiple_choice') {
         // Get all checked checkboxes
@@ -4107,11 +4155,16 @@ async function handleEditReview(e) {
         if (checked.length > 0) {
           const selectedValues = Array.from(checked).map(cb => cb.value);
           answers[q.question_number] = selectedValues.join(','); // "A,B,C"
+          console.log(`[handleEditReview] 多选题 ${q.question_number}: ${selectedValues.join(',')}`);
+        } else {
+          console.log(`[handleEditReview] 多选题 ${q.question_number}: 未选择`);
         }
       }
       // Skip text type - these are managed through the multiple answers UI
     });
   }
+  
+  console.log('[handleEditReview] 收集到的答案:', answers);
   
   // Build data object based on permissions
   let data;
@@ -4180,9 +4233,17 @@ async function handleEditReview(e) {
     
     // Delay slightly to ensure notification is visible before navigating
     setTimeout(() => {
-      showReviews(); // Return to My Reviews page
-      window.scrollTo(0, 0); // Scroll to top
-      console.log('已返回复盘列表');
+      try {
+        console.log('执行返回复盘列表...');
+        showReviews(); // Return to My Reviews page
+        window.scrollTo(0, 0); // Scroll to top
+        console.log('已返回复盘列表');
+      } catch (navError) {
+        console.error('返回列表失败:', navError);
+        // Force navigation even if error
+        window.location.hash = '#reviews';
+        location.reload();
+      }
     }, 800); // 800ms delay to show success message
     
   } catch (error) {
@@ -9844,6 +9905,54 @@ async function saveEditReviewSilently(reviewId) {
   } catch (error) {
     console.error('Silent save failed:', error);
     return false;
+  }
+}
+
+// Add time-type question to Google Calendar
+async function addTimeQuestionToCalendar(reviewId, questionNumber) {
+  try {
+    console.log(`Adding time question ${questionNumber} to Google Calendar`);
+    
+    // 1. Get the datetime input value
+    const datetimeInput = document.getElementById(`time-input-${questionNumber}`);
+    if (!datetimeInput || !datetimeInput.value) {
+      showNotification(i18n.t('pleaseSetScheduledTime') || '请先选择时间', 'warning');
+      return;
+    }
+    
+    // 2. Get question data from current questions
+    const questions = window.currentEditQuestions || [];
+    const question = questions.find(q => q.question_number === questionNumber);
+    if (!question) {
+      showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+      return;
+    }
+    
+    // 3. Prepare calendar event data
+    const title = question.question_text || question.question_text_en || '复盘事项';
+    const datetime = new Date(datetimeInput.value);
+    
+    // Format datetime for Google Calendar (YYYYMMDDTHHMMSSZ)
+    const startTime = datetime.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    
+    // End time is 1 hour later
+    const endDatetime = new Date(datetime.getTime() + 60 * 60 * 1000);
+    const endTime = endDatetime.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    
+    // 4. Generate Google Calendar URL
+    const calendarUrl = new URL('https://calendar.google.com/calendar/render');
+    calendarUrl.searchParams.append('action', 'TEMPLATE');
+    calendarUrl.searchParams.append('text', title);
+    calendarUrl.searchParams.append('dates', `${startTime}/${endTime}`);
+    calendarUrl.searchParams.append('details', `复盘 ID: ${reviewId}\n问题: ${title}`);
+    
+    // 5. Open in new window
+    window.open(calendarUrl.toString(), '_blank');
+    
+    showNotification(i18n.t('calendarEventCreated') || '日历事件已创建', 'success');
+  } catch (error) {
+    console.error('Failed to add time question to calendar:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + error.message, 'error');
   }
 }
 
