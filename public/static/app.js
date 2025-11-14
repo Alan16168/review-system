@@ -9976,6 +9976,18 @@ async function createNewAnswerSet(reviewId) {
   try {
     const questions = window.currentEditQuestions || [];
     
+    // Debug: log questions to see what data we have
+    console.log('[createNewAnswerSet] Questions:', questions);
+    questions.forEach(q => {
+      if (q.question_type === 'time_with_text') {
+        console.log(`[createNewAnswerSet] Time question ${q.question_number}:`, {
+          datetime_value: q.datetime_value,
+          datetime_title: q.datetime_title,
+          datetime_answer_max_length: q.datetime_answer_max_length
+        });
+      }
+    });
+    
     if (questions.length === 0) {
       showNotification('No questions found', 'error');
       return;
@@ -10052,7 +10064,7 @@ async function createNewAnswerSet(reviewId) {
                     <div class="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">
-                          <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || '时间')}
+                          <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || q.question_text_en || q.question_text || '时间')}
                         </label>
                         <input type="datetime-local" id="modal-datetime-${q.question_number}"
                                value="${q.datetime_value ? new Date(q.datetime_value).toISOString().slice(0, 16) : ''}"
@@ -10156,10 +10168,12 @@ async function submitNewAnswerSet(reviewId) {
       } else if (q.question_type === 'time_with_text') {
         const datetimeInput = document.getElementById(`modal-datetime-${q.question_number}`);
         const textarea = document.getElementById(`modal-answer-${q.question_number}`);
+        // Use question_text_en or question_text as fallback for datetime_title
+        const datetimeTitle = q.datetime_title || q.question_text_en || q.question_text || '时间';
         answers[q.question_number] = {
           answer: textarea ? textarea.value.trim() : '',
           datetime_value: datetimeInput ? datetimeInput.value : (q.datetime_value || null),
-          datetime_title: q.datetime_title || '时间',
+          datetime_title: datetimeTitle,
           datetime_answer: textarea ? textarea.value.trim() : ''
         };
       }
