@@ -7391,8 +7391,8 @@ function showAddQuestionForm() {
               </select>
             </div>
             
-            <!-- Question Text -->
-            <div>
+            <!-- Question Text - Hidden for text and time_with_text types -->
+            <div id="question-text-cn-container">
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('questionTextCn')} *
               </label>
@@ -7400,8 +7400,8 @@ function showAddQuestionForm() {
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
             
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+            <div id="question-text-en-container">
+              <label id="question-text-en-label" class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('questionTextEn')}
               </label>
               <textarea id="question-text-en" rows="3"
@@ -7435,8 +7435,8 @@ function showAddQuestionForm() {
                   <p class="text-xs text-gray-500 mt-1">${i18n.t('defaultDatetimeHint')}</p>
                 </div>
                 
-                <!-- Datetime Title (max 12 chars) -->
-                <div>
+                <!-- Datetime Title (max 12 chars) - HIDDEN per requirements -->
+                <div style="display: none;">
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     <i class="fas fa-tag mr-1"></i>${i18n.t('datetimeTitle')} *
                   </label>
@@ -7552,8 +7552,8 @@ function showEditQuestionForm(questionId) {
               </select>
             </div>
             
-            <!-- Question Text -->
-            <div>
+            <!-- Question Text - Hidden for text and time_with_text types -->
+            <div id="question-text-cn-container">
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('questionTextCn')} *
               </label>
@@ -7561,8 +7561,8 @@ function showEditQuestionForm(questionId) {
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(question.question_text)}</textarea>
             </div>
             
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+            <div id="question-text-en-container">
+              <label id="question-text-en-label" class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('questionTextEn')}
               </label>
               <textarea id="question-text-en" rows="3"
@@ -7597,8 +7597,8 @@ function showEditQuestionForm(questionId) {
                   <p class="text-xs text-gray-500 mt-1">${i18n.t('defaultDatetimeHint')}</p>
                 </div>
                 
-                <!-- Datetime Title (max 12 chars) -->
-                <div>
+                <!-- Datetime Title (max 12 chars) - HIDDEN per requirements -->
+                <div style="display: none;">
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     <i class="fas fa-tag mr-1"></i>${i18n.t('datetimeTitle')} *
                   </label>
@@ -7702,6 +7702,11 @@ function handleQuestionTypeChange() {
   const singleChoiceAnswer = document.getElementById('single-choice-answer');
   const multipleChoiceAnswer = document.getElementById('multiple-choice-answer');
   
+  // Get containers and labels for dynamic field management
+  const questionTextCnContainer = document.getElementById('question-text-cn-container');
+  const questionTextEnContainer = document.getElementById('question-text-en-container');
+  const questionTextEnLabel = document.getElementById('question-text-en-label');
+  
   // Hide all type-specific containers first
   answerLengthContainer.classList.add('hidden');
   timeTypeContainer.classList.add('hidden');
@@ -7709,12 +7714,24 @@ function handleQuestionTypeChange() {
   correctAnswerContainer.classList.add('hidden');
   
   if (type === 'text') {
+    // Text type: Hide CN label, show EN as "问题"
     answerLengthContainer.classList.remove('hidden');
+    questionTextCnContainer.classList.add('hidden');
+    questionTextEnContainer.classList.remove('hidden');
+    questionTextEnLabel.textContent = i18n.t('question') + ' *';
   } else if (type === 'time_with_text') {
+    // Time type: Hide CN label, show EN as "标题"
     timeTypeContainer.classList.remove('hidden');
+    questionTextCnContainer.classList.add('hidden');
+    questionTextEnContainer.classList.remove('hidden');
+    questionTextEnLabel.textContent = i18n.t('title') + ' *';
   } else { // single_choice or multiple_choice
+    // Choice types: Show both CN and EN with original labels
     optionsContainer.classList.remove('hidden');
     correctAnswerContainer.classList.remove('hidden');
+    questionTextCnContainer.classList.remove('hidden');
+    questionTextEnContainer.classList.remove('hidden');
+    questionTextEnLabel.textContent = i18n.t('questionTextEn');
     
     if (type === 'single_choice') {
       singleChoiceAnswer.classList.remove('hidden');
@@ -7834,16 +7851,9 @@ function collectQuestionFormData() {
   } else if (type === 'time_with_text') {
     // Collect time type fields
     const datetimeValue = document.getElementById('question-datetime-value').value;
-    const datetimeTitle = document.getElementById('question-datetime-title').value.trim();
+    // datetime_title is hidden, use question_text_en as title instead
+    const datetimeTitle = document.getElementById('question-text-en').value.trim() || '时间';
     const answerMaxLength = parseInt(document.getElementById('question-datetime-answer-max-length').value) || 200;
-    
-    // Validate datetime title (required, max 12 chars)
-    if (!datetimeTitle) {
-      throw new Error(i18n.t('datetimeTitle') + ' ' + i18n.t('isRequired'));
-    }
-    if (datetimeTitle.length > 12) {
-      throw new Error(i18n.t('datetimeTitle') + ' ' + i18n.t('maxLength') + ': 12');
-    }
     
     // Validate answer max length (50-500)
     if (answerMaxLength < 50 || answerMaxLength > 500) {
