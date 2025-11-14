@@ -3701,16 +3701,34 @@ async function showEditReview(id) {
                       </p>
                     </div>
                   `;
-                } else {
-                  // Default text type - support multiple answers
+                } else if (q.question_type === 'time_with_text') {
+                  // Time with text type - show only title (no question_text, no datetime_title)
                   const userAnswers = answersByQuestion[q.question_number] || [];
                   const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
                   
                   return `
                     <div class="mb-6">
                       <label class="block text-sm font-medium text-gray-700 mb-2">
-                        ${q.question_number}. ${escapeHtml(q.question_text)}
-                        ${q.question_text_en ? `<span class="text-xs text-gray-500 block mt-1">${escapeHtml(q.question_text_en)}</span>` : ''}
+                        ${q.question_number}. ${i18n.t('title')}: ${q.question_text_en ? escapeHtml(q.question_text_en) : escapeHtml(q.question_text)}
+                      </label>
+                      
+                      <!-- Answer Set Display Area (Phase 1) -->
+                      <div id="answer-display-${q.question_number}" class="mt-3">
+                        <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
+                          <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswerSetsYet') || '还没有答案组，点击下方"创建新答案组"按钮开始'}
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                } else {
+                  // Default text type - show only question (no question_text label)
+                  const userAnswers = answersByQuestion[q.question_number] || [];
+                  const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
+                  
+                  return `
+                    <div class="mb-6">
+                      <label class="block text-sm font-medium text-gray-700 mb-2">
+                        ${q.question_number}. ${i18n.t('question')}: ${q.question_text_en ? escapeHtml(q.question_text_en) : escapeHtml(q.question_text)}
                       </label>
                       
                       <!-- Answer Set Display Area (Phase 1) -->

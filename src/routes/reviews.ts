@@ -165,7 +165,8 @@ reviews.get('/:id', async (c) => {
     const questionsResult = await c.env.DB.prepare(`
       SELECT 
         question_number,
-        CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text,
+        question_text,
+        question_text_en,
         question_type,
         options,
         correct_answer,
@@ -176,7 +177,7 @@ reviews.get('/:id', async (c) => {
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
-    `).bind(lang, review.template_id).all();
+    `).bind(review.template_id).all();
 
     // Get review answers with user information (support multiple answers per question)
     // Updated to work with new answer_sets structure
