@@ -10048,6 +10048,27 @@ async function createNewAnswerSet(reviewId) {
                         `;
                       }).join('')}
                     </div>
+                  ` : q.question_type === 'time_with_text' ? `
+                    <div class="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
+                          <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || '时间')}
+                        </label>
+                        <input type="datetime-local" id="modal-datetime-${q.question_number}"
+                               value="${q.datetime_value ? new Date(q.datetime_value).toISOString().slice(0, 16) : ''}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                      </div>
+                      <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
+                          <i class="fas fa-pen mr-1"></i>${i18n.t('answer') || '答案'}
+                        </label>
+                        <textarea id="modal-answer-${q.question_number}" rows="3"
+                                  maxlength="${q.datetime_answer_max_length || 200}"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                  placeholder="${i18n.t('enterAnswer') || '输入答案...'}">${escapeHtml(currentValue || '')}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: ${q.datetime_answer_max_length || 200}</p>
+                      </div>
+                    </div>
                   ` : `
                     <textarea id="modal-answer-${q.question_number}" rows="3"
                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
@@ -10131,6 +10152,15 @@ async function submitNewAnswerSet(reviewId) {
         const values = Array.from(checked).map(cb => cb.value);
         answers[q.question_number] = {
           answer: values.join(',')
+        };
+      } else if (q.question_type === 'time_with_text') {
+        const datetimeInput = document.getElementById(`modal-datetime-${q.question_number}`);
+        const textarea = document.getElementById(`modal-answer-${q.question_number}`);
+        answers[q.question_number] = {
+          answer: textarea ? textarea.value.trim() : '',
+          datetime_value: datetimeInput ? datetimeInput.value : (q.datetime_value || null),
+          datetime_title: q.datetime_title || '时间',
+          datetime_answer: textarea ? textarea.value.trim() : ''
         };
       }
     });
