@@ -18,6 +18,28 @@ const reviews = new Hono<{ Bindings: Bindings }>();
 // All routes require authentication
 reviews.use('/*', authMiddleware);
 
+// DEBUG ENDPOINT: Echo back the request body to see what backend receives
+reviews.post('/debug-echo', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const body = await c.req.json();
+    
+    return c.json({
+      debug_info: {
+        user_id: user.id,
+        received_body: body,
+        template_id_value: body.template_id,
+        template_id_type: typeof body.template_id,
+        template_id_is_undefined: body.template_id === undefined,
+        template_id_is_null: body.template_id === null,
+        template_id_truthiness: body.template_id || 'FALSY - will default to 1'
+      }
+    });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
 // Get public reviews (owner_type='public')
 reviews.get('/public', async (c) => {
   try {

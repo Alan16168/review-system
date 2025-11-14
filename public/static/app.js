@@ -2312,6 +2312,16 @@ async function handleStep1Submit(e) {
     console.log('创建空白草稿复盘:', data);
     console.log('[TEMPLATE_ID_TRACE] Template ID being sent:', templateId, 'from element value:', templateElem ? templateElem.value : 'NULL');
     
+    // DEBUG: First test what backend receives
+    console.log('[DEBUG] Testing backend reception with debug-echo endpoint...');
+    try {
+      const debugResponse = await axios.post('/api/reviews/debug-echo', data);
+      console.log('[DEBUG] Backend received:', debugResponse.data);
+      console.log('[DEBUG] template_id in backend:', debugResponse.data.debug_info.template_id_value, 'type:', debugResponse.data.debug_info.template_id_type);
+    } catch (debugError) {
+      console.error('[DEBUG] Debug endpoint failed:', debugError);
+    }
+    
     // Create empty draft review
     const response = await axios.post('/api/reviews', data);
     const newReviewId = response.data.id;
