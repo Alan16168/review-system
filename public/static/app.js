@@ -3751,14 +3751,9 @@ async function showEditReview(id) {
                     </div>
                   `;
                 } else if (q.question_type === 'time_with_text') {
-                  // Time with text type - new order: 时间输入 → 标题 → Google日历按钮 → 答案
+                  // Time with text type - simplified version without time input
                   const userAnswers = answersByQuestion[q.question_number] || [];
                   const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
-                  
-                  // Get datetime value from first answer if exists
-                  const existingDatetime = myAnswersList.length > 0 && myAnswersList[0].datetime_value 
-                    ? new Date(myAnswersList[0].datetime_value).toISOString().slice(0, 16) 
-                    : (q.datetime_value ? new Date(q.datetime_value).toISOString().slice(0, 16) : '');
                   
                   return `
                     <div class="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
@@ -3768,18 +3763,7 @@ async function showEditReview(id) {
                         </span>
                       </div>
                       
-                      <!-- 1. 时间输入框 (可编辑) -->
-                      <div class="mb-3">
-                        <label class="block text-xs font-medium text-gray-700 mb-1">
-                          <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || '时间')}
-                        </label>
-                        <input type="datetime-local" 
-                               id="time-input-${q.question_number}"
-                               value="${existingDatetime}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                      </div>
-                      
-                      <!-- 2. 标题显示 -->
+                      <!-- 1. 标题显示 -->
                       <div class="mb-3">
                         <label class="block text-xs font-medium text-gray-700 mb-1">
                           <i class="fas fa-heading mr-1"></i>${i18n.t('title') || '标题'}
@@ -3789,7 +3773,7 @@ async function showEditReview(id) {
                         </div>
                       </div>
                       
-                      <!-- 3. Google日历按钮 -->
+                      <!-- 2. Google日历按钮 -->
                       <div class="mb-3">
                         <button type="button" 
                                 onclick="addTimeQuestionToCalendar(${id}, ${q.question_number})"
@@ -3798,7 +3782,7 @@ async function showEditReview(id) {
                         </button>
                       </div>
                       
-                      <!-- 4. 答案编辑区 (Answer Sets) -->
+                      <!-- 3. 答案编辑区 (Answer Sets) -->
                       <div>
                         <label class="block text-xs font-medium text-gray-700 mb-2">
                           <i class="fas fa-pen mr-1"></i>${i18n.t('answers') || '答案'}
@@ -10087,20 +10071,9 @@ function renderAnswerSet(reviewId) {
         ` : ''}
       `;
     } else if (q.question_type === 'time_with_text') {
-      // Render time with text type - editable time and answer
-      const datetimeValue = answer?.datetime_value ? new Date(answer.datetime_value).toISOString().slice(0, 16) : '';
+      // Render time with text type - simplified without time input
       answerElement.innerHTML = `
         <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">
-              <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || '时间')}
-            </label>
-            <input type="datetime-local" 
-                   id="set-time-${q.question_number}"
-                   value="${datetimeValue}"
-                   onchange="updateTimeValueInSet(${reviewId}, ${q.question_number})"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-          </div>
           <div>
             <label class="block text-xs font-medium text-gray-700 mb-1">
               <i class="fas fa-pen mr-1"></i>${i18n.t('answer') || '答案'}
@@ -10260,22 +10233,8 @@ async function saveInlineAnswer(reviewId, questionNumber) {
     const currentSet = sets[index];
     const setNumber = currentSet.set_number;
     
-    // Check if this is a time_with_text question
-    const questions = window.currentEditQuestions || [];
-    const question = questions.find(q => q.question_number === questionNumber);
-    
+    // For all question types, just save the answer text
     let answerData = answer;
-    
-    if (question?.question_type === 'time_with_text') {
-      // For time questions, include datetime_value
-      const timeInput = document.getElementById(`set-time-${questionNumber}`);
-      const datetimeValue = timeInput ? timeInput.value : null;
-      
-      answerData = {
-        answer: answer,
-        datetime_value: datetimeValue
-      };
-    }
     
     // Call API to update the answer in current set
     const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
@@ -10434,20 +10393,9 @@ function editAnswerInSet(reviewId, questionNumber) {
   const question = questions.find(q => q.question_number === questionNumber);
   
   if (question?.question_type === 'time_with_text') {
-    // For time questions, only edit the answer text part
-    const datetimeValue = answer?.datetime_value ? new Date(answer.datetime_value).toISOString().slice(0, 16) : '';
+    // For time questions, only edit the answer text part (without time input)
     answerElement.innerHTML = `
       <div class="space-y-3">
-        <div>
-          <label class="block text-xs font-medium text-gray-700 mb-1">
-            <i class="fas fa-clock mr-1"></i>${escapeHtml(question.datetime_title || '时间')}
-          </label>
-          <input type="datetime-local" 
-                 id="set-time-${questionNumber}"
-                 value="${datetimeValue}"
-                 onchange="updateTimeValueInSet(${reviewId}, ${questionNumber})"
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-        </div>
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">
             <i class="fas fa-pen mr-1"></i>${i18n.t('answer') || '答案'}
