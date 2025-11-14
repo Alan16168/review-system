@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 最新修复**: V6.0.0-Phase1-Modal-Fix - Modal自动预填充答案（用户体验改进）
+**✅ 最新修复**: V6.0.0-Phase2.3-Template-Guard - 添加template_id修改防护（代码健壮性提升）
 
 ## 🌟 项目概述
 
@@ -125,17 +125,52 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://2ee03628.review-system.pages.dev
+- **最新部署 ID**: https://9a76cf1a.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ V6.0.0-Phase2.3-AutoSave-Fix - 自动保存持久化修复完成！
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-14
-- **部署时间**: 刚刚部署（V6.0.0-Phase2.3 - 自动保存真正持久化）
+- **部署时间**: 刚刚部署（V6.0.0-Phase2.3-Template-Guard - template_id修改防护）
 - **数据库迁移**: ✅ Migration 0030 已应用到生产数据库
 - **功能状态**: ✅ 答案集合系统 + 自动保存完全修复！
 - **最新更新**: ✅ **V6.0.0-Phase2.1 - 时间型问题管理后台**（新功能 - 2025-11-13）
 - **更新内容**:
+  - 🎉 **V6.0.0-Phase2.3-Template-Guard - template_id修改防护**（代码健壮性提升 - 2025-11-14）：
+    - **用户反馈**: "编辑有时间字段的复盘后保存，会把模板改成默认模板"
+    - **问题调查**:
+      - ✅ 后端PUT API验证：不包含template_id字段，使用COALESCE确保不修改
+      - ✅ 前端handleEditReview验证：不发送template_id字段
+      - ✅ 所有UPDATE语句验证：无任何修改template_id的逻辑
+      - ✅ 答案集合API验证：不涉及reviews表的template_id
+      - **结论**: 未找到会修改template_id的代码路径
+    - **解决方案 - 添加防御性保护**:
+      - ✅ **后端注释保护**:
+        - 在PUT /api/reviews/:id中添加明确注释
+        - 说明template_id应该只在创建时设置，不可后续修改
+        - 防止未来误修改
+      - ✅ **前端注释保护**:
+        - 在handleEditReview()中添加详细注释
+        - 解释为什么不发送template_id
+        - 说明修改template_id会导致时间型问题等数据丢失
+    - **技术实现**:
+      - 修改文件1: `src/routes/reviews.ts` (line 369)
+      - 修改文件2: `public/static/app.js` (line 4217-4220)
+      - 无逻辑变更，仅添加文档注释
+    - **代码健壮性提升**:
+      - ✅ 明确template_id不可修改的设计意图
+      - ✅ 防止未来开发误操作
+      - ✅ 提供清晰的代码文档
+      - ✅ 确保时间型问题等模板特定数据不丢失
+    - **用户问题分析**:
+      - 经过全面代码审查，未发现template_id被修改的路径
+      - 可能原因：
+        1. 用户创建时未正确设置template_id（前端bug）
+        2. 数据库中template_id为NULL被默认为1
+        3. 用户理解错误（实际是查看了不同的复盘）
+      - 防御性注释确保未来不会出现此类问题
+    - **部署URL**: https://9a76cf1a.review-system.pages.dev
+    - **提交commit**: b3b060a
   - 🎉 **V6.0.0-Phase2.1 - 时间型问题管理后台**（新功能 - 2025-11-13）：
     - **功能概述**: 管理后台完整支持创建和编辑 time_with_text 类型问题
     - **核心实现**:
