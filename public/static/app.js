@@ -7528,8 +7528,8 @@ function showAddQuestionForm() {
             
             <!-- Time Type Fields (for time_with_text only) -->
             <div id="time-type-container" class="hidden">
-              <div class="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-sm text-blue-800 font-medium">
+              <div class="space-y-4">
+                <p class="text-sm text-gray-700 font-medium">
                   <i class="fas fa-info-circle mr-1"></i>${i18n.t('timeTypeDescription')}
                 </p>
                 
@@ -7681,8 +7681,8 @@ function showEditQuestionForm(questionId) {
             
             <!-- Time Type Fields (for time_with_text only) -->
             <div id="time-type-container" class="${question.question_type === 'time_with_text' ? '' : 'hidden'}">
-              <div class="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-sm text-blue-800 font-medium">
+              <div class="space-y-4">
+                <p class="text-sm text-gray-700 font-medium">
                   <i class="fas fa-info-circle mr-1"></i>${i18n.t('timeTypeDescription')}
                 </p>
                 
@@ -10580,7 +10580,7 @@ async function createNewAnswerSet(reviewId) {
                       }).join('')}
                     </div>
                   ` : q.question_type === 'time_with_text' ? `
-                    <div class="space-y-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="space-y-3">
                       <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">
                           <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || q.question_text_en || q.question_text || '时间')}
