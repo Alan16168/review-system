@@ -1,5 +1,6 @@
 {
   "name": "webapp",
+  "version": "5.99.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
