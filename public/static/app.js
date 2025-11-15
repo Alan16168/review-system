@@ -7198,30 +7198,16 @@ function showCreateTemplateModal() {
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('templateNameCn')} *
+                ${i18n.t('templateName')} *
               </label>
               <input type="text" id="template-name" required
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('templateNameEn')}
-              </label>
-              <input type="text" id="template-name-en"
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('templateDescriptionCn')}
+                ${i18n.t('templateDescription')}
               </label>
               <textarea id="template-description" rows="3"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('templateDescriptionEn')}
-              </label>
-              <textarea id="template-description-en" rows="3"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
             ${currentUser.role === 'admin' ? `
@@ -7257,9 +7243,7 @@ async function handleCreateTemplate(e) {
   const isDefaultCheckbox = document.getElementById('template-is-default');
   const data = {
     name: document.getElementById('template-name').value,
-    name_en: document.getElementById('template-name-en').value || null,
     description: document.getElementById('template-description').value || null,
-    description_en: document.getElementById('template-description-en').value || null,
     is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false
   };
 
@@ -7297,31 +7281,17 @@ async function showEditTemplateModal(templateId) {
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('templateNameCn')} *
+                  ${i18n.t('templateName')} *
                 </label>
                 <input type="text" id="template-name" required value="${escapeHtml(template.name)}"
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('templateNameEn')}
-                </label>
-                <input type="text" id="template-name-en" value="${escapeHtml(template.name_en || '')}"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('templateDescriptionCn')}
+                  ${i18n.t('templateDescription')}
                 </label>
                 <textarea id="template-description" rows="3"
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(template.description || '')}</textarea>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('templateDescriptionEn')}
-                </label>
-                <textarea id="template-description-en" rows="3"
-                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(template.description_en || '')}</textarea>
               </div>
               ${currentUser.role === 'admin' ? `
                 <div class="flex items-center">
@@ -7366,9 +7336,7 @@ async function handleUpdateTemplate(e, templateId) {
   const isDefaultCheckbox = document.getElementById('template-is-default');
   const data = {
     name: document.getElementById('template-name').value,
-    name_en: document.getElementById('template-name-en').value || null,
     description: document.getElementById('template-description').value || null,
-    description_en: document.getElementById('template-description-en').value || null,
     is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false,
     is_active: document.getElementById('template-is-active').checked
   };
