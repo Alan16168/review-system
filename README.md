@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 最新修复**: V6.0.0-Phase1-Modal-Fix - Modal自动预填充答案（用户体验改进）
+**✅ 当前版本**: V6.0.0-Phase2.3-AutoSave-Fix - 自动保存持久化完整版（已回滚）
 
 ## 🌟 项目概述
 
@@ -125,17 +125,53 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://895e8e56.review-system.pages.dev
+- **最新部署 ID**: https://cf36f475.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ V6.0.0-Phase2.1 - 时间型问题管理后台完成！
+- **版本**: ✅ **V6.0.0-Phase2.3-AutoSave-Fix - 自动保存持久化完整版**
+- **Git Commit**: dfa973a274cfcabe9248658493ed05f43becc9b3
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
-- **状态**: ✅ 已成功部署到生产环境（Published）
-- **部署日期**: 2025-11-13
-- **部署时间**: 刚刚部署（V6.0.0-Phase2.1 - 管理后台时间型问题支持）
-- **数据库迁移**: ✅ Migration 0030 已应用到生产数据库
-- **功能状态**: ✅ 答案集合系统 + 时间型问题管理后台完成！
-- **最新更新**: ✅ **V6.0.0-Phase2.1 - 时间型问题管理后台**（新功能 - 2025-11-13）
+- **状态**: ✅ 已成功部署到生产环境（Published）- 已回滚到稳定版本
+- **部署日期**: 2025-11-15
+- **部署时间**: 刚刚完成回滚部署
+- **数据库迁移**: ✅ Migration 0030 (answer_sets系统) 已应用
+- **功能状态**: ✅ 完整的答案集合系统 + 自动保存持久化
+- **最新更新**: ✅ **系统回滚到 V6.0.0-Phase2.3-AutoSave-Fix**（2025-11-15）
 - **更新内容**:
+  - 🔄 **系统回滚到 V6.0.0-Phase2.3-AutoSave-Fix**（重要回滚 - 2025-11-15）：
+    - **回滚原因**: 从简化版本（v5.99）回滚到功能完整的稳定版本
+    - **回滚目标**: commit dfa973a - "Fix: Auto-save persistence - auto-create first answer set when needed"
+    - **恢复的核心功能**:
+      - ✅ **完整的答案集合系统（Answer Sets）**:
+        - 支持为每个复盘创建多个答案组
+        - 答案组导航功能（上一组/下一组按钮）
+        - "创建新答案组"按钮
+        - 统一的答案集合管理
+      - ✅ **自动保存持久化**:
+        - 首次编辑时自动创建答案集（无需手动点击）
+        - 所有问题类型（文字、时间、单选、多选）支持自动保存
+        - 数据持久化到数据库，刷新页面不丢失
+      - ✅ **完整的问题类型支持**:
+        - 文字型问题（text）
+        - 时间+文字型问题（time_with_text）
+        - 单选题（single_choice）
+        - 多选题（multiple_choice）
+      - ✅ **数据库完整架构**:
+        - `review_answer_sets` 表：管理答案集合元数据
+        - `review_answers` 表：存储具体答案（关联到answer_set_id）
+        - Migration 0030：时间型问题和答案集合系统
+    - **技术细节**:
+      - 创建 `createFirstAnswerSetIfNeeded()` 辅助函数
+      - 修改所有自动保存函数，自动创建答案集
+      - 保持数据库Migration 0030不变（已在生产环境）
+    - **用户体验**:
+      - ✅ 支持多个答案组，可以记录不同时间点的答案
+      - ✅ 答案自动保存，无需担心数据丢失
+      - ✅ 完整的答案管理功能
+    - **部署信息**:
+      - 生产URL: https://review-system.pages.dev
+      - 部署ID: https://cf36f475.review-system.pages.dev
+      - Git commit: dfa973a
+      - 强制推送到GitHub: `git push -f origin main`
   - 🎉 **V6.0.0-Phase2.1 - 时间型问题管理后台**（新功能 - 2025-11-13）：
     - **功能概述**: 管理后台完整支持创建和编辑 time_with_text 类型问题
     - **核心实现**:
