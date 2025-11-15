@@ -19,12 +19,7 @@ window.reviewEditor = {
   template: null,           // 模板数据
   answerSets: [],           // 答案集数据
   currentAnswerSetIndex: 0, // 当前显示的答案集索引
-  isDirty: false,           // 是否有未保存的更改
-  collapsedSections: {      // 区域折叠状态
-    header: false,
-    answers: false,
-    planTime: false
-  }
+  isDirty: false            // 是否有未保存的更改
 };
 
 // ============================================================================
@@ -318,19 +313,17 @@ function renderReviewHeaderSection() {
   return `
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
-      <div class="section-header section-header-purple px-6 py-4 flex items-center justify-between cursor-pointer"
-           onclick="console.log('🖱️ Header 被点击了！'); window.toggleSection('header'); return false;">
+      <div class="section-header section-header-purple px-6 py-4">
         <div class="flex items-center space-x-3">
           <i class="fas fa-heading text-indigo-700"></i>
           <h2 class="text-lg font-semibold text-indigo-900">
             ${i18n.t('reviewHeader')}
           </h2>
         </div>
-        <i class="fas fa-chevron-${isCollapsed ? 'down' : 'up'} text-indigo-700"></i>
       </div>
       
       <!-- Section Content -->
-      <div id="section-header" class="section-content ${isCollapsed ? 'section-collapsed' : ''} p-6 space-y-4">
+      <div id="section-header" class="p-6 space-y-4">
         <!-- Title -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -539,7 +532,6 @@ function renderTemplateDisplay() {
  */
 function renderAnswerSetsSection() {
   const editor = window.reviewEditor;
-  const isCollapsed = editor.collapsedSections.answers;
   const isEdit = (editor.reviewId !== null);
   
   // 创建模式下不显示答案区域（需要先保存后才能填写答案）
@@ -565,8 +557,7 @@ function renderAnswerSetsSection() {
   return `
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
-      <div class="section-header section-header-green px-6 py-4 flex items-center justify-between cursor-pointer"
-           onclick="console.log('🖱️ Answers 被点击了！'); window.toggleSection('answers'); return false;">
+      <div class="section-header section-header-green px-6 py-4">
         <div class="flex items-center space-x-3">
           <i class="fas fa-layer-group text-green-700"></i>
           <h2 class="text-lg font-semibold text-green-900">
@@ -578,11 +569,10 @@ function renderAnswerSetsSection() {
             </span>
           ` : ''}
         </div>
-        <i class="fas fa-chevron-${isCollapsed ? 'down' : 'up'} text-green-700"></i>
       </div>
       
       <!-- Section Content -->
-      <div id="section-answers" class="section-content ${isCollapsed ? 'section-collapsed' : ''} p-6">
+      <div id="section-answers" class="p-6">
         ${renderAnswerSetsContent()}
       </div>
     </div>
@@ -790,7 +780,6 @@ function renderChoiceQuestion(question, answers) {
 function renderPlanTimeSection() {
   const editor = window.reviewEditor;
   const data = editor.reviewData;
-  const isCollapsed = editor.collapsedSections.planTime;
   const isCreator = editor.isCreator;
   const disabled = isCreator ? '' : 'disabled';
   
@@ -800,19 +789,17 @@ function renderPlanTimeSection() {
   return `
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
-      <div class="section-header section-header-blue px-6 py-4 flex items-center justify-between cursor-pointer"
-           onclick="console.log('🖱️ PlanTime 被点击了！'); window.toggleSection('planTime'); return false;">
+      <div class="section-header section-header-blue px-6 py-4">
         <div class="flex items-center space-x-3">
           <i class="fas fa-calendar-alt text-blue-700"></i>
           <h2 class="text-lg font-semibold text-blue-900">
             ${i18n.t('planReviewTime')} <span class="text-sm font-normal text-gray-600">(${i18n.t('optional')})</span>
           </h2>
         </div>
-        <i class="fas fa-chevron-${isCollapsed ? 'down' : 'up'} text-blue-700"></i>
       </div>
       
       <!-- Section Content -->
-      <div id="section-planTime" class="section-content ${isCollapsed ? 'section-collapsed' : ''} p-6 space-y-4">
+      <div id="section-planTime" class="p-6 space-y-4">
         <!-- Scheduled Time -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -914,9 +901,9 @@ window.handleReviewEditorBack = function() {
 };
 
 /**
- * 处理区域折叠/展开
+ * 处理区域折叠/展开 - 已禁用（改用背景色区分）
  */
-window.toggleSection = function(sectionName) {
+// window.toggleSection = function(sectionName) {
   console.log('[toggleSection] ========== 🎯 函数被调用！ ==========');
   console.log('[toggleSection] 参数 sectionName:', sectionName);
   
@@ -990,7 +977,9 @@ window.toggleSection = function(sectionName) {
   }
   
   console.log('[toggleSection] ========== 折叠操作完成 ==========');
-};
+}; */
+
+// 折叠功能已禁用 - 现在使用不同背景色区分不同工作区
 
 /**
  * 处理所有者类型变化
