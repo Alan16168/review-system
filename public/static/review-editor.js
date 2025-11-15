@@ -263,6 +263,9 @@ function renderReviewEditor() {
   
   const pageTitle = isEdit ? i18n.t('editReview') : i18n.t('createReview');
   
+  // 根据创建/编辑模式显示不同的按钮文字
+  const saveButtonText = isEdit ? i18n.t('saveAndExit') : i18n.t('createAndContinue');
+  
   app.innerHTML = `
     <div class="max-w-6xl mx-auto">
       <!-- Header -->
@@ -280,8 +283,8 @@ function renderReviewEditor() {
         </div>
         <button onclick="handleSaveReview()" 
                 class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg flex items-center">
-          <i class="fas fa-save mr-2"></i>
-          ${i18n.t('saveAndExit')}
+          <i class="fas ${isEdit ? 'fa-save' : 'fa-arrow-right'} mr-2"></i>
+          ${saveButtonText}
         </button>
       </div>
       
@@ -289,8 +292,8 @@ function renderReviewEditor() {
         <!-- Section 1: Review Header -->
         ${renderReviewHeaderSection()}
         
-        <!-- Section 2: Answer Sets Management -->
-        ${renderAnswerSetsSection()}
+        <!-- Section 2: Answer Sets Management (仅编辑模式显示) -->
+        ${isEdit ? renderAnswerSetsSection() : ''}
         
         <!-- Section 3: Plan Review Time -->
         ${renderPlanTimeSection()}
@@ -1103,21 +1106,27 @@ async function handleSaveReview(event) {
     if (isEdit) {
       // 更新现有复盘
       await updateReview(editor.reviewId, formData);
+      
+      // 保存成功，返回列表
+      setTimeout(() => {
+        window.reviewEditor.isDirty = false;
+        showReviews();
+        window.scrollTo(0, 0);
+      }, 800);
     } else {
       // 创建新复盘
       const newReviewId = await createReview(formData);
       
-      // 创建成功后，如果用户想继续编辑，可以直接打开编辑模式
-      // 否则返回列表
+      // 创建成功后，自动进入编辑模式
       showNotification(i18n.t('reviewCreated'), 'success');
+      
+      setTimeout(() => {
+        window.reviewEditor.isDirty = false;
+        // 调用编辑器，传入新创建的复盘ID
+        showReviewEditor(newReviewId);
+        window.scrollTo(0, 0);
+      }, 800);
     }
-    
-    // 保存成功，返回列表
-    setTimeout(() => {
-      window.reviewEditor.isDirty = false;
-      showReviews();
-      window.scrollTo(0, 0);
-    }, 800);
     
   } catch (error) {
     console.error('[ReviewEditor] 保存失败:', error);
