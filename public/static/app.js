@@ -7583,11 +7583,7 @@ function showAddQuestionForm() {
             
             <!-- Time Type Fields (for time_with_text only) -->
             <div id="time-type-container" class="hidden">
-              <div class="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-sm text-blue-800 font-medium">
-                  <i class="fas fa-info-circle mr-1"></i>${i18n.t('timeTypeDescription')}
-                </p>
-                
+              <div class="space-y-4 p-4 rounded-lg">
                 <!-- Default Datetime -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -7744,11 +7740,7 @@ function showEditQuestionForm(questionId) {
             
             <!-- Time Type Fields (for time_with_text only) -->
             <div id="time-type-container" class="${question.question_type === 'time_with_text' ? '' : 'hidden'}">
-              <div class="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-sm text-blue-800 font-medium">
-                  <i class="fas fa-info-circle mr-1"></i>${i18n.t('timeTypeDescription')}
-                </p>
-                
+              <div class="space-y-4 p-4 rounded-lg">
                 <!-- Default Datetime -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">
