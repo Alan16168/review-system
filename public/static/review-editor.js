@@ -35,7 +35,10 @@ window.reviewEditor = {
  * 显示复盘编辑器（统一的创建/编辑入口）
  * @param {number|null} reviewId - 复盘ID，null表示创建新复盘
  */
-async function showReviewEditor(reviewId = null) {
+window.showReviewEditor = async function(reviewId = null) {
+  console.log('[ReviewEditor] ========== 开始加载编辑器 ==========');
+  console.log('[ReviewEditor] reviewId:', reviewId);
+  
   currentView = 'review-editor';
   
   // 重置编辑器状态
@@ -57,23 +60,32 @@ async function showReviewEditor(reviewId = null) {
   try {
     if (reviewId) {
       // 编辑模式：加载现有复盘数据
-      console.log('[ReviewEditor] 加载复盘数据, ID:', reviewId);
+      console.log('[ReviewEditor] 编辑模式 - 加载复盘数据, ID:', reviewId);
       await loadReviewData(reviewId);
+      console.log('[ReviewEditor] 数据加载完成');
+      console.log('[ReviewEditor] reviewData:', window.reviewEditor.reviewData);
+      console.log('[ReviewEditor] template:', window.reviewEditor.template);
+      console.log('[ReviewEditor] template.questions:', window.reviewEditor.template?.questions);
+      console.log('[ReviewEditor] answerSets:', window.reviewEditor.answerSets);
     } else {
       // 创建模式：初始化空数据
-      console.log('[ReviewEditor] 初始化新复盘');
+      console.log('[ReviewEditor] 创建模式 - 初始化新复盘');
       await initializeNewReview();
     }
     
     // 渲染UI
+    console.log('[ReviewEditor] 开始渲染UI...');
     renderReviewEditor();
+    console.log('[ReviewEditor] ========== 编辑器加载完成 ==========');
     
   } catch (error) {
-    console.error('[ReviewEditor] 初始化失败:', error);
+    console.error('[ReviewEditor] ========== 初始化失败 ==========');
+    console.error('[ReviewEditor] 错误详情:', error);
+    console.error('[ReviewEditor] 错误堆栈:', error.stack);
     showNotification(i18n.t('operationFailed') + ': ' + error.message, 'error');
     showReviews();
   }
-}
+};
 
 // ============================================================================
 // 数据加载和初始化
@@ -84,10 +96,15 @@ async function showReviewEditor(reviewId = null) {
  */
 async function loadReviewData(reviewId) {
   try {
+    console.log('[loadReviewData] 开始加载复盘数据...');
     const response = await axios.get(`/api/reviews/${reviewId}`);
     const data = response.data;
     
-    console.log('[ReviewEditor] 复盘数据已加载:', data);
+    console.log('[loadReviewData] API响应数据:', data);
+    console.log('[loadReviewData] data.review:', data.review);
+    console.log('[loadReviewData] data.questions:', data.questions);
+    console.log('[loadReviewData] data.questions.length:', data.questions?.length);
+    console.log('[loadReviewData] data.answersByQuestion:', data.answersByQuestion);
     
     // 存储基本数据
     window.reviewEditor.reviewData = {
@@ -109,6 +126,8 @@ async function loadReviewData(reviewId) {
       creator_id: data.review.user_id
     };
     
+    console.log('[loadReviewData] reviewData已存储:', window.reviewEditor.reviewData);
+    
     // 存储模板数据（使用questions数据）
     window.reviewEditor.template = {
       id: data.review.template_id,
@@ -117,15 +136,24 @@ async function loadReviewData(reviewId) {
       questions: data.questions || []
     };
     
+    console.log('[loadReviewData] template已存储:', window.reviewEditor.template);
+    console.log('[loadReviewData] template.questions:', window.reviewEditor.template.questions);
+    
     // 判断是否是创建者
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     window.reviewEditor.isCreator = (data.review.user_id === currentUser.id);
     
+    console.log('[loadReviewData] 当前用户:', currentUser);
+    console.log('[loadReviewData] isCreator:', window.reviewEditor.isCreator);
+    
     // 加载答案集
+    console.log('[loadReviewData] 开始加载答案集...');
     await loadAnswerSets(reviewId);
+    console.log('[loadReviewData] 答案集加载完成');
     
   } catch (error) {
-    console.error('[ReviewEditor] 加载复盘数据失败:', error);
+    console.error('[loadReviewData] 加载复盘数据失败:', error);
+    console.error('[loadReviewData] 错误详情:', error.response?.data);
     throw error;
   }
 }
@@ -196,18 +224,25 @@ async function initializeNewReview() {
  */
 async function loadAnswerSets(reviewId) {
   try {
-    const response = await axios.get(`/api/reviews/${reviewId}/answer-sets`);
-    window.reviewEditor.answerSets = response.data;
+    console.log('[loadAnswerSets] 开始加载答案集, reviewId:', reviewId);
+    const response = await axios.get(`/api/answer-sets/${reviewId}`);
+    console.log('[loadAnswerSets] API响应:', response.data);
     
-    console.log('[ReviewEditor] 答案集已加载:', window.reviewEditor.answerSets.length, '个');
+    // 后端返回 { sets: [...] }
+    window.reviewEditor.answerSets = response.data.sets || [];
+    
+    console.log('[loadAnswerSets] 答案集已加载:', window.reviewEditor.answerSets.length, '个');
+    console.log('[loadAnswerSets] 答案集详情:', window.reviewEditor.answerSets);
     
     // 设置当前答案集索引
     if (window.reviewEditor.answerSets.length > 0) {
       window.reviewEditor.currentAnswerSetIndex = 0;
+      console.log('[loadAnswerSets] 当前答案集索引:', window.reviewEditor.currentAnswerSetIndex);
     }
     
   } catch (error) {
-    console.error('[ReviewEditor] 加载答案集失败:', error);
+    console.error('[loadAnswerSets] 加载答案集失败:', error);
+    console.error('[loadAnswerSets] 错误详情:', error.response?.data);
     // 不阻断流程，答案集可能为空
     window.reviewEditor.answerSets = [];
   }
