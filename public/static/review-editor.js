@@ -873,27 +873,42 @@ function attachEditorEventListeners() {
   }
   
   // 绑定section折叠/展开事件
-  const sectionNames = ['header', 'answers', 'planTime'];
-  sectionNames.forEach(sectionName => {
-    const sectionHeader = document.querySelector(`[onclick="toggleSection('${sectionName}')"]`);
-    if (sectionHeader) {
-      console.log('[attachEditorEventListeners] 找到section header:', sectionName);
-      // 移除inline onclick，使用事件监听器
-      sectionHeader.removeAttribute('onclick');
-      sectionHeader.addEventListener('click', function(e) {
-        console.log('[attachEditorEventListeners] Section header点击:', sectionName);
+  // 使用类名选择器，更可靠
+  const headerSection = document.querySelector('.section-header-purple');
+  const answersSection = document.querySelector('.section-header-green');
+  const planTimeSection = document.querySelector('.section-header-blue');
+  
+  const sections = [
+    { element: headerSection, name: 'header', color: 'purple' },
+    { element: answersSection, name: 'answers', color: 'green' },
+    { element: planTimeSection, name: 'planTime', color: 'blue' }
+  ];
+  
+  sections.forEach(({ element, name, color }) => {
+    if (element) {
+      console.log(`[attachEditorEventListeners] 找到section header: ${name} (${color})`);
+      
+      // 移除可能存在的inline onclick
+      element.removeAttribute('onclick');
+      
+      // 添加点击事件监听器
+      element.addEventListener('click', function(e) {
+        console.log(`[attachEditorEventListeners] Section header点击: ${name}`);
         e.preventDefault();
         e.stopPropagation();
-        window.toggleSection(sectionName);
+        window.toggleSection(name);
       });
-      // 添加视觉提示
-      sectionHeader.style.cursor = 'pointer';
+      
+      // 确保有视觉提示
+      element.style.cursor = 'pointer';
+      
+      console.log(`[attachEditorEventListeners] ${name} 事件绑定完成`);
     } else {
-      console.warn('[attachEditorEventListeners] 未找到section header:', sectionName);
+      console.warn(`[attachEditorEventListeners] 未找到section header: ${name} (${color})`);
     }
   });
   
-  console.log('[attachEditorEventListeners] 事件绑定完成');
+  console.log('[attachEditorEventListeners] 所有事件绑定完成');
 }
 
 /**
