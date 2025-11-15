@@ -692,38 +692,25 @@ function renderQuestion(question, answers) {
  * 渲染文本类型问题
  */
 function renderTextQuestion(question, answers) {
+  // 获取第一个答案（如果有）
+  const existingAnswer = answers.length > 0 ? answers[0] : null;
+  
   return `
     <div class="space-y-3">
-      <!-- Existing Answers -->
-      ${answers.map(answer => `
-        <div class="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg">
-          <div class="flex-1">
-            <p class="text-gray-700">${escapeHtml(answer.answer)}</p>
-            <p class="text-xs text-gray-500 mt-1">
-              ${new Date(answer.created_at).toLocaleString()}
-            </p>
-          </div>
-          <button type="button"
-                  onclick="deleteAnswerConfirm(${answer.id})"
-                  class="text-red-600 hover:text-red-800">
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-      `).join('')}
-      
-      <!-- Add New Answer -->
-      <div class="flex space-x-2">
-        <input type="text"
-               id="new-answer-${question.question_number}"
-               placeholder="${i18n.t('enterAnswer')}"
-               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-        <button type="button"
-                onclick="addNewAnswer(${question.question_number})"
-                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-          <i class="fas fa-plus mr-2"></i>
-          ${i18n.t('add')}
-        </button>
-      </div>
+      <!-- Answer Input -->
+      <textarea
+        id="answer-${question.question_number}"
+        placeholder="${i18n.t('enterAnswer')}"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+        rows="3"
+        onchange="markAnswerDirty(${question.question_number})"
+      >${existingAnswer ? escapeHtml(existingAnswer.answer) : ''}</textarea>
+      ${existingAnswer ? `
+        <p class="text-xs text-gray-500">
+          <i class="fas fa-clock mr-1"></i>
+          ${i18n.t('lastUpdated')}: ${new Date(existingAnswer.updated_at || existingAnswer.created_at).toLocaleString()}
+        </p>
+      ` : ''}
     </div>
   `;
 }
@@ -732,46 +719,34 @@ function renderTextQuestion(question, answers) {
  * 渲染时间类型问题
  */
 function renderTimeQuestion(question, answers) {
+  // 获取第一个答案（如果有）
+  const existingAnswer = answers.length > 0 ? answers[0] : null;
+  
+  // 格式化datetime-local输入值
+  let datetimeValue = '';
+  if (existingAnswer && existingAnswer.answer) {
+    try {
+      const date = new Date(existingAnswer.answer);
+      datetimeValue = date.toISOString().slice(0, 16);
+    } catch (e) {
+      console.error('解析时间失败:', e);
+    }
+  }
+  
   return `
     <div class="space-y-3">
-      <!-- Existing Time Answers -->
-      ${answers.map(answer => `
-        <div class="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg">
-          <div class="flex-1">
-            <p class="text-gray-700">
-              <i class="fas fa-calendar mr-2"></i>
-              ${new Date(answer.answer).toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
-            <p class="text-xs text-gray-500 mt-1">
-              ${new Date(answer.created_at).toLocaleString()}
-            </p>
-          </div>
-          <button type="button"
-                  onclick="deleteAnswerConfirm(${answer.id})"
-                  class="text-red-600 hover:text-red-800">
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-      `).join('')}
-      
-      <!-- Add New Time Answer -->
-      <div class="flex space-x-2">
-        <input type="datetime-local"
-               id="new-answer-${question.question_number}"
-               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-        <button type="button"
-                onclick="addNewAnswer(${question.question_number})"
-                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-          <i class="fas fa-plus mr-2"></i>
-          ${i18n.t('add')}
-        </button>
-      </div>
+      <!-- Time Input -->
+      <input type="datetime-local"
+             id="answer-${question.question_number}"
+             value="${datetimeValue}"
+             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+             onchange="markAnswerDirty(${question.question_number})">
+      ${existingAnswer ? `
+        <p class="text-xs text-gray-500">
+          <i class="fas fa-clock mr-1"></i>
+          ${i18n.t('lastUpdated')}: ${new Date(existingAnswer.updated_at || existingAnswer.created_at).toLocaleString()}
+        </p>
+      ` : ''}
     </div>
   `;
 }
@@ -1002,91 +977,14 @@ function handleChoiceChange(questionNumber) {
 }
 
 /**
- * 添加新答案
+ * 标记答案为已修改
  */
-window.addNewAnswer = async function(questionNumber) {
-  const input = document.getElementById(`new-answer-${questionNumber}`);
-  if (!input) return;
-  
-  const answer = input.value.trim();
-  if (!answer) {
-    showNotification(i18n.t('pleaseEnterAnswer'), 'warning');
-    return;
-  }
-  
-  const editor = window.reviewEditor;
-  const reviewId = editor.reviewId;
-  
-  if (!reviewId) {
-    showNotification(i18n.t('pleaseCreateReviewFirst'), 'error');
-    return;
-  }
-  
-  try {
-    console.log('[ReviewEditor] 添加答案:', questionNumber, answer);
-    
-    // 使用正确的API端点
-    await axios.post(`/api/reviews/${reviewId}/my-answer/${questionNumber}`, {
-      answer: answer
-    });
-    
-    showNotification(i18n.t('answerAdded'), 'success');
-    input.value = '';
-    
-    // 重新加载答案集
-    await loadAnswerSets(reviewId);
-    
-    // 重新渲染答案区域
-    const answerSection = document.getElementById('section-answers');
-    if (answerSection) {
-      answerSection.innerHTML = renderAnswerSetsContent();
-    }
-    
-  } catch (error) {
-    console.error('[ReviewEditor] 添加答案失败:', error);
-    showNotification(i18n.t('operationFailed') + ': ' + error.message, 'error');
-  }
+window.markAnswerDirty = function(questionNumber) {
+  console.log('[ReviewEditor] 答案已修改:', questionNumber);
+  window.reviewEditor.isDirty = true;
 }
 
-/**
- * 删除答案（带确认）
- */
-window.deleteAnswerConfirm = function(answerId) {
-  if (!confirm(i18n.t('confirmDeleteAnswer'))) {
-    return;
-  }
-  
-  deleteAnswer(answerId);
-};
-
-/**
- * 删除答案
- */
-async function deleteAnswer(answerId) {
-  const editor = window.reviewEditor;
-  const reviewId = editor.reviewId;
-  
-  try {
-    console.log('[ReviewEditor] 删除答案:', answerId);
-    
-    await axios.delete(`/api/reviews/${reviewId}/answers/${answerId}`);
-    
-    showNotification(i18n.t('answerDeleted'), 'success');
-    
-    // 重新加载答案集
-    await loadAnswerSets(reviewId);
-    
-    // 重新渲染答案区域
-    const answerSection = document.getElementById('section-answers');
-    if (answerSection) {
-      answerSection.innerHTML = renderAnswerSetsContent();
-    }
-    
-  } catch (error) {
-    console.error('[ReviewEditor] 删除答案失败:', error);
-    showNotification(i18n.t('operationFailed') + ': ' + error.message, 'error');
-  }
-}
+// 删除答案相关函数已移除 - 现在使用单一答案编辑模式
 
 /**
  * 导航答案集
@@ -1200,18 +1098,27 @@ function collectFormData() {
     data.reminder_minutes = parseInt(document.getElementById('review-reminder-minutes')?.value || 60);
   }
   
-  // 收集选择题答案（在编辑模式下）
+  // 收集所有问题的答案（在编辑模式下）
   if (editor.reviewId && editor.template) {
     const answers = {};
     
     editor.template.questions.forEach(q => {
-      if (q.question_type === 'single_choice') {
+      if (q.question_type === 'text' || q.question_type === 'time') {
+        // 文本和时间类型答案
+        const input = document.getElementById(`answer-${q.question_number}`);
+        if (input && input.value.trim()) {
+          answers[q.question_number] = input.value.trim();
+          console.log(`[collectFormData] ${q.question_type}类型答案 ${q.question_number}: ${input.value.trim()}`);
+        }
+      } else if (q.question_type === 'single_choice') {
+        // 单选题答案
         const selected = document.querySelector(`input[name="question-${q.question_number}"]:checked`);
         if (selected) {
           answers[q.question_number] = selected.value;
           console.log(`[collectFormData] 单选题 ${q.question_number}: ${selected.value}`);
         }
       } else if (q.question_type === 'multiple_choice') {
+        // 多选题答案
         const checked = document.querySelectorAll(`input[name="question-${q.question_number}"]:checked`);
         if (checked.length > 0) {
           answers[q.question_number] = Array.from(checked).map(cb => cb.value).join(',');
@@ -1220,7 +1127,7 @@ function collectFormData() {
       }
     });
     
-    console.log('[collectFormData] 收集到的答案:', answers);
+    console.log('[collectFormData] 收集到的所有答案:', answers);
     
     // 始终包含 answers 对象，即使为空（这样后端可以清空未选择的答案）
     data.answers = answers;
