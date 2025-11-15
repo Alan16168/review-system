@@ -661,7 +661,8 @@ function renderQuestion(question, answers) {
   const questionTypeIcon = {
     'text': 'fa-align-left',
     'single_choice': 'fa-dot-circle',
-    'multiple_choice': 'fa-check-square'
+    'multiple_choice': 'fa-check-square',
+    'time': 'fa-clock'
   };
   
   const icon = questionTypeIcon[question.question_type] || 'fa-question';
@@ -678,7 +679,9 @@ function renderQuestion(question, answers) {
             <i class="fas ${icon} text-gray-400"></i>
             <h3 class="font-medium text-gray-900">${question.question_text}</h3>
           </div>
-          ${question.question_type === 'text' ? renderTextQuestion(question, answers) : renderChoiceQuestion(question, answers)}
+          ${question.question_type === 'text' ? renderTextQuestion(question, answers) : 
+            question.question_type === 'time' ? renderTimeQuestion(question, answers) : 
+            renderChoiceQuestion(question, answers)}
         </div>
       </div>
     </div>
@@ -713,6 +716,54 @@ function renderTextQuestion(question, answers) {
         <input type="text"
                id="new-answer-${question.question_number}"
                placeholder="${i18n.t('enterAnswer')}"
+               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <button type="button"
+                onclick="addNewAnswer(${question.question_number})"
+                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+          <i class="fas fa-plus mr-2"></i>
+          ${i18n.t('add')}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * 渲染时间类型问题
+ */
+function renderTimeQuestion(question, answers) {
+  return `
+    <div class="space-y-3">
+      <!-- Existing Time Answers -->
+      ${answers.map(answer => `
+        <div class="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg">
+          <div class="flex-1">
+            <p class="text-gray-700">
+              <i class="fas fa-calendar mr-2"></i>
+              ${new Date(answer.answer).toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+            <p class="text-xs text-gray-500 mt-1">
+              ${new Date(answer.created_at).toLocaleString()}
+            </p>
+          </div>
+          <button type="button"
+                  onclick="deleteAnswerConfirm(${answer.id})"
+                  class="text-red-600 hover:text-red-800">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      `).join('')}
+      
+      <!-- Add New Time Answer -->
+      <div class="flex space-x-2">
+        <input type="datetime-local"
+               id="new-answer-${question.question_number}"
                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
         <button type="button"
                 onclick="addNewAnswer(${question.question_number})"
@@ -1149,7 +1200,7 @@ function collectFormData() {
     data.reminder_minutes = parseInt(document.getElementById('review-reminder-minutes')?.value || 60);
   }
   
-  // 收集选择题答案
+  // 收集选择题答案（在编辑模式下）
   if (editor.reviewId && editor.template) {
     const answers = {};
     
@@ -1158,18 +1209,21 @@ function collectFormData() {
         const selected = document.querySelector(`input[name="question-${q.question_number}"]:checked`);
         if (selected) {
           answers[q.question_number] = selected.value;
+          console.log(`[collectFormData] 单选题 ${q.question_number}: ${selected.value}`);
         }
       } else if (q.question_type === 'multiple_choice') {
         const checked = document.querySelectorAll(`input[name="question-${q.question_number}"]:checked`);
         if (checked.length > 0) {
           answers[q.question_number] = Array.from(checked).map(cb => cb.value).join(',');
+          console.log(`[collectFormData] 多选题 ${q.question_number}: ${answers[q.question_number]}`);
         }
       }
     });
     
-    if (Object.keys(answers).length > 0) {
-      data.answers = answers;
-    }
+    console.log('[collectFormData] 收集到的答案:', answers);
+    
+    // 始终包含 answers 对象，即使为空（这样后端可以清空未选择的答案）
+    data.answers = answers;
   }
   
   return data;
