@@ -863,6 +863,8 @@ function attachEditorEventListeners() {
       window.reviewEditor.isDirty = true;
     });
     console.log('[attachEditorEventListeners] ✓ 表单输入监听已绑定');
+  } else {
+    console.warn('[attachEditorEventListeners] ⚠️ 未找到表单元素 #review-editor-form');
   }
   
   // 模板选择变化
@@ -875,35 +877,50 @@ function attachEditorEventListeners() {
   }
   
   // 绑定section折叠/展开事件 - 使用事件委托
-  // 查找所有的 section headers
-  const allSectionHeaders = document.querySelectorAll('.section-header');
-  console.log(`[attachEditorEventListeners] 找到 ${allSectionHeaders.length} 个 section headers`);
-  
-  allSectionHeaders.forEach((header, index) => {
-    const sectionName = header.getAttribute('data-section');
+  // 等待 DOM 完全渲染
+  setTimeout(() => {
+    console.log('[attachEditorEventListeners] 📋 开始查找 section headers...');
     
-    if (!sectionName) {
-      console.warn(`[attachEditorEventListeners] ⚠️ Section header ${index} 没有 data-section 属性`);
-      return;
-    }
+    // 查找所有的 section headers
+    const allSectionHeaders = document.querySelectorAll('.section-header');
+    console.log(`[attachEditorEventListeners] 找到 ${allSectionHeaders.length} 个 section headers`);
     
-    console.log(`[attachEditorEventListeners] 绑定 section: ${sectionName}`);
-    
-    // 添加点击事件监听器
-    header.addEventListener('click', function(e) {
-      console.log(`[attachEditorEventListeners] 🖱️ Section header 被点击: ${sectionName}`);
-      e.preventDefault();
-      e.stopPropagation();
-      window.toggleSection(sectionName);
+    // 调试：列出所有找到的 headers
+    allSectionHeaders.forEach((h, i) => {
+      console.log(`[attachEditorEventListeners]   Header ${i}: ${h.className} | data-section: "${h.getAttribute('data-section')}"`);
     });
     
-    // 确保有视觉提示
-    header.style.cursor = 'pointer';
+    if (allSectionHeaders.length === 0) {
+      console.error('[attachEditorEventListeners] ❌ 没有找到任何 section headers！检查 HTML 渲染是否正确。');
+    }
     
-    console.log(`[attachEditorEventListeners] ✓ ${sectionName} 事件绑定完成`);
-  });
-  
-  console.log('[attachEditorEventListeners] ========== 所有事件绑定完成 ==========');
+    allSectionHeaders.forEach((header, index) => {
+      const sectionName = header.getAttribute('data-section');
+      
+      if (!sectionName) {
+        console.warn(`[attachEditorEventListeners] ⚠️ Section header ${index} 没有 data-section 属性`);
+        console.warn(`[attachEditorEventListeners]     该元素的 class: ${header.className}`);
+        return;
+      }
+      
+      console.log(`[attachEditorEventListeners] 🔗 开始绑定 section: ${sectionName}`);
+      
+      // 添加点击事件监听器
+      header.addEventListener('click', function(e) {
+        console.log(`[attachEditorEventListeners] 🖱️ Section header 被点击: ${sectionName}`);
+        e.preventDefault();
+        e.stopPropagation();
+        window.toggleSection(sectionName);
+      });
+      
+      // 确保有视觉提示
+      header.style.cursor = 'pointer';
+      
+      console.log(`[attachEditorEventListeners] ✅ ${sectionName} 事件绑定完成`);
+    });
+    
+    console.log('[attachEditorEventListeners] ========== 所有事件绑定完成 ==========');
+  }, 100); // 延迟 100ms 确保 DOM 已渲染
 }
 
 /**
