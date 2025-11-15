@@ -74,7 +74,6 @@ payment.get('/subscription/info', async (c) => {
         renewal_price: config.renewal_price_usd || config.price_usd,
         durationDays: config.duration_days,
         description: config.description,
-        descriptionEn: config.description_en,
       }
     });
   } catch (error) {
@@ -124,7 +123,7 @@ payment.post('/subscription/create-order', async (c) => {
             currency_code: 'USD',
             value: config.price_usd.toString(),
           },
-          description: `${config.description_en} - ${config.duration_days} days`,
+          description: `${config.description} - ${config.duration_days} days`,
         }],
         application_context: {
           brand_name: 'Review System',

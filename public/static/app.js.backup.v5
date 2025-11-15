@@ -1073,7 +1073,7 @@ async function showDashboard() {
 
           <div class="bg-white rounded-lg shadow-lg p-6">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">${i18n.t('myReviews')}</h2>
-            <button onclick="showReviewEditor(null)" 
+            <button onclick="showCreateReview()" 
                     class="mb-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
               <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
             </button>
@@ -1322,7 +1322,7 @@ function renderRecentReviews(reviews) {
                 <button onclick="showReviewDetail(${review.id}, true)" class="text-indigo-600 hover:text-indigo-900 mr-3">
                   <i class="fas fa-eye"></i> ${i18n.t('view')}
                 </button>
-                <button onclick="showReviewEditor(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                <button onclick="showEditReview(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
                   <i class="fas fa-edit"></i> ${i18n.t('edit')}
                 </button>
                 <button onclick="printReview(${review.id})" class="text-green-600 hover:text-green-900 mr-3">
@@ -1382,7 +1382,7 @@ async function showReviews() {
           <h1 class="text-3xl font-bold text-gray-800">
             <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('myReviews')}
           </h1>
-          <button onclick="showReviewEditor(null)" 
+          <button onclick="showCreateReview()" 
                   class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition shadow-lg">
             <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
           </button>
@@ -1613,7 +1613,7 @@ function renderPublicReviewsList(reviews) {
                   <i class="fas fa-print"></i> ${i18n.t('print')}
                 </button>
                 ${canEditReview(review) ? `
-                  <button onclick="showReviewEditor(${review.id})" 
+                  <button onclick="showEditReview(${review.id})" 
                           class="text-green-600 hover:text-green-900">
                     <i class="fas fa-edit"></i> ${i18n.t('edit')}
                   </button>
@@ -1745,7 +1745,7 @@ function renderReviewsList(reviews) {
       <div class="p-12 text-center">
         <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
         <p class="text-gray-500 text-lg">${i18n.t('noData')}</p>
-        <button onclick="showReviewEditor(null)" 
+        <button onclick="showCreateReview()" 
                 class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
           <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
         </button>
@@ -1827,7 +1827,7 @@ function renderReviewsList(reviews) {
                 <button onclick="showReviewDetail(${review.id}, true)" class="text-indigo-600 hover:text-indigo-900 mr-3">
                   <i class="fas fa-eye"></i> ${i18n.t('view')}
                 </button>
-                <button onclick="showReviewEditor(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                <button onclick="showEditReview(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
                   <i class="fas fa-edit"></i> ${i18n.t('edit')}
                 </button>
                 <button onclick="printReview(${review.id})" class="text-green-600 hover:text-green-900 mr-3">
@@ -3122,7 +3122,7 @@ async function showReviewDetail(id, readOnly = false) {
               </div>
               ${!readOnly ? `
               <div class="flex space-x-2">
-                <button onclick="showReviewEditor(${review.id})" 
+                <button onclick="showEditReview(${review.id})" 
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                   <i class="fas fa-edit mr-2"></i>${i18n.t('edit')}
                 </button>

@@ -520,7 +520,7 @@ admin.get('/subscription/config', async (c) => {
 admin.put('/subscription/config/:tier', async (c) => {
   try {
     const tier = c.req.param('tier');
-    const { price_usd, renewal_price_usd, duration_days, description, description_en, is_active } = await c.req.json();
+    const { price_usd, renewal_price_usd, duration_days, description, is_active } = await c.req.json();
     
     if (!price_usd || !duration_days) {
       return c.json({ error: 'Price and duration are required' }, 400);
@@ -532,7 +532,6 @@ admin.put('/subscription/config/:tier', async (c) => {
           renewal_price_usd = ?,
           duration_days = ?,
           description = ?,
-          description_en = ?,
           is_active = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE tier = ?
@@ -541,7 +540,6 @@ admin.put('/subscription/config/:tier', async (c) => {
       renewal_price_usd || price_usd,
       duration_days,
       description || null,
-      description_en || null,
       is_active !== undefined ? is_active : 1,
       tier
     ).run();

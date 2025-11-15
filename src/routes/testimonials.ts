@@ -6,11 +6,9 @@ const app = new Hono<{ Bindings: { DB: D1Database } }>();
 
 // Public endpoint: Get latest 3 testimonials (for homepage)
 app.get('/latest', async (c: Context) => {
-  const lang = c.req.header('X-Language') || 'en';
-  
   try {
     const result = await c.env.DB.prepare(`
-      SELECT id, name, name_en, role, role_en, content, content_en, 
+      SELECT id, name, role, content, 
              avatar_url, rating, created_at
       FROM testimonials
       WHERE is_featured = 1
@@ -18,17 +16,7 @@ app.get('/latest', async (c: Context) => {
       LIMIT 3
     `).all();
     
-    const testimonials = result.results.map((t: any) => ({
-      id: t.id,
-      name: lang === 'zh' ? t.name : (t.name_en || t.name),
-      role: lang === 'zh' ? t.role : (t.role_en || t.role),
-      content: lang === 'zh' ? t.content : (t.content_en || t.content),
-      avatar_url: t.avatar_url,
-      rating: t.rating,
-      created_at: t.created_at
-    }));
-    
-    return c.json({ testimonials });
+    return c.json({ testimonials: result.results });
   } catch (error) {
     console.error('Error fetching testimonials:', error);
     return c.json({ error: 'Failed to fetch testimonials' }, 500);
@@ -76,7 +64,7 @@ app.post('/public', async (c: Context) => {
 app.get('/admin/all', authMiddleware, adminOnly, async (c: Context) => {
   try {
     const result = await c.env.DB.prepare(`
-      SELECT id, name, name_en, role, role_en, content, content_en,
+      SELECT id, name, role, content,
              avatar_url, rating, is_featured, display_order,
              created_at, updated_at
       FROM testimonials
@@ -96,7 +84,7 @@ app.get('/admin/:id', authMiddleware, adminOnly, async (c: Context) => {
   
   try {
     const result = await c.env.DB.prepare(`
-      SELECT id, name, name_en, role, role_en, content, content_en,
+      SELECT id, name, role, content,
              avatar_url, rating, is_featured, display_order,
              created_at, updated_at
       FROM testimonials
@@ -117,7 +105,7 @@ app.get('/admin/:id', authMiddleware, adminOnly, async (c: Context) => {
 // Create testimonial (admin only)
 app.post('/admin', authMiddleware, adminOnly, async (c: Context) => {
   try {
-    const { name, name_en, role, role_en, content, content_en, 
+    const { name, role, content, 
             avatar_url, rating, is_featured, display_order } = await c.req.json();
     
     // Validation
@@ -131,16 +119,13 @@ app.post('/admin', authMiddleware, adminOnly, async (c: Context) => {
     
     const result = await c.env.DB.prepare(`
       INSERT INTO testimonials (
-        name, name_en, role, role_en, content, content_en,
+        name, role, content,
         avatar_url, rating, is_featured, display_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(
       name,
-      name_en || null,
       role,
-      role_en || null,
       content,
-      content_en || null,
       avatar_url || null,
       rating || 5,
       is_featured ? 1 : 0,
@@ -162,7 +147,7 @@ app.put('/admin/:id', authMiddleware, adminOnly, async (c: Context) => {
   const id = parseInt(c.req.param('id'));
   
   try {
-    const { name, name_en, role, role_en, content, content_en,
+    const { name, role, content,
             avatar_url, rating, is_featured, display_order } = await c.req.json();
     
     // Validation
@@ -173,11 +158,8 @@ app.put('/admin/:id', authMiddleware, adminOnly, async (c: Context) => {
     const result = await c.env.DB.prepare(`
       UPDATE testimonials
       SET name = ?,
-          name_en = ?,
           role = ?,
-          role_en = ?,
           content = ?,
-          content_en = ?,
           avatar_url = ?,
           rating = ?,
           is_featured = ?,
@@ -186,11 +168,8 @@ app.put('/admin/:id', authMiddleware, adminOnly, async (c: Context) => {
       WHERE id = ?
     `).bind(
       name,
-      name_en || null,
       role,
-      role_en || null,
       content,
-      content_en || null,
       avatar_url || null,
       rating || 5,
       is_featured ? 1 : 0,

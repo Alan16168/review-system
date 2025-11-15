@@ -278,3 +278,183 @@ html {
   width: 2rem;
   border-radius: 0.75rem;
 }
+
+/* Review Editor v6.0.0 Styles */
+
+/* Collapsible Section Headers */
+.section-header {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s ease;
+}
+
+.section-header:hover {
+  opacity: 0.9;
+}
+
+.section-header-purple {
+  background-color: #EDE9FE;
+  /* Indigo/Purple background */
+}
+
+.section-header-green {
+  background-color: #D1FAE5;
+  /* Green background */
+}
+
+.section-header-blue {
+  background-color: #DBEAFE;
+  /* Blue background */
+}
+
+/* Section Content */
+.section-content {
+  transition: all 0.3s ease;
+  max-height: 10000px;
+  /* Large enough for content */
+  overflow: visible;
+}
+
+.section-collapsed {
+  max-height: 0;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+/* Smooth chevron rotation */
+.section-header i.fa-chevron-up,
+.section-header i.fa-chevron-down {
+  transition: transform 0.3s ease;
+}
+
+/* Answer input animations */
+.answer-input-group {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Form field focus states */
+.review-editor-form input:focus,
+.review-editor-form textarea:focus,
+.review-editor-form select:focus {
+  border-color: #4f46e5;
+  ring: 2px;
+  ring-color: #4f46e5;
+  outline: none;
+}
+
+/* Disabled field styling */
+.review-editor-form input:disabled,
+.review-editor-form textarea:disabled,
+.review-editor-form select:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Answer set navigation */
+.answer-set-nav button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.answer-set-nav button:not(:disabled):hover {
+  background-color: #f3f4f6;
+  transform: scale(1.05);
+}
+
+/* Question number badge */
+.question-number-badge {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Choice option hover effect */
+label.choice-option {
+  transition: all 0.2s ease;
+}
+
+label.choice-option:hover {
+  background-color: #f9fafb;
+  border-color: #4f46e5;
+}
+
+label.choice-option input:checked {
+  accent-color: #4f46e5;
+}
+
+/* Answer card styling */
+.answer-card {
+  transition: all 0.2s ease;
+}
+
+.answer-card:hover {
+  background-color: #f3f4f6;
+}
+
+/* Delete button hover */
+.delete-answer-btn {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.answer-card:hover .delete-answer-btn {
+  opacity: 1;
+}
+
+/* Save button pulse animation */
+.save-button-pulse {
+  animation: buttonPulse 2s ease-in-out infinite;
+}
+
+@keyframes buttonPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+  }
+}
+
+/* Responsive adjustments for Review Editor */
+@media (max-width: 768px) {
+  .section-header {
+    padding: 1rem !important;
+  }
+  
+  .section-content {
+    padding: 1rem !important;
+  }
+  
+  .answer-set-nav {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .review-editor-form .flex.space-x-2 {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .review-editor-form .flex.space-x-2 > * {
+    width: 100%;
+  }
+}

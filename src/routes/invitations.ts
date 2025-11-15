@@ -191,7 +191,7 @@ invitations.get('/verify/:token', async (c) => {
 
     // Get review answers
     const answers = await c.env.DB.prepare(`
-      SELECT ra.*, tq.question_text, tq.question_text_en, tq.question_number
+      SELECT ra.*, tq.question_text, tq.question_number
       FROM review_answers ra
       LEFT JOIN template_questions tq ON ra.question_number = tq.question_number
       WHERE ra.review_id = ?

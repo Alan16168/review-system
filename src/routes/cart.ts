@@ -36,7 +36,7 @@ cart.get('/', async (c) => {
 cart.post('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
-    const { item_type, subscription_tier, price_usd, duration_days, description, description_en } = await c.req.json();
+    const { item_type, subscription_tier, price_usd, duration_days, description } = await c.req.json();
     
     // Validate required fields
     if (!item_type || !subscription_tier || !price_usd || !duration_days) {
@@ -65,7 +65,7 @@ cart.post('/', async (c) => {
     const result = await c.env.DB.prepare(`
       INSERT INTO shopping_cart (
         user_id, item_type, subscription_tier, price_usd, 
-        duration_days, description, description_en
+        duration_days, description
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(
       user.id,
@@ -74,7 +74,7 @@ cart.post('/', async (c) => {
       price_usd,
       duration_days,
       description || null,
-      description_en || null
+      
     ).run();
     
     return c.json({ 
