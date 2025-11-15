@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.0.0-Phase2.3-AutoSave-Fix - 自动保存持久化完整版（已回滚）
+**✅ 当前版本**: V6.0.1-Phase2.4-RemoveChineseFields - 模板系统简化为英文单字段
 
 ## 🌟 项目概述
 
@@ -127,16 +127,52 @@
 - **应用 URL**: https://review-system.pages.dev
 - **最新部署 ID**: https://cf36f475.review-system.pages.dev
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.0.0-Phase2.3-AutoSave-Fix - 自动保存持久化完整版**
-- **Git Commit**: dfa973a274cfcabe9248658493ed05f43becc9b3
+- **版本**: ✅ **V6.0.1-Phase2.4-RemoveChineseFields - 模板系统简化**
+- **Git Commit**: 1584305a6e9ff0a97c4db5a5f7e2e0d5e8c3b1d2
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
-- **状态**: ✅ 已成功部署到生产环境（Published）- 已回滚到稳定版本
+- **状态**: 🔄 待部署到生产环境
 - **部署日期**: 2025-11-15
-- **部署时间**: 刚刚完成回滚部署
-- **数据库迁移**: ✅ Migration 0030 (answer_sets系统) 已应用
-- **功能状态**: ✅ 完整的答案集合系统 + 自动保存持久化
-- **最新更新**: ✅ **系统回滚到 V6.0.0-Phase2.3-AutoSave-Fix**（2025-11-15）
+- **部署时间**: 等待部署
+- **数据库迁移**: ✅ Migration 0032 (本地) + 0033 (生产) 已应用
+- **功能状态**: ✅ 模板系统简化为英文单字段 + 完整答案集合系统
+- **最新更新**: ✅ **V6.0.1-Phase2.4-RemoveChineseFields - 模板系统简化**（2025-11-15）
 - **更新内容**:
+  - 🔧 **V6.0.1-Phase2.4-RemoveChineseFields - 模板系统简化为英文单字段**（数据库重构 - 2025-11-15）：
+    - **重构目标**: 简化模板和问题的数据结构，从中英双字段改为英文单字段
+    - **数据库迁移**:
+      - ✅ **本地数据库**: Migration 0032（重建表结构）
+        - 删除 `name`/`name_en`、`description`/`description_en`、`question_text`/`question_text_en` 双字段
+        - 使用单一字段 `name`、`description`、`question_text` 存储英文内容
+        - 通过创建备份表 → 删除旧表 → 创建新表 → 迁移数据的方式完成
+      - ✅ **生产数据库**: Migration 0033（直接执行SQL）
+        - 生产环境数据已经是英文，直接删除 `_en` 后缀列
+        - 使用 `PRAGMA foreign_keys = OFF/ON` 处理外键约束
+        - 成功执行12个查询，读取1569行，写入274行
+    - **前端UI改进**:
+      - ✅ 简化模板创建/编辑表单：从4个字段减少到2个字段
+        - 移除"中文名称"和"英文名称"分离
+        - 统一为"模板名称"（name）
+        - 移除"中文描述"和"英文描述"分离
+        - 统一为"模板描述"（description）
+      - ✅ 简化问题添加/编辑表单：
+        - 移除 `question-text-cn-container` 和 `question-text-en-container` 双容器
+        - 统一为 `question-text-container` 单容器
+        - 更新 `handleQuestionTypeChange()` 逻辑适应单字段
+      - ✅ 更新 `collectQuestionFormData()` 函数：
+        - 移除 `question_text_en` 字段收集
+        - time_with_text 类型使用 `question_text` 作为 `datetime_title`
+    - **后端API简化** (`src/routes/templates.ts`):
+      - ✅ 移除所有 `name_en`、`description_en`、`question_text_en` 字段引用
+      - ✅ 简化SQL查询，移除 `CASE WHEN ? = 'en'` 语言判断逻辑
+      - ✅ 更新CREATE/UPDATE操作，只处理单一字段
+      - ✅ 保持向后兼容：前端其他模块的 fallback 逻辑仍然存在（如 `q.question_text_en || q.question_text`）
+    - **技术优势**:
+      - ✅ **简化数据模型**: 减少50%的字段数量
+      - ✅ **减少维护成本**: 无需管理中英文两套内容
+      - ✅ **提高性能**: 查询更简单，数据量更小
+      - ✅ **保持国际化**: UI层面通过i18n.js继续支持4种语言
+    - **Git commit**: 1584305
+    - **部署状态**: 🔄 等待部署到生产环境
   - 🔄 **系统回滚到 V6.0.0-Phase2.3-AutoSave-Fix**（重要回滚 - 2025-11-15）：
     - **回滚原因**: 从简化版本（v5.99）回滚到功能完整的稳定版本
     - **回滚目标**: commit dfa973a - "Fix: Auto-save persistence - auto-create first answer set when needed"
