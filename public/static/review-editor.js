@@ -165,29 +165,21 @@ async function initializeNewReview() {
   try {
     // 加载模板列表
     const response = await axios.get('/api/templates');
-    const templatesData = response.data;
+    console.log('[initializeNewReview] 模板API响应:', response.data);
     
-    // 验证模板数据是数组
-    if (Array.isArray(templatesData)) {
-      window.currentTemplates = templatesData;
-      console.log('[ReviewEditor] 加载了', templatesData.length, '个模板');
-    } else {
-      console.error('[ReviewEditor] 模板数据不是数组:', templatesData);
-      window.currentTemplates = [];
-    }
+    // API返回 { templates: [...] }
+    const templatesData = response.data.templates || [];
+    window.currentTemplates = templatesData;
+    console.log('[initializeNewReview] 加载了', templatesData.length, '个模板');
     
     // 加载团队列表
     const teamsResponse = await axios.get('/api/teams');
-    const teamsData = teamsResponse.data;
+    console.log('[initializeNewReview] 团队API响应:', teamsResponse.data);
     
-    // 验证团队数据是数组
-    if (Array.isArray(teamsData)) {
-      window.currentTeams = teamsData;
-      console.log('[ReviewEditor] 加载了', teamsData.length, '个团队');
-    } else {
-      console.error('[ReviewEditor] 团队数据不是数组:', teamsData);
-      window.currentTeams = [];
-    }
+    // API返回 { myTeams: [...] }
+    const teamsData = teamsResponse.data.myTeams || [];
+    window.currentTeams = teamsData;
+    console.log('[initializeNewReview] 加载了', teamsData.length, '个团队');
     
     // 初始化默认数据
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -196,7 +188,7 @@ async function initializeNewReview() {
       description: '',
       template_id: 1,  // 默认模板
       time_type: 'year',
-      owner_type: 'personal',
+      owner_type: 'private',
       team_id: null,
       status: 'draft',
       scheduled_at: null,
@@ -397,8 +389,9 @@ function renderReviewHeaderSection() {
                   onchange="handleOwnerTypeChange()"
                   required
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="personal" ${data.owner_type === 'personal' ? 'selected' : ''}>${i18n.t('personal')}</option>
-            <option value="team" ${data.owner_type === 'team' ? 'selected' : ''}>${i18n.t('team')}</option>
+            <option value="private" ${data.owner_type === 'private' ? 'selected' : ''}>${i18n.t('ownerTypePrivate')}</option>
+            <option value="team" ${data.owner_type === 'team' ? 'selected' : ''}>${i18n.t('ownerTypeTeam')}</option>
+            <option value="public" ${data.owner_type === 'public' ? 'selected' : ''}>${i18n.t('ownerTypePublic')}</option>
           </select>
         </div>
         
@@ -877,7 +870,7 @@ function attachEditorEventListeners() {
 /**
  * 处理返回按钮
  */
-function handleReviewEditorBack() {
+window.handleReviewEditorBack = function() {
   const editor = window.reviewEditor;
   
   if (editor.isDirty) {
@@ -887,14 +880,16 @@ function handleReviewEditorBack() {
   }
   
   showReviews();
-}
+};
 
 /**
  * 处理区域折叠/展开
  */
-function toggleSection(sectionName) {
+window.toggleSection = function(sectionName) {
   const editor = window.reviewEditor;
   editor.collapsedSections[sectionName] = !editor.collapsedSections[sectionName];
+  
+  console.log('[toggleSection] 切换区域:', sectionName, '折叠状态:', editor.collapsedSections[sectionName]);
   
   // 重新渲染（或使用DOM操作切换显示）
   const sectionContent = document.getElementById(`section-${sectionName}`);
@@ -920,19 +915,19 @@ function toggleSection(sectionName) {
       }
     }
   }
-}
+};
 
 /**
  * 处理所有者类型变化
  */
-function handleOwnerTypeChange() {
+window.handleOwnerTypeChange = function() {
   const ownerType = document.getElementById('review-owner-type').value;
   const teamContainer = document.getElementById('team-select-container');
   
   if (teamContainer) {
     teamContainer.style.display = (ownerType === 'team') ? 'block' : 'none';
   }
-}
+};
 
 /**
  * 处理模板选择变化
@@ -973,7 +968,7 @@ function handleChoiceChange(questionNumber) {
 /**
  * 添加新答案
  */
-async function addNewAnswer(questionNumber) {
+window.addNewAnswer = async function(questionNumber) {
   const input = document.getElementById(`new-answer-${questionNumber}`);
   if (!input) return;
   
@@ -1020,13 +1015,13 @@ async function addNewAnswer(questionNumber) {
 /**
  * 删除答案（带确认）
  */
-function deleteAnswerConfirm(answerId) {
+window.deleteAnswerConfirm = function(answerId) {
   if (!confirm(i18n.t('confirmDeleteAnswer'))) {
     return;
   }
   
   deleteAnswer(answerId);
-}
+};
 
 /**
  * 删除答案
@@ -1060,7 +1055,7 @@ async function deleteAnswer(answerId) {
 /**
  * 导航答案集
  */
-function navigateAnswerSet(direction) {
+window.navigateAnswerSet = function(direction) {
   const editor = window.reviewEditor;
   const newIndex = editor.currentAnswerSetIndex + direction;
   
@@ -1075,7 +1070,7 @@ function navigateAnswerSet(direction) {
   if (answerSection) {
     answerSection.innerHTML = renderAnswerSetsContent();
   }
-}
+};
 
 // ============================================================================
 // 保存功能
