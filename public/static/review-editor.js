@@ -319,7 +319,7 @@ function renderReviewHeaderSection() {
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
       <div class="section-header section-header-purple px-6 py-4 flex items-center justify-between cursor-pointer"
-           onclick="window.toggleSection('header')">
+           onclick="console.log('🖱️ Header 被点击了！'); window.toggleSection('header'); return false;">
         <div class="flex items-center space-x-3">
           <i class="fas fa-heading text-indigo-700"></i>
           <h2 class="text-lg font-semibold text-indigo-900">
@@ -566,7 +566,7 @@ function renderAnswerSetsSection() {
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
       <div class="section-header section-header-green px-6 py-4 flex items-center justify-between cursor-pointer"
-           onclick="window.toggleSection('answers')">
+           onclick="console.log('🖱️ Answers 被点击了！'); window.toggleSection('answers'); return false;">
         <div class="flex items-center space-x-3">
           <i class="fas fa-layer-group text-green-700"></i>
           <h2 class="text-lg font-semibold text-green-900">
@@ -801,7 +801,7 @@ function renderPlanTimeSection() {
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
       <div class="section-header section-header-blue px-6 py-4 flex items-center justify-between cursor-pointer"
-           onclick="window.toggleSection('planTime')">
+           onclick="console.log('🖱️ PlanTime 被点击了！'); window.toggleSection('planTime'); return false;">
         <div class="flex items-center space-x-3">
           <i class="fas fa-calendar-alt text-blue-700"></i>
           <h2 class="text-lg font-semibold text-blue-900">
@@ -917,9 +917,18 @@ window.handleReviewEditorBack = function() {
  * 处理区域折叠/展开
  */
 window.toggleSection = function(sectionName) {
+  console.log('[toggleSection] ========== 🎯 函数被调用！ ==========');
+  console.log('[toggleSection] 参数 sectionName:', sectionName);
+  
   const editor = window.reviewEditor;
   
-  console.log('[toggleSection] ========== 开始折叠操作 ==========');
+  if (!editor) {
+    console.error('[toggleSection] ❌ window.reviewEditor 不存在！');
+    alert('错误：编辑器对象不存在');
+    return;
+  }
+  
+  console.log('[toggleSection] 开始折叠操作');
   console.log('[toggleSection] 点击区域:', sectionName);
   console.log('[toggleSection] 当前折叠状态:', editor.collapsedSections[sectionName]);
   
