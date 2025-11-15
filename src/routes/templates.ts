@@ -29,18 +29,18 @@ templates.get('/', async (c) => {
   try {
     const lang = getLanguage(c);
     
-    // Get all active templates with language-specific fields
+    // Get all active templates
     const templatesResult = await c.env.DB.prepare(`
       SELECT 
         id, 
-        CASE WHEN ? = 'en' AND name_en IS NOT NULL THEN name_en ELSE name END as name,
-        CASE WHEN ? = 'en' AND description_en IS NOT NULL THEN description_en ELSE description END as description,
+        name,
+        description,
         is_default, 
         created_at
       FROM templates
       WHERE is_active = 1
       ORDER BY is_default DESC, created_at DESC
-    `).bind(lang, lang).all();
+    `).all();
 
     const templateList = templatesResult.results || [];
 
@@ -50,7 +50,7 @@ templates.get('/', async (c) => {
         const questionsResult = await c.env.DB.prepare(`
           SELECT 
             question_number,
-            CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text,
+            question_text,
             answer_length,
             question_type,
             options,
@@ -58,7 +58,7 @@ templates.get('/', async (c) => {
           FROM template_questions
           WHERE template_id = ?
           ORDER BY question_number ASC
-        `).bind(lang, template.id).all();
+        `).bind(template.id).all();
 
         return {
           ...template,
@@ -80,27 +80,27 @@ templates.get('/:id', async (c) => {
     const templateId = c.req.param('id');
     const lang = getLanguage(c);
 
-    // Get template with language-specific fields
+    // Get template
     const template = await c.env.DB.prepare(`
       SELECT 
         id, 
-        CASE WHEN ? = 'en' AND name_en IS NOT NULL THEN name_en ELSE name END as name,
-        CASE WHEN ? = 'en' AND description_en IS NOT NULL THEN description_en ELSE description END as description,
+        name,
+        description,
         is_default, 
         created_at
       FROM templates
       WHERE id = ? AND is_active = 1
-    `).bind(lang, lang, templateId).first();
+    `).bind(templateId).first();
 
     if (!template) {
       return c.json({ error: 'Template not found' }, 404);
     }
 
-    // Get questions with language-specific text
+    // Get questions
     const questionsResult = await c.env.DB.prepare(`
       SELECT 
         question_number,
-        CASE WHEN ? = 'en' AND question_text_en IS NOT NULL THEN question_text_en ELSE question_text END as question_text,
+        question_text,
         answer_length,
         question_type,
         options,
@@ -108,7 +108,7 @@ templates.get('/:id', async (c) => {
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
-    `).bind(lang, templateId).all();
+    `).bind(templateId).all();
 
     return c.json({
       template: {
@@ -134,9 +134,7 @@ templates.get('/admin/all', premiumOrAdmin, async (c) => {
       SELECT 
         t.id, 
         t.name,
-        t.name_en,
         t.description,
-        t.description_en,
         t.is_default,
         t.is_active,
         t.created_at,
@@ -195,9 +193,7 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
       SELECT 
         id, 
         name,
-        name_en,
         description,
-        description_en,
         is_default,
         is_active,
         created_at,
@@ -210,13 +206,12 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
       return c.json({ error: 'Template not found' }, 404);
     }
 
-    // Get all questions with both languages
+    // Get all questions
     const questionsResult = await c.env.DB.prepare(`
       SELECT 
         id,
         question_number,
         question_text,
-        question_text_en,
         answer_length,
         question_type,
         options,
@@ -248,7 +243,7 @@ templates.post('/', premiumOrAdmin, async (c) => {
       return c.json({ error: 'User not authenticated' }, 401);
     }
     
-    const { name, name_en, description, description_en, is_default } = await c.req.json();
+    const { name, description, is_default } = await c.req.json();
 
     if (!name) {
       return c.json({ error: 'Template name is required' }, 400);
@@ -267,13 +262,11 @@ templates.post('/', premiumOrAdmin, async (c) => {
 
     // Insert new template with creator
     const result = await c.env.DB.prepare(`
-      INSERT INTO templates (name, name_en, description, description_en, is_default, is_active, created_by)
-      VALUES (?, ?, ?, ?, ?, 1, ?)
+      INSERT INTO templates (name, description, is_default, is_active, created_by)
+      VALUES (?, ?, ?, 1, ?)
     `).bind(
       name,
-      name_en || null,
       description || null,
-      description_en || null,
       actualIsDefault ? 1 : 0,
       user.id
     ).run();
@@ -293,7 +286,7 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
   try {
     const user = c.get('user') as any;
     const templateId = c.req.param('id');
-    const { name, name_en, description, description_en, is_default, is_active } = await c.req.json();
+    const { name, description, is_default, is_active } = await c.req.json();
 
     // Check if template exists and get creator
     const existing = await c.env.DB.prepare(`
@@ -325,18 +318,14 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
     await c.env.DB.prepare(`
       UPDATE templates
       SET name = ?,
-          name_en = ?,
           description = ?,
-          description_en = ?,
           is_default = ?,
           is_active = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
       name,
-      name_en || null,
       description || null,
-      description_en || null,
       actualIsDefault ? 1 : 0,
       is_active ? 1 : 0,
       templateId
@@ -419,7 +408,6 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
     const templateId = c.req.param('id');
     const { 
       question_text, 
-      question_text_en, 
       question_number, 
       answer_length,
       question_type = 'text',
@@ -489,16 +477,15 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
     // Insert question
     const result = await c.env.DB.prepare(`
       INSERT INTO template_questions (
-        template_id, question_number, question_text, question_text_en, 
+        template_id, question_number, question_text, 
         answer_length, question_type, options, correct_answer,
         datetime_value, datetime_title, datetime_answer_max_length
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       templateId, 
       nextNumber, 
       question_text, 
-      question_text_en || null, 
       finalAnswerLength,
       question_type,
       options,
@@ -526,7 +513,6 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
     const questionId = c.req.param('questionId');
     const { 
       question_text, 
-      question_text_en, 
       question_number, 
       answer_length,
       question_type = 'text',
@@ -587,7 +573,6 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
     await c.env.DB.prepare(`
       UPDATE template_questions
       SET question_text = ?,
-          question_text_en = ?,
           question_number = ?,
           answer_length = ?,
           question_type = ?,
@@ -599,7 +584,6 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
       WHERE id = ? AND template_id = ?
     `).bind(
       question_text,
-      question_text_en || null,
       question_number,
       finalAnswerLength,
       question_type,

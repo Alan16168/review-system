@@ -7061,7 +7061,6 @@ function renderTemplatesTable(templates) {
             <tr class="${!template.is_active ? 'bg-gray-100' : ''}">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">${escapeHtml(template.name)}</div>
-                ${template.name_en ? `<div class="text-xs text-gray-500">${escapeHtml(template.name_en)}</div>` : ''}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 ${template.creator_role === 'admin' || !template.creator_name ? 
@@ -7148,30 +7147,16 @@ function showCreateTemplateModal() {
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('templateNameCn')} *
+                ${i18n.t('templateName')} *
               </label>
               <input type="text" id="template-name" required
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('templateNameEn')}
-              </label>
-              <input type="text" id="template-name-en"
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('templateDescriptionCn')}
+                ${i18n.t('templateDescription')}
               </label>
               <textarea id="template-description" rows="3"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('templateDescriptionEn')}
-              </label>
-              <textarea id="template-description-en" rows="3"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
             ${currentUser.role === 'admin' ? `
@@ -7207,9 +7192,7 @@ async function handleCreateTemplate(e) {
   const isDefaultCheckbox = document.getElementById('template-is-default');
   const data = {
     name: document.getElementById('template-name').value,
-    name_en: document.getElementById('template-name-en').value || null,
     description: document.getElementById('template-description').value || null,
-    description_en: document.getElementById('template-description-en').value || null,
     is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false
   };
 
@@ -7247,31 +7230,17 @@ async function showEditTemplateModal(templateId) {
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('templateNameCn')} *
+                  ${i18n.t('templateName')} *
                 </label>
                 <input type="text" id="template-name" required value="${escapeHtml(template.name)}"
                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('templateNameEn')}
-                </label>
-                <input type="text" id="template-name-en" value="${escapeHtml(template.name_en || '')}"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('templateDescriptionCn')}
+                  ${i18n.t('templateDescription')}
                 </label>
                 <textarea id="template-description" rows="3"
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(template.description || '')}</textarea>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('templateDescriptionEn')}
-                </label>
-                <textarea id="template-description-en" rows="3"
-                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(template.description_en || '')}</textarea>
               </div>
               ${currentUser.role === 'admin' ? `
                 <div class="flex items-center">
@@ -7316,9 +7285,7 @@ async function handleUpdateTemplate(e, templateId) {
   const isDefaultCheckbox = document.getElementById('template-is-default');
   const data = {
     name: document.getElementById('template-name').value,
-    name_en: document.getElementById('template-name-en').value || null,
     description: document.getElementById('template-description').value || null,
-    description_en: document.getElementById('template-description-en').value || null,
     is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false,
     is_active: document.getElementById('template-is-active').checked
   };
@@ -7536,20 +7503,12 @@ function showAddQuestionForm() {
               </select>
             </div>
             
-            <!-- Question Text - Hidden for text and time_with_text types -->
-            <div id="question-text-cn-container">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('questionTextCn')} *
+            <!-- Question Text -->
+            <div id="question-text-container">
+              <label id="question-text-label" class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('questionText')} *
               </label>
               <textarea id="question-text" required rows="3"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
-            </div>
-            
-            <div id="question-text-en-container">
-              <label id="question-text-en-label" class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('questionTextEn')}
-              </label>
-              <textarea id="question-text-en" rows="3"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
             
@@ -7697,21 +7656,13 @@ function showEditQuestionForm(questionId) {
               </select>
             </div>
             
-            <!-- Question Text - Hidden for text and time_with_text types -->
-            <div id="question-text-cn-container">
+            <!-- Question Text -->
+            <div id="question-text-container">
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('questionTextCn')} *
+                ${i18n.t('questionText')} *
               </label>
               <textarea id="question-text" required rows="3"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(question.question_text)}</textarea>
-            </div>
-            
-            <div id="question-text-en-container">
-              <label id="question-text-en-label" class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('questionTextEn')}
-              </label>
-              <textarea id="question-text-en" rows="3"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(question.question_text_en || '')}</textarea>
             </div>
             
             <!-- Answer Length (for text type only) -->
@@ -7848,9 +7799,8 @@ function handleQuestionTypeChange() {
   const multipleChoiceAnswer = document.getElementById('multiple-choice-answer');
   
   // Get containers and labels for dynamic field management
-  const questionTextCnContainer = document.getElementById('question-text-cn-container');
-  const questionTextEnContainer = document.getElementById('question-text-en-container');
-  const questionTextEnLabel = document.getElementById('question-text-en-label');
+  const questionTextContainer = document.getElementById('question-text-container');
+  const questionTextLabel = document.getElementById('question-text-label');
   
   // Hide all type-specific containers first
   answerLengthContainer.classList.add('hidden');
@@ -7858,25 +7808,22 @@ function handleQuestionTypeChange() {
   optionsContainer.classList.add('hidden');
   correctAnswerContainer.classList.add('hidden');
   
+  // Show question text container for all types
+  questionTextContainer.classList.remove('hidden');
+  
   if (type === 'text') {
-    // Text type: Hide CN label, show EN as "问题"
+    // Text type: Label as "问题"
     answerLengthContainer.classList.remove('hidden');
-    questionTextCnContainer.classList.add('hidden');
-    questionTextEnContainer.classList.remove('hidden');
-    questionTextEnLabel.textContent = i18n.t('question') + ' *';
+    questionTextLabel.textContent = i18n.t('question') + ' *';
   } else if (type === 'time_with_text') {
-    // Time type: Hide CN label, show EN as "标题"
+    // Time type: Label as "标题"
     timeTypeContainer.classList.remove('hidden');
-    questionTextCnContainer.classList.add('hidden');
-    questionTextEnContainer.classList.remove('hidden');
-    questionTextEnLabel.textContent = i18n.t('title') + ' *';
+    questionTextLabel.textContent = i18n.t('title') + ' *';
   } else { // single_choice or multiple_choice
-    // Choice types: Show both CN and EN with original labels
+    // Choice types: Label as "问题文本"
     optionsContainer.classList.remove('hidden');
     correctAnswerContainer.classList.remove('hidden');
-    questionTextCnContainer.classList.remove('hidden');
-    questionTextEnContainer.classList.remove('hidden');
-    questionTextEnLabel.textContent = i18n.t('questionTextEn');
+    questionTextLabel.textContent = i18n.t('questionText') + ' *';
     
     if (type === 'single_choice') {
       singleChoiceAnswer.classList.remove('hidden');
@@ -7987,7 +7934,6 @@ function collectQuestionFormData() {
   const type = document.getElementById('question-type').value;
   const data = {
     question_text: document.getElementById('question-text').value,
-    question_text_en: document.getElementById('question-text-en').value || null,
     question_type: type
   };
   
@@ -7996,8 +7942,8 @@ function collectQuestionFormData() {
   } else if (type === 'time_with_text') {
     // Collect time type fields
     const datetimeValue = document.getElementById('question-datetime-value').value;
-    // datetime_title is hidden, use question_text_en as title instead
-    const datetimeTitle = document.getElementById('question-text-en').value.trim() || '时间';
+    // Use question_text as datetime title
+    const datetimeTitle = document.getElementById('question-text').value.trim() || '时间';
     const answerMaxLength = parseInt(document.getElementById('question-datetime-answer-max-length').value) || 200;
     
     // Validate answer max length (50-500)
