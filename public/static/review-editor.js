@@ -742,9 +742,27 @@ function renderChoiceQuestion(question, answers) {
   const selectedAnswers = answers.map(a => a.answer);
   const isSingleChoice = (question.question_type === 'single_choice');
   
+  // 解析 options - 可能是 JSON 字符串或数组
+  let options = [];
+  if (question.options) {
+    if (typeof question.options === 'string') {
+      try {
+        options = JSON.parse(question.options);
+      } catch (e) {
+        console.error('[renderChoiceQuestion] 解析 options 失败:', e, question.options);
+        options = [];
+      }
+    } else if (Array.isArray(question.options)) {
+      options = question.options;
+    } else {
+      console.error('[renderChoiceQuestion] options 类型错误:', typeof question.options, question.options);
+      options = [];
+    }
+  }
+  
   return `
     <div class="space-y-2">
-      ${question.options ? question.options.map((option, index) => {
+      ${options.length > 0 ? options.map((option, index) => {
         const optionValue = String.fromCharCode(65 + index); // A, B, C, ...
         const isChecked = selectedAnswers.includes(optionValue);
         const inputType = isSingleChoice ? 'radio' : 'checkbox';
@@ -761,7 +779,7 @@ function renderChoiceQuestion(question, answers) {
             <span class="flex-1 text-gray-700">${optionValue}. ${option}</span>
           </label>
         `;
-      }).join('') : ''}
+      }).join('') : '<p class="text-gray-500 text-sm">暂无选项</p>'}
     </div>
   `;
 }
