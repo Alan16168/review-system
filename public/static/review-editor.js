@@ -253,6 +253,10 @@ function renderReviewEditor() {
   const data = editor.reviewData;
   const isEdit = (editor.reviewId !== null);
   
+  console.log('[renderReviewEditor] 开始渲染编辑器');
+  console.log('[renderReviewEditor] 模式:', isEdit ? '编辑' : '创建');
+  console.log('[renderReviewEditor] 折叠状态:', editor.collapsedSections);
+  
   const pageTitle = isEdit ? i18n.t('editReview') : i18n.t('createReview');
   
   // 根据创建/编辑模式显示不同的按钮文字
@@ -887,24 +891,37 @@ window.handleReviewEditorBack = function() {
  */
 window.toggleSection = function(sectionName) {
   const editor = window.reviewEditor;
+  
+  console.log('[toggleSection] 点击区域:', sectionName);
+  console.log('[toggleSection] 当前折叠状态:', editor.collapsedSections[sectionName]);
+  
+  // 切换状态
   editor.collapsedSections[sectionName] = !editor.collapsedSections[sectionName];
   
-  console.log('[toggleSection] 切换区域:', sectionName, '折叠状态:', editor.collapsedSections[sectionName]);
+  console.log('[toggleSection] 新的折叠状态:', editor.collapsedSections[sectionName]);
   
   // 重新渲染（或使用DOM操作切换显示）
   const sectionContent = document.getElementById(`section-${sectionName}`);
+  console.log('[toggleSection] 找到section-content:', !!sectionContent);
+  
   if (sectionContent) {
     if (editor.collapsedSections[sectionName]) {
       sectionContent.classList.add('section-collapsed');
+      console.log('[toggleSection] 添加 section-collapsed class');
     } else {
       sectionContent.classList.remove('section-collapsed');
+      console.log('[toggleSection] 移除 section-collapsed class');
     }
+    console.log('[toggleSection] 当前classes:', sectionContent.className);
+  } else {
+    console.error('[toggleSection] 未找到元素 #section-' + sectionName);
   }
   
   // 更新箭头图标
   const sectionHeader = sectionContent?.previousElementSibling;
   if (sectionHeader) {
     const icon = sectionHeader.querySelector('.fa-chevron-up, .fa-chevron-down');
+    console.log('[toggleSection] 找到图标:', !!icon);
     if (icon) {
       if (editor.collapsedSections[sectionName]) {
         icon.classList.remove('fa-chevron-up');
@@ -913,7 +930,10 @@ window.toggleSection = function(sectionName) {
         icon.classList.remove('fa-chevron-down');
         icon.classList.add('fa-chevron-up');
       }
+      console.log('[toggleSection] 图标classes:', icon.className);
     }
+  } else {
+    console.error('[toggleSection] 未找到section header');
   }
 };
 
