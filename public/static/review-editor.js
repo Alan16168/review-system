@@ -91,28 +91,35 @@ async function loadReviewData(reviewId) {
     
     // 存储基本数据
     window.reviewEditor.reviewData = {
-      id: data.id,
-      title: data.title,
-      description: data.description,
-      template_id: data.template_id,
-      time_type: data.time_type,
-      owner_type: data.owner_type,
-      team_id: data.team_id,
-      status: data.status,
-      scheduled_at: data.scheduled_at,
-      location: data.location,
-      reminder_minutes: data.reminder_minutes || 60,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      creator_id: data.creator_id
+      id: data.review.id,
+      title: data.review.title,
+      description: data.review.description,
+      template_id: data.review.template_id,
+      template_name: data.review.template_name,
+      template_description: data.review.template_description,
+      time_type: data.review.time_type,
+      owner_type: data.review.owner_type,
+      team_id: data.review.team_id,
+      status: data.review.status,
+      scheduled_at: data.review.scheduled_at,
+      location: data.review.location,
+      reminder_minutes: data.review.reminder_minutes || 60,
+      created_at: data.review.created_at,
+      updated_at: data.review.updated_at,
+      creator_id: data.review.user_id
     };
     
-    // 存储模板数据
-    window.reviewEditor.template = data.template;
+    // 存储模板数据（使用questions数据）
+    window.reviewEditor.template = {
+      id: data.review.template_id,
+      name: data.review.template_name,
+      description: data.review.template_description,
+      questions: data.questions || []
+    };
     
     // 判断是否是创建者
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    window.reviewEditor.isCreator = (data.creator_id === currentUser.id);
+    window.reviewEditor.isCreator = (data.review.user_id === currentUser.id);
     
     // 加载答案集
     await loadAnswerSets(reviewId);
