@@ -1025,8 +1025,8 @@ window.addNewAnswer = async function(questionNumber) {
   try {
     console.log('[ReviewEditor] 添加答案:', questionNumber, answer);
     
-    await axios.post(`/api/reviews/${reviewId}/answers`, {
-      question_number: questionNumber,
+    // 使用正确的API端点
+    await axios.post(`/api/reviews/${reviewId}/my-answer/${questionNumber}`, {
       answer: answer
     });
     
