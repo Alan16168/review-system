@@ -854,6 +854,8 @@ function renderPlanTimeSection() {
  * 绑定编辑器事件监听器
  */
 function attachEditorEventListeners() {
+  console.log('[attachEditorEventListeners] 开始绑定事件');
+  
   // 表单输入变化监听（标记为脏数据）
   const form = document.getElementById('review-editor-form');
   if (form) {
@@ -869,6 +871,29 @@ function attachEditorEventListeners() {
     // 初始化模板信息显示
     handleTemplateChange();
   }
+  
+  // 绑定section折叠/展开事件
+  const sectionNames = ['header', 'answers', 'planTime'];
+  sectionNames.forEach(sectionName => {
+    const sectionHeader = document.querySelector(`[onclick="toggleSection('${sectionName}')"]`);
+    if (sectionHeader) {
+      console.log('[attachEditorEventListeners] 找到section header:', sectionName);
+      // 移除inline onclick，使用事件监听器
+      sectionHeader.removeAttribute('onclick');
+      sectionHeader.addEventListener('click', function(e) {
+        console.log('[attachEditorEventListeners] Section header点击:', sectionName);
+        e.preventDefault();
+        e.stopPropagation();
+        window.toggleSection(sectionName);
+      });
+      // 添加视觉提示
+      sectionHeader.style.cursor = 'pointer';
+    } else {
+      console.warn('[attachEditorEventListeners] 未找到section header:', sectionName);
+    }
+  });
+  
+  console.log('[attachEditorEventListeners] 事件绑定完成');
 }
 
 /**
