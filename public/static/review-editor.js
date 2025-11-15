@@ -908,9 +908,19 @@ function attachEditorEventListeners() {
       // 添加点击事件监听器
       header.addEventListener('click', function(e) {
         console.log(`[attachEditorEventListeners] 🖱️ Section header 被点击: ${sectionName}`);
+        console.log('[attachEditorEventListeners] 📝 事件对象:', e.type, '| 目标:', e.target.className);
+        console.log('[attachEditorEventListeners] 🔍 window.toggleSection 存在?', typeof window.toggleSection);
+        
         e.preventDefault();
         e.stopPropagation();
-        window.toggleSection(sectionName);
+        
+        try {
+          console.log('[attachEditorEventListeners] 🚀 开始调用 toggleSection...');
+          window.toggleSection(sectionName);
+          console.log('[attachEditorEventListeners] ✅ toggleSection 调用完成');
+        } catch (err) {
+          console.error('[attachEditorEventListeners] ❌ toggleSection 调用失败:', err);
+        }
       });
       
       // 确保有视觉提示
