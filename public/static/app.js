@@ -2023,10 +2023,10 @@ async function showCreateReview(preservedData = null) {
             </select>
           </div>
 
-          <!-- Owner Type (Access Control) -->
+          <!-- Object (Access Control) -->
           <div class="border-t pt-6">
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              ${i18n.t('ownerType')} <span class="text-red-500">*</span>
+              ${i18n.t('object')} <span class="text-red-500">*</span>
             </label>
             <select id="review-owner-type" required onchange="handleOwnerTypeChange()"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
@@ -2069,11 +2069,17 @@ async function showCreateReview(preservedData = null) {
             `}
           </div>
 
-          <!-- Calendar Integration (Optional) -->
+          <!-- Reminder Time -->
           <div class="border-t pt-6">
-            <div class="mb-4 flex items-center">
-              <i class="fas fa-calendar-plus text-indigo-600 mr-2"></i>
-              <h3 class="text-lg font-medium text-gray-800">${i18n.t('scheduleReview')} (${i18n.t('optional')})</h3>
+            <div class="mb-4 flex items-center justify-between">
+              <div class="flex items-center">
+                <i class="fas fa-bell text-indigo-600 mr-2"></i>
+                <h3 class="text-lg font-medium text-gray-800">${i18n.t('reminderTime')}</h3>
+              </div>
+              <button type="button" id="add-to-google-calendar-btn" onclick="addToGoogleCalendar()" 
+                      class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 shadow-md flex items-center">
+                <i class="fab fa-google mr-2"></i>${i18n.t('addToGoogleCalendar')}
+              </button>
             </div>
             
             <div class="space-y-4">
@@ -3638,10 +3644,10 @@ async function showEditReview(id) {
               ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
 
-            <!-- Owner Type (Access Control) -->
+            <!-- Object (Access Control) -->
             <div class="border-t pt-6">
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('ownerType')} <span class="text-red-500">*</span>
+                ${i18n.t('object')} <span class="text-red-500">*</span>
               </label>
               <select id="review-owner-type" required
                       ${!isCreator ? 'disabled' : ''}
@@ -3660,6 +3666,66 @@ async function showEditReview(id) {
                 </p>
               </div>
               ` : ''}
+            </div>
+            
+            <!-- Reminder Time -->
+            <div class="border-t pt-6">
+              <div class="mb-4 flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-bell text-indigo-600 mr-2"></i>
+                  <h3 class="text-base font-medium text-gray-800">${i18n.t('reminderTime')}</h3>
+                </div>
+                ${isCreator && review.scheduled_at ? `
+                <button type="button" onclick="addToGoogleCalendar(${id})" 
+                        class="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 shadow-md flex items-center">
+                  <i class="fab fa-google mr-2"></i>${i18n.t('addToGoogleCalendar')}
+                </button>
+                ` : ''}
+              </div>
+              
+              <div class="space-y-4">
+                <!-- Scheduled Time -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-clock mr-1"></i>${i18n.t('scheduledTime')}
+                  </label>
+                  <input type="datetime-local" id="review-scheduled-at"
+                         value="${review.scheduled_at ? new Date(review.scheduled_at).toISOString().slice(0, 16) : ''}"
+                         ${!isCreator ? 'disabled' : ''}
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
+                  ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
+                </div>
+    
+                <!-- Location -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-map-marker-alt mr-1"></i>${i18n.t('location')}
+                  </label>
+                  <input type="text" id="review-location"
+                         value="${escapeHtml(review.location || '')}"
+                         ${!isCreator ? 'disabled' : ''}
+                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}"
+                         placeholder="${i18n.t('locationPlaceholder')}">
+                  ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
+                </div>
+    
+                <!-- Reminder -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-bell mr-1"></i>${i18n.t('reminderMinutes')}
+                  </label>
+                  <select id="review-reminder-minutes"
+                          ${!isCreator ? 'disabled' : ''}
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
+                    <option value="15" ${review.reminder_minutes == 15 ? 'selected' : ''}>15 ${i18n.t('minutes')}</option>
+                    <option value="30" ${review.reminder_minutes == 30 ? 'selected' : ''}>30 ${i18n.t('minutes')}</option>
+                    <option value="60" ${review.reminder_minutes == 60 || !review.reminder_minutes ? 'selected' : ''}>60 ${i18n.t('minutes')}</option>
+                    <option value="120" ${review.reminder_minutes == 120 ? 'selected' : ''}>120 ${i18n.t('minutes')}</option>
+                    <option value="1440" ${review.reminder_minutes == 1440 ? 'selected' : ''}>1 ${i18n.t('day') || '天'}</option>
+                  </select>
+                  ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
+                </div>
+              </div>
             </div>
 
             <!-- Status -->
@@ -4222,9 +4288,9 @@ async function handleEditReview(e) {
     const status = document.querySelector('input[name="status"]:checked').value;
     
     // Get calendar fields
-    const scheduledAt = document.getElementById('edit-scheduled-at').value || null;
-    const location = document.getElementById('edit-location').value || null;
-    const reminderMinutes = parseInt(document.getElementById('edit-reminder-minutes').value) || 60;
+    const scheduledAt = document.getElementById('review-scheduled-at')?.value || null;
+    const location = document.getElementById('review-location')?.value || null;
+    const reminderMinutes = parseInt(document.getElementById('review-reminder-minutes')?.value) || 60;
     
     // IMPORTANT: We do NOT include template_id in the update request
     // template_id should only be set during review creation and cannot be changed afterwards
@@ -10230,24 +10296,35 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
   const hasNext = currentNum < totalNum;
   
   navElement.innerHTML = `
-    <div class="flex items-center justify-between p-4 bg-indigo-50 rounded-lg mb-4">
-      <button onclick="navigateToPreviousSet(${reviewId})" 
-              ${!hasPrev ? 'disabled' : ''}
-              class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-        <i class="fas fa-arrow-left mr-2"></i>${i18n.t('previousSet') || '上一组'}
-      </button>
-      
-      <div class="text-center">
-        <p class="text-sm text-gray-600">${i18n.t('answerSet') || '答案组'}</p>
-        <p class="text-xl font-bold text-indigo-600">${currentNum} / ${totalNum}</p>
-        ${totalNum > 0 ? `<p class="text-xs text-gray-500 mt-1">${i18n.t('createdAt')}: ${window.currentAnswerSets[currentNum-1]?.created_at || ''}</p>` : ''}
+    <div class="p-4 bg-indigo-50 rounded-lg mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <button onclick="navigateToPreviousSet(${reviewId})" 
+                ${!hasPrev ? 'disabled' : ''}
+                class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>${i18n.t('previousSet') || '上一组'}
+        </button>
+        
+        <div class="text-center">
+          <p class="text-sm text-gray-600">${i18n.t('answerSet') || '答案组'}</p>
+          <p class="text-xl font-bold text-indigo-600">${currentNum} / ${totalNum}</p>
+          ${totalNum > 0 ? `<p class="text-xs text-gray-500 mt-1">${i18n.t('createdAt')}: ${window.currentAnswerSets[currentNum-1]?.created_at || ''}</p>` : ''}
+        </div>
+        
+        <button onclick="navigateToNextSet(${reviewId})" 
+                ${!hasNext ? 'disabled' : ''}
+                class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          ${i18n.t('nextSet') || '下一组'}<i class="fas fa-arrow-right ml-2"></i>
+        </button>
       </div>
       
-      <button onclick="navigateToNextSet(${reviewId})" 
-              ${!hasNext ? 'disabled' : ''}
-              class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-        ${i18n.t('nextSet') || '下一组'}<i class="fas fa-arrow-right ml-2"></i>
-      </button>
+      ${totalNum > 1 ? `
+      <div class="text-center">
+        <button onclick="deleteAnswerSet(${reviewId}, ${currentNum})" 
+                class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors">
+          <i class="fas fa-trash-alt mr-2"></i>${i18n.t('deleteAnswerSet') || '删除答案组'}
+        </button>
+      </div>
+      ` : ''}
     </div>
   `;
 }
@@ -10699,6 +10776,39 @@ async function createNewAnswerSet(reviewId) {
   } catch (error) {
     console.error('Failed to show answer set modal:', error);
     showNotification(i18n.t('operationFailed') + ': ' + error.message, 'error');
+  }
+}
+
+/**
+ * Delete an answer set
+ */
+async function deleteAnswerSet(reviewId, setNumber) {
+  try {
+    // Confirm deletion
+    const confirmMessage = i18n.t('confirmDeleteAnswerSet').replace('{number}', setNumber);
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    // Call API to delete
+    await axios.delete(`/api/answer-sets/${reviewId}/${setNumber}`);
+    
+    showNotification(i18n.t('answerSetDeleted') || '答案组已删除', 'success');
+    
+    // Reload answer sets
+    await loadAnswerSets(reviewId);
+    
+    // If we deleted the last set and there are still sets, navigate to the previous one
+    if (window.currentAnswerSetIndex >= window.currentAnswerSets.length) {
+      window.currentAnswerSetIndex = Math.max(0, window.currentAnswerSets.length - 1);
+    }
+    
+    // Render the current (or previous) set
+    await renderCurrentAnswerSet(reviewId);
+    
+  } catch (error) {
+    console.error('Failed to delete answer set:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
 

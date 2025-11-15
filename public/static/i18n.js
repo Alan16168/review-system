@@ -149,6 +149,29 @@ const translations = {
     'publicReviewsDesc': '查看所有公开的复盘，供学习和参考',
     'noPublicReviews': '暂无公开的复盘',
     
+    // Review Creation New Fields
+    'object': '对象',
+    'reminderTime': '提醒时间',
+    'addToGoogleCalendar': '加入 Google 日历',
+    'location': '地点',
+    'locationPlaceholder': '输入地点...',
+    'scheduledTime': '规划时间',
+    'reminderMinutes': '提前提醒',
+    'minutes': '分钟',
+    'minutes15': '15分钟',
+    'minutes30': '30分钟',
+    'minutes60': '1小时',
+    'minutes1440': '1天',
+    'selectDate': '选择日期',
+    'selectTime': '选择时间',
+    
+    // Answer Sets Management
+    'addAnswerSet': '增加答案组',
+    'deleteAnswerSet': '删除答案组',
+    'answerSetNumber': '答案组 {number}',
+    'confirmDeleteAnswerSet': '确定要删除答案组 {number} 吗？此操作不可撤销。',
+    'answerSetDeleted': '答案组已删除',
+    
     // Team Management
     'teamList': '团队列表',
     'myTeams': '我的团队',
@@ -894,6 +917,29 @@ const translations = {
     'publicReviewsDesc': 'View all public reviews for learning and reference',
     'noPublicReviews': 'No public reviews yet',
     
+    // Review Creation New Fields
+    'object': 'Object',
+    'reminderTime': 'Reminder Time',
+    'addToGoogleCalendar': 'Add to Google Calendar',
+    'location': 'Location',
+    'locationPlaceholder': 'Enter location...',
+    'scheduledTime': 'Scheduled Time',
+    'reminderMinutes': 'Reminder Before',
+    'minutes': 'Minutes',
+    'minutes15': '15 minutes',
+    'minutes30': '30 minutes',
+    'minutes60': '1 hour',
+    'minutes1440': '1 day',
+    'selectDate': 'Select Date',
+    'selectTime': 'Select Time',
+    
+    // Answer Sets Management
+    'addAnswerSet': 'Add Answer Set',
+    'deleteAnswerSet': 'Delete Answer Set',
+    'answerSetNumber': 'Answer Set {number}',
+    'confirmDeleteAnswerSet': 'Are you sure you want to delete Answer Set {number}? This action cannot be undone.',
+    'answerSetDeleted': 'Answer Set Deleted',
+    
     // Team Management
     'teamList': 'Team List',
     'myTeams': 'My Teams',
@@ -1600,6 +1646,29 @@ const translations = {
     'ownerTypePublicDesc': 'Public: Everyone can view but not edit (only creator can edit)',
     'publicReviewsDesc': 'View all public reviews for learning and reference',
     'noPublicReviews': 'まだ公開レビューはありません',
+    
+    // Review Creation New Fields
+    'object': 'オブジェクト',
+    'reminderTime': 'リマインダー時間',
+    'addToGoogleCalendar': 'Googleカレンダーに追加',
+    'location': '場所',
+    'locationPlaceholder': '場所を入力...',
+    'scheduledTime': '予定時刻',
+    'reminderMinutes': 'リマインダー前',
+    'minutes': '分',
+    'minutes15': '15分',
+    'minutes30': '30分',
+    'minutes60': '1時間',
+    'minutes1440': '1日',
+    'selectDate': '日付を選択',
+    'selectTime': '時刻を選択',
+    
+    // Answer Sets Management
+    'addAnswerSet': '回答セットを追加',
+    'deleteAnswerSet': '回答セットを削除',
+    'answerSetNumber': '回答セット {number}',
+    'confirmDeleteAnswerSet': '回答セット {number} を削除してもよろしいですか？この操作は元に戻せません。',
+    'answerSetDeleted': '回答セットが削除されました',
     
     // Team Management
     'teamList': 'チームリスト',
@@ -2335,6 +2404,29 @@ const translations = {
     'ownerTypePublicDesc': 'Public: Everyone can view but not edit (only creator can edit)',
     'publicReviewsDesc': 'View all public reviews for learning and reference',
     'noPublicReviews': 'No public reviews yet',
+    
+    // Review Creation New Fields
+    'object': 'Objeto',
+    'reminderTime': 'Hora de Recordatorio',
+    'addToGoogleCalendar': 'Agregar a Google Calendar',
+    'location': 'Ubicación',
+    'locationPlaceholder': 'Ingrese ubicación...',
+    'scheduledTime': 'Hora Programada',
+    'reminderMinutes': 'Recordatorio Antes',
+    'minutes': 'Minutos',
+    'minutes15': '15 minutos',
+    'minutes30': '30 minutos',
+    'minutes60': '1 hora',
+    'minutes1440': '1 día',
+    'selectDate': 'Seleccionar Fecha',
+    'selectTime': 'Seleccionar Hora',
+    
+    // Answer Sets Management
+    'addAnswerSet': 'Agregar Conjunto de Respuestas',
+    'deleteAnswerSet': 'Eliminar Conjunto de Respuestas',
+    'answerSetNumber': 'Conjunto de Respuestas {number}',
+    'confirmDeleteAnswerSet': '¿Está seguro de que desea eliminar el Conjunto de Respuestas {number}? Esta acción no se puede deshacer.',
+    'answerSetDeleted': 'Conjunto de Respuestas Eliminado',
     
     // Team Management
     'teamList': 'Lista de Equipos',
