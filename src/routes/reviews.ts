@@ -141,8 +141,8 @@ reviews.get('/:id', async (c) => {
 
     const query = `
       SELECT r.*, u.username as creator_name, t.name as team_name, 
-             CASE WHEN ? = 'en' AND tp.name_en IS NOT NULL THEN tp.name_en ELSE tp.name END as template_name,
-             CASE WHEN ? = 'en' AND tp.description_en IS NOT NULL THEN tp.description_en ELSE tp.description END as template_description
+             tp.name as template_name,
+             tp.description as template_description
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
       LEFT JOIN teams t ON r.team_id = t.id
@@ -155,7 +155,7 @@ reviews.get('/:id', async (c) => {
       )
     `;
 
-    const review: any = await c.env.DB.prepare(query).bind(lang, lang, reviewId, user.id, user.id, user.id).first();
+    const review: any = await c.env.DB.prepare(query).bind(reviewId, user.id, user.id, user.id).first();
 
     if (!review) {
       return c.json({ error: 'Review not found or access denied' }, 404);
