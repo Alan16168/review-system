@@ -3442,20 +3442,32 @@ async function handleDeleteMyAnswer(reviewId, questionNumber) {
 
 async function showEditReview(id) {
   try {
+    console.log('[showEditReview] 开始加载复盘 ID:', id);
     const response = await axios.get(`/api/reviews/${id}`);
+    console.log('[showEditReview] 服务器响应:', response.data);
+    
     const review = response.data.review;
     const questions = response.data.questions || [];
     const answersByQuestion = response.data.answersByQuestion || {};
+    
+    console.log('[showEditReview] 复盘信息:', review);
+    console.log('[showEditReview] 问题数量:', questions.length);
+    console.log('[showEditReview] 答案数据:', answersByQuestion);
     
     // Extract current user's answers for editing
     const myAnswers = {};
     Object.keys(answersByQuestion).forEach(qNum => {
       const userAnswers = answersByQuestion[qNum] || [];
+      // For choice-type questions, take the first answer
+      // For text-type questions, there can be multiple answers (handled separately)
       const myAnswer = userAnswers.find(a => a.user_id === currentUser.id);
-      if (myAnswer) {
+      if (myAnswer && myAnswer.answer) {
         myAnswers[qNum] = myAnswer.answer;
       }
     });
+    
+    console.log('[showEditReview] 我的答案:', myAnswers);
+    console.log('[showEditReview] 所有答案:', answersByQuestion);
     
     // Check if current user is the creator
     const isCreator = currentUser.id === review.user_id;
@@ -3695,7 +3707,13 @@ async function showEditReview(id) {
               ${questions.length > 0 ? questions.map(q => {
                 // Render based on question type
                 if (q.question_type === 'single_choice' && q.options) {
-                  const options = JSON.parse(q.options);
+                  let options = [];
+                  try {
+                    options = JSON.parse(q.options);
+                  } catch (e) {
+                    console.error('[showEditReview] 解析选项失败:', e, q.options);
+                    options = [];
+                  }
                   const myAnswer = myAnswers[q.question_number] || '';
                   return `
                     <div class="mb-6">
@@ -3722,9 +3740,15 @@ async function showEditReview(id) {
                     </div>
                   `;
                 } else if (q.question_type === 'multiple_choice' && q.options) {
-                  const options = JSON.parse(q.options);
+                  let options = [];
+                  try {
+                    options = JSON.parse(q.options);
+                  } catch (e) {
+                    console.error('[showEditReview] 解析选项失败:', e, q.options);
+                    options = [];
+                  }
                   const myAnswer = myAnswers[q.question_number] || '';
-                  const selectedLetters = myAnswer.split(',').map(a => a.trim());
+                  const selectedLetters = myAnswer ? myAnswer.split(',').map(a => a.trim()) : [];
                   return `
                     <div class="mb-6">
                       <label class="block text-sm font-medium text-gray-700 mb-3">
@@ -3937,9 +3961,22 @@ async function showEditReview(id) {
       } else {
         updateAnswerSetNavigation(id, 0, 0);
       }
+    }).catch(err => {
+      console.error('[showEditReview] 加载答案集失败:', err);
     });
   } catch (error) {
-    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+    console.error('[showEditReview] 加载失败:', error);
+    console.error('[showEditReview] 错误详情:', {
+      message: error.message,
+      response: error.response?.data,
+      stack: error.stack
+    });
+    
+    const errorMsg = error.response?.data?.error || error.message || '未知错误';
+    showNotification(
+      i18n.t('operationFailed') + ': ' + errorMsg + ' (查看控制台获取详情)',
+      'error'
+    );
     showReviews();
   }
 }
