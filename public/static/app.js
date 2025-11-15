@@ -7401,11 +7401,15 @@ function renderQuestionsList() {
       ${currentTemplateQuestions.map((q, index) => {
         const typeLabel = q.question_type === 'single_choice' ? i18n.t('questionTypeSingleChoice') :
                          q.question_type === 'multiple_choice' ? i18n.t('questionTypeMultipleChoice') :
+                         q.question_type === 'time_with_text' ? i18n.t('questionTypeTimeWithText') :
                          i18n.t('questionTypeText');
         const typeIcon = q.question_type === 'single_choice' ? 'fa-dot-circle' :
                         q.question_type === 'multiple_choice' ? 'fa-check-square' :
+                        q.question_type === 'time_with_text' ? 'fa-clock' :
                         'fa-font';
-        const typeColor = q.question_type === 'text' ? 'blue' : 'green';
+        const typeColor = q.question_type === 'text' ? 'blue' : 
+                         q.question_type === 'time_with_text' ? 'purple' : 
+                         'green';
         
         return `
         <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
