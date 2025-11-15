@@ -319,7 +319,7 @@ function renderReviewHeaderSection() {
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
       <div class="section-header section-header-purple px-6 py-4 flex items-center justify-between cursor-pointer"
-           data-section="header">
+           onclick="window.toggleSection('header')">
         <div class="flex items-center space-x-3">
           <i class="fas fa-heading text-indigo-700"></i>
           <h2 class="text-lg font-semibold text-indigo-900">
@@ -566,7 +566,7 @@ function renderAnswerSetsSection() {
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
       <div class="section-header section-header-green px-6 py-4 flex items-center justify-between cursor-pointer"
-           data-section="answers">
+           onclick="window.toggleSection('answers')">
         <div class="flex items-center space-x-3">
           <i class="fas fa-layer-group text-green-700"></i>
           <h2 class="text-lg font-semibold text-green-900">
@@ -801,7 +801,7 @@ function renderPlanTimeSection() {
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
       <div class="section-header section-header-blue px-6 py-4 flex items-center justify-between cursor-pointer"
-           data-section="planTime">
+           onclick="window.toggleSection('planTime')">
         <div class="flex items-center space-x-3">
           <i class="fas fa-calendar-alt text-blue-700"></i>
           <h2 class="text-lg font-semibold text-blue-900">
@@ -894,61 +894,8 @@ function attachEditorEventListeners() {
     console.log('[attachEditorEventListeners] ✓ 模板选择监听已绑定');
   }
   
-  // 绑定section折叠/展开事件 - 使用事件委托
-  // 等待 DOM 完全渲染
-  setTimeout(() => {
-    console.log('[attachEditorEventListeners] 📋 开始查找 section headers...');
-    
-    // 查找所有的 section headers
-    const allSectionHeaders = document.querySelectorAll('.section-header');
-    console.log(`[attachEditorEventListeners] 找到 ${allSectionHeaders.length} 个 section headers`);
-    
-    // 调试：列出所有找到的 headers
-    allSectionHeaders.forEach((h, i) => {
-      console.log(`[attachEditorEventListeners]   Header ${i}: ${h.className} | data-section: "${h.getAttribute('data-section')}"`);
-    });
-    
-    if (allSectionHeaders.length === 0) {
-      console.error('[attachEditorEventListeners] ❌ 没有找到任何 section headers！检查 HTML 渲染是否正确。');
-    }
-    
-    allSectionHeaders.forEach((header, index) => {
-      const sectionName = header.getAttribute('data-section');
-      
-      if (!sectionName) {
-        console.warn(`[attachEditorEventListeners] ⚠️ Section header ${index} 没有 data-section 属性`);
-        console.warn(`[attachEditorEventListeners]     该元素的 class: ${header.className}`);
-        return;
-      }
-      
-      console.log(`[attachEditorEventListeners] 🔗 开始绑定 section: ${sectionName}`);
-      
-      // 添加点击事件监听器
-      header.addEventListener('click', function(e) {
-        console.log(`[attachEditorEventListeners] 🖱️ Section header 被点击: ${sectionName}`);
-        console.log('[attachEditorEventListeners] 📝 事件对象:', e.type, '| 目标:', e.target.className);
-        console.log('[attachEditorEventListeners] 🔍 window.toggleSection 存在?', typeof window.toggleSection);
-        
-        e.preventDefault();
-        e.stopPropagation();
-        
-        try {
-          console.log('[attachEditorEventListeners] 🚀 开始调用 toggleSection...');
-          window.toggleSection(sectionName);
-          console.log('[attachEditorEventListeners] ✅ toggleSection 调用完成');
-        } catch (err) {
-          console.error('[attachEditorEventListeners] ❌ toggleSection 调用失败:', err);
-        }
-      });
-      
-      // 确保有视觉提示
-      header.style.cursor = 'pointer';
-      
-      console.log(`[attachEditorEventListeners] ✅ ${sectionName} 事件绑定完成`);
-    });
-    
-    console.log('[attachEditorEventListeners] ========== 所有事件绑定完成 ==========');
-  }, 100); // 延迟 100ms 确保 DOM 已渲染
+  // Section 折叠功能使用 inline onclick，无需绑定事件
+  console.log('[attachEditorEventListeners] ========== 所有事件绑定完成 ==========');
 }
 
 /**
