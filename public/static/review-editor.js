@@ -319,7 +319,7 @@ function renderReviewHeaderSection() {
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
       <div class="section-header section-header-purple px-6 py-4 flex items-center justify-between cursor-pointer"
-           onclick="toggleSection('header')">
+           data-section="header">
         <div class="flex items-center space-x-3">
           <i class="fas fa-heading text-indigo-700"></i>
           <h2 class="text-lg font-semibold text-indigo-900">
@@ -566,7 +566,7 @@ function renderAnswerSetsSection() {
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
       <div class="section-header section-header-green px-6 py-4 flex items-center justify-between cursor-pointer"
-           onclick="toggleSection('answers')">
+           data-section="answers">
         <div class="flex items-center space-x-3">
           <i class="fas fa-layer-group text-green-700"></i>
           <h2 class="text-lg font-semibold text-green-900">
@@ -783,7 +783,7 @@ function renderPlanTimeSection() {
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
       <!-- Section Header -->
       <div class="section-header section-header-blue px-6 py-4 flex items-center justify-between cursor-pointer"
-           onclick="toggleSection('planTime')">
+           data-section="planTime">
         <div class="flex items-center space-x-3">
           <i class="fas fa-calendar-alt text-blue-700"></i>
           <h2 class="text-lg font-semibold text-blue-900">
@@ -854,7 +854,7 @@ function renderPlanTimeSection() {
  * 绑定编辑器事件监听器
  */
 function attachEditorEventListeners() {
-  console.log('[attachEditorEventListeners] 开始绑定事件');
+  console.log('[attachEditorEventListeners] ========== 开始绑定事件 ==========');
   
   // 表单输入变化监听（标记为脏数据）
   const form = document.getElementById('review-editor-form');
@@ -862,6 +862,7 @@ function attachEditorEventListeners() {
     form.addEventListener('input', () => {
       window.reviewEditor.isDirty = true;
     });
+    console.log('[attachEditorEventListeners] ✓ 表单输入监听已绑定');
   }
   
   // 模板选择变化
@@ -870,45 +871,39 @@ function attachEditorEventListeners() {
     templateSelect.addEventListener('change', handleTemplateChange);
     // 初始化模板信息显示
     handleTemplateChange();
+    console.log('[attachEditorEventListeners] ✓ 模板选择监听已绑定');
   }
   
-  // 绑定section折叠/展开事件
-  // 使用类名选择器，更可靠
-  const headerSection = document.querySelector('.section-header-purple');
-  const answersSection = document.querySelector('.section-header-green');
-  const planTimeSection = document.querySelector('.section-header-blue');
+  // 绑定section折叠/展开事件 - 使用事件委托
+  // 查找所有的 section headers
+  const allSectionHeaders = document.querySelectorAll('.section-header');
+  console.log(`[attachEditorEventListeners] 找到 ${allSectionHeaders.length} 个 section headers`);
   
-  const sections = [
-    { element: headerSection, name: 'header', color: 'purple' },
-    { element: answersSection, name: 'answers', color: 'green' },
-    { element: planTimeSection, name: 'planTime', color: 'blue' }
-  ];
-  
-  sections.forEach(({ element, name, color }) => {
-    if (element) {
-      console.log(`[attachEditorEventListeners] 找到section header: ${name} (${color})`);
-      
-      // 移除可能存在的inline onclick
-      element.removeAttribute('onclick');
-      
-      // 添加点击事件监听器
-      element.addEventListener('click', function(e) {
-        console.log(`[attachEditorEventListeners] Section header点击: ${name}`);
-        e.preventDefault();
-        e.stopPropagation();
-        window.toggleSection(name);
-      });
-      
-      // 确保有视觉提示
-      element.style.cursor = 'pointer';
-      
-      console.log(`[attachEditorEventListeners] ${name} 事件绑定完成`);
-    } else {
-      console.warn(`[attachEditorEventListeners] 未找到section header: ${name} (${color})`);
+  allSectionHeaders.forEach((header, index) => {
+    const sectionName = header.getAttribute('data-section');
+    
+    if (!sectionName) {
+      console.warn(`[attachEditorEventListeners] ⚠️ Section header ${index} 没有 data-section 属性`);
+      return;
     }
+    
+    console.log(`[attachEditorEventListeners] 绑定 section: ${sectionName}`);
+    
+    // 添加点击事件监听器
+    header.addEventListener('click', function(e) {
+      console.log(`[attachEditorEventListeners] 🖱️ Section header 被点击: ${sectionName}`);
+      e.preventDefault();
+      e.stopPropagation();
+      window.toggleSection(sectionName);
+    });
+    
+    // 确保有视觉提示
+    header.style.cursor = 'pointer';
+    
+    console.log(`[attachEditorEventListeners] ✓ ${sectionName} 事件绑定完成`);
   });
   
-  console.log('[attachEditorEventListeners] 所有事件绑定完成');
+  console.log('[attachEditorEventListeners] ========== 所有事件绑定完成 ==========');
 }
 
 /**
@@ -932,49 +927,68 @@ window.handleReviewEditorBack = function() {
 window.toggleSection = function(sectionName) {
   const editor = window.reviewEditor;
   
+  console.log('[toggleSection] ========== 开始折叠操作 ==========');
   console.log('[toggleSection] 点击区域:', sectionName);
   console.log('[toggleSection] 当前折叠状态:', editor.collapsedSections[sectionName]);
   
   // 切换状态
   editor.collapsedSections[sectionName] = !editor.collapsedSections[sectionName];
+  const isCollapsed = editor.collapsedSections[sectionName];
   
-  console.log('[toggleSection] 新的折叠状态:', editor.collapsedSections[sectionName]);
+  console.log('[toggleSection] 新的折叠状态:', isCollapsed);
   
-  // 重新渲染（或使用DOM操作切换显示）
+  // 找到 section content
   const sectionContent = document.getElementById(`section-${sectionName}`);
   console.log('[toggleSection] 找到section-content:', !!sectionContent);
   
-  if (sectionContent) {
-    if (editor.collapsedSections[sectionName]) {
-      sectionContent.classList.add('section-collapsed');
-      console.log('[toggleSection] 添加 section-collapsed class');
-    } else {
-      sectionContent.classList.remove('section-collapsed');
-      console.log('[toggleSection] 移除 section-collapsed class');
-    }
-    console.log('[toggleSection] 当前classes:', sectionContent.className);
-  } else {
-    console.error('[toggleSection] 未找到元素 #section-' + sectionName);
+  if (!sectionContent) {
+    console.error('[toggleSection] ❌ 未找到元素 #section-' + sectionName);
+    return;
   }
   
-  // 更新箭头图标
-  const sectionHeader = sectionContent?.previousElementSibling;
+  // 应用折叠/展开
+  if (isCollapsed) {
+    console.log('[toggleSection] 🔽 折叠区域');
+    sectionContent.classList.add('section-collapsed');
+  } else {
+    console.log('[toggleSection] 🔼 展开区域');
+    sectionContent.classList.remove('section-collapsed');
+  }
+  
+  console.log('[toggleSection] 当前classes:', sectionContent.className);
+  console.log('[toggleSection] 计算后的样式 - maxHeight:', window.getComputedStyle(sectionContent).maxHeight);
+  console.log('[toggleSection] 计算后的样式 - opacity:', window.getComputedStyle(sectionContent).opacity);
+  
+  // 找到并更新箭头图标
+  // 使用更可靠的方式：通过父元素查找
+  const parentCard = sectionContent.parentElement;
+  if (!parentCard) {
+    console.error('[toggleSection] ❌ 未找到父元素');
+    return;
+  }
+  
+  const sectionHeader = parentCard.querySelector('.section-header');
+  console.log('[toggleSection] 找到section-header:', !!sectionHeader);
+  
   if (sectionHeader) {
     const icon = sectionHeader.querySelector('.fa-chevron-up, .fa-chevron-down');
     console.log('[toggleSection] 找到图标:', !!icon);
+    
     if (icon) {
-      if (editor.collapsedSections[sectionName]) {
+      if (isCollapsed) {
         icon.classList.remove('fa-chevron-up');
         icon.classList.add('fa-chevron-down');
+        console.log('[toggleSection] ⬇️ 箭头改为向下');
       } else {
         icon.classList.remove('fa-chevron-down');
         icon.classList.add('fa-chevron-up');
+        console.log('[toggleSection] ⬆️ 箭头改为向上');
       }
       console.log('[toggleSection] 图标classes:', icon.className);
     }
-  } else {
-    console.error('[toggleSection] 未找到section header');
   }
+  
+  console.log('[toggleSection] ========== 折叠操作完成 ==========');
 };
 
 /**

@@ -307,18 +307,21 @@ html {
   /* Blue background */
 }
 
-/* Section Content */
+/* Section Content - IMPROVED COLLAPSE ANIMATION */
 .section-content {
-  transition: all 0.3s ease;
-  max-height: 10000px;
+  transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out, opacity 0.4s ease-in-out;
+  max-height: 5000px;
   /* Large enough for content */
   overflow: visible;
+  opacity: 1;
 }
 
 .section-collapsed {
-  max-height: 0;
-  overflow: hidden;
-  padding: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  opacity: 0 !important;
 }
 
 /* Smooth chevron rotation */
