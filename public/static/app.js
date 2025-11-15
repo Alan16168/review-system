@@ -7772,6 +7772,9 @@ function showEditQuestionForm(questionId) {
   // Initialize options display
   renderOptionsInputs();
   
+  // Render correct answer options for choice questions
+  renderCorrectAnswerOptions();
+  
   // Set correct answer
   if (question.correct_answer) {
     setTimeout(() => {
