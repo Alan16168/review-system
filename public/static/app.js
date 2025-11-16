@@ -10211,6 +10211,9 @@ function renderAnswerSet(reviewId) {
   // Update navigation display
   updateAnswerSetNavigation(reviewId, index + 1, sets.length);
   
+  // Set flag to prevent auto-save during rendering
+  window.isRenderingAnswerSet = true;
+  
   // Update answer displays for each question
   questions.forEach(q => {
     const answer = currentSet.answers.find(a => a.question_number === q.question_number);
@@ -10341,6 +10344,11 @@ function renderAnswerSet(reviewId) {
       }
     }
   });
+  
+  // Clear the rendering flag after a short delay to ensure all events are processed
+  setTimeout(() => {
+    window.isRenderingAnswerSet = false;
+  }, 100);
 }
 
 /**
@@ -10470,6 +10478,12 @@ async function saveInlineAnswer(reviewId, questionNumber) {
  * Update single choice answer in current set
  */
 async function updateAnswerInSet(reviewId, questionNumber, value) {
+  // Prevent auto-save during rendering
+  if (window.isRenderingAnswerSet) {
+    console.log('[updateAnswerInSet] Skipping save during render');
+    return;
+  }
+  
   try {
     let sets = window.currentAnswerSets || [];
     let index = window.currentSetIndex || 0;
@@ -10515,6 +10529,12 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
  * Update multiple choice answer in current set
  */
 async function updateMultipleChoiceInSet(reviewId, questionNumber) {
+  // Prevent auto-save during rendering
+  if (window.isRenderingAnswerSet) {
+    console.log('[updateMultipleChoiceInSet] Skipping save during render');
+    return;
+  }
+  
   try {
     const checked = document.querySelectorAll(`input[name="set-question${questionNumber}"]:checked`);
     const values = Array.from(checked).map(cb => cb.value);
