@@ -19,6 +19,7 @@ const reviews = new Hono<{ Bindings: Bindings }>();
 reviews.use('/*', authMiddleware);
 
 // Get public reviews (owner_type='public' or 'team')
+// Note: 'team' owner_type reviews are only visible to team members
 reviews.get('/public', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
@@ -33,27 +34,38 @@ reviews.get('/public', async (c) => {
     `;
 
     const result = await c.env.DB.prepare(query).all();
-    const reviews = result.results || [];
+    const allReviews = result.results || [];
     
-    // For each review with team_id, check if current user is a team member
-    const reviewsWithMembership = await Promise.all(
-      reviews.map(async (review: any) => {
-        if (review.team_id) {
+    // Filter reviews based on ownership and team membership
+    const filteredReviews = await Promise.all(
+      allReviews.map(async (review: any) => {
+        // If owner_type is 'team', check team membership
+        if (review.owner_type === 'team' && review.team_id) {
           // Check if current user is a member of this team
           const memberCheck = await c.env.DB.prepare(`
             SELECT 1 FROM team_members 
             WHERE team_id = ? AND user_id = ?
           `).bind(review.team_id, user.id).first();
           
-          review.is_team_member = !!memberCheck;
+          // Only include if user is a team member
+          if (memberCheck) {
+            review.is_team_member = true;
+            return review;
+          } else {
+            return null; // Filter out - user is not a team member
+          }
         } else {
+          // owner_type is 'public' - visible to everyone
           review.is_team_member = false;
+          return review;
         }
-        return review;
       })
     );
 
-    return c.json({ reviews: reviewsWithMembership });
+    // Remove null entries (filtered out team reviews)
+    const accessibleReviews = filteredReviews.filter(r => r !== null);
+
+    return c.json({ reviews: accessibleReviews });
   } catch (error) {
     console.error('Get public reviews error:', error);
     return c.json({ error: 'Internal server error' }, 500);
