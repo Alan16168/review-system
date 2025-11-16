@@ -54,7 +54,9 @@ templates.get('/', async (c) => {
             answer_length,
             question_type,
             options,
-            correct_answer
+            correct_answer,
+            owner,
+            required
           FROM template_questions
           WHERE template_id = ?
           ORDER BY question_number ASC
@@ -104,7 +106,9 @@ templates.get('/:id', async (c) => {
         answer_length,
         question_type,
         options,
-        correct_answer
+        correct_answer,
+        owner,
+        required
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
@@ -215,7 +219,9 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
         answer_length,
         question_type,
         options,
-        correct_answer
+        correct_answer,
+        owner,
+        required
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
@@ -415,7 +421,9 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
       correct_answer = null,
       datetime_value = null,
       datetime_title = null,
-      datetime_answer_max_length = 200
+      datetime_answer_max_length = 200,
+      owner = 'public',
+      required = 'no'
     } = await c.req.json();
 
     if (!question_text) {
@@ -479,9 +487,10 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
       INSERT INTO template_questions (
         template_id, question_number, question_text, 
         answer_length, question_type, options, correct_answer,
-        datetime_value, datetime_title, datetime_answer_max_length
+        datetime_value, datetime_title, datetime_answer_max_length,
+        owner, required
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       templateId, 
       nextNumber, 
@@ -492,7 +501,9 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
       correct_answer,
       datetime_value,
       datetime_title,
-      datetime_answer_max_length
+      datetime_answer_max_length,
+      owner,
+      required
     ).run();
 
     return c.json({ 
@@ -520,7 +531,9 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
       correct_answer = null,
       datetime_value = null,
       datetime_title = null,
-      datetime_answer_max_length = 200
+      datetime_answer_max_length = 200,
+      owner = 'public',
+      required = 'no'
     } = await c.req.json();
 
     if (!question_text) {
@@ -580,7 +593,9 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
           correct_answer = ?,
           datetime_value = ?,
           datetime_title = ?,
-          datetime_answer_max_length = ?
+          datetime_answer_max_length = ?,
+          owner = ?,
+          required = ?
       WHERE id = ? AND template_id = ?
     `).bind(
       question_text,
@@ -592,6 +607,8 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
       datetime_value,
       datetime_title,
       datetime_answer_max_length,
+      owner,
+      required,
       questionId,
       templateId
     ).run();

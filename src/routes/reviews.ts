@@ -188,7 +188,9 @@ reviews.get('/:id', async (c) => {
         answer_length,
         datetime_value,
         datetime_title,
-        datetime_answer_max_length
+        datetime_answer_max_length,
+        owner,
+        required
       FROM template_questions
       WHERE template_id = ?
       ORDER BY question_number ASC
