@@ -3351,23 +3351,25 @@ async function showReviewDetail(id, readOnly = false) {
               </div>
               ` : ''}
               
-              ${review.scheduled_at ? `
-              <!-- Scheduled Time -->
+              <!-- Scheduled Time (Always show) -->
               <div>
                 <label class="block text-sm font-medium text-gray-600 mb-1">
                   <i class="fas fa-clock mr-1"></i>${i18n.t('scheduledTime') || '计划时间'}
                 </label>
                 <div class="px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <i class="fas fa-calendar-check mr-2 text-yellow-600"></i>${new Date(review.scheduled_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  ${review.scheduled_at ? `
+                    <i class="fas fa-calendar-check mr-2 text-yellow-600"></i>${new Date(review.scheduled_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  ` : `
+                    <i class="fas fa-question-circle mr-2 text-gray-500"></i><span class="text-gray-500">${i18n.t('notDetermined') || '未确定'}</span>
+                  `}
                 </div>
               </div>
-              ` : ''}
               
               ${review.location ? `
               <!-- Location -->
@@ -3380,16 +3382,6 @@ async function showReviewDetail(id, readOnly = false) {
                 </div>
               </div>
               ` : ''}
-              
-              <!-- Planning Time (Time Type) -->
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">
-                  <i class="fas fa-calendar-days mr-1"></i>${i18n.t('planningTime') || '规划时间'}
-                </label>
-                <div class="px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-                  <i class="fas fa-calendar-alt mr-2 text-green-600"></i>${i18n.t('timeType' + (review.time_type ? review.time_type.charAt(0).toUpperCase() + review.time_type.slice(1) : 'Daily'))}
-                </div>
-              </div>
               
               ${review.reminder_minutes ? `
               <!-- Reminder -->
