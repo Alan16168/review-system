@@ -1192,11 +1192,13 @@ async function handleLogin() {
     // Check if there's a pending review invitation (referral)
     const referralToken = sessionStorage.getItem('referral_token');
     if (referralToken) {
-      // Keep the token and view the shared review
+      // Clear the token - user has successfully registered/logged in
+      sessionStorage.removeItem('referral_token');
+      // Show success message and go to dashboard
       showNotification(i18n.t('loginSuccess') || '登录成功', 'success');
+      // Go directly to dashboard, don't redirect back to invitation page
       setTimeout(() => {
-        // The referral token handler will be processed by the invitation system
-        window.location.href = `/?invite=${referralToken}`;
+        showDashboard();
       }, 1000);
       return;
     }
