@@ -10246,10 +10246,16 @@ function renderAnswerSet(reviewId) {
     
     // Update answer display element
     const answerElement = document.getElementById(`answer-display-${q.question_number}`);
-    if (!answerElement) return;
+    console.log('[renderAnswerSet] answerElement for question', q.question_number, ':', answerElement ? 'found' : 'NOT FOUND');
+    if (!answerElement) {
+      console.warn('[renderAnswerSet] Skipping question', q.question_number, '- answerElement not found');
+      return;
+    }
     
     // Handle different question types
+    console.log('[renderAnswerSet] Question', q.question_number, 'has options:', q.options ? 'YES' : 'NO');
     if (q.question_type === 'single_choice' && q.options) {
+      console.log('[renderAnswerSet] Rendering single_choice for question', q.question_number);
       // Render single choice with radio buttons
       const options = JSON.parse(q.options);
       // DO NOT use onchange in HTML - we'll add event listeners after rendering
@@ -10279,6 +10285,7 @@ function renderAnswerSet(reviewId) {
         ` : ''}
       `;
     } else if (q.question_type === 'multiple_choice' && q.options) {
+      console.log('[renderAnswerSet] Rendering multiple_choice for question', q.question_number);
       // Render multiple choice with checkboxes
       const options = JSON.parse(q.options);
       const selectedLetters = answerText ? answerText.split(',').map(a => a.trim()) : [];
