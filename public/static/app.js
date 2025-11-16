@@ -3494,9 +3494,16 @@ async function showEditReview(id) {
             <button onclick="handleEditReviewCancel(${id})" class="text-indigo-600 hover:text-indigo-800 mb-4">
               <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
             </button>
-            <h1 class="text-3xl font-bold text-gray-800">
-              <i class="fas fa-edit mr-2"></i>${i18n.t('edit')} ${i18n.t('review') || '复盘'}
-            </h1>
+            <div class="flex justify-between items-center">
+              <h1 class="text-3xl font-bold text-gray-800">
+                <i class="fas fa-edit mr-2"></i>${i18n.t('edit')} ${i18n.t('review') || '复盘'}
+              </h1>
+              <button onclick="handleSaveAndExitReview(${id})" 
+                      class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg transition-all duration-200 flex items-center space-x-2">
+                <i class="fas fa-save"></i>
+                <span>${i18n.t('saveAndExit') || '保存并退出'}</span>
+              </button>
+            </div>
           </div>
 
           <form id="edit-review-form" class="bg-white rounded-lg shadow-md p-6 space-y-4">
@@ -3931,17 +3938,7 @@ async function showEditReview(id) {
             </div>
             <!-- End of Section 3: Calendar -->
 
-            <!-- Save/Exit Buttons (Outside all sections) -->
-            <div class="flex justify-end space-x-4 pt-6 border-t mt-6">
-              <button type="button" onclick="handleEditReviewCancel(${id})" 
-                      class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                ${i18n.t('exit')}
-              </button>
-              <button type="submit" 
-                      class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg">
-                <i class="fas fa-save mr-2"></i>${i18n.t('save')}
-              </button>
-            </div>
+
 
           </form>
         </div>
@@ -4310,6 +4307,137 @@ async function handleEditReviewCancel(reviewId) {
   }
   
   showReviews();
+}
+
+// Handle "Save and Exit" button - combines save and exit functionality
+async function handleSaveAndExitReview(id) {
+  const isCreator = window.currentEditIsCreator;
+  
+  // Collect answers for choice-type questions only
+  const answers = {};
+  const questions = window.currentEditQuestions || [];
+  
+  console.log('[handleSaveAndExitReview] 开始收集答案，问题数量:', questions.length);
+  
+  if (questions.length > 0) {
+    questions.forEach(q => {
+      if (q.question_type === 'single_choice') {
+        // Get selected radio button
+        const selected = document.querySelector(`input[name="question${q.question_number}"]:checked`);
+        if (selected) {
+          answers[q.question_number] = selected.value;
+          console.log(`[handleSaveAndExitReview] 单选题 ${q.question_number}: ${selected.value}`);
+        } else {
+          console.log(`[handleSaveAndExitReview] 单选题 ${q.question_number}: 未选择`);
+        }
+      } else if (q.question_type === 'multiple_choice') {
+        // Get all checked checkboxes
+        const checked = document.querySelectorAll(`input[name="question${q.question_number}"]:checked`);
+        if (checked.length > 0) {
+          const selectedValues = Array.from(checked).map(cb => cb.value);
+          answers[q.question_number] = selectedValues.join(',');
+          console.log(`[handleSaveAndExitReview] 多选题 ${q.question_number}: ${selectedValues.join(',')}`);
+        } else {
+          console.log(`[handleSaveAndExitReview] 多选题 ${q.question_number}: 未选择`);
+        }
+      }
+    });
+  }
+  
+  console.log('[handleSaveAndExitReview] 收集到的答案:', answers);
+  
+  // Build data object based on permissions
+  let data;
+  if (isCreator) {
+    // Creator can edit everything
+    const title = document.getElementById('review-title').value;
+    const description = document.getElementById('review-description').value;
+    const timeType = document.getElementById('review-time-type').value;
+    const ownerType = document.getElementById('review-owner-type').value;
+    const status = document.querySelector('input[name="status"]:checked').value;
+    
+    // Get calendar fields
+    const scheduledAt = document.getElementById('edit-scheduled-at').value || null;
+    const location = document.getElementById('edit-location').value || null;
+    const reminderMinutes = parseInt(document.getElementById('edit-reminder-minutes').value) || 60;
+    
+    data = {
+      title,
+      description: description || null,
+      time_type: timeType,
+      owner_type: ownerType,
+      status,
+      scheduled_at: scheduledAt,
+      location: location,
+      reminder_minutes: reminderMinutes,
+      answers
+    };
+  } else {
+    // Non-creator can only edit answers
+    data = {
+      answers
+    };
+  }
+
+  try {
+    console.log('[handleSaveAndExitReview] 开始保存复盘，ID:', id);
+    console.log('[handleSaveAndExitReview] 保存数据:', JSON.stringify(data, null, 2));
+    
+    const response = await axios.put(`/api/reviews/${id}`, data);
+    
+    console.log('[handleSaveAndExitReview] 保存成功！服务器响应:', response.data);
+    
+    // Get current timestamp for display
+    const savedTime = new Date().toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    
+    // Show success notification
+    showNotification(
+      i18n.t('saveAndExitSuccess') || '保存成功，正在退出编辑...',
+      'success'
+    );
+    
+    // Clear newly created draft flag on successful save
+    if (window.newlyCreatedDraftId == id) {
+      delete window.newlyCreatedDraftId;
+      console.log('[handleSaveAndExitReview] 已清除新建草稿标记');
+    }
+    
+    console.log('[handleSaveAndExitReview] 准备返回复盘列表...');
+    
+    // Navigate immediately after save (shorter delay than original)
+    setTimeout(() => {
+      try {
+        console.log('[handleSaveAndExitReview] 执行返回复盘列表...');
+        showReviews(); // Return to My Reviews page
+        window.scrollTo(0, 0); // Scroll to top
+        console.log('[handleSaveAndExitReview] 已返回复盘列表');
+      } catch (navError) {
+        console.error('[handleSaveAndExitReview] 返回列表失败:', navError);
+        // Force navigation even if error
+        window.location.hash = '#reviews';
+        location.reload();
+      }
+    }, 500); // Shorter delay for immediate exit
+    
+  } catch (error) {
+    console.error('[handleSaveAndExitReview] 保存复盘失败！');
+    console.error('[handleSaveAndExitReview] 错误详情:', error);
+    console.error('[handleSaveAndExitReview] 错误响应:', error.response);
+    console.error('[handleSaveAndExitReview] 错误数据:', error.response?.data);
+    
+    const errorMessage = error.response?.data?.error || error.message || '未知错误';
+    showNotification(
+      i18n.t('operationFailed') + ': ' + errorMessage,
+      'error'
+    );
+  }
 }
 
 // ============ Helper Functions ============
