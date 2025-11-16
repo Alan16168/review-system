@@ -3729,18 +3729,21 @@ async function showEditReview(id) {
                         ${q.question_number}. ${escapeHtml(q.question_text)}
                         ${q.question_text_en ? `<span class="text-xs text-gray-500 block mt-1">${escapeHtml(q.question_text_en)}</span>` : ''}
                       </label>
-                      <div class="space-y-2">
-                        ${options.map((opt, idx) => {
-                          const letter = String.fromCharCode(65 + idx);
-                          return `
-                            <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
-                              <input type="radio" name="question${q.question_number}" value="${letter}" 
-                                     ${myAnswer === letter ? 'checked' : ''}
-                                     class="mt-1 mr-3 flex-shrink-0">
-                              <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
-                            </label>
-                          `;
-                        }).join('')}
+                      <!-- Answer display container for answer sets -->
+                      <div id="answer-display-${q.question_number}">
+                        <div class="space-y-2">
+                          ${options.map((opt, idx) => {
+                            const letter = String.fromCharCode(65 + idx);
+                            return `
+                              <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                <input type="radio" name="question${q.question_number}" value="${letter}" 
+                                       ${myAnswer === letter ? 'checked' : ''}
+                                       class="mt-1 mr-3 flex-shrink-0">
+                                <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
+                              </label>
+                            `;
+                          }).join('')}
+                        </div>
                       </div>
                       <p class="mt-1 text-xs text-gray-500">
                         <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
@@ -3764,18 +3767,21 @@ async function showEditReview(id) {
                         ${q.question_text_en ? `<span class="text-xs text-gray-500 block mt-1">${escapeHtml(q.question_text_en)}</span>` : ''}
                         <span class="text-xs text-indigo-600 block mt-1">${i18n.t('multipleChoiceHint')}</span>
                       </label>
-                      <div class="space-y-2">
-                        ${options.map((opt, idx) => {
-                          const letter = String.fromCharCode(65 + idx);
-                          return `
-                            <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
-                              <input type="checkbox" name="question${q.question_number}" value="${letter}" 
-                                     ${selectedLetters.includes(letter) ? 'checked' : ''}
-                                     class="mt-1 mr-3 flex-shrink-0">
-                              <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
-                            </label>
-                          `;
-                        }).join('')}
+                      <!-- Answer display container for answer sets -->
+                      <div id="answer-display-${q.question_number}">
+                        <div class="space-y-2">
+                          ${options.map((opt, idx) => {
+                            const letter = String.fromCharCode(65 + idx);
+                            return `
+                              <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" name="question${q.question_number}" value="${letter}" 
+                                       ${selectedLetters.includes(letter) ? 'checked' : ''}
+                                       class="mt-1 mr-3 flex-shrink-0">
+                                <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
+                              </label>
+                            `;
+                          }).join('')}
+                        </div>
                       </div>
                       <p class="mt-1 text-xs text-gray-500">
                         <i class="fas fa-info-circle mr-1"></i>${i18n.t('onlyEditOwnAnswers') || '您只能编辑自己的答案'}
