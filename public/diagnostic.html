@@ -1,62 +1,4 @@
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
-import { serveStatic } from 'hono/cloudflare-workers';
-import auth from './routes/auth';
-import reviews from './routes/reviews';
-import teams from './routes/teams';
-import admin from './routes/admin';
-import notifications from './routes/notifications';
-import resources from './routes/resources';
-import templates from './routes/templates';
-import testimonials from './routes/testimonials';
-import payment from './routes/payment';
-import cron from './routes/cron';
-import cart from './routes/cart';
-import invitations from './routes/invitations';
-import calendar from './routes/calendar';
-import answerSets from './routes/answer_sets';
-
-type Bindings = {
-  DB: D1Database;
-  GOOGLE_API_KEY?: string;
-  GOOGLE_SEARCH_ENGINE_ID?: string;
-  YOUTUBE_API_KEY?: string;
-  GOOGLE_CLIENT_ID?: string;
-  GOOGLE_CLIENT_SECRET?: string;
-  RESEND_API_KEY?: string;
-  APP_URL?: string;
-  PAYPAL_CLIENT_ID?: string;
-  PAYPAL_CLIENT_SECRET?: string;
-  PAYPAL_MODE?: string;
-};
-
-const app = new Hono<{ Bindings: Bindings }>();
-
-// Enable CORS for API routes
-app.use('/api/*', cors());
-
-// Serve static files
-app.use('/static/*', serveStatic({ root: './public' }));
-
-// API routes
-app.route('/api/auth', auth);
-app.route('/api/reviews', reviews);
-app.route('/api/teams', teams);
-app.route('/api/admin', admin);
-app.route('/api/notifications', notifications);
-app.route('/api/resources', resources);
-app.route('/api/templates', templates);
-app.route('/api/testimonials', testimonials);
-app.route('/api/payment', payment);
-app.route('/api/cron', cron);
-app.route('/api/cart', cart);
-app.route('/api/invitations', invitations);
-app.route('/api/calendar', calendar);
-app.route('/api/answer-sets', answerSets);
-
-// Diagnostic page - serve directly
-app.get('/diagnostic.html', (c) => {
-  return c.html(`<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -120,17 +62,17 @@ app.get('/diagnostic.html', (c) => {
             };
 
             const div = document.createElement('div');
-            div.className = \`border-l-4 p-4 \${statusColors[status]}\`;
-            div.innerHTML = \`
+            div.className = `border-l-4 p-4 ${statusColors[status]}`;
+            div.innerHTML = `
                 <div class="flex items-start">
-                    <i class="fas \${statusIcons[status]} mr-3 mt-1"></i>
+                    <i class="fas ${statusIcons[status]} mr-3 mt-1"></i>
                     <div class="flex-1">
-                        <h3 class="font-bold">\${title}</h3>
-                        <p class="mt-1">\${message}</p>
-                        \${details ? \`<pre class="mt-2 p-2 bg-white bg-opacity-50 rounded text-xs overflow-x-auto">\${details}</pre>\` : ''}
+                        <h3 class="font-bold">${title}</h3>
+                        <p class="mt-1">${message}</p>
+                        ${details ? `<pre class="mt-2 p-2 bg-white bg-opacity-50 rounded text-xs overflow-x-auto">${details}</pre>` : ''}
                     </div>
                 </div>
-            \`;
+            `;
             container.appendChild(div);
         }
 
@@ -155,14 +97,14 @@ app.get('/diagnostic.html', (c) => {
                         '前端代码',
                         'success',
                         '✅ 前端代码是最新版本',
-                        \`文件大小: \${fileSize} bytes\\n包含 owner 字段: \${hasOwner}\\n包含 required 字段: \${hasRequired}\\n使用正确的 API 路径: \${hasAdminAll}\`
+                        `文件大小: ${fileSize} bytes\n包含 owner 字段: ${hasOwner}\n包含 required 字段: ${hasRequired}\n使用正确的 API 路径: ${hasAdminAll}`
                     );
                 } else {
                     addDiagnostic(
                         '前端代码',
                         'error',
                         '❌ 前端代码可能是旧版本',
-                        \`文件大小: \${fileSize} bytes\\n包含 owner 字段: \${hasOwner}\\n包含 required 字段: \${hasRequired}\\n使用正确的 API 路径: \${hasAdminAll}\\n\\n请清除浏览器缓存！\`
+                        `文件大小: ${fileSize} bytes\n包含 owner 字段: ${hasOwner}\n包含 required 字段: ${hasRequired}\n使用正确的 API 路径: ${hasAdminAll}\n\n请清除浏览器缓存！`
                     );
                 }
             } catch (error) {
@@ -170,7 +112,7 @@ app.get('/diagnostic.html', (c) => {
             }
 
             // 2. 检查浏览器信息
-            const browserInfo = \`浏览器: \${navigator.userAgent}\\n时间: \${new Date().toISOString()}\\nURL: \${window.location.href}\`;
+            const browserInfo = `浏览器: ${navigator.userAgent}\n时间: ${new Date().toISOString()}\nURL: ${window.location.href}`;
             addDiagnostic('浏览器信息', 'info', '当前浏览器环境', browserInfo);
 
             // 3. 检查 localStorage
@@ -178,8 +120,8 @@ app.get('/diagnostic.html', (c) => {
             addDiagnostic(
                 'LocalStorage',
                 'info',
-                \`LocalStorage 大小: \${localStorageSize} bytes\`,
-                \`Token 存在: \${!!localStorage.getItem('token')}\\nUser 存在: \${!!localStorage.getItem('user')}\`
+                `LocalStorage 大小: ${localStorageSize} bytes`,
+                `Token 存在: ${!!localStorage.getItem('token')}\nUser 存在: ${!!localStorage.getItem('user')}`
             );
 
             // 4. 检查 Service Worker
@@ -189,7 +131,7 @@ app.get('/diagnostic.html', (c) => {
                     addDiagnostic(
                         'Service Worker',
                         'warning',
-                        \`检测到 \${registrations.length} 个 Service Worker\`,
+                        `检测到 ${registrations.length} 个 Service Worker`,
                         'Service Worker 可能会缓存旧版本代码。建议取消注册。'
                     );
                 } else {
@@ -212,7 +154,7 @@ app.get('/diagnostic.html', (c) => {
             }
             
             // 提示用户
-            alert('即将清除缓存并重新加载页面。\\n\\n请按以下步骤操作：\\n1. 点击确定后，页面将重新加载\\n2. 如果问题仍然存在，请使用 Ctrl+Shift+R (Windows) 或 Cmd+Shift+R (Mac) 强制刷新');
+            alert('即将清除缓存并重新加载页面。\n\n请按以下步骤操作：\n1. 点击确定后，页面将重新加载\n2. 如果问题仍然存在，请使用 Ctrl+Shift+R (Windows) 或 Cmd+Shift+R (Mac) 强制刷新');
             
             // 重新加载页面（强制从服务器获取）
             window.location.reload(true);
@@ -230,13 +172,13 @@ app.get('/diagnostic.html', (c) => {
                 if (response.status === 401) {
                     addDiagnostic('API 端点', 'success', '✅ GET /api/templates 返回 401（预期行为：需要认证）');
                 } else {
-                    addDiagnostic('API 端点', 'success', \`✅ GET /api/templates 返回 \${response.status}\`, JSON.stringify(response.data, null, 2));
+                    addDiagnostic('API 端点', 'success', `✅ GET /api/templates 返回 ${response.status}`, JSON.stringify(response.data, null, 2));
                 }
             } catch (error) {
                 if (error.response && error.response.status === 401) {
                     addDiagnostic('API 端点', 'success', '✅ GET /api/templates 返回 401（预期行为：需要认证）');
                 } else {
-                    addDiagnostic('API 端点', 'error', \`❌ GET /api/templates 失败: \${error.message}\`);
+                    addDiagnostic('API 端点', 'error', `❌ GET /api/templates 失败: ${error.message}`);
                 }
             }
 
@@ -246,20 +188,20 @@ app.get('/diagnostic.html', (c) => {
                 addDiagnostic('API 测试', 'info', '测试 GET /api/templates/admin/all（带认证）');
                 try {
                     const response = await axios.get('/api/templates/admin/all', {
-                        headers: { 'Authorization': \`Bearer \${token}\` }
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
                     addDiagnostic(
                         'API 端点',
                         'success',
-                        \`✅ GET /api/templates/admin/all 返回 \${response.status}\`,
-                        \`模板数量: \${response.data.templates?.length || 0}\`
+                        `✅ GET /api/templates/admin/all 返回 ${response.status}`,
+                        `模板数量: ${response.data.templates?.length || 0}`
                     );
                 } catch (error) {
                     addDiagnostic(
                         'API 端点',
                         'error',
-                        \`❌ GET /api/templates/admin/all 失败\`,
-                        \`状态码: \${error.response?.status}\\n错误: \${error.response?.data?.error || error.message}\`
+                        `❌ GET /api/templates/admin/all 失败`,
+                        `状态码: ${error.response?.status}\n错误: ${error.response?.data?.error || error.message}`
                     );
                 }
             } else {
@@ -273,38 +215,4 @@ app.get('/diagnostic.html', (c) => {
         });
     </script>
 </body>
-</html>`);
-});
-
-// Main page - Login/Dashboard
-app.get('/', (c) => {
-  // Get PayPal Client ID from environment variables
-  const paypalClientId = c.env.PAYPAL_CLIENT_ID || 'YOUR_PAYPAL_CLIENT_ID';
-  
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="zh-CN">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>系统复盘 - Review System</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
-        <!-- Google Sign-In -->
-        <script src="https://accounts.google.com/gsi/client" async defer></script>
-        <!-- PayPal SDK - Client ID from environment variables -->
-        <script src="https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=USD" data-sdk-integration-source="button-factory"></script>
-    </head>
-    <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-        <div id="app"></div>
-        
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/i18n.js"></script>
-        <script src="/static/app.js"></script>
-    </body>
-    </html>
-  `);
-});
-
-export default app;
+</html>
