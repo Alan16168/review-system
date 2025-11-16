@@ -10150,6 +10150,9 @@ async function handleReferralRegister(e) {
     authToken = null;
     axios.defaults.headers.common['Authorization'] = '';
     
+    // Clear URL parameters to prevent showing invitation page again
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
     showNotification(i18n.t('registerSuccess'), 'success');
     setTimeout(() => showLogin(), 1500);
   } catch (error) {

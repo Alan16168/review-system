@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.6.5 - 修复公开复盘团队权限（2025-11-16）
+**✅ 当前版本**: V6.6.6 - 修复注册后URL参数残留问题（2025-11-16）
 
 ## 🌟 项目概述
 
@@ -136,8 +136,40 @@
 - **部署URL**: https://6b0f5373.review-system.pages.dev
 - **数据库迁移**: ✅ Migration 0032, 0033, 0034 已应用
 - **功能状态**: ✅ 模板系统简化 + created_by字段修复 + 完整答案集合系统
-- **最新更新**: ✅ **V6.6.5 - 修复公开复盘团队权限**（2025-11-16）
+- **最新更新**: ✅ **V6.6.6 - 修复注册后URL参数残留问题**（2025-11-16）
 - **更新内容**:
+  - 🐛 **V6.6.6 - 修复注册后URL参数残留问题**（用户体验修复 - 2025-11-16）：
+    - **用户反馈**: "团队问题解决了，注册后第一次login会出现介绍人发过来的链接界面还是会出现"
+    - **问题分析**:
+      - **根本原因**: 用户通过邀请链接 `/?invite=token` 注册成功后，虽然清除了 `sessionStorage` 中的 `referral_token`
+      - **遗留问题**: URL中仍然保留着 `?invite=token` 参数
+      - **触发条件**: 当用户完成注册后第一次登录时，`checkAuth()` 检测到URL中的 `invite` 参数，再次显示邀请落地页
+      - 即使登录成功清除了 `sessionStorage`，但URL参数仍然存在，导致页面刷新或重新访问时会再次显示邀请页面
+    - **解决方案**:
+      - ✅ **清除URL参数**: 在注册成功后调用 `window.history.replaceState({}, document.title, window.location.pathname)`
+      - ✅ **保持URL简洁**: 将 `/?invite=token` 替换为 `/`，移除所有查询参数
+      - ✅ **防止重复显示**: 确保注册后的登录流程不会再次触发邀请页面
+      - ✅ **时机正确**: 在清除 `sessionStorage` 后、显示登录页面前执行URL清理
+    - **修复代码**:
+      ```javascript
+      // 注册成功后
+      sessionStorage.removeItem('referral_token');
+      // 清除URL参数，防止再次显示邀请页面
+      window.history.replaceState({}, document.title, window.location.pathname);
+      showNotification(i18n.t('registerSuccess'), 'success');
+      setTimeout(() => showLogin(), 1500);
+      ```
+    - **修复文件**:
+      - `public/static/app.js`（修复 handleReferralRegister 函数，第10143-10155行）
+    - **测试验证**:
+      - ✅ 通过邀请链接 `/?invite=xxx` 访问
+      - ✅ 点击"注册"按钮注册新账号
+      - ✅ 注册成功后URL变为 `/`（无参数）
+      - ✅ 登录后直接进入Dashboard，不再显示邀请页面
+      - ✅ 刷新页面也不会显示邀请页面
+    - **修复效果**: ✅ 用户通过邀请链接注册后，首次登录直接进入Dashboard，完全解决URL参数残留问题
+    - **部署URL**: 待部署
+    - **Git commit**: 待提交
   - 🐛 **V6.6.5 - 修复公开复盘团队权限**（权限控制修复 - 2025-11-16）：
     - **用户需求**: "请修复'公开复盘'的列表中，如果是'团队'属性的复盘，必须是'团队'成员才可以看到"
     - **问题分析**:
