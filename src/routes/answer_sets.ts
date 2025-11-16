@@ -282,10 +282,10 @@ answerSets.put('/:reviewId/:setNumber', async (c: Context) => {
               updated_at = CURRENT_TIMESTAMP
           WHERE answer_set_id = ? AND question_number = ?
         `).bind(
-          data.answer || data || null,
-          data.datetime_value || null,
-          data.datetime_title || null,
-          data.datetime_answer || null,
+          data.answer !== undefined ? data.answer : (typeof data === 'string' ? data : null),
+          data.datetime_value !== undefined ? data.datetime_value : null,
+          data.datetime_title !== undefined ? data.datetime_title : null,
+          data.datetime_answer !== undefined ? data.datetime_answer : null,
           setId,
           parsedQuestionNum
         );
@@ -300,10 +300,10 @@ answerSets.put('/:reviewId/:setNumber', async (c: Context) => {
         `).bind(
           setId,
           parsedQuestionNum,
-          data.answer || data || null,
-          data.datetime_value || null,
-          data.datetime_title || null,
-          data.datetime_answer || null
+          data.answer !== undefined ? data.answer : (typeof data === 'string' ? data : null),
+          data.datetime_value !== undefined ? data.datetime_value : null,
+          data.datetime_title !== undefined ? data.datetime_title : null,
+          data.datetime_answer !== undefined ? data.datetime_answer : null
         );
         
         upsertPromises.push(insertQuery.run());
