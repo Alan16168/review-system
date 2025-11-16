@@ -170,10 +170,13 @@ invitations.get('/verify/:token', async (c) => {
       return c.json({ error: 'Invalid invitation token' }, 404);
     }
 
-    // Check if expired
-    const now = new Date();
-    const expiresAt = new Date(invitation.expires_at);
-    if (now > expiresAt) {
+    // Check if expired - use UTC time for consistent comparison
+    const nowUTC = new Date().toISOString();
+    const expiresAtUTC = invitation.expires_at;
+    
+    // Compare ISO strings directly to avoid timezone issues
+    if (nowUTC > expiresAtUTC) {
+      console.log('Invitation expired:', { nowUTC, expiresAtUTC, token });
       return c.json({ error: 'Invitation has expired' }, 410);
     }
 
@@ -189,14 +192,15 @@ invitations.get('/verify/:token', async (c) => {
       return c.json({ error: 'Review not found' }, 404);
     }
 
-    // Get review answers
+    // Get review answers through answer sets
     const answers = await c.env.DB.prepare(`
-      SELECT ra.*, tq.question_text, tq.question_number
-      FROM review_answers ra
-      LEFT JOIN template_questions tq ON ra.question_number = tq.question_number
-      WHERE ra.review_id = ?
+      SELECT ra.*, tq.question_text, tq.question_text_en, tq.question_number
+      FROM review_answer_sets ras
+      INNER JOIN review_answers ra ON ras.id = ra.answer_set_id
+      LEFT JOIN template_questions tq ON ra.question_number = tq.question_number AND tq.template_id = ?
+      WHERE ras.review_id = ?
       ORDER BY ra.question_number
-    `).bind(invitation.review_id).all();
+    `).bind(review.template_id || 1, invitation.review_id).all();
 
     // Get referrer info
     const referrer = await getUserById(c.env.DB, invitation.referrer_id);
