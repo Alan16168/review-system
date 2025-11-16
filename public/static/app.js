@@ -4311,6 +4311,15 @@ async function handleEditReviewCancel(reviewId) {
 
 // Handle "Save and Exit" button - combines save and exit functionality
 async function handleSaveAndExitReview(id) {
+  // Prevent duplicate saves (debounce mechanism)
+  if (window.isSavingAndExiting) {
+    console.log('[handleSaveAndExitReview] 已有保存操作正在进行，忽略重复调用');
+    return;
+  }
+  
+  window.isSavingAndExiting = true;
+  console.log('[handleSaveAndExitReview] 设置保存锁，防止重复保存');
+  
   const isCreator = window.currentEditIsCreator;
   
   // Collect answers for choice-type questions only
@@ -4415,11 +4424,17 @@ async function handleSaveAndExitReview(id) {
     setTimeout(() => {
       try {
         console.log('[handleSaveAndExitReview] 执行返回复盘列表...');
+        // Release the save lock before navigation
+        window.isSavingAndExiting = false;
+        console.log('[handleSaveAndExitReview] 释放保存锁');
+        
         showReviews(); // Return to My Reviews page
         window.scrollTo(0, 0); // Scroll to top
         console.log('[handleSaveAndExitReview] 已返回复盘列表');
       } catch (navError) {
         console.error('[handleSaveAndExitReview] 返回列表失败:', navError);
+        // Release the save lock even on error
+        window.isSavingAndExiting = false;
         // Force navigation even if error
         window.location.hash = '#reviews';
         location.reload();
@@ -4431,6 +4446,10 @@ async function handleSaveAndExitReview(id) {
     console.error('[handleSaveAndExitReview] 错误详情:', error);
     console.error('[handleSaveAndExitReview] 错误响应:', error.response);
     console.error('[handleSaveAndExitReview] 错误数据:', error.response?.data);
+    
+    // Release the save lock on error
+    window.isSavingAndExiting = false;
+    console.log('[handleSaveAndExitReview] 保存失败，释放保存锁');
     
     const errorMessage = error.response?.data?.error || error.message || '未知错误';
     showNotification(
