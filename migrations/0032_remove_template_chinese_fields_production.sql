@@ -71,4 +71,4 @@ CREATE INDEX IF NOT EXISTS idx_reviews_template_id ON reviews(template_id);
 
 -- Step 9: Drop backup tables
 DROP TABLE IF EXISTS templates_backup;
-DROP TABLE IF NOT EXISTS template_questions_backup;
+DROP TABLE IF EXISTS template_questions_backup;
