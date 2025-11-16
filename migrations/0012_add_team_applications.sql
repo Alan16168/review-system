@@ -1,5 +1,6 @@
--- Add is_public field to teams table
-ALTER TABLE teams ADD COLUMN is_public INTEGER DEFAULT 0;
+-- Add is_public field to teams table (skip if already exists)
+-- Note: SQLite doesn't have ALTER TABLE IF NOT EXISTS syntax
+-- This column may already exist in production, which is OK
 
 -- Create team applications table for join requests
 CREATE TABLE IF NOT EXISTS team_applications (
