@@ -8608,6 +8608,15 @@ async function showEditUserModal(userId) {
       return;
     }
     
+    // Find referrer email from user_id
+    let referrerEmail = 'dengalan@gmail.com'; // Default value
+    if (user.referred_by) {
+      const referrer = allUsers.find(u => u.id === user.referred_by);
+      if (referrer) {
+        referrerEmail = referrer.email;
+      }
+    }
+    
     // Format dates for display
     const formatDate = (dateStr) => {
       if (!dateStr) return '';
@@ -8703,10 +8712,12 @@ async function showEditUserModal(userId) {
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   ${i18n.t('referredBy') || '介绍人ID'}
                 </label>
-                <input type="number" id="user-referred-by" 
-                       value="${user.referred_by || ''}"
-                       placeholder="${i18n.t('enterReferrerUserId') || '输入介绍人的用户ID'}"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <input type="text" id="user-referred-by" 
+                       value="${referrerEmail}"
+                       placeholder="dengalan@gmail.com"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       readonly
+                       title="${i18n.t('referrerEmailReadonly') || '介绍人邮箱（只读）'}">
               </div>
               
               <!-- Login Count (Read-only display) -->
@@ -8777,8 +8788,21 @@ async function handleUpdateUser(e, userId) {
   e.preventDefault();
   
   const subscriptionExpiresValue = document.getElementById('user-subscription-expires').value;
-  const referredByValue = document.getElementById('user-referred-by').value;
+  const referredByEmail = document.getElementById('user-referred-by').value;
   const loginCountValue = document.getElementById('user-login-count').value;
+  
+  // Find referrer user_id from email
+  let referredById = null;
+  if (referredByEmail) {
+    const referrer = allUsers.find(u => u.email === referredByEmail);
+    if (referrer) {
+      referredById = referrer.id;
+    } else {
+      // Default to dengalan@gmail.com if email not found
+      const defaultReferrer = allUsers.find(u => u.email === 'dengalan@gmail.com');
+      referredById = defaultReferrer ? defaultReferrer.id : null;
+    }
+  }
   
   const data = {
     username: document.getElementById('user-username').value,
@@ -8787,7 +8811,7 @@ async function handleUpdateUser(e, userId) {
     language: document.getElementById('user-language').value,
     subscription_tier: document.getElementById('user-subscription-tier').value,
     subscription_expires_at: subscriptionExpiresValue ? new Date(subscriptionExpiresValue).toISOString() : null,
-    referred_by: referredByValue ? parseInt(referredByValue) : null,
+    referred_by: referredById,
     login_count: loginCountValue ? parseInt(loginCountValue) : 0
   };
 
