@@ -3788,8 +3788,8 @@ async function showEditReview(id) {
                   
                   // Get datetime value from first answer if exists
                   const existingDatetime = myAnswersList.length > 0 && myAnswersList[0].datetime_value 
-                    ? new Date(myAnswersList[0].datetime_value).toISOString().slice(0, 16) 
-                    : (q.datetime_value ? new Date(q.datetime_value).toISOString().slice(0, 16) : '');
+                    ? myAnswersList[0].datetime_value.slice(0, 16) 
+                    : (q.datetime_value ? q.datetime_value.slice(0, 16) : '');
                   
                   return `
                     <div class="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
@@ -3887,7 +3887,7 @@ async function showEditReview(id) {
                     <i class="fas fa-clock mr-1"></i>${i18n.t('scheduledTime')}
                   </label>
                   <input type="datetime-local" id="edit-scheduled-at"
-                         value="${review.scheduled_at ? new Date(review.scheduled_at).toISOString().slice(0, 16) : ''}"
+                         value="${review.scheduled_at ? review.scheduled_at.slice(0, 16) : ''}"
                          ${!isCreator ? 'disabled' : ''}
                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 ${!isCreator ? 'bg-gray-100 cursor-not-allowed' : ''}">
                   ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
@@ -7857,7 +7857,7 @@ function showEditQuestionForm(questionId) {
                     <i class="fas fa-clock mr-1"></i>${i18n.t('defaultDatetime')}
                   </label>
                   <input type="datetime-local" id="question-datetime-value" 
-                         value="${question.datetime_value ? new Date(question.datetime_value).toISOString().slice(0, 16) : ''}"
+                         value="${question.datetime_value ? question.datetime_value.slice(0, 16) : ''}"
                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                   <p class="text-xs text-gray-500 mt-1">${i18n.t('defaultDatetimeHint')}</p>
                 </div>
@@ -10099,14 +10099,35 @@ async function addTimeQuestionToCalendar(reviewId, questionNumber) {
     
     // 3. Prepare calendar event data
     const title = question.question_text || question.question_text_en || '复盘事项';
-    const datetime = new Date(datetimeInput.value);
+    const datetimeStr = datetimeInput.value; // Format: "YYYY-MM-DDTHH:mm"
     
-    // Format datetime for Google Calendar (YYYYMMDDTHHMMSSZ)
-    const startTime = datetime.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    // CRITICAL: DO NOT use new Date() to avoid timezone conversion
+    // Format datetime for Google Calendar (YYYYMMDDTHHMMSS) WITHOUT 'Z' suffix
+    // This keeps it as local time which Google Calendar interprets correctly
+    const formatLocalTimeForGoogle = (dateTimeStr) => {
+      // Add seconds if missing
+      const normalized = dateTimeStr.length === 16 ? dateTimeStr + ':00' : dateTimeStr;
+      // Input: "YYYY-MM-DDTHH:mm:ss"
+      // Output: "YYYYMMDDTHHmmss"
+      return normalized.replace(/[-:]/g, '');
+    };
     
-    // End time is 1 hour later
-    const endDatetime = new Date(datetime.getTime() + 60 * 60 * 1000);
-    const endTime = endDatetime.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const startTime = formatLocalTimeForGoogle(datetimeStr);
+    
+    // Calculate end time (1 hour later) without timezone conversion
+    const [datePart, timePart] = datetimeStr.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = timePart.split(':').map(Number);
+    
+    // Create date in UTC context to avoid timezone issues during calculation
+    const startDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    
+    // Format end time back to local format
+    const pad = (num) => String(num).padStart(2, '0');
+    const endTime = 
+      `${endDate.getUTCFullYear()}${pad(endDate.getUTCMonth() + 1)}${pad(endDate.getUTCDate())}` +
+      `T${pad(endDate.getUTCHours())}${pad(endDate.getUTCMinutes())}${pad(endDate.getUTCSeconds())}`;
     
     // 4. Generate Google Calendar URL
     const calendarUrl = new URL('https://calendar.google.com/calendar/render');
@@ -10751,7 +10772,7 @@ async function createNewAnswerSet(reviewId) {
                           <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || q.question_text_en || q.question_text || '时间')}
                         </label>
                         <input type="datetime-local" id="modal-datetime-${q.question_number}"
-                               value="${q.datetime_value ? new Date(q.datetime_value).toISOString().slice(0, 16) : ''}"
+                               value="${q.datetime_value ? q.datetime_value.slice(0, 16) : ''}"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                       </div>
                       <div>
