@@ -10213,6 +10213,7 @@ function renderAnswerSet(reviewId) {
   
   // Set flag to prevent auto-save during rendering
   window.isRenderingAnswerSet = true;
+  console.log('[renderAnswerSet] Starting render, flag set to TRUE, set index:', index);
   
   // Update answer displays for each question
   questions.forEach(q => {
@@ -10227,6 +10228,7 @@ function renderAnswerSet(reviewId) {
     if (q.question_type === 'single_choice' && q.options) {
       // Render single choice with radio buttons
       const options = JSON.parse(q.options);
+      // DO NOT use onchange in HTML - we'll add event listeners after rendering
       answerElement.innerHTML = `
         <div class="space-y-2">
           ${options.map((opt, idx) => {
@@ -10238,8 +10240,9 @@ function renderAnswerSet(reviewId) {
                        name="set-question${q.question_number}" 
                        value="${letter}" 
                        ${isChecked ? 'checked' : ''}
-                       onchange="updateAnswerInSet(${reviewId}, ${q.question_number}, this.value)"
-                       class="mt-1 mr-3 flex-shrink-0">
+                       data-question-number="${q.question_number}"
+                       data-review-id="${reviewId}"
+                       class="mt-1 mr-3 flex-shrink-0 answer-set-radio">
                 <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
               </label>
             `;
@@ -10255,6 +10258,7 @@ function renderAnswerSet(reviewId) {
       // Render multiple choice with checkboxes
       const options = JSON.parse(q.options);
       const selectedLetters = answerText ? answerText.split(',').map(a => a.trim()) : [];
+      // DO NOT use onchange in HTML - we'll add event listeners after rendering
       answerElement.innerHTML = `
         <div class="space-y-2">
           ${options.map((opt, idx) => {
@@ -10266,8 +10270,9 @@ function renderAnswerSet(reviewId) {
                        name="set-question${q.question_number}" 
                        value="${letter}" 
                        ${isChecked ? 'checked' : ''}
-                       onchange="updateMultipleChoiceInSet(${reviewId}, ${q.question_number})"
-                       class="mt-1 mr-3 flex-shrink-0">
+                       data-question-number="${q.question_number}"
+                       data-review-id="${reviewId}"
+                       class="mt-1 mr-3 flex-shrink-0 answer-set-checkbox">
                 <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
               </label>
             `;
@@ -10345,12 +10350,43 @@ function renderAnswerSet(reviewId) {
     }
   });
   
-  // Clear the rendering flag after a sufficient delay to ensure all events are processed
-  // Increased to 200ms to handle all delayed browser events
-  setTimeout(() => {
-    window.isRenderingAnswerSet = false;
-    console.log('[renderAnswerSet] Rendering flag cleared, auto-save enabled');
-  }, 200);
+  // Now that rendering is complete, attach event listeners to radio and checkbox inputs
+  // This ensures events are only triggered by user interactions, not programmatic changes
+  
+  // Attach listeners to radio buttons (single choice)
+  document.querySelectorAll('.answer-set-radio').forEach(radio => {
+    radio.addEventListener('change', function(e) {
+      if (window.isRenderingAnswerSet) {
+        console.log('[Radio Change] Blocked during rendering');
+        return;
+      }
+      const reviewId = parseInt(this.getAttribute('data-review-id'));
+      const questionNumber = parseInt(this.getAttribute('data-question-number'));
+      const value = this.value;
+      console.log('[Radio Change] User interaction detected:', { reviewId, questionNumber, value });
+      updateAnswerInSet(reviewId, questionNumber, value);
+    });
+  });
+  
+  // Attach listeners to checkboxes (multiple choice)
+  document.querySelectorAll('.answer-set-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function(e) {
+      if (window.isRenderingAnswerSet) {
+        console.log('[Checkbox Change] Blocked during rendering');
+        return;
+      }
+      const reviewId = parseInt(this.getAttribute('data-review-id'));
+      const questionNumber = parseInt(this.getAttribute('data-question-number'));
+      console.log('[Checkbox Change] User interaction detected:', { reviewId, questionNumber });
+      updateMultipleChoiceInSet(reviewId, questionNumber);
+    });
+  });
+  
+  // Clear the rendering flag immediately after attaching event listeners
+  // Since we're now using addEventListener instead of inline onchange, 
+  // we don't need to worry about delayed events
+  window.isRenderingAnswerSet = false;
+  console.log('[renderAnswerSet] Rendering complete, flag set to FALSE');
 }
 
 /**
