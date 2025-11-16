@@ -171,7 +171,6 @@ reviews.get('/:id', async (c) => {
       SELECT 
         question_number,
         question_text,
-        question_text_en,
         question_type,
         options,
         correct_answer,
