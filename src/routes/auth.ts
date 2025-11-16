@@ -29,42 +29,59 @@ auth.post('/register', async (c) => {
       return c.json({ error: 'Email already registered' }, 400);
     }
 
-    // Handle referral token
+    // Handle referral token validation (don't update invitation yet)
     let referrerId = null;
+    let validReferralToken = false;
+    
     if (referral_token) {
       const invitation: any = await c.env.DB.prepare(
         'SELECT * FROM invitations WHERE token = ?'
       ).bind(referral_token).first();
       
-      if (invitation && new Date(invitation.expires_at) > new Date()) {
+      // Use ISO string comparison to avoid timezone issues (same fix as invitations.ts)
+      const nowUTC = new Date().toISOString();
+      const expiresAtUTC = invitation?.expires_at;
+      
+      if (invitation && nowUTC < expiresAtUTC) {
         referrerId = invitation.referrer_id;
+        validReferralToken = true;
         
-        // Mark invitation as used
-        await c.env.DB.prepare(
-          'UPDATE invitations SET used_at = CURRENT_TIMESTAMP, used_by_user_id = ? WHERE token = ?'
-        ).bind(0, referral_token).run(); // Will update with actual user ID later
+        console.log('Valid referral token found:', {
+          token: referral_token,
+          referrerId,
+          expires_at: expiresAtUTC
+        });
+      } else {
+        console.log('Referral token invalid or expired:', {
+          token: referral_token,
+          invitation: !!invitation,
+          expires_at: expiresAtUTC,
+          now: nowUTC
+        });
       }
     }
-    
-    // If no valid referral token, default to dengalan@gmail.com (user_id = 4)
-    if (!referrerId) {
-      referrerId = 4;
-    }
 
+    // Create user first
     const passwordHash = await hashPassword(password);
     const userRole = role && ['user', 'premium', 'admin'].includes(role) ? role : 'user';
     const userId = await createUser(c.env.DB, email, passwordHash, username, userRole);
     
-    // Set referred_by
-    await c.env.DB.prepare(
-      'UPDATE users SET referred_by = ? WHERE id = ?'
-    ).bind(referrerId, userId).run();
-    
-    // Update invitation with actual user ID
-    if (referral_token) {
+    // Set referred_by only if we have a valid referrer
+    if (referrerId) {
       await c.env.DB.prepare(
-        'UPDATE invitations SET used_by_user_id = ? WHERE token = ?'
+        'UPDATE users SET referred_by = ? WHERE id = ?'
+      ).bind(referrerId, userId).run();
+      console.log('User registered with referrer:', { userId, referrerId });
+    } else {
+      console.log('User registered without referrer:', { userId });
+    }
+    
+    // Update invitation with actual user ID (AFTER user is created)
+    if (validReferralToken && referral_token) {
+      await c.env.DB.prepare(
+        'UPDATE invitations SET used_at = CURRENT_TIMESTAMP, used_by_user_id = ? WHERE token = ?'
       ).bind(userId, referral_token).run();
+      console.log('Invitation marked as used:', { userId, token: referral_token });
     }
 
     const user = await getUserById(c.env.DB, userId);
