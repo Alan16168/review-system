@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.0.1-Phase2.4.1-CriticalFix - 修复复盘编辑500错误（2025-11-16）
+**✅ 当前版本**: V6.6.1 - 修复邀请验证功能（2025-11-16）
 
 ## 🌟 项目概述
 
@@ -136,8 +136,31 @@
 - **部署URL**: https://c1f18906.review-system.pages.dev
 - **数据库迁移**: ✅ Migration 0032, 0033, 0034 已应用
 - **功能状态**: ✅ 模板系统简化 + created_by字段修复 + 完整答案集合系统
-- **最新更新**: ✅ **V6.0.1-Phase2.4-RemoveChineseFields - 模板系统简化**（2025-11-15）
+- **最新更新**: ✅ **V6.6.1 - 修复邀请验证功能**（2025-11-16）
 - **更新内容**:
+  - 🐛 **V6.6.1 - 修复邀请验证功能**（关键Bug修复 - 2025-11-16）：
+    - **用户反馈问题**: "生成的邀请链接，马上使用也会说'邀请无效或过期'"
+    - **问题分析**:
+      - **根本原因**: 邀请验证时查询答案数据使用了错误的表结构
+      - `review_answers`表已重构为使用`answer_set_id`而非直接`review_id`
+      - SQL查询：`SELECT ra.* FROM review_answers ra WHERE ra.review_id = ?`
+      - 错误：`D1_ERROR: no such column: ra.review_id`
+    - **解决方案**:
+      - ✅ 更新邀请验证SQL查询使用正确的表关联
+      - ✅ 通过`review_answer_sets`表JOIN查询答案
+      - ✅ 新查询：`SELECT ra.* FROM review_answer_sets ras INNER JOIN review_answers ra ON ras.id = ra.answer_set_id WHERE ras.review_id = ?`
+      - ✅ 优化时间比较逻辑：使用ISO字符串直接比较避免时区问题
+    - **修复文件**:
+      - `src/routes/invitations.ts`（邀请验证查询逻辑）
+      - `migrations/0032_remove_template_chinese_fields_production.sql`（修复语法错误）
+    - **测试验证**:
+      - ✅ 创建邀请链接成功
+      - ✅ 立即使用邀请链接验证成功
+      - ✅ 返回完整的复盘信息和答案数据
+      - ✅ 不再显示"邀请无效或过期"错误
+    - **修复效果**: ✅ 邀请功能完全正常，用户生成的邀请链接可以立即使用
+    - **部署URL**: https://afd1a4dc.review-system.pages.dev
+    - **Git commit**: 45be2da
   - 🔧 **V6.0.1-Phase2.4-RemoveChineseFields - 模板系统简化为英文单字段**（数据库重构 - 2025-11-15）：
     - **重构目标**: 简化模板和问题的数据结构，从中英双字段改为英文单字段
     - **数据库迁移**:
