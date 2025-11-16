@@ -10304,6 +10304,15 @@ function renderAnswerSet(reviewId) {
           ` : ''}
         </div>
       `;
+      
+      // Update the time input field with datetime_value from current answer set
+      const timeInput = document.getElementById(`time-input-${q.question_number}`);
+      if (timeInput && answer && answer.datetime_value) {
+        timeInput.value = answer.datetime_value.slice(0, 16);
+      } else if (timeInput) {
+        // Clear time input if no datetime_value in this set
+        timeInput.value = '';
+      }
     } else {
       // Default text type - show answer with edit button
       if (answerText) {
