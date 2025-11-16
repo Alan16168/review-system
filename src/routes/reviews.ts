@@ -18,7 +18,7 @@ const reviews = new Hono<{ Bindings: Bindings }>();
 // All routes require authentication
 reviews.use('/*', authMiddleware);
 
-// Get public reviews (owner_type='public')
+// Get public reviews (owner_type='public' or 'team')
 reviews.get('/public', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
@@ -28,7 +28,7 @@ reviews.get('/public', async (c) => {
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
       LEFT JOIN teams t ON r.team_id = t.id
-      WHERE r.owner_type = 'public'
+      WHERE r.owner_type IN ('public', 'team')
       ORDER BY r.updated_at DESC
     `;
 
