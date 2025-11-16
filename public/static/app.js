@@ -8609,11 +8609,17 @@ async function showEditUserModal(userId) {
     }
     
     // Find referrer email from user_id
-    let referrerEmail = 'dengalan@gmail.com'; // Default value
+    let referrerEmail = '';
+    let referrerDisplay = i18n.t('none') || '无';
+    
     if (user.referred_by) {
       const referrer = allUsers.find(u => u.id === user.referred_by);
       if (referrer) {
         referrerEmail = referrer.email;
+        referrerDisplay = referrer.email;
+      } else {
+        // Referrer not found in allUsers, show ID
+        referrerDisplay = `User ID: ${user.referred_by}`;
       }
     }
     
@@ -8710,12 +8716,12 @@ async function showEditUserModal(userId) {
               <!-- Referred By -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('referredBy') || '介绍人ID'}
+                  ${i18n.t('referredBy') || '介绍人邮箱'}
                 </label>
                 <input type="text" id="user-referred-by" 
-                       value="${referrerEmail}"
-                       placeholder="dengalan@gmail.com"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       value="${escapeHtml(referrerDisplay)}"
+                       placeholder="${i18n.t('none') || '无'}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-gray-50"
                        readonly
                        title="${i18n.t('referrerEmailReadonly') || '介绍人邮箱（只读）'}">
               </div>

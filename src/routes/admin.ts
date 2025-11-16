@@ -88,7 +88,9 @@ admin.get('/users', async (c) => {
           updated_at: u.updated_at || new Date().toISOString(),
           last_login_at: u.last_login_at || null,
           login_count: u.login_count || 0,
+          subscription_tier: u.subscription_tier || 'free',
           subscription_expires_at: u.subscription_expires_at || null,
+          referred_by: u.referred_by || null,
           review_count: reviewCount?.count || 0,
           template_count: templateCount?.count || 0
         };
@@ -105,7 +107,9 @@ admin.get('/users', async (c) => {
           updated_at: u.updated_at || new Date().toISOString(),
           last_login_at: null,
           login_count: 0,
+          subscription_tier: u.subscription_tier || 'free',
           subscription_expires_at: u.subscription_expires_at || null,
+          referred_by: u.referred_by || null,
           review_count: 0,
           template_count: 0
         };
