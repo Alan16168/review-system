@@ -136,8 +136,8 @@
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-16
-- **部署时间**: 刚刚完成V6.7.0-Hotfix部署（修复500错误）
-- **部署URL**: https://2daec7ca.review-system.pages.dev
+- **部署时间**: 最新部署 - V6.7.0-Hotfix-Final（修复500错误）
+- **部署URL**: https://c734df03.review-system.pages.dev
 - **数据库迁移**: ✅ Migration 0036 已应用（恢复created_by字段）
 - **功能状态**: ✅ 模板系统简化 + created_by字段修复 + 完整答案集合系统
 - **最新更新**: ✅ **V6.7.0 - 增加问题的答案可见性和必填属性**（2025-11-16）
