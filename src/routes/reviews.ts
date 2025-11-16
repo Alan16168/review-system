@@ -139,6 +139,8 @@ reviews.get('/:id', async (c) => {
     const reviewId = c.req.param('id');
     const lang = getLanguage(c);
 
+    console.log('[GET REVIEW] Starting request:', { reviewId, userId: user.id, lang });
+
     const query = `
       SELECT r.*, u.username as creator_name, t.name as team_name, 
              tp.name as template_name,
@@ -155,13 +157,16 @@ reviews.get('/:id', async (c) => {
       )
     `;
 
+    console.log('[GET REVIEW] Executing main query...');
     const review: any = await c.env.DB.prepare(query).bind(reviewId, user.id, user.id, user.id).first();
+    console.log('[GET REVIEW] Main query result:', review ? 'Found' : 'Not found');
 
     if (!review) {
       return c.json({ error: 'Review not found or access denied' }, 404);
     }
 
     // Get template questions with language-specific text and question type info
+    console.log('[GET REVIEW] Fetching template questions for template_id:', review.template_id);
     const questionsResult = await c.env.DB.prepare(`
       SELECT 
         question_number,
@@ -178,9 +183,11 @@ reviews.get('/:id', async (c) => {
       WHERE template_id = ?
       ORDER BY question_number ASC
     `).bind(review.template_id).all();
+    console.log('[GET REVIEW] Questions fetched:', questionsResult.results?.length || 0);
 
     // Get review answers with user information (support multiple answers per question)
     // Updated to work with new answer_sets structure
+    console.log('[GET REVIEW] Fetching review answers...');
     const answersResult = await c.env.DB.prepare(`
       SELECT ra.id, ra.question_number, ra.answer, 
              ra.datetime_value, ra.datetime_title, ra.datetime_answer,
@@ -192,6 +199,7 @@ reviews.get('/:id', async (c) => {
       WHERE ras.review_id = ?
       ORDER BY ra.question_number ASC, ras.set_number ASC, ra.created_at ASC
     `).bind(reviewId).all();
+    console.log('[GET REVIEW] Answers fetched:', answersResult.results?.length || 0);
 
     // Group answers by question number
     const answersByQuestion: Record<number, any[]> = {};
@@ -240,8 +248,20 @@ reviews.get('/:id', async (c) => {
       collaborators: collaborators.results || []
     });
   } catch (error) {
-    console.error('Get review error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('[DETAILED ERROR] Get review error:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      reviewId: c.req.param('id'),
+      userId: (c.get('user') as UserPayload)?.id,
+      timestamp: new Date().toISOString()
+    });
+    return c.json({ 
+      error: 'Internal server error',
+      debug: process.env.NODE_ENV === 'development' ? {
+        message: error instanceof Error ? error.message : String(error),
+        reviewId: c.req.param('id')
+      } : undefined
+    }, 500);
   }
 });
 
