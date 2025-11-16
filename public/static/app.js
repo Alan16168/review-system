@@ -2282,8 +2282,9 @@ async function handleStep1Submit(e) {
     console.log('草稿创建成功，ID:', newReviewId);
     showNotification(i18n.t('draftCreated') + ' (ID: ' + newReviewId + ')', 'success');
     
-    // Clear currentDraftId to prevent conflicts
-    currentDraftId = null;
+    // IMPORTANT: Set currentDraftId to prevent autoSaveDraftBeforeNavigation from creating a duplicate
+    currentDraftId = newReviewId;
+    console.log('已设置 currentDraftId:', currentDraftId, '防止自动保存创建重复草稿');
     
     // Mark this as a newly created draft that hasn't been saved yet
     window.newlyCreatedDraftId = newReviewId;
