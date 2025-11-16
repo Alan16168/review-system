@@ -86,20 +86,19 @@ reviews.get('/', async (c) => {
     const user = c.get('user') as UserPayload;
 
     // Get reviews based on access control:
-    // 1. Reviews created by the user (any owner_type)
-    // 2. Reviews where user is a team member (has team_id and user is in that team)
-    // 3. Reviews where user is a collaborator
-    // Note: Public reviews are excluded from "My Reviews" (use /api/reviews/public instead)
+    // 1. Reviews created by the user (including public ones)
+    // 2. Non-public reviews where user is a team member (has team_id and user is in that team)
+    // 3. Non-public reviews where user is a collaborator
     const query = `
       SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
       LEFT JOIN teams t ON r.team_id = t.id
       LEFT JOIN review_collaborators rc ON r.id = rc.review_id
-      WHERE r.owner_type != 'public' AND (
+      WHERE (
         r.user_id = ?
-        OR (r.team_id IS NOT NULL AND r.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
-        OR rc.user_id = ?
+        OR (r.owner_type != 'public' AND r.team_id IS NOT NULL AND r.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
+        OR (r.owner_type != 'public' AND rc.user_id = ?)
       )
       ORDER BY r.updated_at DESC
     `;
