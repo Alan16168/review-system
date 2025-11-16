@@ -10234,9 +10234,13 @@ function renderAnswerSet(reviewId) {
   // Set flag to prevent auto-save during rendering
   window.isRenderingAnswerSet = true;
   console.log('[renderAnswerSet] Starting render, flag set to TRUE, set index:', index);
+  console.log('[renderAnswerSet] Current set:', currentSet);
+  console.log('[renderAnswerSet] Questions count:', questions.length);
+  console.log('[renderAnswerSet] Questions:', questions);
   
   // Update answer displays for each question
   questions.forEach(q => {
+    console.log('[renderAnswerSet] Processing question:', q.question_number, 'type:', q.question_type);
     const answer = currentSet.answers.find(a => a.question_number === q.question_number);
     const answerText = answer ? answer.answer : '';
     
