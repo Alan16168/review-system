@@ -3381,6 +3381,16 @@ async function showReviewDetail(id, readOnly = false) {
               </div>
               ` : ''}
               
+              <!-- Planning Time (Time Type) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                  <i class="fas fa-calendar-days mr-1"></i>${i18n.t('planningTime') || '规划时间'}
+                </label>
+                <div class="px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                  <i class="fas fa-calendar-alt mr-2 text-green-600"></i>${i18n.t('timeType' + (review.time_type ? review.time_type.charAt(0).toUpperCase() + review.time_type.slice(1) : 'Daily'))}
+                </div>
+              </div>
+              
               ${review.reminder_minutes ? `
               <!-- Reminder -->
               <div>

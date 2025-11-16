@@ -706,6 +706,7 @@ const translations = {
     
     // Calendar Integration
     'scheduledTime': '计划时间',
+    'planningTime': '规划时间',
     'location': '地点',
     'reminderBefore': '提前提醒',
     'minutes': '分钟',
@@ -1421,6 +1422,7 @@ const translations = {
     
     // Calendar Integration
     'scheduledTime': 'Scheduled Time',
+    'planningTime': 'Planning Time',
     'location': 'Location',
     'reminderBefore': 'Reminder Before',
     'minutes': 'minutes',
@@ -2134,6 +2136,7 @@ const translations = {
     
     // Calendar Integration
     'scheduledTime': '予定時刻',
+    'planningTime': '計画時間',
     'location': '場所',
     'reminderBefore': 'リマインダー',
     'minutes': '分',
