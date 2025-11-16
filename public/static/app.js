@@ -10345,10 +10345,12 @@ function renderAnswerSet(reviewId) {
     }
   });
   
-  // Clear the rendering flag after a short delay to ensure all events are processed
+  // Clear the rendering flag after a sufficient delay to ensure all events are processed
+  // Increased to 200ms to handle all delayed browser events
   setTimeout(() => {
     window.isRenderingAnswerSet = false;
-  }, 100);
+    console.log('[renderAnswerSet] Rendering flag cleared, auto-save enabled');
+  }, 200);
 }
 
 /**
@@ -10515,9 +10517,9 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     if (response.data) {
       showNotification(i18n.t('choiceSaved') || '选项已自动保存', 'success');
       
-      // Reload answer sets to refresh display, keep current index
+      // Reload answer sets to refresh the in-memory data
+      // DO NOT re-render immediately to avoid triggering new change events
       await loadAnswerSets(reviewId, true);
-      renderAnswerSet(reviewId);
     }
   } catch (error) {
     console.error('Update answer error:', error);
@@ -10569,9 +10571,9 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     if (response.data) {
       showNotification(i18n.t('choiceSaved') || '选项已自动保存', 'success');
       
-      // Reload answer sets to refresh display, keep current index
+      // Reload answer sets to refresh the in-memory data
+      // DO NOT re-render immediately to avoid triggering new change events
       await loadAnswerSets(reviewId, true);
-      renderAnswerSet(reviewId);
     }
   } catch (error) {
     console.error('Update multiple choice error:', error);
