@@ -10374,8 +10374,11 @@ function renderAnswerSet(reviewId) {
   // This ensures events are only triggered by user interactions, not programmatic changes
   
   // Attach listeners to radio buttons (single choice)
-  document.querySelectorAll('.answer-set-radio').forEach(radio => {
+  const radioButtons = document.querySelectorAll('.answer-set-radio');
+  console.log('[renderAnswerSet] Found', radioButtons.length, 'radio buttons');
+  radioButtons.forEach(radio => {
     radio.addEventListener('change', function(e) {
+      console.log('[Radio Change] Event triggered, isRenderingAnswerSet:', window.isRenderingAnswerSet);
       if (window.isRenderingAnswerSet) {
         console.log('[Radio Change] Blocked during rendering');
         return;
@@ -10384,13 +10387,17 @@ function renderAnswerSet(reviewId) {
       const questionNumber = parseInt(this.getAttribute('data-question-number'));
       const value = this.value;
       console.log('[Radio Change] User interaction detected:', { reviewId, questionNumber, value });
+      console.log('[Radio Change] Calling updateAnswerInSet...');
       updateAnswerInSet(reviewId, questionNumber, value);
     });
   });
   
   // Attach listeners to checkboxes (multiple choice)
-  document.querySelectorAll('.answer-set-checkbox').forEach(checkbox => {
+  const checkboxes = document.querySelectorAll('.answer-set-checkbox');
+  console.log('[renderAnswerSet] Found', checkboxes.length, 'checkboxes');
+  checkboxes.forEach(checkbox => {
     checkbox.addEventListener('change', function(e) {
+      console.log('[Checkbox Change] Event triggered, isRenderingAnswerSet:', window.isRenderingAnswerSet);
       if (window.isRenderingAnswerSet) {
         console.log('[Checkbox Change] Blocked during rendering');
         return;
@@ -10398,6 +10405,7 @@ function renderAnswerSet(reviewId) {
       const reviewId = parseInt(this.getAttribute('data-review-id'));
       const questionNumber = parseInt(this.getAttribute('data-question-number'));
       console.log('[Checkbox Change] User interaction detected:', { reviewId, questionNumber });
+      console.log('[Checkbox Change] Calling updateMultipleChoiceInSet...');
       updateMultipleChoiceInSet(reviewId, questionNumber);
     });
   });
@@ -10536,15 +10544,23 @@ async function saveInlineAnswer(reviewId, questionNumber) {
  * Update single choice answer in current set
  */
 async function updateAnswerInSet(reviewId, questionNumber, value) {
+  console.log('[updateAnswerInSet] 函数被调用！', { reviewId, questionNumber, value });
+  console.log('[updateAnswerInSet] isRenderingAnswerSet:', window.isRenderingAnswerSet);
+  
   // Prevent auto-save during rendering
   if (window.isRenderingAnswerSet) {
     console.log('[updateAnswerInSet] Skipping save during render');
     return;
   }
   
+  console.log('[updateAnswerInSet] 开始保存流程...');
+  
   try {
     let sets = window.currentAnswerSets || [];
     let index = window.currentSetIndex || 0;
+    
+    console.log('[updateAnswerInSet] 答案组数量:', sets.length);
+    console.log('[updateAnswerInSet] 当前索引:', index);
     
     // If no answer sets exist, create one first
     if (sets.length === 0) {
@@ -10563,6 +10579,10 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     const currentSet = sets[index];
     const setNumber = currentSet.set_number;
     
+    console.log('[updateAnswerInSet] 当前答案组:', currentSet);
+    console.log('[updateAnswerInSet] 组编号:', setNumber);
+    console.log('[updateAnswerInSet] 准备调用 API...');
+    
     // Call API to update the answer in current set
     const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
       answers: {
@@ -10570,15 +10590,20 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
       }
     });
     
+    console.log('[updateAnswerInSet] API 响应:', response.data);
+    
     if (response.data) {
       showNotification(i18n.t('choiceSaved') || '选项已自动保存', 'success');
+      console.log('[updateAnswerInSet] 保存成功！重新加载答案组...');
       
       // Reload answer sets to refresh the in-memory data
       // DO NOT re-render immediately to avoid triggering new change events
       await loadAnswerSets(reviewId, true);
+      console.log('[updateAnswerInSet] 答案组已重新加载');
     }
   } catch (error) {
-    console.error('Update answer error:', error);
+    console.error('[updateAnswerInSet] 保存失败！', error);
+    console.error('[updateAnswerInSet] 错误详情:', error.response?.data);
     showNotification(i18n.t('autoSaveFailed') || '自动保存失败', 'error');
   }
 }
@@ -10587,22 +10612,34 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
  * Update multiple choice answer in current set
  */
 async function updateMultipleChoiceInSet(reviewId, questionNumber) {
+  console.log('[updateMultipleChoiceInSet] 函数被调用！', { reviewId, questionNumber });
+  console.log('[updateMultipleChoiceInSet] isRenderingAnswerSet:', window.isRenderingAnswerSet);
+  
   // Prevent auto-save during rendering
   if (window.isRenderingAnswerSet) {
     console.log('[updateMultipleChoiceInSet] Skipping save during render');
     return;
   }
   
+  console.log('[updateMultipleChoiceInSet] 开始保存流程...');
+  
   try {
     const checked = document.querySelectorAll(`input[name="set-question${questionNumber}"]:checked`);
     const values = Array.from(checked).map(cb => cb.value);
     const answer = values.join(',');
     
+    console.log('[updateMultipleChoiceInSet] 选中的值:', values);
+    console.log('[updateMultipleChoiceInSet] 答案字符串:', answer);
+    
     let sets = window.currentAnswerSets || [];
     let index = window.currentSetIndex || 0;
     
+    console.log('[updateMultipleChoiceInSet] 答案组数量:', sets.length);
+    console.log('[updateMultipleChoiceInSet] 当前索引:', index);
+    
     // If no answer sets exist, create one first
     if (sets.length === 0) {
+      console.log('[updateMultipleChoiceInSet] 没有答案组，创建第一个...');
       await createFirstAnswerSetIfNeeded(reviewId);
       sets = window.currentAnswerSets || [];
       index = window.currentSetIndex || 0;
@@ -10610,12 +10647,17 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     
     // Check again after creation attempt
     if (sets.length === 0) {
+      console.error('[updateMultipleChoiceInSet] 创建答案组失败');
       showNotification('Failed to create answer set', 'error');
       return;
     }
     
     const currentSet = sets[index];
     const setNumber = currentSet.set_number;
+    
+    console.log('[updateMultipleChoiceInSet] 当前答案组:', currentSet);
+    console.log('[updateMultipleChoiceInSet] 组编号:', setNumber);
+    console.log('[updateMultipleChoiceInSet] 准备调用 API...');
     
     // Call API to update the answer in current set
     const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
@@ -10624,15 +10666,20 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
       }
     });
     
+    console.log('[updateMultipleChoiceInSet] API 响应:', response.data);
+    
     if (response.data) {
       showNotification(i18n.t('choiceSaved') || '选项已自动保存', 'success');
+      console.log('[updateMultipleChoiceInSet] 保存成功！重新加载答案组...');
       
       // Reload answer sets to refresh the in-memory data
       // DO NOT re-render immediately to avoid triggering new change events
       await loadAnswerSets(reviewId, true);
+      console.log('[updateMultipleChoiceInSet] 答案组已重新加载');
     }
   } catch (error) {
-    console.error('Update multiple choice error:', error);
+    console.error('[updateMultipleChoiceInSet] 保存失败！', error);
+    console.error('[updateMultipleChoiceInSet] 错误详情:', error.response?.data);
     showNotification(i18n.t('autoSaveFailed') || '自动保存失败', 'error');
   }
 }
