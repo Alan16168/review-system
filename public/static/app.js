@@ -1033,12 +1033,13 @@ async function showDashboard() {
   currentView = 'dashboard';
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div class="min-h-screen">
+    <div class="min-h-screen bg-gray-50">
       ${renderNavigation()}
 
       <!-- Content -->
       <div class="max-w-7xl mx-auto px-4 py-8">
         <div id="dashboard-content">
+          <!-- Stats Cards -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition" onclick="showReviews()">
               <div class="flex items-center justify-between">
@@ -1071,13 +1072,86 @@ async function showDashboard() {
             </div>
           </div>
 
-          <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">${i18n.t('myReviews')}</h2>
-            <button onclick="showCreateReview()" 
-                    class="mb-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
-              <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
-            </button>
-            <div id="recent-reviews"></div>
+          <!-- Reviews List with Filters -->
+          <div class="mb-6">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-2xl font-bold text-gray-800">${i18n.t('myReviews')}</h2>
+              <button onclick="showCreateReview()" 
+                      class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+                <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
+              </button>
+            </div>
+            
+            <!-- Filters Section -->
+            <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Status Filter -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-filter mr-1"></i>${i18n.t('status')}
+                  </label>
+                  <select id="dashboard-filter-status" 
+                          onchange="filterDashboardReviews()" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="all">${i18n.t('all')}</option>
+                    <option value="draft">${i18n.t('draft')}</option>
+                    <option value="completed">${i18n.t('completed')}</option>
+                  </select>
+                </div>
+                
+                <!-- Search Input -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-search mr-1"></i>${i18n.t('search')}
+                  </label>
+                  <input id="dashboard-search-input" 
+                         type="text" 
+                         oninput="filterDashboardReviews()" 
+                         placeholder="${i18n.t('searchPlaceholder') || '搜索标题...'}"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                
+                <!-- Time Type Filter -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-clock mr-1"></i>${i18n.t('timeType')}
+                  </label>
+                  <select id="dashboard-filter-time-type" 
+                          onchange="filterDashboardReviews()" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="all">${i18n.t('all')}</option>
+                    <option value="daily">${i18n.t('daily')}</option>
+                    <option value="weekly">${i18n.t('weekly')}</option>
+                    <option value="monthly">${i18n.t('monthly')}</option>
+                    <option value="quarterly">${i18n.t('quarterly')}</option>
+                    <option value="yearly">${i18n.t('yearly')}</option>
+                    <option value="project">${i18n.t('project')}</option>
+                  </select>
+                </div>
+                
+                <!-- Owner Type Filter -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-user-tag mr-1"></i>${i18n.t('ownerType')}
+                  </label>
+                  <select id="dashboard-filter-owner-type" 
+                          onchange="filterDashboardReviews()" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="all">${i18n.t('all')}</option>
+                    <option value="personal">${i18n.t('personal')}</option>
+                    <option value="team">${i18n.t('team')}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Reviews Container -->
+            <div id="dashboard-reviews-container" class="bg-white rounded-lg shadow-md">
+              <div class="p-8 text-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+                <p class="text-gray-600">${i18n.t('loading')}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1207,7 +1281,7 @@ async function loadDashboardData() {
     }
     
     dashboardCurrentPage = 1; // Reset to first page
-    renderRecentReviews(dashboardReviews);
+    renderDashboardReviewsList(dashboardReviews);
     
     // Load teams data for all users
     try {
@@ -1224,6 +1298,15 @@ async function loadDashboardData() {
     }
   } catch (error) {
     console.error('Load dashboard error:', error);
+    const container = document.getElementById('dashboard-reviews-container');
+    if (container) {
+      container.innerHTML = `
+        <div class="p-8 text-center">
+          <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+          <p class="text-red-600">${i18n.t('operationFailed')}</p>
+        </div>
+      `;
+    }
     // Set defaults on error
     const reviewCountEl = document.getElementById('review-count');
     const completedCountEl = document.getElementById('completed-count');
@@ -1231,33 +1314,69 @@ async function loadDashboardData() {
     if (reviewCountEl) reviewCountEl.textContent = '0';
     if (completedCountEl) completedCountEl.textContent = '0';
     if (teamCountEl) teamCountEl.textContent = '0';
-    // Still render empty reviews list
-    dashboardReviews = [];
-    renderRecentReviews(dashboardReviews);
   }
 }
 
-function changeDashboardPage(newPage) {
-  dashboardCurrentPage = newPage;
-  renderRecentReviews(dashboardReviews);
+// Filter dashboard reviews based on filters
+function filterDashboardReviews() {
+  const statusFilter = document.getElementById('dashboard-filter-status')?.value || 'all';
+  const searchText = document.getElementById('dashboard-search-input')?.value.toLowerCase() || '';
+  const timeTypeFilter = document.getElementById('dashboard-filter-time-type')?.value || 'all';
+  const ownerTypeFilter = document.getElementById('dashboard-filter-owner-type')?.value || 'all';
+
+  let filtered = dashboardReviews.filter(review => {
+    // Status filter
+    if (statusFilter !== 'all' && review.status !== statusFilter) return false;
+    
+    // Search filter
+    if (searchText && !review.title.toLowerCase().includes(searchText)) return false;
+    
+    // Time type filter
+    if (timeTypeFilter !== 'all' && review.time_type !== timeTypeFilter) return false;
+    
+    // Owner type filter
+    if (ownerTypeFilter !== 'all' && review.owner_type !== ownerTypeFilter) return false;
+    
+    return true;
+  });
+
+  dashboardCurrentPage = 1; // Reset to first page when filtering
+  renderDashboardReviewsList(filtered);
 }
 
-function renderRecentReviews(reviews) {
-  const container = document.getElementById('recent-reviews');
-  
+function changeDashboardPage(newPage, reviews) {
+  dashboardCurrentPage = newPage;
+  renderDashboardReviewsList(reviews);
+}
+
+// Render dashboard reviews list with pagination (full-featured)
+function renderDashboardReviewsList(reviews) {
+  const container = document.getElementById('dashboard-reviews-container');
   if (!container) return;
   
   if (reviews.length === 0) {
-    container.innerHTML = `<p class="text-gray-500 text-center py-4">${i18n.t('noData')}</p>`;
+    container.innerHTML = `
+      <div class="p-12 text-center">
+        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-lg">${i18n.t('noData')}</p>
+        <button onclick="showCreateReview()" 
+                class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
+          <i class="fas fa-plus mr-2"></i>${i18n.t('createReview')}
+        </button>
+      </div>
+    `;
     return;
   }
-  
+
   // Calculate pagination
   const totalPages = Math.ceil(reviews.length / dashboardItemsPerPage);
   const startIndex = (dashboardCurrentPage - 1) * dashboardItemsPerPage;
   const endIndex = startIndex + dashboardItemsPerPage;
   const paginatedReviews = reviews.slice(startIndex, endIndex);
-  
+
+  // Store reviews for pagination
+  window.dashboardCurrentReviews = reviews;
+
   container.innerHTML = `
     <div class="overflow-x-auto">
       <table class="min-w-full">
@@ -1293,37 +1412,108 @@ function renderRecentReviews(reviews) {
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${new Date(review.updated_at).toLocaleString()}
+                <div class="flex flex-col">
+                  <span class="font-medium text-gray-700">
+                    <i class="fas fa-edit text-xs mr-1"></i>
+                    ${new Date(review.updated_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                  ${review.created_at ? `
+                    <span class="text-xs text-gray-400 mt-1">
+                      <i class="fas fa-plus-circle text-xs mr-1"></i>
+                      ${new Date(review.created_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  ` : ''}
+                </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <button onclick="showReviewDetail(${review.id})" class="text-indigo-600 hover:text-indigo-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button onclick="showReviewDetail(${review.id}, true)" class="text-indigo-600 hover:text-indigo-900 mr-3">
                   <i class="fas fa-eye"></i> ${i18n.t('view')}
+                </button>
+                <button onclick="showEditReview(${review.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                  <i class="fas fa-edit"></i> ${i18n.t('edit')}
+                </button>
+                <button onclick="printReview(${review.id})" class="text-green-600 hover:text-green-900 mr-3">
+                  <i class="fas fa-print"></i> ${i18n.t('print')}
+                </button>
+                <button onclick="showInviteModal(${review.id})" class="text-purple-600 hover:text-purple-900 mr-3">
+                  <i class="fas fa-user-plus"></i> ${i18n.t('invite')}
+                </button>
+                <button onclick="deleteReview(${review.id})" class="text-red-600 hover:text-red-900">
+                  <i class="fas fa-trash"></i> ${i18n.t('delete')}
                 </button>
               </td>
             </tr>
           `).join('')}
         </tbody>
       </table>
-      
-      <!-- Pagination -->
-      ${totalPages > 1 ? `
-        <div class="flex justify-center items-center mt-4 space-x-2">
-          <button onclick="changeDashboardPage(${dashboardCurrentPage - 1})" 
+    </div>
+    
+    <!-- Pagination -->
+    ${totalPages > 1 ? `
+      <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <button onclick="changeDashboardPage(${dashboardCurrentPage - 1}, window.dashboardCurrentReviews)" 
                   ${dashboardCurrentPage === 1 ? 'disabled' : ''}
-                  class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${dashboardCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">
             ${i18n.t('previousPage') || '上一页'}
           </button>
-          <span class="text-gray-700">
-            ${i18n.t('page') || '第'} ${dashboardCurrentPage} / ${totalPages} ${i18n.t('pages') || '页'}
-          </span>
-          <button onclick="changeDashboardPage(${dashboardCurrentPage + 1})" 
+          <button onclick="changeDashboardPage(${dashboardCurrentPage + 1}, window.dashboardCurrentReviews)" 
                   ${dashboardCurrentPage === totalPages ? 'disabled' : ''}
-                  class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                  class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${dashboardCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">
             ${i18n.t('nextPage') || '下一页'}
           </button>
         </div>
-      ` : ''}
-    </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              ${i18n.t('showing') || '显示'} 
+              <span class="font-medium">${startIndex + 1}</span>
+              ${i18n.t('to') || '到'}
+              <span class="font-medium">${Math.min(endIndex, reviews.length)}</span>
+              ${i18n.t('of') || '共'}
+              <span class="font-medium">${reviews.length}</span>
+              ${i18n.t('results') || '条结果'}
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button onclick="changeDashboardPage(${dashboardCurrentPage - 1}, window.dashboardCurrentReviews)" 
+                      ${dashboardCurrentPage === 1 ? 'disabled' : ''}
+                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${dashboardCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
+                <button onclick="changeDashboardPage(${page}, window.dashboardCurrentReviews)"
+                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
+                          page === dashboardCurrentPage 
+                            ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' 
+                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                        }">
+                  ${page}
+                </button>
+              `).join('')}
+              <button onclick="changeDashboardPage(${dashboardCurrentPage + 1}, window.dashboardCurrentReviews)" 
+                      ${dashboardCurrentPage === totalPages ? 'disabled' : ''}
+                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${dashboardCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    ` : ''}
   `;
 }
 
