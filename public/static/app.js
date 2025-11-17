@@ -4496,11 +4496,18 @@ async function deleteExistingAnswer(reviewId, answerId, questionNumber) {
 
 // V6.7.0: Validate required questions before submission
 function validateRequiredQuestions(questions, answers) {
+  console.log('[validateRequiredQuestions] Starting validation...');
+  console.log('[validateRequiredQuestions] Questions to check:', questions.length);
+  console.log('[validateRequiredQuestions] Answers provided:', Object.keys(answers).length);
+  
   const errors = [];
   
   questions.forEach(q => {
+    console.log(`[validateRequiredQuestions] Q${q.question_number}: type=${q.question_type}, required=${q.required}`);
+    
     if (q.required === 'yes') {
       const answer = answers[q.question_number];
+      console.log(`[validateRequiredQuestions] Q${q.question_number} is REQUIRED, answer=`, answer);
       
       // Check if answer is empty based on question type
       let isEmpty = false;
@@ -4516,7 +4523,10 @@ function validateRequiredQuestions(questions, answers) {
         isEmpty = !answerValue || answerValue.trim() === '';
       }
       
+      console.log(`[validateRequiredQuestions] Q${q.question_number} isEmpty=${isEmpty}`);
+      
       if (isEmpty) {
+        console.log(`[validateRequiredQuestions] Q${q.question_number} FAILED validation!`);
         errors.push({
           questionNumber: q.question_number,
           questionText: q.question_text
@@ -4525,6 +4535,7 @@ function validateRequiredQuestions(questions, answers) {
     }
   });
   
+  console.log('[validateRequiredQuestions] Validation complete, errors:', errors.length);
   return errors;
 }
 
