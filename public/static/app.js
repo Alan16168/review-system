@@ -4701,10 +4701,14 @@ function filterAnswersByPrivacy(question, answers, currentUserId, reviewCreatorI
     return answers; // Public question, show all answers
   }
   
-  // Private question: show answers from current user OR review creator
-  return answers.filter(answer => 
-    answer.user_id === currentUserId || answer.user_id === reviewCreatorId
-  );
+  // Private question:
+  // - If current user is review creator: show all answers
+  // - Otherwise: show only current user's own answers
+  if (currentUserId === reviewCreatorId) {
+    return answers; // Review creator sees all answers
+  } else {
+    return answers.filter(answer => answer.user_id === currentUserId); // Others see only their own
+  }
 }
 
 async function handleEditReview(e) {
