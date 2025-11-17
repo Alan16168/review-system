@@ -3013,24 +3013,11 @@ async function handlePreviousWithConfirmation() {
 
 async function printReview(reviewId) {
   try {
-    console.log('[printReview] Function called with reviewId:', reviewId);
-    
     // Fetch review data
-    console.log('[printReview] Fetching review data...');
     const response = await axios.get(`/api/reviews/${reviewId}`);
-    console.log('[printReview] Response received:', response.data);
-    
     const review = response.data.review;
     const questions = response.data.questions || [];
     const answersByQuestion = response.data.answersByQuestion || {};
-    
-    console.log('[printReview] Data extracted:', {
-      reviewId: review.id,
-      reviewTitle: review.title,
-      questionsCount: questions.length,
-      answersByQuestionKeys: Object.keys(answersByQuestion),
-      answersByQuestion: answersByQuestion
-    });
     
     // V6.7.0: Get current user for privacy filtering
     const currentUser = window.currentUser || { id: null };
@@ -3192,7 +3179,6 @@ async function printReview(reviewId) {
     `;
     
     // Add questions and answers
-    console.log('[printReview] Processing questions...');
     questions.forEach((question, index) => {
       printContent += `
         <div class="question">
@@ -3203,23 +3189,7 @@ async function printReview(reviewId) {
       // V6.7.5: Fix data type mismatch - API returns string keys, ensure we use string
       const questionKey = String(question.question_number);
       const allAnswers = answersByQuestion[questionKey] || [];
-      
-      console.log(`[printReview] Q${question.question_number}:`, {
-        questionKey: questionKey,
-        owner: question.owner,
-        allAnswersCount: allAnswers.length,
-        allAnswersPreview: allAnswers.slice(0, 2).map(a => ({
-          username: a.username,
-          answer: a.answer ? a.answer.substring(0, 50) : null,
-          user_id: a.user_id
-        }))
-      });
-      
       const filteredAnswers = filterAnswersByPrivacy(question, allAnswers, currentUser.id, reviewCreatorId);
-      
-      console.log(`[printReview] Q${question.question_number} filtered:`, {
-        filteredCount: filteredAnswers.length
-      });
       
       if (filteredAnswers.length > 0) {
         filteredAnswers.forEach(answer => {
@@ -3520,7 +3490,7 @@ async function showReviewDetail(id, readOnly = false) {
             ${questions.length > 0 ? questions.map(q => {
               const allAnswers = answersByQuestion[q.question_number] || [];
               // V6.7.0: Filter answers based on privacy settings
-              const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.creator_id);
+              const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.user_id);
               const myAnswer = userAnswers.find(a => a.user_id === currentUser.id);
               const questionId = `question-${q.question_number}`;
               const hiddenCount = allAnswers.length - userAnswers.length;
@@ -4219,7 +4189,7 @@ async function showEditReview(id) {
                   // Time with text type - with auto-save time input
                   const allAnswers = answersByQuestion[q.question_number] || [];
                   // V6.7.0: Filter answers based on privacy settings
-                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.creator_id);
+                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.user_id);
                   const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
                   
                   // Get datetime value from first answer if exists
@@ -4280,7 +4250,7 @@ async function showEditReview(id) {
                   // Default text type - show only question (no question_text label)
                   const allAnswers = answersByQuestion[q.question_number] || [];
                   // V6.7.0: Filter answers based on privacy settings
-                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.creator_id);
+                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.user_id);
                   const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
                   
                   return `
