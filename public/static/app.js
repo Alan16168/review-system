@@ -8183,6 +8183,24 @@ async function showEditTemplateModal(templateId) {
                 <textarea id="template-description" rows="3"
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(template.description || '')}</textarea>
               </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('templateOwner')}
+                </label>
+                <select id="template-owner" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="public" ${(template.owner === 'public' || !template.owner) ? 'selected' : ''}>
+                    ${i18n.t('templateOwnerPublic')} - ${i18n.t('templateOwnerHint').split('；')[2] || i18n.t('templateOwnerHint').split(';')[2]}
+                  </option>
+                  <option value="team" ${template.owner === 'team' ? 'selected' : ''}>
+                    ${i18n.t('templateOwnerTeam')} - ${i18n.t('templateOwnerHint').split('；')[1] || i18n.t('templateOwnerHint').split(';')[1]}
+                  </option>
+                  <option value="private" ${template.owner === 'private' ? 'selected' : ''}>
+                    ${i18n.t('templateOwnerPrivate')} - ${i18n.t('templateOwnerHint').split('；')[0] || i18n.t('templateOwnerHint').split(';')[0]}
+                  </option>
+                </select>
+                <p class="mt-1 text-xs text-gray-500">${i18n.t('templateOwnerDescription')}</p>
+              </div>
               ${currentUser.role === 'admin' ? `
                 <div class="flex items-center">
                   <input type="checkbox" id="template-is-default" ${template.is_default ? 'checked' : ''}
