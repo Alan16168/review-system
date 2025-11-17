@@ -11072,22 +11072,28 @@ async function saveInlineAnswer(reviewId, questionNumber) {
   const textarea = document.getElementById(`inline-answer-${questionNumber}`);
   const answer = textarea ? textarea.value.trim() : '';
   
+  // Check if this question is required
+  const questions = window.currentEditQuestions || [];
+  const question = questions.find(q => q.question_number === questionNumber);
+  
   if (!answer) {
-    // If answer is empty, restore the empty state display
-    console.log(`[saveInlineAnswer] Q${questionNumber}: Answer is empty, restoring empty state`);
+    console.log(`[saveInlineAnswer] Q${questionNumber}: Answer is empty, checking required status`);
+    console.log(`[saveInlineAnswer] Question:`, question);
+    console.log(`[saveInlineAnswer] Required:`, question?.required);
     
-    // Re-render to show empty state
-    const answerElement = document.getElementById(`answer-display-${questionNumber}`);
-    if (answerElement) {
-      answerElement.innerHTML = `
-        <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
-             onclick="editEmptyAnswerInSet(${reviewId}, ${questionNumber})">
-          <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswersYet') || '此组暂无答案 (点击添加)'}
-        </div>
-      `;
+    // Check if this is a required question
+    if (question && question.required === 'yes') {
+      // Required question - show error and keep editing
+      showNotification(i18n.t('thisQuestionRequired') || '此问题必须回答', 'error');
+      // Keep the textarea focused so user can continue editing
+      if (textarea) {
+        textarea.focus();
+      }
+      return;
     }
     
-    return;
+    // Optional question (required='no' or not set) - save empty value
+    console.log(`[saveInlineAnswer] Q${questionNumber}: Optional question, saving empty value`);
   }
   
   try {
