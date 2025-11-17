@@ -4412,9 +4412,27 @@ async function addNewAnswer(reviewId, questionNumber) {
     const answer = textarea ? textarea.value.trim() : '';
     
     if (!answer) {
-      // If answer is empty, just cancel the input instead of showing error
-      console.log(`[addNewAnswer] Q${questionNumber}: Answer is empty, canceling input`);
+      // If answer is empty, close input and show "no answers" message
+      console.log(`[addNewAnswer] Q${questionNumber}: Answer is empty, closing input and showing empty state`);
+      
+      // Close the input section
       cancelNewAnswer(questionNumber);
+      
+      // Check if there are any existing answers
+      const container = document.getElementById(`answers-container-${questionNumber}`);
+      if (container) {
+        const existingAnswers = container.querySelectorAll('.border-l-4');
+        
+        // If no existing answers, show "no answers yet" message
+        if (existingAnswers.length === 0) {
+          container.innerHTML = `
+            <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg">
+              <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswersYet') || '此组暂无答案 (点击添加)'}
+            </div>
+          `;
+        }
+      }
+      
       return;
     }
     
@@ -11055,13 +11073,20 @@ async function saveInlineAnswer(reviewId, questionNumber) {
   const answer = textarea ? textarea.value.trim() : '';
   
   if (!answer) {
-    // If answer is empty, just close the input instead of showing error
-    console.log(`[saveInlineAnswer] Q${questionNumber}: Answer is empty, closing input`);
-    // Hide the inline answer input
-    const container = document.getElementById(`inline-answer-container-${questionNumber}`);
-    if (container) {
-      container.style.display = 'none';
+    // If answer is empty, restore the empty state display
+    console.log(`[saveInlineAnswer] Q${questionNumber}: Answer is empty, restoring empty state`);
+    
+    // Re-render to show empty state
+    const answerElement = document.getElementById(`answer-display-${questionNumber}`);
+    if (answerElement) {
+      answerElement.innerHTML = `
+        <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+             onclick="editEmptyAnswerInSet(${reviewId}, ${questionNumber})">
+          <i class="fas fa-info-circle mr-1"></i>${i18n.t('noAnswersYet') || '此组暂无答案 (点击添加)'}
+        </div>
+      `;
     }
+    
     return;
   }
   
