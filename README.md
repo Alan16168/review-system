@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.7.4 - 空答案保存验证（必填字段检查）（2025-11-17）  
+**✅ 当前版本**: V6.7.5 - 打印服务增强（权限过滤 + 动态格式化）（2025-11-17）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 
 ## 🌟 项目概述
@@ -133,20 +133,25 @@
 - **最新部署 ID**: https://1e10c581.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.7.4 - 空答案保存验证（必填字段检查）**
-- **Git Commit**: e17980b (添加required字段验证 + 完整日语西班牙语翻译)
+- **版本**: ✅ **V6.7.5 - 打印服务增强（权限过滤 + 动态格式化）**
+- **Git Commit**: 6d6f186 (打印服务owner过滤 + 动态答案格式化)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-17
 - **部署时间**: 最新部署 - V6.7.1-Hotfix（优化空答案处理）
 - **数据库迁移**: ✅ Migration 0035 已应用（添加owner和required字段）+ Migration 0036（恢复created_by字段）
 - **功能状态**: ✅ 私人答案过滤 + 必填字段验证 + 空答案自动关闭 + 完整答案集合系统 + 诊断工具
-- **最新更新**: ✅ **V6.7.4 - 空答案保存验证（必填字段检查）**（2025-11-17）
-  - ✅ **新增功能**：空答案保存时检查 `required` 字段
-  - ✅ **必填问题 (required='yes')**：显示错误提示"此问题必须回答"，保持编辑界面，聚焦textarea
-  - ✅ **可选问题 (required='no')**：允许保存空值到数据库，显示灰色背景"此组暂无答案 (点击添加)"
-  - ✅ **国际化支持**：新增 `thisQuestionRequired` 翻译（中英日西4语言）
-  - ✅ **日语西班牙语完善**：补充所有 answerOwner 和 answerRequired 相关翻译
+- **最新更新**: ✅ **V6.7.5 - 打印服务增强（权限过滤 + 动态格式化）**（2025-11-17）
+  - ✅ **打印权限过滤**：打印服务检查答案的 `owner` 属性
+    - 公开问题（owner='public'）：显示所有人的答案
+    - 私人问题（owner='private'）：仅显示当前用户和创建者的答案
+    - 使用 `filterAnswersByPrivacy()` 函数确保权限正确性
+  - ✅ **动态答案格式化**：根据实际内容长度显示答案
+    - 移除固定高度限制，使用动态内容自适应
+    - 添加 `word-wrap` 和 `overflow-wrap` 处理长文本
+    - 添加 `page-break-inside: avoid` 避免问题被分页
+    - 答案不再预留不必要的空白空间
+  - ✅ **打印质量提升**：更清晰、更紧凑的打印输出
   - ✨ **用户体验**：清晰区分必填和可选问题，避免误保存空答案
 - **更新内容**:
   - ✨ **V6.7.0 - 问题属性增强**（功能更新 - 2025-11-16）：
