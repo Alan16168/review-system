@@ -29,19 +29,40 @@ resources.get('/articles', async (c) => {
 
     // Search for review-related articles based on language
     // For Chinese: Use Baidu Wenku (skip verification due to anti-bot measures)
-    const queries = lang === 'zh' ? [
-      'site:wenku.baidu.com 复盘',
-      'site:wenku.baidu.com 系统复盘',
-      'site:wenku.baidu.com 如何复盘',
-      'site:wenku.baidu.com 复盘的方法',
-      'site:wenku.baidu.com 如何进行系统复盘'
-    ] : [
-      'systematic review reflection',
-      'how to conduct retrospective',
-      'after action review method',
-      'project review best practices',
-      'learning from experience'
-    ];
+    let queries: string[];
+    if (lang === 'zh') {
+      queries = [
+        'site:wenku.baidu.com 复盘',
+        'site:wenku.baidu.com 系统复盘',
+        'site:wenku.baidu.com 如何复盘',
+        'site:wenku.baidu.com 复盘的方法',
+        'site:wenku.baidu.com 如何进行系统复盘'
+      ];
+    } else if (lang === 'ja') {
+      queries = [
+        'プロジェクト振り返り 方法',
+        'チーム レトロスペクティブ',
+        '業務改善 振り返り',
+        'アジャイル ふりかえり',
+        '学習 振り返り 方法'
+      ];
+    } else if (lang === 'es') {
+      queries = [
+        'revisión sistemática proyecto',
+        'retrospectiva de equipo método',
+        'cómo hacer revisión de proyectos',
+        'mejores prácticas retrospectiva',
+        'aprendizaje de experiencias'
+      ];
+    } else {
+      queries = [
+        'systematic review reflection',
+        'how to conduct retrospective',
+        'after action review method',
+        'project review best practices',
+        'learning from experience'
+      ];
+    }
 
     const allArticles: any[] = [];
     
@@ -143,15 +164,32 @@ resources.get('/videos', async (c) => {
     }
 
     // Search for systematic review related videos based on language
-    const queries = lang === 'zh' ? [
-      '什么是系统化的复盘',
-      '如何系统性复盘',
-      '系统性复盘的优势'
-    ] : [
-      'what is systematic review reflection',
-      'how to conduct systematic retrospective',
-      'benefits of systematic review'
-    ];
+    let queries: string[];
+    if (lang === 'zh') {
+      queries = [
+        '什么是系统化的复盘',
+        '如何系统性复盘',
+        '系统性复盘的优势'
+      ];
+    } else if (lang === 'ja') {
+      queries = [
+        'プロジェクト振り返りとは',
+        '効果的な振り返り方法',
+        'レトロスペクティブのメリット'
+      ];
+    } else if (lang === 'es') {
+      queries = [
+        'qué es retrospectiva sistemática',
+        'cómo hacer retrospectiva efectiva',
+        'beneficios de revisión sistemática'
+      ];
+    } else {
+      queries = [
+        'what is systematic review reflection',
+        'how to conduct systematic retrospective',
+        'benefits of systematic review'
+      ];
+    }
 
     const allVideos: any[] = [];
     
@@ -225,6 +263,136 @@ function formatViewCount(views: number): string {
 
 // Mock data functions
 function getMockArticles(lang: string = 'en') {
+  if (lang === 'ja') {
+    return [
+      {
+        title: 'プロジェクト振り返りの基本: 4つのステップ',
+        description: '効果的な振り返りを行うための4つの基本ステップを学び、チームの継続的な改善を実現します。',
+        url: 'https://www.atlassian.com/ja/team-playbook/plays/retrospective',
+        image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=振り返り基本'
+      },
+      {
+        title: 'アジャイル開発におけるレトロスペクティブの実践',
+        description: 'スクラムチームが効果的な振り返りを通じて、スプリントごとに改善を重ねる方法を解説。',
+        url: 'https://www.atlassian.com/ja/agile/scrum/retrospectives',
+        image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=アジャイル'
+      },
+      {
+        title: 'チーム学習と組織の成長戦略',
+        description: 'チーム全体で学習し、組織としての成長を加速させるための振り返りフレームワーク。',
+        url: 'https://hbr.org/ja/2016/03/learning-to-learn',
+        image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=チーム学習'
+      },
+      {
+        title: '失敗から学ぶ: 効果的な振り返りの技術',
+        description: '失敗を成長の機会に変える、構造化された振り返りの手法とベストプラクティス。',
+        url: 'https://www.mindtools.com/ja/reflective-practice',
+        image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=失敗から学ぶ'
+      },
+      {
+        title: 'プロジェクトマネジメント: 教訓の管理',
+        description: 'プロジェクト完了後の振り返りを通じて、教訓を体系的に収集・活用する方法。',
+        url: 'https://www.pmi-japan.org/topics/lessons-learned',
+        image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=PM教訓'
+      },
+      {
+        title: '個人の成長のための振り返り習慣',
+        description: '定期的な自己振り返りを通じて、個人のスキルとキャリアを継続的に向上させる方法。',
+        url: 'https://www.forbes.com/ja/personal-growth-habits',
+        image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=個人成長'
+      },
+      {
+        title: 'リーダーシップ開発: 経験から学ぶ',
+        description: '優れたリーダーが日々の経験から知見を引き出し、成長し続ける方法を学びます。',
+        url: 'https://hbr.org/ja/leadership-development',
+        image: 'https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=リーダーシップ'
+      },
+      {
+        title: '生産性向上のための振り返りテクニック',
+        description: '科学的な振り返り手法を用いて、仕事の効率と生産性を大幅に向上させる実践ガイド。',
+        url: 'https://www.inc.com/ja/productivity-reflection',
+        image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=生産性'
+      },
+      {
+        title: '組織学習と知識管理のベストプラクティス',
+        description: 'トップコンサルティングファームが実践する、組織的な学習と知識管理の仕組み。',
+        url: 'https://www.mckinsey.com/ja/organizational-learning',
+        image: 'https://via.placeholder.com/400x250/06B6D4/FFFFFF?text=組織学習'
+      },
+      {
+        title: 'デザイン思考と振り返りの融合',
+        description: 'デザイン思考のプロセスに振り返りを組み込み、イノベーションを加速させる手法。',
+        url: 'https://www.ideo.com/ja/design-thinking-reflection',
+        image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=デザイン思考'
+      }
+    ];
+  }
+  
+  if (lang === 'es') {
+    return [
+      {
+        title: 'Fundamentos de Retrospectiva: 4 Pasos Clave',
+        description: 'Aprende los cuatro pasos fundamentales para realizar retrospectivas efectivas y lograr mejora continua del equipo.',
+        url: 'https://www.atlassian.com/es/team-playbook/plays/retrospective',
+        image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=Retrospectiva'
+      },
+      {
+        title: 'Retrospectivas Ágiles: Mejores Prácticas',
+        description: 'Cómo los equipos ágiles mejoran continuamente a través de reuniones retrospectivas efectivas.',
+        url: 'https://www.atlassian.com/es/agile/scrum/retrospectives',
+        image: 'https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=Ágil'
+      },
+      {
+        title: 'HBR: Aprendiendo a Aprender',
+        description: 'Profundiza en cómo la reflexión y revisión sistemática aceleran el crecimiento personal y profesional.',
+        url: 'https://hbr.org/es/2016/03/learning-to-learn',
+        image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=HBR'
+      },
+      {
+        title: 'Práctica Reflexiva para Desarrollo Profesional',
+        description: 'Aprende cómo la reflexión estructurada mejora las habilidades profesionales y la toma de decisiones.',
+        url: 'https://www.mindtools.com/es/reflective-practice',
+        image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=Reflexión'
+      },
+      {
+        title: 'Gestión de Lecciones Aprendidas en Proyectos',
+        description: 'Cómo recopilar, analizar y aplicar sistemáticamente la experiencia de proyectos anteriores.',
+        url: 'https://www.pmi.org/es/learning/lessons-learned',
+        image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=PM'
+      },
+      {
+        title: 'Colaboración de Equipos de Clase Mundial',
+        description: 'Cómo los equipos de alto rendimiento conducen revisiones eficientes y colaboración efectiva.',
+        url: 'https://www.atlassian.com/es/team-collaboration',
+        image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=Equipo'
+      },
+      {
+        title: 'Desarrollo de Liderazgo: Aprender de la Experiencia',
+        description: 'Cómo los grandes líderes extraen sabiduría de cada experiencia para su crecimiento continuo.',
+        url: 'https://hbr.org/es/leadership-development',
+        image: 'https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=Liderazgo'
+      },
+      {
+        title: 'Técnicas de Reflexión para Productividad',
+        description: 'Haz tu trabajo más eficiente a través de métodos científicos de revisión y reflexión.',
+        url: 'https://www.inc.com/es/productivity-reflection',
+        image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=Productividad'
+      },
+      {
+        title: 'McKinsey: Aprendizaje Organizacional',
+        description: 'Cómo las principales firmas de consultoría construyen organizaciones que aprenden continuamente.',
+        url: 'https://www.mckinsey.com/es/organizational-learning',
+        image: 'https://via.placeholder.com/400x250/06B6D4/FFFFFF?text=McKinsey'
+      },
+      {
+        title: 'Innovación a través de la Retrospectiva',
+        description: 'Integra la reflexión sistemática en procesos de innovación para acelerar el desarrollo de productos.',
+        url: 'https://www.ideo.com/es/innovation-retrospective',
+        image: 'https://via.placeholder.com/400x250/14B8A6/FFFFFF?text=Innovación'
+      }
+    ];
+  }
+  
   if (lang === 'zh') {
     return [
       // 原有的10篇文章
@@ -520,6 +688,156 @@ function getMockArticles(lang: string = 'en') {
 }
 
 function getMockVideos(lang: string = 'en') {
+  if (lang === 'ja') {
+    return [
+      {
+        title: 'プロジェクト振り返りの基本: 3分で理解',
+        channel: '成長マインドセット',
+        views: '50万',
+        thumbnail: 'https://via.placeholder.com/400x225/DC2626/FFFFFF?text=振り返り基本',
+        url: 'https://www.youtube.com/results?search_query=プロジェクト振り返り+方法'
+      },
+      {
+        title: 'アジャイル開発のレトロスペクティブ実践',
+        channel: 'アジャイルコーチ',
+        views: '120万',
+        thumbnail: 'https://via.placeholder.com/400x225/7C3AED/FFFFFF?text=アジャイル',
+        url: 'https://www.youtube.com/results?search_query=アジャイル+レトロスペクティブ'
+      },
+      {
+        title: '個人の振り返り: 5ステップ実戦ガイド',
+        channel: '個人成長チャンネル',
+        views: '80万',
+        thumbnail: 'https://via.placeholder.com/400x225/059669/FFFFFF?text=個人振り返り',
+        url: 'https://www.youtube.com/results?search_query=個人+振り返り+方法'
+      },
+      {
+        title: 'チーム振り返りミーティングの進め方',
+        channel: 'スクラムマスター',
+        views: '65万',
+        thumbnail: 'https://via.placeholder.com/400x225/F59E0B/FFFFFF?text=チーム',
+        url: 'https://www.youtube.com/results?search_query=チーム+振り返り+会議'
+      },
+      {
+        title: '年次振り返りガイド: 一年の総括方法',
+        channel: '時間管理の達人',
+        views: '95万',
+        thumbnail: 'https://via.placeholder.com/400x225/EC4899/FFFFFF?text=年次',
+        url: 'https://www.youtube.com/results?search_query=年次+振り返り'
+      },
+      {
+        title: 'プロジェクト振り返り: 教訓の抽出',
+        channel: 'PMI Japan',
+        views: '45万',
+        thumbnail: 'https://via.placeholder.com/400x225/3B82F6/FFFFFF?text=プロジェクト',
+        url: 'https://www.youtube.com/results?search_query=プロジェクト+振り返り'
+      },
+      {
+        title: 'システム思考と深い振り返り',
+        channel: '思考トレーニング',
+        views: '70万',
+        thumbnail: 'https://via.placeholder.com/400x225/8B5CF6/FFFFFF?text=システム思考',
+        url: 'https://www.youtube.com/results?search_query=システム思考+振り返り'
+      },
+      {
+        title: 'OKR振り返り: 目標レビューの方法',
+        channel: 'OKR実践者',
+        views: '55万',
+        thumbnail: 'https://via.placeholder.com/400x225/06B6D4/FFFFFF?text=OKR',
+        url: 'https://www.youtube.com/results?search_query=OKR+振り返り'
+      },
+      {
+        title: '失敗から学ぶ: 振り返りの技術',
+        channel: 'リーダーシップ研究所',
+        views: '88万',
+        thumbnail: 'https://via.placeholder.com/400x225/14B8A6/FFFFFF?text=失敗学習',
+        url: 'https://www.youtube.com/results?search_query=失敗+振り返り'
+      },
+      {
+        title: 'スクラム回顧会: アジャイルチームの実践',
+        channel: 'スクラム日本',
+        views: '60万',
+        thumbnail: 'https://via.placeholder.com/400x225/EF4444/FFFFFF?text=スクラム',
+        url: 'https://www.youtube.com/results?search_query=スクラム+回顧会'
+      }
+    ];
+  }
+  
+  if (lang === 'es') {
+    return [
+      {
+        title: '¿Qué es una Retrospectiva Sistemática? Explicado en 3 minutos',
+        channel: 'Mentalidad de Crecimiento',
+        views: '50K',
+        thumbnail: 'https://via.placeholder.com/400x225/DC2626/FFFFFF?text=Retrospectiva',
+        url: 'https://www.youtube.com/results?search_query=retrospectiva+sistemática'
+      },
+      {
+        title: 'Retrospectivas Ágiles: Guía Completa',
+        channel: 'Agile Coach',
+        views: '120K',
+        thumbnail: 'https://via.placeholder.com/400x225/7C3AED/FFFFFF?text=Ágil',
+        url: 'https://www.youtube.com/results?search_query=retrospectiva+ágil'
+      },
+      {
+        title: 'Cómo Hacer Revisión Personal: 5 Pasos',
+        channel: 'Crecimiento Personal',
+        views: '80K',
+        thumbnail: 'https://via.placeholder.com/400x225/059669/FFFFFF?text=Personal',
+        url: 'https://www.youtube.com/results?search_query=revisión+personal+método'
+      },
+      {
+        title: 'Reunión de Retrospectiva de Equipo: Proceso Completo',
+        channel: 'Scrum Master',
+        views: '65K',
+        thumbnail: 'https://via.placeholder.com/400x225/F59E0B/FFFFFF?text=Equipo',
+        url: 'https://www.youtube.com/results?search_query=reunión+retrospectiva+equipo'
+      },
+      {
+        title: 'Guía de Revisión Anual: Cómo Resumir el Año',
+        channel: 'Gestión del Tiempo',
+        views: '95K',
+        thumbnail: 'https://via.placeholder.com/400x225/EC4899/FFFFFF?text=Anual',
+        url: 'https://www.youtube.com/results?search_query=revisión+anual'
+      },
+      {
+        title: 'Retrospectiva de Proyecto: Extracción de Lecciones',
+        channel: 'PMI España',
+        views: '45K',
+        thumbnail: 'https://via.placeholder.com/400x225/3B82F6/FFFFFF?text=Proyecto',
+        url: 'https://www.youtube.com/results?search_query=retrospectiva+proyecto'
+      },
+      {
+        title: 'Pensamiento Sistémico y Reflexión Profunda',
+        channel: 'Entrenamiento Mental',
+        views: '70K',
+        thumbnail: 'https://via.placeholder.com/400x225/8B5CF6/FFFFFF?text=Sistémico',
+        url: 'https://www.youtube.com/results?search_query=pensamiento+sistémico+reflexión'
+      },
+      {
+        title: 'Revisión OKR: Cómo Revisar Objetivos',
+        channel: 'OKR Practitioner',
+        views: '55K',
+        thumbnail: 'https://via.placeholder.com/400x225/06B6D4/FFFFFF?text=OKR',
+        url: 'https://www.youtube.com/results?search_query=revisión+OKR'
+      },
+      {
+        title: 'Aprender del Fracaso: El Arte de la Retrospectiva',
+        channel: 'Academia de Liderazgo',
+        views: '88K',
+        thumbnail: 'https://via.placeholder.com/400x225/14B8A6/FFFFFF?text=Fracaso',
+        url: 'https://www.youtube.com/results?search_query=aprender+fracaso+retrospectiva'
+      },
+      {
+        title: 'Sprint Retrospective: Práctica de Equipos Scrum',
+        channel: 'Scrum Español',
+        views: '60K',
+        thumbnail: 'https://via.placeholder.com/400x225/EF4444/FFFFFF?text=Sprint',
+        url: 'https://www.youtube.com/results?search_query=sprint+retrospective'
+      }
+    ];
+  }
+  
   if (lang === 'zh') {
     return [
       {
