@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.7.0 - 增加问题的答案可见性和必填属性（2025-11-16）  
+**✅ 当前版本**: V6.7.4 - 空答案保存验证（必填字段检查）（2025-11-17）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 
 ## 🌟 项目概述
@@ -133,18 +133,21 @@
 - **最新部署 ID**: https://1e10c581.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.7.1-Hotfix - 空答案处理优化**
-- **Git Commit**: 04a5428 (自动关闭空答案输入，不显示错误)
+- **版本**: ✅ **V6.7.4 - 空答案保存验证（必填字段检查）**
+- **Git Commit**: e17980b (添加required字段验证 + 完整日语西班牙语翻译)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-17
 - **部署时间**: 最新部署 - V6.7.1-Hotfix（优化空答案处理）
 - **数据库迁移**: ✅ Migration 0035 已应用（添加owner和required字段）+ Migration 0036（恢复created_by字段）
 - **功能状态**: ✅ 私人答案过滤 + 必填字段验证 + 空答案自动关闭 + 完整答案集合系统 + 诊断工具
-- **最新更新**: ✅ **V6.7.1-Hotfix - 空答案处理优化**（2025-11-17）
-  - 🐛 修复：空答案不再显示错误，自动关闭输入框
-  - 🎯 改进：addNewAnswer() 和 saveInlineAnswer() 自动处理空答案
-  - ✨ 用户体验：可选问题可以留空，不会触发"答案不能为空"错误
+- **最新更新**: ✅ **V6.7.4 - 空答案保存验证（必填字段检查）**（2025-11-17）
+  - ✅ **新增功能**：空答案保存时检查 `required` 字段
+  - ✅ **必填问题 (required='yes')**：显示错误提示"此问题必须回答"，保持编辑界面，聚焦textarea
+  - ✅ **可选问题 (required='no')**：允许保存空值到数据库，显示灰色背景"此组暂无答案 (点击添加)"
+  - ✅ **国际化支持**：新增 `thisQuestionRequired` 翻译（中英日西4语言）
+  - ✅ **日语西班牙语完善**：补充所有 answerOwner 和 answerRequired 相关翻译
+  - ✨ **用户体验**：清晰区分必填和可选问题，避免误保存空答案
 - **更新内容**:
   - ✨ **V6.7.0 - 问题属性增强**（功能更新 - 2025-11-16）：
     - **新增功能**: 为模板问题增加两个新属性
