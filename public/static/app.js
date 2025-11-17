@@ -8088,13 +8088,13 @@ function showCreateTemplateModal() {
               <select id="template-owner" 
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 <option value="public">
-                  ${i18n.t('templateOwnerPublic')} - ${i18n.t('templateOwnerHint').split('；')[2]}
+                  ${i18n.t('templateOwnerPublic')}
                 </option>
                 <option value="team">
-                  ${i18n.t('templateOwnerTeam')} - ${i18n.t('templateOwnerHint').split('；')[1]}
+                  ${i18n.t('templateOwnerTeam')}
                 </option>
                 <option value="private">
-                  ${i18n.t('templateOwnerPrivate')} - ${i18n.t('templateOwnerHint').split('；')[0]}
+                  ${i18n.t('templateOwnerPrivate')}
                 </option>
               </select>
               <p class="mt-1 text-xs text-gray-500">${i18n.t('templateOwnerDescription')}</p>
@@ -8190,13 +8190,13 @@ async function showEditTemplateModal(templateId) {
                 <select id="template-owner" 
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                   <option value="public" ${(template.owner === 'public' || !template.owner) ? 'selected' : ''}>
-                    ${i18n.t('templateOwnerPublic')} - ${i18n.t('templateOwnerHint').split('；')[2] || i18n.t('templateOwnerHint').split(';')[2]}
+                    ${i18n.t('templateOwnerPublic')}
                   </option>
                   <option value="team" ${template.owner === 'team' ? 'selected' : ''}>
-                    ${i18n.t('templateOwnerTeam')} - ${i18n.t('templateOwnerHint').split('；')[1] || i18n.t('templateOwnerHint').split(';')[1]}
+                    ${i18n.t('templateOwnerTeam')}
                   </option>
                   <option value="private" ${template.owner === 'private' ? 'selected' : ''}>
-                    ${i18n.t('templateOwnerPrivate')} - ${i18n.t('templateOwnerHint').split('；')[0] || i18n.t('templateOwnerHint').split(';')[0]}
+                    ${i18n.t('templateOwnerPrivate')}
                   </option>
                 </select>
                 <p class="mt-1 text-xs text-gray-500">${i18n.t('templateOwnerDescription')}</p>
