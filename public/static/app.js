@@ -3013,15 +3013,33 @@ async function handlePreviousWithConfirmation() {
 
 async function printReview(reviewId) {
   try {
+    console.log('[printReview] Function called with reviewId:', reviewId);
+    
     // Fetch review data
+    console.log('[printReview] Fetching review data...');
     const response = await axios.get(`/api/reviews/${reviewId}`);
+    console.log('[printReview] Response received:', response.data);
+    
     const review = response.data.review;
     const questions = response.data.questions || [];
     const answersByQuestion = response.data.answersByQuestion || {};
     
+    console.log('[printReview] Data extracted:', {
+      reviewId: review.id,
+      reviewTitle: review.title,
+      questionsCount: questions.length,
+      answersByQuestionKeys: Object.keys(answersByQuestion),
+      answersByQuestion: answersByQuestion
+    });
+    
     // V6.7.0: Get current user for privacy filtering
     const currentUser = window.currentUser || { id: null };
     const reviewCreatorId = review.user_id;
+    
+    console.log('[printReview] User info:', {
+      currentUserId: currentUser.id,
+      reviewCreatorId: reviewCreatorId
+    });
     
     // Create printable content
     let printContent = `
@@ -3174,6 +3192,7 @@ async function printReview(reviewId) {
     `;
     
     // Add questions and answers
+    console.log('[printReview] Processing questions...');
     questions.forEach((question, index) => {
       printContent += `
         <div class="question">
@@ -3184,7 +3203,23 @@ async function printReview(reviewId) {
       // V6.7.5: Fix data type mismatch - API returns string keys, ensure we use string
       const questionKey = String(question.question_number);
       const allAnswers = answersByQuestion[questionKey] || [];
+      
+      console.log(`[printReview] Q${question.question_number}:`, {
+        questionKey: questionKey,
+        owner: question.owner,
+        allAnswersCount: allAnswers.length,
+        allAnswersPreview: allAnswers.slice(0, 2).map(a => ({
+          username: a.username,
+          answer: a.answer ? a.answer.substring(0, 50) : null,
+          user_id: a.user_id
+        }))
+      });
+      
       const filteredAnswers = filterAnswersByPrivacy(question, allAnswers, currentUser.id, reviewCreatorId);
+      
+      console.log(`[printReview] Q${question.question_number} filtered:`, {
+        filteredCount: filteredAnswers.length
+      });
       
       if (filteredAnswers.length > 0) {
         filteredAnswers.forEach(answer => {
@@ -3217,9 +3252,18 @@ async function printReview(reviewId) {
     `;
     
     // Open print window
+    console.log('[printReview] Opening print window...');
     const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      console.error('[printReview] Failed to open print window - popup blocked?');
+      alert('打印窗口被阻止，请允许弹出窗口');
+      return;
+    }
+    
+    console.log('[printReview] Writing content to print window...');
     printWindow.document.write(printContent);
     printWindow.document.close();
+    console.log('[printReview] Print window ready');
     
     // Trigger print dialog after content loads
     printWindow.onload = function() {
@@ -3227,10 +3271,15 @@ async function printReview(reviewId) {
     };
     
   } catch (error) {
-    console.error('Print error:', error);
+    console.error('[printReview] Error occurred:', error);
+    console.error('[printReview] Error stack:', error.stack);
+    alert('打印出错: ' + error.message);
     showToast(i18n.t('printError') || 'Failed to generate print preview', 'error');
   }
 }
+
+// V6.7.6: Expose printReview to global scope for debugging
+console.log('[printReview] Function defined and available:', typeof printReview);
 
 // ============ Review Detail & Edit ============
 
@@ -4652,9 +4701,9 @@ function filterAnswersByPrivacy(question, answers, currentUserId, reviewCreatorI
     return answers; // Public question, show all answers
   }
   
-  // Private question, filter answers
+  // Private question: show answers from current user OR review creator
   return answers.filter(answer => 
-    answer.user_id === currentUserId || currentUserId === reviewCreatorId
+    answer.user_id === currentUserId || answer.user_id === reviewCreatorId
   );
 }
 
