@@ -4306,16 +4306,10 @@ async function showEditReview(id) {
                   
                   return `
                     <div class="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
-                      <div class="mb-3">
-                        <span class="text-sm font-semibold text-gray-800">
-                          ${q.question_number}. ${i18n.t('timeTypeQuestion') || '时间型问题'}
-                        </span>
-                      </div>
-                      
                       <!-- 1. 标题显示 -->
                       <div class="mb-3">
                         <label class="block text-xs font-medium text-gray-700 mb-1">
-                          <i class="fas fa-heading mr-1"></i>${i18n.t('title') || '标题'}
+                          ${q.question_number}. ${i18n.t('title') || '标题'}
                         </label>
                         <div class="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-800">
                           ${q.question_text_en ? escapeHtml(q.question_text_en) : escapeHtml(q.question_text)}
