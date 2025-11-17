@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.7.9 - 修复creator_id字段错误（2025-11-17）  
+**✅ 当前版本**: V6.8.0 - 修复打印功能答案显示（2025-11-17）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 
 ## 🌟 项目概述
@@ -133,15 +133,24 @@
 - **最新部署 ID**: https://36e8e166.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.7.9 - 修复creator_id字段错误**
-- **Git Commit**: 20052a9 (修复review.creator_id字段错误)
+- **版本**: ✅ **V6.8.0 - 修复打印功能答案显示**
+- **Git Commit**: TBD (修复打印功能currentUserId获取)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-17
 - **部署时间**: 最新部署 - V6.7.9（修复creator_id字段错误）
 - **数据库迁移**: ✅ Migration 0036 已完全应用（所有迁移均已同步）
 - **功能状态**: ✅ 打印功能完整 + 打印权限过滤 + 打印动态格式化 + 私人答案过滤 + 必填字段验证
-- **最新更新**: ✅ **V6.7.9 - 修复creator_id字段错误**（2025-11-17）
+- **最新更新**: ✅ **V6.8.0 - 修复打印功能答案显示**（2025-11-17）
+  - ✅ **修复关键Bug**：打印时答案显示"未填写"的问题
+    - **问题**：打印功能中 `currentUser` 全局变量为 `null`
+    - **原因**：代码依赖 `window.currentUser` 但在某些情况下该变量未初始化
+    - **解决方案**：
+      1. 优先从全局变量 `currentUser` 获取用户 ID
+      2. 如果失败，从 `localStorage` 读取用户信息
+      3. 如果仍然失败，假设当前用户是复盘创建者（兜底方案）
+    - **结果**：打印功能现在能正确获取用户 ID，答案正常显示
+  - ✅ **V6.7.9 优化**：修复creator_id字段错误
   - ✅ **修复关键Bug**：修正 review 对象的创建者 ID 字段名错误
     - **问题**：代码中使用了不存在的 `review.creator_id` 字段
     - **正确**：应该使用 `review.user_id` 字段

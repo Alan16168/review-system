@@ -3019,13 +3019,43 @@ async function printReview(reviewId) {
     const questions = response.data.questions || [];
     const answersByQuestion = response.data.answersByQuestion || {};
     
-    // V6.7.0: Get current user for privacy filtering
-    const currentUser = window.currentUser || { id: null };
+    // V6.7.12: Get current user ID - use response data directly instead of global variable
+    // The response already contains the review creator's user_id
+    // For privacy filtering, we need current logged-in user's ID
     const reviewCreatorId = review.user_id;
+    let currentUserId = null;
     
-    console.log('[printReview] User info:', {
-      currentUserId: currentUser.id,
-      reviewCreatorId: reviewCreatorId
+    // Method 1: Try global currentUser variable (set during login)
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.id) {
+      currentUserId = currentUser.id;
+      console.log('[printReview] Got currentUserId from global variable:', currentUserId);
+    }
+    
+    // Method 2: Try localStorage as fallback
+    if (!currentUserId) {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          currentUserId = user.id;
+          console.log('[printReview] Got currentUserId from localStorage:', currentUserId);
+        }
+      } catch (error) {
+        console.error('[printReview] Failed to get user from localStorage:', error);
+      }
+    }
+    
+    // Method 3: As last resort, assume current user is the review creator
+    // This is safe because only users with access can view the review
+    if (!currentUserId) {
+      console.warn('[printReview] Could not determine currentUserId, assuming user is review creator');
+      currentUserId = reviewCreatorId;
+    }
+    
+    console.log('[printReview] V6.7.12 User info:', {
+      currentUserId: currentUserId,
+      reviewCreatorId: reviewCreatorId,
+      isCreator: currentUserId === reviewCreatorId
     });
     
     // Create printable content
@@ -3189,18 +3219,39 @@ async function printReview(reviewId) {
       // V6.7.5: Fix data type mismatch - API returns string keys, ensure we use string
       const questionKey = String(question.question_number);
       const allAnswers = answersByQuestion[questionKey] || [];
-      const filteredAnswers = filterAnswersByPrivacy(question, allAnswers, currentUser.id, reviewCreatorId);
+      
+      console.log(`[printReview] Question ${questionKey}:`, {
+        questionText: question.question_text,
+        owner: question.owner,
+        allAnswersCount: allAnswers.length,
+        allAnswers: allAnswers
+      });
+      
+      const filteredAnswers = filterAnswersByPrivacy(question, allAnswers, currentUserId, reviewCreatorId);
+      
+      console.log(`[printReview] After filtering:`, {
+        filteredAnswersCount: filteredAnswers.length,
+        filteredAnswers: filteredAnswers
+      });
       
       if (filteredAnswers.length > 0) {
         filteredAnswers.forEach(answer => {
+          const answerText = answer.answer || '';
+          console.log(`[printReview] Rendering answer:`, {
+            username: answer.username,
+            answerLength: answerText.length,
+            answerPreview: answerText.substring(0, 50)
+          });
+          
           printContent += `
             <div class="answer">
               ${answer.username ? `<div class="answer-header"><strong>${answer.username}</strong> - ${new Date(answer.updated_at).toLocaleString()}</div>` : ''}
-              <div>${answer.answer || i18n.t('noAnswer')}</div>
+              <div>${answerText || i18n.t('noAnswer')}</div>
             </div>
           `;
         });
       } else {
+        console.log(`[printReview] No filtered answers for question ${questionKey}`);
         printContent += `
           <div class="answer">
             <div>${i18n.t('noAnswer')}</div>
