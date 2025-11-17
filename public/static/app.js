@@ -10877,17 +10877,17 @@ function renderAnswerSet(reviewId) {
         ` : ''}
       `;
     } else if (q.question_type === 'time_with_text') {
-      // Render time with text type - no "answer" label, just show the answer
+      // Render time with text type - no "answer" label, just show the answer with always visible edit button
       answerElement.innerHTML = `
         <div class="space-y-3">
           ${answerText ? `
-            <div class="relative group">
-              <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+            <div class="relative">
+              <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg pr-20">
                 <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
               </div>
               <button type="button" 
                       onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
-                      class="absolute top-2 right-2 px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                      class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
                 <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
               </button>
             </div>
@@ -10914,11 +10914,11 @@ function renderAnswerSet(reviewId) {
         timeInput.value = '';
       }
     } else {
-      // Default text type - show answer with edit button
+      // Default text type - show answer with edit button (always visible)
       if (answerText) {
         answerElement.innerHTML = `
-          <div class="relative group">
-            <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+          <div class="relative">
+            <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg pr-20">
               <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
               <p class="text-xs text-gray-500 mt-2">
                 <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
@@ -10926,7 +10926,7 @@ function renderAnswerSet(reviewId) {
             </div>
             <button type="button" 
                     onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
-                    class="absolute top-2 right-2 px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                    class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
               <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
             </button>
           </div>
