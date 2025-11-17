@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.7.8 - 打印权限规则优化（创建者全览）（2025-11-17）  
+**✅ 当前版本**: V6.7.9 - 修复creator_id字段错误（2025-11-17）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 
 ## 🌟 项目概述
@@ -130,23 +130,27 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://2704c802.review-system.pages.dev
+- **最新部署 ID**: https://36e8e166.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.7.8 - 打印权限规则优化（创建者全览）**
-- **Git Commit**: 8b5a1b4 (优化打印私人问题权限规则)
+- **版本**: ✅ **V6.7.9 - 修复creator_id字段错误**
+- **Git Commit**: 20052a9 (修复review.creator_id字段错误)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-17
-- **部署时间**: 最新部署 - V6.7.8（打印权限规则优化：创建者全览）
+- **部署时间**: 最新部署 - V6.7.9（修复creator_id字段错误）
 - **数据库迁移**: ✅ Migration 0036 已完全应用（所有迁移均已同步）
 - **功能状态**: ✅ 打印功能完整 + 打印权限过滤 + 打印动态格式化 + 私人答案过滤 + 必填字段验证
-- **最新更新**: ✅ **V6.7.8 - 打印权限规则优化（创建者全览）**（2025-11-17）
-  - ✅ **优化权限规则**：调整私人问题打印权限逻辑
+- **最新更新**: ✅ **V6.7.9 - 修复creator_id字段错误**（2025-11-17）
+  - ✅ **修复关键Bug**：修正 review 对象的创建者 ID 字段名错误
+    - **问题**：代码中使用了不存在的 `review.creator_id` 字段
+    - **正确**：应该使用 `review.user_id` 字段
+    - **影响范围**：修复了3处错误（查看、编辑、打印功能）
+    - **结果**：现在创建者能正确看到所有私人问题的答案，其他用户只能看到自己的答案
+  - ✅ **V6.7.8 优化**：调整私人问题权限逻辑
     - **复盘创建者**：可以看到所有用户的答案（便于管理和查看）
     - **其他用户**：只能看到自己的答案（保护隐私）
     - **公开问题**：所有用户都能看到所有答案（不变）
-    - **实现方式**：检查 `currentUserId === reviewCreatorId` 来区分权限
   - ✅ **V6.7.7 修复**：解决私人问题答案在打印中不显示的问题
     - **问题原因**：`filterAnswersByPrivacy()` 函数中的逻辑错误
     - **修复内容**：正确比较 `answer.user_id` 与 `reviewCreatorId`
