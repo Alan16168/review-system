@@ -130,17 +130,17 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://1e10c581.review-system.pages.dev
+- **最新部署 ID**: https://dd4e87a1.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ **V6.7.5 - 打印服务增强（权限过滤 + 动态格式化）**
-- **Git Commit**: 6d6f186 (打印服务owner过滤 + 动态答案格式化)
+- **Git Commit**: a2c9dd9 (更新README记录打印服务增强)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-17
-- **部署时间**: 最新部署 - V6.7.1-Hotfix（优化空答案处理）
-- **数据库迁移**: ✅ Migration 0035 已应用（添加owner和required字段）+ Migration 0036（恢复created_by字段）
-- **功能状态**: ✅ 私人答案过滤 + 必填字段验证 + 空答案自动关闭 + 完整答案集合系统 + 诊断工具
+- **部署时间**: 最新部署 - V6.7.5（打印服务增强：权限过滤 + 动态格式化）
+- **数据库迁移**: ✅ Migration 0036 已完全应用（所有迁移均已同步）
+- **功能状态**: ✅ 打印权限过滤 + 打印动态格式化 + 私人答案过滤 + 必填字段验证 + 完整答案集合系统
 - **最新更新**: ✅ **V6.7.5 - 打印服务增强（权限过滤 + 动态格式化）**（2025-11-17）
   - ✅ **打印权限过滤**：打印服务检查答案的 `owner` 属性
     - 公开问题（owner='public'）：显示所有人的答案
