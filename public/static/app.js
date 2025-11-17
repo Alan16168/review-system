@@ -8034,6 +8034,32 @@ function showAddQuestionForm() {
               <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: 10-1000 (${i18n.t('defaultValue')}: 50)</p>
             </div>
             
+            <!-- Answer Owner (V6.7.0: 答案可见性) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('answerOwner')} *
+              </label>
+              <select id="question-owner" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="public">${i18n.t('answerOwnerPublic')}</option>
+                <option value="private">${i18n.t('answerOwnerPrivate')}</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('answerOwnerHint')}</p>
+            </div>
+            
+            <!-- Answer Required (V6.7.0: 是否必填) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('answerRequired')} *
+              </label>
+              <select id="question-required" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="no">${i18n.t('answerRequiredNo')}</option>
+                <option value="yes">${i18n.t('answerRequiredYes')}</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('answerRequiredHint')}</p>
+            </div>
+            
             <!-- Time Type Fields (for time_with_text only) -->
             <div id="time-type-container" class="hidden">
               <div class="space-y-4">
@@ -8185,6 +8211,32 @@ function showEditQuestionForm(questionId) {
               <input type="number" id="question-answer-length" min="10" max="1000" value="${question.answer_length || 50}"
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: 10-1000 (${i18n.t('defaultValue')}: 50)</p>
+            </div>
+            
+            <!-- Answer Owner (V6.7.0: 答案可见性) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('answerOwner')} *
+              </label>
+              <select id="question-owner" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="public" ${(question.owner || 'public') === 'public' ? 'selected' : ''}>${i18n.t('answerOwnerPublic')}</option>
+                <option value="private" ${(question.owner || 'public') === 'private' ? 'selected' : ''}>${i18n.t('answerOwnerPrivate')}</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('answerOwnerHint')}</p>
+            </div>
+            
+            <!-- Answer Required (V6.7.0: 是否必填) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('answerRequired')} *
+              </label>
+              <select id="question-required" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="no" ${(question.required || 'no') === 'no' ? 'selected' : ''}>${i18n.t('answerRequiredNo')}</option>
+                <option value="yes" ${(question.required || 'no') === 'yes' ? 'selected' : ''}>${i18n.t('answerRequiredYes')}</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('answerRequiredHint')}</p>
             </div>
             
             <!-- Time Type Fields (for time_with_text only) -->
@@ -8449,7 +8501,10 @@ function collectQuestionFormData() {
   const type = document.getElementById('question-type').value;
   const data = {
     question_text: document.getElementById('question-text').value,
-    question_type: type
+    question_type: type,
+    // V6.7.0: Add owner and required fields
+    owner: document.getElementById('question-owner')?.value || 'public',
+    required: document.getElementById('question-required')?.value || 'no'
   };
   
   if (type === 'text') {
