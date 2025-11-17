@@ -10,8 +10,9 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.9.0 - 全面移动端响应式界面（2025-11-17）  
+**✅ 当前版本**: V6.9.1 - 修复英文版本国际化翻译（2025-11-17）  
 **📱 移动端**: ✅ 完整的手机/平板自适应设计  
+**🌍 多语言**: ✅ 完整的中英日西语支持  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 
 ## 🌟 项目概述
@@ -142,7 +143,30 @@
 - **部署时间**: 最新部署 - V6.7.9（修复creator_id字段错误）
 - **数据库迁移**: ✅ Migration 0036 已完全应用（所有迁移均已同步）
 - **功能状态**: ✅ 打印功能完整 + 打印权限过滤 + 打印动态格式化 + 私人答案过滤 + 必填字段验证
-- **最新更新**: ✅ **V6.9.0 - 全面移动端响应式界面**（2025-11-17）
+- **最新更新**: ✅ **V6.9.1 - 修复英文版本国际化翻译**（2025-11-17）
+  - ✅ **修复i18n Bug**：英文版本中用户评价区域显示日文的问题
+    - **问题位置**：`public/static/i18n.js` 英文翻译第1227-1236行
+    - **问题内容**：
+      - `userTestimonials`: 'メッセージをお寄せください' （日文）
+      - `welcomeToLeaveMessage`: 'メッセージをお寄せください' （日文）
+      - 其他8个字段也使用了日文而非英文
+    - **修复内容**：将所有日文翻译改为正确的英文
+      - `userTestimonials`: 'User Testimonials'
+      - `welcomeToLeaveMessage`: 'Welcome to Leave a Message'
+      - `leaveYourMessage`: 'Leave Your Message'
+      - `submitMessage`: 'Submit Message'
+      - `yourName`: 'Your Name'
+      - `yourRole`: 'Your Role'
+      - `yourMessage`: 'Your Message'
+      - `yourRating`: 'Your Rating'
+      - `roleExample`: 'e.g., Product Manager, Entrepreneur, Student'
+    - **结果**：英文版本现在显示正确的英文翻译
+  - **文件修改**：
+    - `public/static/i18n.js`：修复10个翻译条目
+    - `package.json`：版本号 6.9.0 → 6.9.1
+    - `README.md`：更新版本说明
+
+- **上一版本**: ✅ **V6.9.0 - 全面移动端响应式界面**（2025-11-17）
   - ✅ **移动端优化**：全面的手机和平板自适应设计
     - **汉堡菜单**：移动端导航菜单（滑入式侧边栏）
     - **触摸友好**：所有按钮和输入框最小44px高度，符合触摸操作标准
