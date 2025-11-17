@@ -10,7 +10,7 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.7.6 - 打印服务修复（答案键类型匹配）（2025-11-17）  
+**✅ 当前版本**: V6.7.7 - 打印权限过滤逻辑修复（2025-11-17）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 
 ## 🌟 项目概述
@@ -130,22 +130,26 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://28e6409f.review-system.pages.dev
+- **最新部署 ID**: https://9c0888fa.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.7.6 - 打印服务修复（答案键类型匹配）**
-- **Git Commit**: 92d32b6 (修复打印功能答案显示问题)
+- **版本**: ✅ **V6.7.7 - 打印权限过滤逻辑修复**
+- **Git Commit**: d493022 (修复打印权限过滤逻辑bug)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-17
-- **部署时间**: 最新部署 - V6.7.6（打印服务修复完成，移除调试代码）
+- **部署时间**: 最新部署 - V6.7.7（打印权限过滤逻辑修复）
 - **数据库迁移**: ✅ Migration 0036 已完全应用（所有迁移均已同步）
 - **功能状态**: ✅ 打印功能完整 + 打印权限过滤 + 打印动态格式化 + 私人答案过滤 + 必填字段验证
-- **最新更新**: ✅ **V6.7.6 - 打印服务修复（答案键类型匹配）**（2025-11-17）
-  - ✅ **修复关键 Bug**：解决打印预览中答案不显示的问题
+- **最新更新**: ✅ **V6.7.7 - 打印权限过滤逻辑修复**（2025-11-17）
+  - ✅ **修复关键 Bug**：解决私人问题答案在打印中不显示的问题
+    - **问题原因**：`filterAnswersByPrivacy()` 函数中的逻辑错误
+    - **错误代码**：`answer.user_id === currentUserId || currentUserId === reviewCreatorId`
+    - **正确代码**：`answer.user_id === currentUserId || answer.user_id === reviewCreatorId`
+    - **影响范围**：私人问题答案现在正确显示（当前用户或创建者的答案）
+  - ✅ **V6.7.6 修复**：解决打印预览中答案不显示的问题
     - **问题原因**：API 返回字符串键 `"1"`, `"2"` 但代码使用数字键查找
     - **解决方案**：使用 `String(question.question_number)` 确保键类型匹配
-    - **影响范围**：所有打印功能现在正确显示答案
   - ✅ **打印权限过滤**：打印服务检查答案的 `owner` 属性
     - 公开问题（owner='public'）：显示所有人的答案
     - 私人问题（owner='private'）：仅显示当前用户和创建者的答案
