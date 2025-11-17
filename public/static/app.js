@@ -3417,9 +3417,12 @@ async function showReviewDetail(id, readOnly = false) {
             </h2>
             
             ${questions.length > 0 ? questions.map(q => {
-              const userAnswers = answersByQuestion[q.question_number] || [];
+              const allAnswers = answersByQuestion[q.question_number] || [];
+              // V6.7.0: Filter answers based on privacy settings
+              const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.creator_id);
               const myAnswer = userAnswers.find(a => a.user_id === currentUser.id);
               const questionId = `question-${q.question_number}`;
+              const hiddenCount = allAnswers.length - userAnswers.length;
               
               return `
                 <div class="border-b border-gray-200 py-3 last:border-b-0">
@@ -3509,6 +3512,12 @@ async function showReviewDetail(id, readOnly = false) {
                         ${i18n.t('noAnswer') || '未填写'}
                       </div>
                     `}
+                    ${hiddenCount > 0 ? `
+                      <div class="text-sm text-gray-500 italic mt-2 bg-yellow-50 p-2 rounded border border-yellow-200">
+                        <i class="fas fa-lock mr-1"></i>
+                        ${i18n.t('privateAnswersHidden').replace('{count}', hiddenCount)}
+                      </div>
+                    ` : ''}
                   </div>
                 </div>
               `;
@@ -4107,7 +4116,9 @@ async function showEditReview(id) {
                   `;
                 } else if (q.question_type === 'time_with_text') {
                   // Time with text type - with auto-save time input
-                  const userAnswers = answersByQuestion[q.question_number] || [];
+                  const allAnswers = answersByQuestion[q.question_number] || [];
+                  // V6.7.0: Filter answers based on privacy settings
+                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.creator_id);
                   const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
                   
                   // Get datetime value from first answer if exists
@@ -4166,7 +4177,9 @@ async function showEditReview(id) {
                   `;
                 } else {
                   // Default text type - show only question (no question_text label)
-                  const userAnswers = answersByQuestion[q.question_number] || [];
+                  const allAnswers = answersByQuestion[q.question_number] || [];
+                  // V6.7.0: Filter answers based on privacy settings
+                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.creator_id);
                   const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
                   
                   return `
@@ -4528,6 +4541,34 @@ function showRequiredFieldsError(errors) {
   );
 }
 
+// V6.7.0: Check if current user can view this answer (for private questions)
+function canViewAnswer(question, answer, currentUserId, reviewCreatorId) {
+  // Public question: everyone can see
+  if (!question.owner || question.owner === 'public') {
+    return true;
+  }
+  
+  // Private question: only answerer and review creator can see
+  if (question.owner === 'private') {
+    return answer.user_id === currentUserId || currentUserId === reviewCreatorId;
+  }
+  
+  // Default: can view
+  return true;
+}
+
+// V6.7.0: Filter answers based on privacy settings
+function filterAnswersByPrivacy(question, answers, currentUserId, reviewCreatorId) {
+  if (!question.owner || question.owner === 'public') {
+    return answers; // Public question, show all answers
+  }
+  
+  // Private question, filter answers
+  return answers.filter(answer => 
+    answer.user_id === currentUserId || currentUserId === reviewCreatorId
+  );
+}
+
 async function handleEditReview(e) {
   e.preventDefault();
   
@@ -4603,10 +4644,17 @@ async function handleEditReview(e) {
   }
 
   // V6.7.0: Validate required questions before submission
-  const validationErrors = validateRequiredQuestions(questions, answers);
-  if (validationErrors.length > 0) {
-    showRequiredFieldsError(validationErrors);
-    return; // Stop submission
+  // Note: Only validate choice-type questions here, text-type answers are managed separately
+  // Only validate if we actually have answers to check (choice questions)
+  if (Object.keys(answers).length > 0) {
+    const choiceQuestions = questions.filter(q => 
+      q.question_type === 'single_choice' || q.question_type === 'multiple_choice'
+    );
+    const validationErrors = validateRequiredQuestions(choiceQuestions, answers);
+    if (validationErrors.length > 0) {
+      showRequiredFieldsError(validationErrors);
+      return; // Stop submission
+    }
   }
 
   try {
