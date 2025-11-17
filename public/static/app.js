@@ -1921,7 +1921,69 @@ function renderReviewsList(reviews) {
   window.currentReviews = reviews;
 
   container.innerHTML = `
-    <div class="overflow-x-auto">
+    <!-- Mobile Card View (hidden on desktop) -->
+    <div class="md:hidden space-y-4">
+      ${paginatedReviews.map(review => `
+        <div class="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+          <div class="flex justify-between items-start mb-3">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-900 mb-1">${escapeHtml(review.title)}</h3>
+              ${review.team_name ? `<p class="text-sm text-gray-500"><i class="fas fa-users mr-1"></i>${escapeHtml(review.team_name)}</p>` : ''}
+            </div>
+            <span class="px-2 py-1 text-xs rounded-full ${review.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+              ${i18n.t(review.status)}
+            </span>
+          </div>
+          
+          <div class="space-y-2 text-sm mb-4">
+            <div class="flex items-center text-gray-600">
+              <i class="fas fa-user-circle w-5 mr-2"></i>
+              <span>${escapeHtml(review.creator_name || 'Unknown')}</span>
+            </div>
+            <div class="flex items-center">
+              ${renderOwnerTypeBadge(review.owner_type)}
+            </div>
+            <div class="flex items-center text-gray-500 text-xs">
+              <i class="fas fa-clock w-5 mr-2"></i>
+              <span>${new Date(review.updated_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</span>
+            </div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="showReviewDetail(${review.id}, true)" 
+                    class="flex items-center justify-center px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 text-sm">
+              <i class="fas fa-eye mr-2"></i>${i18n.t('view')}
+            </button>
+            <button onclick="showEditReview(${review.id})" 
+                    class="flex items-center justify-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm">
+              <i class="fas fa-edit mr-2"></i>${i18n.t('edit')}
+            </button>
+            <button onclick="printReview(${review.id})" 
+                    class="flex items-center justify-center px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm">
+              <i class="fas fa-print mr-2"></i>${i18n.t('print')}
+            </button>
+            <button onclick="showInviteModal(${review.id})" 
+                    class="flex items-center justify-center px-3 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 text-sm">
+              <i class="fas fa-user-plus mr-2"></i>${i18n.t('invite')}
+            </button>
+            <button onclick="deleteReview(${review.id})" 
+                    class="col-span-2 flex items-center justify-center px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm">
+              <i class="fas fa-trash mr-2"></i>${i18n.t('delete')}
+            </button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Desktop Table View (hidden on mobile) -->
+    <div class="hidden md:block overflow-x-auto">
       <table class="min-w-full">
         <thead class="bg-gray-50">
           <tr>
