@@ -27,20 +27,34 @@ function getLanguage(c: any): string {
 // Get all active templates with their questions
 templates.get('/', async (c) => {
   try {
+    const user = c.get('user') as any;
     const lang = getLanguage(c);
     
-    // Get all active templates
+    // Get all active templates with owner filtering
     const templatesResult = await c.env.DB.prepare(`
       SELECT 
         id, 
         name,
         description,
-        is_default, 
+        is_default,
+        owner,
+        created_by,
         created_at
       FROM templates
       WHERE is_active = 1
+        AND (
+          owner = 'public'
+          OR created_by = ?
+          OR ? = 'admin'
+          OR (owner = 'team' AND EXISTS (
+            SELECT 1 FROM team_members tm
+            WHERE tm.user_id = ? AND tm.team_id IN (
+              SELECT team_id FROM team_members WHERE user_id = created_by
+            )
+          ))
+        )
       ORDER BY is_default DESC, created_at DESC
-    `).all();
+    `).bind(user.userId || user.id, user.role, user.userId || user.id).all();
 
     const templateList = templatesResult.results || [];
 
@@ -79,20 +93,35 @@ templates.get('/', async (c) => {
 // Get a specific template with its questions
 templates.get('/:id', async (c) => {
   try {
+    const user = c.get('user') as any;
     const templateId = c.req.param('id');
     const lang = getLanguage(c);
 
-    // Get template
+    // Get template with owner filtering
     const template = await c.env.DB.prepare(`
       SELECT 
         id, 
         name,
         description,
-        is_default, 
+        is_default,
+        owner,
+        created_by,
         created_at
       FROM templates
-      WHERE id = ? AND is_active = 1
-    `).bind(templateId).first();
+      WHERE id = ? 
+        AND is_active = 1
+        AND (
+          owner = 'public'
+          OR created_by = ?
+          OR ? = 'admin'
+          OR (owner = 'team' AND EXISTS (
+            SELECT 1 FROM team_members tm
+            WHERE tm.user_id = ? AND tm.team_id IN (
+              SELECT team_id FROM team_members WHERE user_id = created_by
+            )
+          ))
+        )
+    `).bind(templateId, user.userId || user.id, user.role, user.userId || user.id).first();
 
     if (!template) {
       return c.json({ error: 'Template not found' }, 404);
@@ -141,6 +170,7 @@ templates.get('/admin/all', premiumOrAdmin, async (c) => {
         t.description,
         t.is_default,
         t.is_active,
+        t.owner,
         t.created_at,
         t.updated_at,
         t.created_by,
@@ -200,6 +230,7 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
         description,
         is_default,
         is_active,
+        owner,
         created_at,
         updated_at
       FROM templates
@@ -249,10 +280,15 @@ templates.post('/', premiumOrAdmin, async (c) => {
       return c.json({ error: 'User not authenticated' }, 401);
     }
     
-    const { name, description, is_default } = await c.req.json();
+    const { name, description, is_default, owner } = await c.req.json();
 
     if (!name) {
       return c.json({ error: 'Template name is required' }, 400);
+    }
+
+    // Validate owner value
+    if (owner && !['private', 'team', 'public'].includes(owner)) {
+      return c.json({ error: 'Invalid owner value' }, 400);
     }
 
     // Only admin users can set templates as default
@@ -268,12 +304,13 @@ templates.post('/', premiumOrAdmin, async (c) => {
 
     // Insert new template with creator
     const result = await c.env.DB.prepare(`
-      INSERT INTO templates (name, description, is_default, is_active, created_by)
-      VALUES (?, ?, ?, 1, ?)
+      INSERT INTO templates (name, description, is_default, is_active, owner, created_by)
+      VALUES (?, ?, ?, 1, ?, ?)
     `).bind(
       name,
       description || null,
       actualIsDefault ? 1 : 0,
+      owner || 'public',
       user.id
     ).run();
 
@@ -292,7 +329,12 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
   try {
     const user = c.get('user') as any;
     const templateId = c.req.param('id');
-    const { name, description, is_default, is_active } = await c.req.json();
+    const { name, description, is_default, is_active, owner } = await c.req.json();
+
+    // Validate owner value
+    if (owner && !['private', 'team', 'public'].includes(owner)) {
+      return c.json({ error: 'Invalid owner value' }, 400);
+    }
 
     // Check if template exists and get creator
     const existing = await c.env.DB.prepare(`
@@ -327,6 +369,7 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
           description = ?,
           is_default = ?,
           is_active = ?,
+          owner = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
@@ -334,6 +377,7 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
       description || null,
       actualIsDefault ? 1 : 0,
       is_active ? 1 : 0,
+      owner || 'public',
       templateId
     ).run();
 

@@ -7956,6 +7956,9 @@ function renderTemplatesTable(templates) {
               ${i18n.t('questionCount')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('templateOwner')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ${i18n.t('isDefault')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -7990,6 +7993,15 @@ function renderTemplatesTable(templates) {
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="text-sm text-gray-900">${template.question_count}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  template.owner === 'private' ? 'bg-red-100 text-red-800' : 
+                  template.owner === 'team' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-green-100 text-green-800'
+                }">
+                  ${template.owner ? i18n.t('templateOwner' + template.owner.charAt(0).toUpperCase() + template.owner.slice(1)) : i18n.t('templateOwnerPublic')}
+                </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 ${template.is_default ? 
@@ -8069,6 +8081,24 @@ function showCreateTemplateModal() {
               <textarea id="template-description" rows="3"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('templateOwner')}
+              </label>
+              <select id="template-owner" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="public">
+                  ${i18n.t('templateOwnerPublic')} - ${i18n.t('templateOwnerHint').split('；')[2]}
+                </option>
+                <option value="team">
+                  ${i18n.t('templateOwnerTeam')} - ${i18n.t('templateOwnerHint').split('；')[1]}
+                </option>
+                <option value="private">
+                  ${i18n.t('templateOwnerPrivate')} - ${i18n.t('templateOwnerHint').split('；')[0]}
+                </option>
+              </select>
+              <p class="mt-1 text-xs text-gray-500">${i18n.t('templateOwnerDescription')}</p>
+            </div>
             ${currentUser.role === 'admin' ? `
               <div class="flex items-center">
                 <input type="checkbox" id="template-is-default"
@@ -8103,7 +8133,8 @@ async function handleCreateTemplate(e) {
   const data = {
     name: document.getElementById('template-name').value,
     description: document.getElementById('template-description').value || null,
-    is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false
+    is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false,
+    owner: document.getElementById('template-owner').value
   };
 
   try {
@@ -8197,7 +8228,8 @@ async function handleUpdateTemplate(e, templateId) {
     name: document.getElementById('template-name').value,
     description: document.getElementById('template-description').value || null,
     is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false,
-    is_active: document.getElementById('template-is-active').checked
+    is_active: document.getElementById('template-is-active').checked,
+    owner: document.getElementById('template-owner').value
   };
 
   try {
@@ -11567,6 +11599,38 @@ async function updateTimeValueInSet(reviewId, questionNumber) {
     
     let sets = window.currentAnswerSets || [];
     let index = window.currentSetIndex || 0;
+    
+    // If no answer sets exist, create one first
+    if (sets.length === 0) {
+      await createFirstAnswerSetIfNeeded(reviewId);
+      sets = window.currentAnswerSets || [];
+      index = window.currentSetIndex || 0;
+    }
+    
+    // Check again after creation attempt
+    if (sets.length === 0) {
+      showNotification('Failed to create answer set', 'error');
+      return;
+    }
+    
+    const currentSet = sets[index];
+    const setNumber = currentSet.set_number;
+    const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
+    
+    // Call API to update the datetime_value in current set
+    const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
+      answers: {
+        [questionNumber]: {
+          answer: currentAnswer?.answer || '',
+          datetime_value: datetimeValue
+        }
+      }
+    });
+    
+    if (response.data) {
+      showNotification(i18n.t('timeSaved') || '时间已自动保存', 'success');
+      
+      // Reload answer sets to refresh display, keep current iindex = window.currentSetIndex || 0;
     
     // If no answer sets exist, create one first
     if (sets.length === 0) {
