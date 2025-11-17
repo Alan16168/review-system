@@ -130,7 +130,7 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://581ae152.review-system.pages.dev
+- **最新部署 ID**: https://28e6409f.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ **V6.7.6 - 打印服务修复（答案键类型匹配）**
