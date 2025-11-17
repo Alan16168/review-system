@@ -130,7 +130,7 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://bf535b55.review-system.pages.dev
+- **最新部署 ID**: https://581ae152.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ **V6.7.6 - 打印服务修复（答案键类型匹配）**
@@ -138,7 +138,7 @@
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-17
-- **部署时间**: 最新部署 - V6.7.6（打印服务修复：答案键类型匹配）
+- **部署时间**: 最新部署 - V6.7.6（打印服务修复完成，移除调试代码）
 - **数据库迁移**: ✅ Migration 0036 已完全应用（所有迁移均已同步）
 - **功能状态**: ✅ 打印功能完整 + 打印权限过滤 + 打印动态格式化 + 私人答案过滤 + 必填字段验证
 - **最新更新**: ✅ **V6.7.6 - 打印服务修复（答案键类型匹配）**（2025-11-17）
