@@ -11533,6 +11533,7 @@ async function createNewAnswerSet(reviewId) {
                 <div class="border-b pb-4">
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     ${q.question_number}. ${escapeHtml(q.question_text)}
+                    ${q.required === 'yes' ? '<span class="text-red-500 ml-1">*</span>' : ''}
                   </label>
                   ${q.question_type === 'single_choice' && q.options ? `
                     <div class="space-y-2">
@@ -11705,6 +11706,7 @@ async function submitNewAnswerSet(reviewId) {
     const questions = window.currentEditQuestions || [];
     const answers = {};
     
+    // V6.7.0: Collect all answers first
     questions.forEach(q => {
       if (q.question_type === 'text') {
         const textarea = document.getElementById(`modal-answer-${q.question_number}`);
@@ -11735,6 +11737,26 @@ async function submitNewAnswerSet(reviewId) {
         };
       }
     });
+    
+    // V6.7.0: Validate required fields before submission
+    const requiredErrors = [];
+    questions.forEach(q => {
+      if (q.required === 'yes') {
+        const answer = answers[q.question_number];
+        const answerText = answer ? answer.answer : '';
+        
+        if (!answerText || answerText.trim() === '') {
+          requiredErrors.push(`${i18n.t('question') || '问题'} ${q.question_number}: ${q.question_text}`);
+        }
+      }
+    });
+    
+    // If there are required field errors, show them and stop submission
+    if (requiredErrors.length > 0) {
+      const errorMessage = `${i18n.t('requiredFieldsNotFilled') || '以下必填项未填写'}:\n\n${requiredErrors.join('\n')}`;
+      alert(errorMessage);
+      return;
+    }
     
     // Create new answer set
     const response = await axios.post(`/api/answer-sets/${reviewId}`, { answers });
