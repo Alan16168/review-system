@@ -11630,38 +11630,6 @@ async function updateTimeValueInSet(reviewId, questionNumber) {
     if (response.data) {
       showNotification(i18n.t('timeSaved') || '时间已自动保存', 'success');
       
-      // Reload answer sets to refresh display, keep current iindex = window.currentSetIndex || 0;
-    
-    // If no answer sets exist, create one first
-    if (sets.length === 0) {
-      await createFirstAnswerSetIfNeeded(reviewId);
-      sets = window.currentAnswerSets || [];
-      index = window.currentSetIndex || 0;
-    }
-    
-    // Check again after creation attempt
-    if (sets.length === 0) {
-      showNotification('Failed to create answer set', 'error');
-      return;
-    }
-    
-    const currentSet = sets[index];
-    const setNumber = currentSet.set_number;
-    const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
-    
-    // Call API to update the datetime_value in current set
-    const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
-      answers: {
-        [questionNumber]: {
-          answer: currentAnswer?.answer || '',
-          datetime_value: datetimeValue
-        }
-      }
-    });
-    
-    if (response.data) {
-      showNotification(i18n.t('timeSaved') || '时间已自动保存', 'success');
-      
       // Reload answer sets to refresh display, keep current index
       await loadAnswerSets(reviewId, true);
       renderAnswerSet(reviewId);
