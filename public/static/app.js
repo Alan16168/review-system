@@ -4412,7 +4412,9 @@ async function addNewAnswer(reviewId, questionNumber) {
     const answer = textarea ? textarea.value.trim() : '';
     
     if (!answer) {
-      showNotification(i18n.t('answerCannotBeEmpty') || '答案不能为空', 'error');
+      // If answer is empty, just cancel the input instead of showing error
+      console.log(`[addNewAnswer] Q${questionNumber}: Answer is empty, canceling input`);
+      cancelNewAnswer(questionNumber);
       return;
     }
     
@@ -11053,7 +11055,13 @@ async function saveInlineAnswer(reviewId, questionNumber) {
   const answer = textarea ? textarea.value.trim() : '';
   
   if (!answer) {
-    showNotification(i18n.t('answerCannotBeEmpty') || '答案不能为空', 'error');
+    // If answer is empty, just close the input instead of showing error
+    console.log(`[saveInlineAnswer] Q${questionNumber}: Answer is empty, closing input`);
+    // Hide the inline answer input
+    const container = document.getElementById(`inline-answer-container-${questionNumber}`);
+    if (container) {
+      container.style.display = 'none';
+    }
     return;
   }
   
