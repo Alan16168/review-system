@@ -3019,6 +3019,10 @@ async function printReview(reviewId) {
     const questions = response.data.questions || [];
     const answersByQuestion = response.data.answersByQuestion || {};
     
+    // V6.7.0: Get current user for privacy filtering
+    const currentUser = window.currentUser || { id: null };
+    const reviewCreatorId = review.user_id;
+    
     // Create printable content
     let printContent = `
       <!DOCTYPE html>
@@ -3087,6 +3091,7 @@ async function printReview(reviewId) {
             border-left: 4px solid #4F46E5;
             margin-bottom: 20px;
             border-radius: 4px;
+            page-break-inside: avoid;
           }
           .question-title {
             font-weight: bold;
@@ -3101,6 +3106,8 @@ async function printReview(reviewId) {
             border-radius: 4px;
             margin-top: 10px;
             white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
           }
           .answer-header {
             font-size: 0.9em;
@@ -3173,9 +3180,12 @@ async function printReview(reviewId) {
           <div class="question-title">${index + 1}. ${question.question_text}</div>
       `;
       
-      const answers = answersByQuestion[question.question_number] || [];
-      if (answers.length > 0) {
-        answers.forEach(answer => {
+      // V6.7.0: Apply privacy filtering based on owner attribute
+      const allAnswers = answersByQuestion[question.question_number] || [];
+      const filteredAnswers = filterAnswersByPrivacy(question, allAnswers, currentUser.id, reviewCreatorId);
+      
+      if (filteredAnswers.length > 0) {
+        filteredAnswers.forEach(answer => {
           printContent += `
             <div class="answer">
               ${answer.username ? `<div class="answer-header"><strong>${answer.username}</strong> - ${new Date(answer.updated_at).toLocaleString()}</div>` : ''}
