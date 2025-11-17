@@ -3181,7 +3181,9 @@ async function printReview(reviewId) {
       `;
       
       // V6.7.0: Apply privacy filtering based on owner attribute
-      const allAnswers = answersByQuestion[question.question_number] || [];
+      // V6.7.5: Fix data type mismatch - API returns string keys, ensure we use string
+      const questionKey = String(question.question_number);
+      const allAnswers = answersByQuestion[questionKey] || [];
       const filteredAnswers = filterAnswersByPrivacy(question, allAnswers, currentUser.id, reviewCreatorId);
       
       if (filteredAnswers.length > 0) {
