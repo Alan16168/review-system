@@ -4208,12 +4208,6 @@ async function showEditReview(id) {
                       class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors mb-4">
                 <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
               </button>
-              
-              <div class="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
-                <i class="fas fa-info-circle mr-1"></i>
-                <strong>${i18n.t('howToUse') || '使用方法'}:</strong> 
-                ${i18n.t('answerSetsInstructions') || '1. 点击"创建新答案组"会为所有问题创建一组新答案 2. 使用箭头按钮在不同答案组之间切换查看 3. 每个问题的答案数量将保持一致'}
-              </div>
             </div>
 
             <!-- Dynamic Questions -->
