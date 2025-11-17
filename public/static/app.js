@@ -2777,6 +2777,46 @@ async function handleStep2Submit(e) {
   const template = window.currentSelectedTemplate;
   const reviewData = window.createReviewData;
   
+  // V6.7.0: Validate required fields before submission
+  const requiredErrors = [];
+  if (template && template.questions) {
+    template.questions.forEach(q => {
+      // Check if this question is required
+      if (q.required === 'yes') {
+        let hasAnswer = false;
+        
+        if (q.question_type === 'single_choice') {
+          const selected = document.querySelector(`input[name="question${q.question_number}"]:checked`);
+          hasAnswer = !!selected;
+        } else if (q.question_type === 'multiple_choice') {
+          const checked = document.querySelectorAll(`input[name="question${q.question_number}"]:checked`);
+          hasAnswer = checked.length > 0;
+        } else {
+          // Text type
+          const answerInputs = document.querySelectorAll(`textarea[data-question="${q.question_number}"]`);
+          for (const input of answerInputs) {
+            if (input.value.trim()) {
+              hasAnswer = true;
+              break;
+            }
+          }
+        }
+        
+        if (!hasAnswer) {
+          requiredErrors.push(`${i18n.t('question') || '问题'} ${q.question_number}: ${q.question_text}`);
+        }
+      }
+    });
+  }
+  
+  // If there are required field errors, show them and stop submission
+  if (requiredErrors.length > 0) {
+    window.isSubmitting = false;
+    const errorMessage = `${i18n.t('requiredFieldsNotFilled') || '以下必填项未填写'}:\n\n${requiredErrors.join('\n')}`;
+    alert(errorMessage);
+    return;
+  }
+  
   // Collect answers dynamically
   const answers = {};
   if (template && template.questions) {
@@ -8649,12 +8689,21 @@ function renderCorrectAnswerOptions() {
 // Collect form data
 function collectQuestionFormData() {
   const type = document.getElementById('question-type').value;
+  
+  // Collect owner and required values
+  const ownerElement = document.getElementById('question-owner');
+  const requiredElement = document.getElementById('question-required');
+  
+  // Use actual value or default (handle empty string properly)
+  const owner = ownerElement ? (ownerElement.value || 'public') : 'public';
+  const required = requiredElement ? (requiredElement.value || 'no') : 'no';
+  
   const data = {
     question_text: document.getElementById('question-text').value,
     question_type: type,
     // V6.7.0: Add owner and required fields
-    owner: document.getElementById('question-owner')?.value || 'public',
-    required: document.getElementById('question-required')?.value || 'no'
+    owner: owner,
+    required: required
   };
   
   if (type === 'text') {
@@ -11146,6 +11195,16 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
   
   console.log('[updateAnswerInSet] 开始保存流程...');
   
+  // V6.7.0: Check if this is a required question and value is empty
+  const questions = window.currentEditQuestions || [];
+  const question = questions.find(q => q.question_number === questionNumber);
+  
+  if (!value && question && question.required === 'yes') {
+    console.log(`[updateAnswerInSet] Q${questionNumber}: Required question, cannot save empty value`);
+    showNotification(i18n.t('thisQuestionRequired') || '此问题必须回答', 'error');
+    return;
+  }
+  
   try {
     let sets = window.currentAnswerSets || [];
     let index = window.currentSetIndex || 0;
@@ -11172,12 +11231,13 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     
     console.log('[updateAnswerInSet] 当前答案组:', currentSet);
     console.log('[updateAnswerInSet] 组编号:', setNumber);
-    console.log('[updateAnswerInSet] 准备调用 API...');
+    console.log('[updateAnswerInSet] 准备调用 API，值为:', value, '(类型:', typeof value, ')');
     
+    // V6.7.0: Allow empty string to be saved (user wants to clear the answer)
     // Call API to update the answer in current set
     const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
       answers: {
-        [questionNumber]: value
+        [questionNumber]: value || ''  // Explicitly send empty string if value is falsy
       }
     });
     
@@ -11221,6 +11281,16 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     
     console.log('[updateMultipleChoiceInSet] 选中的值:', values);
     console.log('[updateMultipleChoiceInSet] 答案字符串:', answer);
+    
+    // V6.7.0: Check if this is a required question and answer is empty
+    const questions = window.currentEditQuestions || [];
+    const question = questions.find(q => q.question_number === questionNumber);
+    
+    if (!answer && question && question.required === 'yes') {
+      console.log(`[updateMultipleChoiceInSet] Q${questionNumber}: Required question, cannot save empty value`);
+      showNotification(i18n.t('thisQuestionRequired') || '此问题必须回答', 'error');
+      return;
+    }
     
     let sets = window.currentAnswerSets || [];
     let index = window.currentSetIndex || 0;
