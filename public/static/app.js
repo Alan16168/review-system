@@ -232,30 +232,30 @@ async function showHomePage() {
       ${renderNavigation()}
 
       <!-- Hero Section with Carousel -->
-      <section class="bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-20">
+      <section class="bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 md:py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
             <!-- Left: Text Content -->
-            <div>
-              <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+            <div class="text-center md:text-left">
+              <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 md:mb-6">
                 ${i18n.t('heroTitle')}
               </h1>
-              <p class="text-xl text-gray-600 mb-8">
+              <p class="text-base sm:text-lg md:text-xl text-gray-600 mb-6 md:mb-8">
                 ${i18n.t('heroSubtitle')}
               </p>
-              <div class="flex space-x-4">
+              <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start">
                 ${!currentUser ? `
                   <button onclick="showRegister()" 
-                          class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-lg">
+                          class="bg-indigo-600 text-white px-6 sm:px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-base sm:text-lg w-full sm:w-auto">
                     <i class="fas fa-rocket mr-2"></i>${i18n.t('getStarted')}
                   </button>
                   <button onclick="showLogin()" 
-                          class="bg-white text-indigo-600 px-8 py-3 rounded-lg border-2 border-indigo-600 hover:bg-indigo-50 transition text-lg">
+                          class="bg-white text-indigo-600 px-6 sm:px-8 py-3 rounded-lg border-2 border-indigo-600 hover:bg-indigo-50 transition text-base sm:text-lg w-full sm:w-auto">
                     ${i18n.t('login')}
                   </button>
                 ` : `
                   <button onclick="showDashboard()" 
-                          class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-lg">
+                          class="bg-indigo-600 text-white px-6 sm:px-8 py-3 rounded-lg hover:bg-indigo-700 transition text-base sm:text-lg w-full sm:w-auto">
                     <i class="fas fa-tachometer-alt mr-2"></i>${i18n.t('goToDashboard')}
                   </button>
                 `}
@@ -263,8 +263,8 @@ async function showHomePage() {
             </div>
             
             <!-- Right: Image Carousel -->
-            <div class="relative">
-              <div id="carousel" class="relative h-96 bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="relative mt-8 md:mt-0">
+              <div id="carousel" class="relative h-64 sm:h-80 md:h-96 bg-white rounded-2xl shadow-2xl overflow-hidden">
                 <!-- Carousel slides -->
                 <div class="carousel-slide active">
                   <img src="https://cdn1.genspark.ai/user-upload-image/5_generated/0d286e2a-265b-45ff-8e44-52c7805f8bcf.jpeg" 
@@ -5076,8 +5076,16 @@ function renderNavigation() {
         <div class="flex justify-between items-center h-16">
           <div class="flex items-center cursor-pointer" onclick="showHomePage()">
             <i class="fas fa-brain text-indigo-600 text-2xl mr-2"></i>
-            <span class="text-xl font-bold text-gray-800">${i18n.t('systemTitle')}</span>
+            <span class="text-xl font-bold text-gray-800 hidden sm:inline">${i18n.t('systemTitle')}</span>
+            <span class="text-lg font-bold text-gray-800 sm:hidden">Review System</span>
           </div>
+          
+          <!-- Mobile Menu Toggle Button -->
+          <button onclick="toggleMobileMenu()" class="md:hidden text-gray-700 hover:text-indigo-600 p-2">
+            <i class="fas fa-bars text-2xl"></i>
+          </button>
+          
+          <!-- Desktop Navigation -->
           <div class="hidden md:flex space-x-8">
             ${currentUser ? `
               <button onclick="showDashboard()" class="text-gray-700 hover:text-indigo-600 transition">
@@ -5159,6 +5167,124 @@ function renderNavigation() {
                 <i class="fas fa-sign-in-alt mr-2"></i>${i18n.t('login')}
               </button>
             `}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Mobile Menu Overlay -->
+      <div id="mobile-menu" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onclick="closeMobileMenu()">
+        <div class="fixed right-0 top-0 bottom-0 w-80 max-w-[80%] bg-white shadow-xl transform transition-transform duration-300" onclick="event.stopPropagation()">
+          <!-- Mobile Menu Header -->
+          <div class="flex justify-between items-center p-4 border-b">
+            <span class="text-lg font-bold text-gray-800">${i18n.t('systemTitle')}</span>
+            <button onclick="closeMobileMenu()" class="text-gray-600 hover:text-gray-900 p-2">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- Mobile Menu Items -->
+          <div class="overflow-y-auto h-[calc(100vh-64px)]">
+            ${currentUser ? `
+              <!-- Logged In User Menu -->
+              <div class="p-4 border-b bg-indigo-50">
+                <div class="flex items-center mb-2">
+                  <i class="fas fa-user-circle text-2xl text-indigo-600 mr-3"></i>
+                  <div>
+                    <div class="font-medium text-gray-900">${escapeHtml(currentUser.username)}</div>
+                    <div class="text-xs text-indigo-600 font-medium">${currentUser.role}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="py-2">
+                <button onclick="showDashboard(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
+                  <i class="fas fa-home w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('dashboard')}</span>
+                </button>
+                <button onclick="showReviews(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
+                  <i class="fas fa-clipboard-list w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('myReviews')}</span>
+                </button>
+                <button onclick="showPublicReviews(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
+                  <i class="fas fa-globe w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('publicReviews')}</span>
+                </button>
+                <button onclick="showTeams(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
+                  <i class="fas fa-users w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('teams')}</span>
+                </button>
+                ${currentUser.role === 'premium' || currentUser.role === 'admin' ? `
+                  <button onclick="showAdmin(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
+                    <i class="fas fa-cog w-6 text-indigo-600"></i>
+                    <span class="ml-3">${i18n.t('admin')}</span>
+                  </button>
+                ` : ''}
+                <button onclick="showCart(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
+                  <i class="fas fa-shopping-cart w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('cart')}</span>
+                  <span id="mobile-cart-count" class="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+                </button>
+                <button onclick="showUserSettings(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
+                  <i class="fas fa-cog w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('userSettings')}</span>
+                </button>
+              </div>
+              
+              <div class="border-t py-2">
+                <button onclick="logout(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-red-50 flex items-center text-red-600">
+                  <i class="fas fa-sign-out-alt w-6"></i>
+                  <span class="ml-3">${i18n.t('logout')}</span>
+                </button>
+              </div>
+            ` : `
+              <!-- Guest User Menu -->
+              <div class="py-2">
+                <a href="#resources" onclick="closeMobileMenu()" class="block px-6 py-3 hover:bg-gray-100 text-gray-700">
+                  <i class="fas fa-book w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('resources')}</span>
+                </a>
+                <a href="#about" onclick="closeMobileMenu()" class="block px-6 py-3 hover:bg-gray-100 text-gray-700">
+                  <i class="fas fa-info-circle w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('aboutUs')}</span>
+                </a>
+                <a href="#testimonials" onclick="closeMobileMenu()" class="block px-6 py-3 hover:bg-gray-100 text-gray-700">
+                  <i class="fas fa-comments w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('testimonials')}</span>
+                </a>
+                <a href="#contact" onclick="closeMobileMenu()" class="block px-6 py-3 hover:bg-gray-100 text-gray-700">
+                  <i class="fas fa-envelope w-6 text-indigo-600"></i>
+                  <span class="ml-3">${i18n.t('contact')}</span>
+                </a>
+              </div>
+              
+              <div class="border-t py-4 px-6">
+                <button onclick="showLogin(); closeMobileMenu();" class="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition mb-3">
+                  <i class="fas fa-sign-in-alt mr-2"></i>${i18n.t('login')}
+                </button>
+                <button onclick="showRegister(); closeMobileMenu();" class="w-full bg-white text-indigo-600 px-4 py-3 rounded-lg border-2 border-indigo-600 hover:bg-indigo-50 transition">
+                  <i class="fas fa-user-plus mr-2"></i>${i18n.t('register')}
+                </button>
+              </div>
+            `}
+            
+            <!-- Language Switcher in Mobile Menu -->
+            <div class="border-t py-3 px-6">
+              <div class="text-sm font-medium text-gray-600 mb-2">${i18n.t('language')}</div>
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="handleLanguageSwitch('zh'); closeMobileMenu();" class="px-3 py-2 rounded-lg text-sm ${i18n.getCurrentLanguage() === 'zh' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}">
+                  <span class="mr-1">🇨🇳</span>中文
+                </button>
+                <button onclick="handleLanguageSwitch('en'); closeMobileMenu();" class="px-3 py-2 rounded-lg text-sm ${i18n.getCurrentLanguage() === 'en' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}">
+                  <span class="mr-1">🇬🇧</span>English
+                </button>
+                <button onclick="handleLanguageSwitch('ja'); closeMobileMenu();" class="px-3 py-2 rounded-lg text-sm ${i18n.getCurrentLanguage() === 'ja' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}">
+                  <span class="mr-1">🇯🇵</span>日本語
+                </button>
+                <button onclick="handleLanguageSwitch('es'); closeMobileMenu();" class="px-3 py-2 rounded-lg text-sm ${i18n.getCurrentLanguage() === 'es' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}">
+                  <span class="mr-1">🇪🇸</span>Español
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -11868,5 +11994,79 @@ async function submitNewAnswerSet(reviewId) {
   } catch (error) {
     console.error('Failed to create answer set:', error);
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// ============================================
+// Mobile Menu Control Functions
+// ============================================
+
+function toggleMobileMenu() {
+  const mobileMenu = document.getElementById('mobile-menu');
+  if (mobileMenu) {
+    if (mobileMenu.classList.contains('hidden')) {
+      openMobileMenu();
+    } else {
+      closeMobileMenu();
+    }
+  }
+}
+
+function openMobileMenu() {
+  const mobileMenu = document.getElementById('mobile-menu');
+  if (mobileMenu) {
+    mobileMenu.classList.remove('hidden');
+    // Prevent body scroll when menu is open
+    document.body.style.overflow = 'hidden';
+    
+    // Animate menu slide in
+    setTimeout(() => {
+      const menuContent = mobileMenu.querySelector('div > div');
+      if (menuContent) {
+        menuContent.style.transform = 'translateX(0)';
+      }
+    }, 10);
+  }
+}
+
+function closeMobileMenu() {
+  const mobileMenu = document.getElementById('mobile-menu');
+  if (mobileMenu) {
+    const menuContent = mobileMenu.querySelector('div > div');
+    if (menuContent) {
+      menuContent.style.transform = 'translateX(100%)';
+    }
+    
+    // Wait for animation to complete before hiding
+    setTimeout(() => {
+      mobileMenu.classList.add('hidden');
+      // Restore body scroll
+      document.body.style.overflow = '';
+    }, 300);
+  }
+}
+
+// Update cart count in mobile menu
+function updateMobileCartCount() {
+  const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  const mobileCartCount = document.getElementById('mobile-cart-count');
+  const desktopCartCount = document.getElementById('cart-count');
+  
+  if (cart.length > 0) {
+    if (mobileCartCount) {
+      mobileCartCount.textContent = cart.length;
+      mobileCartCount.classList.remove('hidden');
+    }
+    if (desktopCartCount) {
+      desktopCartCount.textContent = cart.length;
+      desktopCartCount.classList.remove('hidden');
+    }
+  } else {
+    if (mobileCartCount) {
+      mobileCartCount.classList.add('hidden');
+    }
+    if (desktopCartCount) {
+      desktopCartCount.classList.add('hidden');
+    }
   }
 }

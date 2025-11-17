@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone 14 Pro Max - Review System Preview</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .device-container {
+            position: relative;
+            background: #1a1a1a;
+            border-radius: 55px;
+            padding: 14px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            width: 430px;
+            height: 932px;
+        }
+
+        .device-notch {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #1a1a1a;
+            border-radius: 0 0 20px 20px;
+            z-index: 10;
+        }
+
+        .device-screen {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 45px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        iframe {
+            width: 430px;
+            height: 932px;
+            border: none;
+            display: block;
+        }
+
+        .info {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-width: 300px;
+        }
+
+        .info h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .info p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .info .highlight {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            border-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        }
+
+        .instructions p {
+            margin: 0;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .instructions .key {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin: 0 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h3>📱 iPhone 14 Pro Max</h3>
+        <p><span class="highlight">分辨率:</span> 430 x 932 px</p>
+        <p><span class="highlight">设备:</span> 真实系统预览</p>
+        <p><span class="highlight">版本:</span> V6.9.1</p>
+        <p><span class="highlight">网址:</span> review-system.pages.dev</p>
+    </div>
+
+    <div class="device-container">
+        <div class="device-notch"></div>
+        <div class="device-screen">
+            <iframe src="https://review-system.pages.dev" title="Review System"></iframe>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <p>💡 截图提示: 按 <span class="key">Cmd/Ctrl</span> + <span class="key">Shift</span> + <span class="key">4</span> (Mac) 或 <span class="key">Win</span> + <span class="key">Shift</span> + <span class="key">S</span> (Windows) 截图</p>
+    </div>
+</body>
+</html>
