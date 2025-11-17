@@ -130,7 +130,7 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://e595f55b.review-system.pages.dev
+- **最新部署 ID**: https://bb93b57d.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ **V6.7.0 - 增加问题的答案可见性和必填属性 + 诊断工具**
@@ -138,7 +138,7 @@
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-16
-- **部署时间**: 最新部署 - V6.7.0-Diagnostic-Tool（新增诊断页面）
+- **部署时间**: 最新部署 - V6.7.0-Complete（数据库修复 + 前端UI完成）
 - **数据库迁移**: ✅ Migration 0035 已应用（添加owner和required字段）+ Migration 0036（恢复created_by字段）
 - **功能状态**: ✅ 模板系统简化 + created_by字段修复 + 完整答案集合系统 + 诊断工具
 - **最新更新**: ✅ **V6.7.0 - 增加问题的答案可见性和必填属性 + 诊断工具**（2025-11-16）
