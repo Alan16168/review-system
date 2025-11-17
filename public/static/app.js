@@ -4481,6 +4481,53 @@ async function deleteExistingAnswer(reviewId, answerId, questionNumber) {
   }
 }
 
+// V6.7.0: Validate required questions before submission
+function validateRequiredQuestions(questions, answers) {
+  const errors = [];
+  
+  questions.forEach(q => {
+    if (q.required === 'yes') {
+      const answer = answers[q.question_number];
+      
+      // Check if answer is empty based on question type
+      let isEmpty = false;
+      
+      if (!answer) {
+        isEmpty = true;
+      } else if (q.question_type === 'text' || q.question_type === 'time_with_text') {
+        // Text type: check answer field
+        isEmpty = !answer.answer || answer.answer.trim() === '';
+      } else if (q.question_type === 'single_choice' || q.question_type === 'multiple_choice') {
+        // Choice type: check answer field (could be string or in answer object)
+        const answerValue = typeof answer === 'string' ? answer : answer.answer;
+        isEmpty = !answerValue || answerValue.trim() === '';
+      }
+      
+      if (isEmpty) {
+        errors.push({
+          questionNumber: q.question_number,
+          questionText: q.question_text
+        });
+      }
+    }
+  });
+  
+  return errors;
+}
+
+// V6.7.0: Show required fields error notification
+function showRequiredFieldsError(errors) {
+  const errorMessages = errors.map(err => 
+    `<strong>Q${err.questionNumber}:</strong> ${escapeHtml(err.questionText)}`
+  ).join('<br>');
+  
+  showNotification(
+    `<div class="text-left">${i18n.t('requiredFieldsEmpty')}:<br><br>${errorMessages}</div>`,
+    'error',
+    8000 // Show for 8 seconds
+  );
+}
+
 async function handleEditReview(e) {
   e.preventDefault();
   
@@ -4553,6 +4600,13 @@ async function handleEditReview(e) {
     data = {
       answers
     };
+  }
+
+  // V6.7.0: Validate required questions before submission
+  const validationErrors = validateRequiredQuestions(questions, answers);
+  if (validationErrors.length > 0) {
+    showRequiredFieldsError(validationErrors);
+    return; // Stop submission
   }
 
   try {
@@ -11434,6 +11488,13 @@ async function createFirstAnswerSetIfNeeded(reviewId) {
         };
       }
     });
+    
+    // V6.7.0: Validate required questions before submission
+    const validationErrors = validateRequiredQuestions(questions, answers);
+    if (validationErrors.length > 0) {
+      showRequiredFieldsError(validationErrors);
+      return; // Stop submission
+    }
     
     // Create new answer set via API
     const response = await axios.post(`/api/answer-sets/${reviewId}`, { answers });
