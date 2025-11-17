@@ -2186,10 +2186,10 @@ const translations = {
     'creator': '作成者',
     'system': 'System',
     'systemTemplate': 'System Template',
-    'userTemplate': 'User Template',
-    'type': 'Type',
-    'updateArticles': 'Update Articles',
-    'updateVideos': 'Update Videos',
+    'userTemplate': 'ユーザーテンプレート',
+    'type': 'タイプ',
+    'updateArticles': '記事を更新',
+    'updateVideos': '動画を更新',
     'answerCannotBeEmpty': '回答は空にできません',
     
     // Calendar Integration
@@ -2919,10 +2919,10 @@ const translations = {
     'creator': 'Creador',
     'system': 'System',
     'systemTemplate': 'System Template',
-    'userTemplate': 'User Template',
-    'type': 'Type',
-    'updateArticles': 'Update Articles',
-    'updateVideos': 'Update Videos',
+    'userTemplate': 'Plantilla de Usuario',
+    'type': 'Tipo',
+    'updateArticles': 'Actualizar Artículos',
+    'updateVideos': 'Actualizar Videos',
     'answerCannotBeEmpty': 'La respuesta no puede estar vacía',
     
     // Calendar Integration
