@@ -4495,6 +4495,8 @@ async function deleteExistingAnswer(reviewId, answerId, questionNumber) {
 }
 
 // V6.7.0: Validate required questions before submission
+// IMPORTANT: This function should ONLY be called with choice-type questions
+// Text and time_with_text questions are managed separately through answer sets
 function validateRequiredQuestions(questions, answers) {
   console.log('[validateRequiredQuestions] Starting validation...');
   console.log('[validateRequiredQuestions] Questions to check:', questions.length);
@@ -4505,18 +4507,22 @@ function validateRequiredQuestions(questions, answers) {
   questions.forEach(q => {
     console.log(`[validateRequiredQuestions] Q${q.question_number}: type=${q.question_type}, required=${q.required}`);
     
+    // DOUBLE CHECK: Skip text and time_with_text questions even if accidentally passed in
+    if (q.question_type === 'text' || q.question_type === 'time_with_text') {
+      console.log(`[validateRequiredQuestions] Q${q.question_number} SKIPPED - text/time type should not be validated here`);
+      return; // Skip this question
+    }
+    
+    // Only validate if marked as required
     if (q.required === 'yes') {
       const answer = answers[q.question_number];
       console.log(`[validateRequiredQuestions] Q${q.question_number} is REQUIRED, answer=`, answer);
       
-      // Check if answer is empty based on question type
+      // Check if answer is empty (only for choice questions)
       let isEmpty = false;
       
       if (!answer) {
         isEmpty = true;
-      } else if (q.question_type === 'text' || q.question_type === 'time_with_text') {
-        // Text type: check answer field
-        isEmpty = !answer.answer || answer.answer.trim() === '';
       } else if (q.question_type === 'single_choice' || q.question_type === 'multiple_choice') {
         // Choice type: check answer field (could be string or in answer object)
         const answerValue = typeof answer === 'string' ? answer : answer.answer;
@@ -4655,17 +4661,28 @@ async function handleEditReview(e) {
   }
 
   // V6.7.0: Validate required questions before submission
-  // Note: Only validate choice-type questions here, text-type answers are managed separately
-  // Only validate if we actually have answers to check (choice questions)
+  // Note: ONLY validate choice-type questions here
+  // Text-type and time_with_text questions are managed through answer sets system
+  // and should NOT be validated here even if marked as required
   if (Object.keys(answers).length > 0) {
+    // Filter to ONLY choice questions - explicitly exclude text and time_with_text
     const choiceQuestions = questions.filter(q => 
       q.question_type === 'single_choice' || q.question_type === 'multiple_choice'
     );
-    const validationErrors = validateRequiredQuestions(choiceQuestions, answers);
-    if (validationErrors.length > 0) {
-      showRequiredFieldsError(validationErrors);
-      return; // Stop submission
+    
+    console.log('[handleEditReview] Validating choice questions only:', choiceQuestions.length);
+    
+    if (choiceQuestions.length > 0) {
+      const validationErrors = validateRequiredQuestions(choiceQuestions, answers);
+      if (validationErrors.length > 0) {
+        showRequiredFieldsError(validationErrors);
+        return; // Stop submission
+      }
+    } else {
+      console.log('[handleEditReview] No choice questions to validate, skipping validation');
     }
+  } else {
+    console.log('[handleEditReview] No answers collected, skipping validation');
   }
 
   try {
