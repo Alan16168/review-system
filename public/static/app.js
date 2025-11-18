@@ -12283,7 +12283,7 @@ async function loadKeywords() {
   } catch (error) {
     console.error('Failed to load keywords:', error);
     const errorMsg = i18n.t('loadError') || '加载失败';
-    showError(errorMsg);
+    showNotification(errorMsg, 'error');
     // Display empty state on error
     const tbody = document.getElementById('keywords-table-body');
     if (tbody) {
@@ -12472,11 +12472,11 @@ async function handleAddKeyword(event) {
 
     // Close modal first
     closeKeywordModal();
-    showSuccess(i18n.t('keywordAddedSuccess'));
+    showNotification(i18n.t('keywordAddedSuccess') || '关键词添加成功', 'success');
     await loadKeywords();
   } catch (error) {
     console.error('Failed to add keyword:', error);
-    showError(error.response?.data?.error || i18n.t('operationFailed'));
+    showNotification(error.response?.data?.error || i18n.t('operationFailed') || '操作失败', 'error');
   }
 }
 
@@ -12566,11 +12566,11 @@ async function handleEditKeyword(event, id) {
 
     // Close modal first
     closeKeywordModal();
-    showSuccess(i18n.t('keywordUpdatedSuccess'));
+    showNotification(i18n.t('keywordUpdatedSuccess') || '关键词更新成功', 'success');
     await loadKeywords();
   } catch (error) {
     console.error('Failed to update keyword:', error);
-    showError(error.response?.data?.error || i18n.t('operationFailed'));
+    showNotification(error.response?.data?.error || i18n.t('operationFailed') || '操作失败', 'error');
   }
 }
 
@@ -12587,7 +12587,7 @@ async function deleteKeyword(id) {
     });
 
     const successMessage = i18n.t('keywordDeletedSuccess') || '关键词删除成功';
-    showSuccess(successMessage);
+    showNotification(successMessage, 'success');
     
     // Force reload keywords list
     console.log('Keyword deleted, reloading list...');
@@ -12595,7 +12595,7 @@ async function deleteKeyword(id) {
   } catch (error) {
     console.error('Failed to delete keyword:', error);
     const errorMessage = error.response?.data?.error || i18n.t('operationFailed') || '操作失败';
-    showError(errorMessage);
+    showNotification(errorMessage, 'error');
   }
 }
 
@@ -12608,10 +12608,10 @@ async function toggleKeywordStatus(id) {
       }
     });
 
-    showSuccess(i18n.t('keywordStatusToggled'));
+    showNotification(i18n.t('keywordStatusToggled') || '关键词状态已切换', 'success');
     await loadKeywords();
   } catch (error) {
     console.error('Failed to toggle keyword status:', error);
-    showError(error.response?.data?.error || i18n.t('operationFailed'));
+    showNotification(error.response?.data?.error || i18n.t('operationFailed') || '操作失败', 'error');
   }
 }
