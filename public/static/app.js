@@ -6140,6 +6140,11 @@ async function showAdmin() {
                         data-tab="subscription">
                   <i class="fas fa-credit-card mr-2"></i>${i18n.t('subscriptionManagement') || '订阅管理'}
                 </button>
+                <button onclick="showAdminTab('keywords')" 
+                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
+                        data-tab="keywords">
+                  <i class="fas fa-key mr-2"></i>${i18n.t('keywordsManagement')}
+                </button>
               ` : ''}
             </nav>
           </div>
@@ -6207,6 +6212,9 @@ async function showAdminTab(tab) {
       break;
     case 'subscription':
       await showSubscriptionManagement(content);
+      break;
+    case 'keywords':
+      await showKeywordsManagement(content);
       break;
   }
 }
@@ -12168,5 +12176,378 @@ function updateMobileCartCount() {
     if (desktopCartCount) {
       desktopCartCount.classList.add('hidden');
     }
+  }
+}
+
+// Keywords Management Functions
+async function showKeywordsManagement(container) {
+  container.innerHTML = `
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-key mr-2"></i>${i18n.t('keywordsManagement')}
+        </h2>
+        <button onclick="showAddKeywordModal()" 
+                class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+          <i class="fas fa-plus mr-2"></i>${i18n.t('addKeyword')}
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
+          <select id="filter-language" onchange="filterKeywords()" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="">${i18n.t('all')}</option>
+            <option value="zh">中文 (Chinese)</option>
+            <option value="en">English</option>
+            <option value="ja">日本語 (Japanese)</option>
+            <option value="es">Español (Spanish)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keywordType')}</label>
+          <select id="filter-type" onchange="filterKeywords()" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="">${i18n.t('all')}</option>
+            <option value="article">${i18n.t('articleKeyword')}</option>
+            <option value="video">${i18n.t('videoKeyword')}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keywordStatus')}</label>
+          <select id="filter-status" onchange="filterKeywords()" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="">${i18n.t('all')}</option>
+            <option value="1">${i18n.t('keywordActive')}</option>
+            <option value="0">${i18n.t('keywordInactive')}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Keywords Table -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('keyword')}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('language')}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('keywordType')}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('keywordStatus')}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${i18n.t('actions')}</th>
+            </tr>
+          </thead>
+          <tbody id="keywords-table-body" class="bg-white divide-y divide-gray-200">
+            <tr>
+              <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                <i class="fas fa-spinner fa-spin mr-2"></i>${i18n.t('loading')}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  await loadKeywords();
+}
+
+let allKeywords = [];
+
+async function loadKeywords() {
+  try {
+    const response = await axios.get('/api/keywords', {
+      headers: {
+        'X-User-ID': currentUser.id,
+        'X-User-Role': currentUser.role
+      }
+    });
+
+    allKeywords = response.data.keywords;
+    displayKeywords(allKeywords);
+  } catch (error) {
+    console.error('Failed to load keywords:', error);
+    showError(i18n.t('loadError'));
+  }
+}
+
+function displayKeywords(keywords) {
+  const tbody = document.getElementById('keywords-table-body');
+  
+  if (keywords.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+          ${i18n.t('noData')}
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = keywords.map(kw => `
+    <tr>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${kw.id}</td>
+      <td class="px-6 py-4 text-sm text-gray-900">${escapeHtml(kw.keyword)}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${kw.language === 'zh' ? '中文' : kw.language === 'en' ? 'English' : kw.language === 'ja' ? '日本語' : 'Español'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+          kw.type === 'article' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+        }">
+          ${kw.type === 'article' ? i18n.t('articleKeyword') : i18n.t('videoKeyword')}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+          kw.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }">
+          ${kw.is_active ? i18n.t('keywordActive') : i18n.t('keywordInactive')}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+        <button onclick="toggleKeywordStatus(${kw.id})" 
+                class="text-yellow-600 hover:text-yellow-900" 
+                title="${i18n.t('toggleStatus')}">
+          <i class="fas fa-toggle-${kw.is_active ? 'on' : 'off'}"></i>
+        </button>
+        <button onclick="showEditKeywordModal(${kw.id})" 
+                class="text-indigo-600 hover:text-indigo-900" 
+                title="${i18n.t('edit')}">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button onclick="deleteKeyword(${kw.id})" 
+                class="text-red-600 hover:text-red-900" 
+                title="${i18n.t('delete')}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterKeywords() {
+  const language = document.getElementById('filter-language').value;
+  const type = document.getElementById('filter-type').value;
+  const status = document.getElementById('filter-status').value;
+
+  const filtered = allKeywords.filter(kw => {
+    if (language && kw.language !== language) return false;
+    if (type && kw.type !== type) return false;
+    if (status !== '' && kw.is_active !== parseInt(status)) return false;
+    return true;
+  });
+
+  displayKeywords(filtered);
+}
+
+function showAddKeywordModal() {
+  showModal(`
+    <div class="p-6">
+      <h2 class="text-2xl font-bold mb-4">${i18n.t('addKeyword')}</h2>
+      <form id="add-keyword-form" onsubmit="handleAddKeyword(event)">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keyword')}</label>
+          <input type="text" id="keyword-text" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('keyword')}">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
+          <select id="keyword-language" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="zh">中文 (Chinese)</option>
+            <option value="en">English</option>
+            <option value="ja">日本語 (Japanese)</option>
+            <option value="es">Español (Spanish)</option>
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keywordType')}</label>
+          <select id="keyword-type" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="article">${i18n.t('articleKeyword')}</option>
+            <option value="video">${i18n.t('videoKeyword')}</option>
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label class="flex items-center">
+            <input type="checkbox" id="keyword-active" checked
+                   class="mr-2 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <span class="text-sm font-medium text-gray-700">${i18n.t('keywordActive')}</span>
+          </label>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+          <button type="button" onclick="closeModal()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+            ${i18n.t('cancel')}
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+            ${i18n.t('add')}
+          </button>
+        </div>
+      </form>
+    </div>
+  `);
+}
+
+async function handleAddKeyword(event) {
+  event.preventDefault();
+  
+  const keyword = document.getElementById('keyword-text').value;
+  const language = document.getElementById('keyword-language').value;
+  const type = document.getElementById('keyword-type').value;
+  const is_active = document.getElementById('keyword-active').checked ? 1 : 0;
+
+  try {
+    await axios.post('/api/keywords', {
+      keyword,
+      language,
+      type,
+      is_active
+    }, {
+      headers: {
+        'X-User-ID': currentUser.id,
+        'X-User-Role': currentUser.role
+      }
+    });
+
+    showSuccess(i18n.t('keywordAddedSuccess'));
+    closeModal();
+    await loadKeywords();
+  } catch (error) {
+    console.error('Failed to add keyword:', error);
+    showError(error.response?.data?.error || i18n.t('operationFailed'));
+  }
+}
+
+function showEditKeywordModal(id) {
+  const keyword = allKeywords.find(kw => kw.id === id);
+  if (!keyword) return;
+
+  showModal(`
+    <div class="p-6">
+      <h2 class="text-2xl font-bold mb-4">${i18n.t('editKeyword')}</h2>
+      <form id="edit-keyword-form" onsubmit="handleEditKeyword(event, ${id})">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keyword')}</label>
+          <input type="text" id="edit-keyword-text" value="${escapeHtml(keyword.keyword)}" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
+          <select id="edit-keyword-language" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="zh" ${keyword.language === 'zh' ? 'selected' : ''}>中文 (Chinese)</option>
+            <option value="en" ${keyword.language === 'en' ? 'selected' : ''}>English</option>
+            <option value="ja" ${keyword.language === 'ja' ? 'selected' : ''}>日本語 (Japanese)</option>
+            <option value="es" ${keyword.language === 'es' ? 'selected' : ''}>Español (Spanish)</option>
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keywordType')}</label>
+          <select id="edit-keyword-type" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="article" ${keyword.type === 'article' ? 'selected' : ''}>${i18n.t('articleKeyword')}</option>
+            <option value="video" ${keyword.type === 'video' ? 'selected' : ''}>${i18n.t('videoKeyword')}</option>
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label class="flex items-center">
+            <input type="checkbox" id="edit-keyword-active" ${keyword.is_active ? 'checked' : ''}
+                   class="mr-2 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <span class="text-sm font-medium text-gray-700">${i18n.t('keywordActive')}</span>
+          </label>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+          <button type="button" onclick="closeModal()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+            ${i18n.t('cancel')}
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+            ${i18n.t('save')}
+          </button>
+        </div>
+      </form>
+    </div>
+  `);
+}
+
+async function handleEditKeyword(event, id) {
+  event.preventDefault();
+  
+  const keyword = document.getElementById('edit-keyword-text').value;
+  const language = document.getElementById('edit-keyword-language').value;
+  const type = document.getElementById('edit-keyword-type').value;
+  const is_active = document.getElementById('edit-keyword-active').checked ? 1 : 0;
+
+  try {
+    await axios.put(`/api/keywords/${id}`, {
+      keyword,
+      language,
+      type,
+      is_active
+    }, {
+      headers: {
+        'X-User-ID': currentUser.id,
+        'X-User-Role': currentUser.role
+      }
+    });
+
+    showSuccess(i18n.t('keywordUpdatedSuccess'));
+    closeModal();
+    await loadKeywords();
+  } catch (error) {
+    console.error('Failed to update keyword:', error);
+    showError(error.response?.data?.error || i18n.t('operationFailed'));
+  }
+}
+
+async function deleteKeyword(id) {
+  if (!confirm(i18n.t('confirmDeleteKeyword'))) return;
+
+  try {
+    await axios.delete(`/api/keywords/${id}`, {
+      headers: {
+        'X-User-ID': currentUser.id,
+        'X-User-Role': currentUser.role
+      }
+    });
+
+    showSuccess(i18n.t('keywordDeletedSuccess'));
+    await loadKeywords();
+  } catch (error) {
+    console.error('Failed to delete keyword:', error);
+    showError(error.response?.data?.error || i18n.t('operationFailed'));
+  }
+}
+
+async function toggleKeywordStatus(id) {
+  try {
+    await axios.patch(`/api/keywords/${id}/toggle`, {}, {
+      headers: {
+        'X-User-ID': currentUser.id,
+        'X-User-Role': currentUser.role
+      }
+    });
+
+    showSuccess(i18n.t('keywordStatusToggled'));
+    await loadKeywords();
+  } catch (error) {
+    console.error('Failed to toggle keyword status:', error);
+    showError(error.response?.data?.error || i18n.t('operationFailed'));
   }
 }

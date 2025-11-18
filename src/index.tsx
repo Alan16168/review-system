@@ -15,6 +15,7 @@ import cart from './routes/cart';
 import invitations from './routes/invitations';
 import calendar from './routes/calendar';
 import answerSets from './routes/answer_sets';
+import keywords from './routes/keywords';
 
 type Bindings = {
   DB: D1Database;
@@ -53,6 +54,7 @@ app.route('/api/cart', cart);
 app.route('/api/invitations', invitations);
 app.route('/api/calendar', calendar);
 app.route('/api/answer-sets', answerSets);
+app.route('/api/keywords', keywords);
 
 // Diagnostic page - serve directly
 app.get('/diagnostic.html', (c) => {

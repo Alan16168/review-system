@@ -27,41 +27,27 @@ resources.get('/articles', async (c) => {
       });
     }
 
-    // Search for review-related articles based on language
-    // For Chinese: Use Baidu Wenku (skip verification due to anti-bot measures)
+    // Get keywords from database
+    const keywordsResult = await c.env.DB.prepare(`
+      SELECT keyword FROM search_keywords 
+      WHERE language = ? AND type = 'article' AND is_active = 1
+      ORDER BY id
+    `).bind(lang).all();
+    
     let queries: string[];
-    if (lang === 'zh') {
-      queries = [
-        'site:wenku.baidu.com 复盘',
-        'site:wenku.baidu.com 系统复盘',
-        'site:wenku.baidu.com 如何复盘',
-        'site:wenku.baidu.com 复盘的方法',
-        'site:wenku.baidu.com 如何进行系统复盘'
-      ];
-    } else if (lang === 'ja') {
-      queries = [
-        'プロジェクト振り返り 方法',
-        'チーム レトロスペクティブ',
-        '業務改善 振り返り',
-        'アジャイル ふりかえり',
-        '学習 振り返り 方法'
-      ];
-    } else if (lang === 'es') {
-      queries = [
-        'revisión sistemática proyecto',
-        'retrospectiva de equipo método',
-        'cómo hacer revisión de proyectos',
-        'mejores prácticas retrospectiva',
-        'aprendizaje de experiencias'
-      ];
+    if (keywordsResult.results && keywordsResult.results.length > 0) {
+      queries = keywordsResult.results.map((row: any) => row.keyword);
     } else {
-      queries = [
-        'systematic review reflection',
-        'how to conduct retrospective',
-        'after action review method',
-        'project review best practices',
-        'learning from experience'
-      ];
+      // Fallback to default keywords if database is empty
+      if (lang === 'zh') {
+        queries = ['site:wenku.baidu.com 复盘'];
+      } else if (lang === 'ja') {
+        queries = ['プロジェクト振り返り 方法'];
+      } else if (lang === 'es') {
+        queries = ['revisión sistemática proyecto'];
+      } else {
+        queries = ['systematic review reflection'];
+      }
     }
 
     const allArticles: any[] = [];
@@ -163,32 +149,27 @@ resources.get('/videos', async (c) => {
       });
     }
 
-    // Search for systematic review related videos based on language
+    // Get keywords from database
+    const keywordsResult = await c.env.DB.prepare(`
+      SELECT keyword FROM search_keywords 
+      WHERE language = ? AND type = 'video' AND is_active = 1
+      ORDER BY id
+    `).bind(lang).all();
+    
     let queries: string[];
-    if (lang === 'zh') {
-      queries = [
-        '什么是系统化的复盘',
-        '如何系统性复盘',
-        '系统性复盘的优势'
-      ];
-    } else if (lang === 'ja') {
-      queries = [
-        'プロジェクト振り返りとは',
-        '効果的な振り返り方法',
-        'レトロスペクティブのメリット'
-      ];
-    } else if (lang === 'es') {
-      queries = [
-        'qué es retrospectiva sistemática',
-        'cómo hacer retrospectiva efectiva',
-        'beneficios de revisión sistemática'
-      ];
+    if (keywordsResult.results && keywordsResult.results.length > 0) {
+      queries = keywordsResult.results.map((row: any) => row.keyword);
     } else {
-      queries = [
-        'what is systematic review reflection',
-        'how to conduct systematic retrospective',
-        'benefits of systematic review'
-      ];
+      // Fallback to default keywords if database is empty
+      if (lang === 'zh') {
+        queries = ['什么是系统化的复盘'];
+      } else if (lang === 'ja') {
+        queries = ['プロジェクト振り返りとは'];
+      } else if (lang === 'es') {
+        queries = ['qué es retrospectiva sistemática'];
+      } else {
+        queries = ['what is systematic review reflection'];
+      }
     }
 
     const allVideos: any[] = [];
