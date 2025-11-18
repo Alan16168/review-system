@@ -3143,7 +3143,7 @@ const translations = {
     'noPublicReviews': 'Aucun examen public pour le moment',
     'confirmDeleteReview': 'Êtes-vous sûr de vouloir supprimer cet examen ? Cette action est irréversible.',
     'teams': 'Équipes',
-    'admin': 'Admin',
+    'admin': 'Administration',
     'profile': 'Profil',
     
     // Review
@@ -3272,6 +3272,23 @@ const translations = {
     'systemManagement': 'Gestion du système',
     'keywordManagement': 'Gestion des mots-clés',
     'testimonialManagement': 'Gestion des témoignages',
+    
+    // System
+    'systemTitle': 'Plateforme de Rétrospective Systématique',
+    'systemSubtitle': 'Aidez les individus et les équipes à effectuer des rétrospectives approfondies pour une amélioration continue',
+    'switchLanguage': 'Changer de langue',
+    
+    // Home Page
+    'heroTitle': 'Construire des Organisations Apprenantes par la Rétrospective Systématique',
+    'heroSubtitle': 'Aidez les individus et les équipes à croître continuellement grâce à des rétrospectives structurées, en capitalisant sur l\'expérience et en découvrant les principes',
+    'carousel1Title': 'Rétrospective Collaborative en Équipe',
+    'carousel1Desc': 'Permettez aux équipes d\'améliorer leur efficacité collaborative et d\'atteindre une croissance collective grâce à des rétrospectives systématiques',
+    'carousel2Title': 'Accélération de la Croissance Personnelle',
+    'carousel2Desc': 'Transformez chaque expérience en une étape vers la croissance grâce à une réflexion structurée',
+    'carousel3Title': 'Optimisation de la Planification Stratégique',
+    'carousel3Desc': 'Extraire des modèles des rétrospectives pour guider les décisions stratégiques futures',
+    'loadError': 'Échec du chargement, veuillez actualiser et réessayer',
+    'getStarted': 'Commencer',
     
     // Other common translations
     'name': 'Nom',
