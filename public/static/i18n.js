@@ -473,6 +473,19 @@ const translations = {
     'aiQueryError': 'AI 查询失败，请稍后重试',
     'readMore': '阅读更多',
     
+    // AI Chat
+    'aiChat': '与AI对话',
+    'chatWithAI': '与AI对话',
+    'aiChatTitle': '系统复盘专家 - AI助手',
+    'aiChatPlaceholder': '请输入您的问题...',
+    'sendQuestion': '发送问题',
+    'aiThinking': 'AI正在思考中...',
+    'nextQuestions': '您可能还想问：',
+    'clickToAsk': '点击快速提问',
+    'aiChatError': 'AI对话失败，请稍后重试',
+    'clearChat': '清空对话',
+    'closeChat': '关闭对话',
+    
     // About
     'aboutCompany': '关于我们',
     'aboutCompanyText1': '我们致力于帮助个人和团队建立系统化的复盘习惯，通过结构化的反思框架，让每一次经验都成为成长的阶梯。',
@@ -1243,6 +1256,19 @@ const translations = {
     'aiQueryError': 'AI query failed, please try again later',
     'readMore': 'Read More',
     
+    // AI Chat
+    'aiChat': 'AI Chat',
+    'chatWithAI': 'Chat with AI',
+    'aiChatTitle': 'Review Expert - AI Assistant',
+    'aiChatPlaceholder': 'Please enter your question...',
+    'sendQuestion': 'Send Question',
+    'aiThinking': 'AI is thinking...',
+    'nextQuestions': 'You might also want to ask:',
+    'clickToAsk': 'Click to ask quickly',
+    'aiChatError': 'AI chat failed, please try again later',
+    'clearChat': 'Clear Chat',
+    'closeChat': 'Close Chat',
+    
     // About
     'aboutCompany': 'About Our Company',
     'aboutCompanyText1': 'We are committed to helping individuals and teams build systematic review habits through structured reflection frameworks, turning every experience into a stepping stone for growth.',
@@ -2002,6 +2028,19 @@ const translations = {
     'aiQueryError': 'AI クエリに失敗しました。後でもう一度お試しください',
     'readMore': '続きを読む',
     
+    // AI Chat
+    'aiChat': 'AI チャット',
+    'chatWithAI': 'AI と対話',
+    'aiChatTitle': 'システムレビュー専門家 - AI アシスタント',
+    'aiChatPlaceholder': '質問を入力してください...',
+    'sendQuestion': '質問を送信',
+    'aiThinking': 'AI が考え中...',
+    'nextQuestions': '次の質問もおすすめ：',
+    'clickToAsk': 'クリックして質問',
+    'aiChatError': 'AI チャットに失敗しました。後でもう一度お試しください',
+    'clearChat': 'チャットをクリア',
+    'closeChat': 'チャットを閉じる',
+    
     // About
     'aboutCompany': '私たちの会社について',
     'aboutCompanyText1': '構造化された振り返りフレームワークを通じて、個人とチームが体系的なレビュー習慣を築き、すべての経験を成長の足がかりに変えるお手伝いをしています。',
@@ -2760,6 +2799,19 @@ const translations = {
     'startAIQuery': 'Iniciar Consulta AI',
     'aiQueryError': 'Consulta AI falló, por favor intente más tarde',
     'readMore': 'Leer Más',
+    
+    // AI Chat
+    'aiChat': 'Chat con AI',
+    'chatWithAI': 'Chatear con AI',
+    'aiChatTitle': 'Experto en Revisión de Sistemas - Asistente AI',
+    'aiChatPlaceholder': 'Por favor ingrese su pregunta...',
+    'sendQuestion': 'Enviar Pregunta',
+    'aiThinking': 'AI está pensando...',
+    'nextQuestions': 'También podría preguntar:',
+    'clickToAsk': 'Haga clic para preguntar rápidamente',
+    'aiChatError': 'Chat con AI falló, por favor intente más tarde',
+    'clearChat': 'Borrar Chat',
+    'closeChat': 'Cerrar Chat',
     
     // About
     'aboutCompany': 'Sobre Nuestra Empresa',

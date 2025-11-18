@@ -322,7 +322,7 @@ async function showHomePage() {
           </h2>
           
           <!-- Tabs -->
-          <div class="flex justify-center mb-8 space-x-4">
+          <div class="flex justify-center mb-8 space-x-4 flex-wrap">
             <button onclick="showResourceTab('articles')" id="tab-articles"
                     class="px-6 py-3 rounded-lg font-medium transition active-tab">
               <i class="fas fa-book mr-2"></i>${i18n.t('articles')}
@@ -334,6 +334,10 @@ async function showHomePage() {
             <button onclick="showResourceTab('ai-query')" id="tab-ai-query"
                     class="px-6 py-3 rounded-lg font-medium transition inactive-tab">
               <i class="fas fa-robot mr-2"></i>${i18n.t('aiQuery')}
+            </button>
+            <button onclick="openAIChat()" id="btn-ai-chat"
+                    class="px-6 py-3 rounded-lg font-medium transition bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700">
+              <i class="fas fa-comments mr-2"></i>${i18n.t('aiChat')}
             </button>
           </div>
 
@@ -12741,4 +12745,175 @@ async function toggleKeywordStatus(id) {
     console.error('Failed to toggle keyword status:', error);
     showNotification(error.response?.data?.error || i18n.t('operationFailed') || '操作失败', 'error');
   }
+}
+
+// ==================== AI Chat Functions ====================
+
+let aiChatHistory = [];
+
+function openAIChat() {
+  // Create modal if it doesn't exist
+  if (!document.getElementById('ai-chat-modal')) {
+    const modalHtml = `
+      <div id="ai-chat-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <i class="fas fa-robot text-2xl"></i>
+              <div>
+                <h3 class="text-lg font-bold">${i18n.t('aiChatTitle')}</h3>
+                <p class="text-xs opacity-90">${i18n.t('aiThinking').replace(i18n.t('aiThinking').split('...')[0], '在线服务')}</p>
+              </div>
+            </div>
+            <button onclick="closeAIChat()" class="text-white hover:text-gray-200 transition">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- Chat Messages -->
+          <div id="ai-chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+            <div class="text-center text-gray-500 text-sm">
+              <i class="fas fa-comments text-3xl mb-2"></i>
+              <p>${i18n.t('aiChatPlaceholder')}</p>
+            </div>
+          </div>
+          
+          <!-- Predicted Questions -->
+          <div id="ai-predicted-questions" class="px-6 py-3 bg-white border-t border-gray-200 hidden">
+            <p class="text-xs text-gray-600 mb-2">${i18n.t('nextQuestions')}</p>
+            <div id="predicted-questions-list" class="flex flex-wrap gap-2"></div>
+          </div>
+          
+          <!-- Input Area -->
+          <div class="p-4 bg-white border-t border-gray-200 rounded-b-2xl">
+            <div class="flex gap-2">
+              <input type="text" id="ai-chat-input" placeholder="${i18n.t('aiChatPlaceholder')}"
+                     class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                     onkeypress="handleAIChatKeyPress(event)">
+              <button onclick="sendAIQuestion()" id="ai-send-btn"
+                      class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-paper-plane mr-2"></i>${i18n.t('sendQuestion')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+  
+  document.getElementById('ai-chat-modal').classList.remove('hidden');
+}
+
+function closeAIChat() {
+  document.getElementById('ai-chat-modal').classList.add('hidden');
+}
+
+function handleAIChatKeyPress(event) {
+  if (event.key === 'Enter') {
+    sendAIQuestion();
+  }
+}
+
+async function sendAIQuestion(questionText = null) {
+  const input = document.getElementById('ai-chat-input');
+  const question = questionText || input.value.trim();
+  
+  if (!question) {
+    showNotification(i18n.t('aiChatPlaceholder'), 'warning');
+    return;
+  }
+  
+  // Clear input and disable button
+  input.value = '';
+  const sendBtn = document.getElementById('ai-send-btn');
+  sendBtn.disabled = true;
+  
+  // Add user message to chat
+  addMessageToChat('user', question);
+  
+  // Show loading message
+  const loadingId = addMessageToChat('ai', `<i class="fas fa-spinner fa-spin mr-2"></i>${i18n.t('aiThinking')}`, true);
+  
+  try {
+    const response = await axios.post('/api/resources/ai-chat', 
+      { question },
+      {
+        headers: {
+          'X-Language': i18n.language
+        }
+      }
+    );
+    
+    // Remove loading message
+    removeMessageFromChat(loadingId);
+    
+    // Add AI response
+    const answer = response.data.answer || '抱歉，我现在无法回答这个问题。';
+    const nextQuestions = response.data.nextQuestions || [];
+    
+    addMessageToChat('ai', answer);
+    
+    // Show predicted questions
+    if (nextQuestions.length > 0) {
+      showPredictedQuestions(nextQuestions);
+    }
+    
+  } catch (error) {
+    console.error('AI chat error:', error);
+    removeMessageFromChat(loadingId);
+    addMessageToChat('ai', `<i class="fas fa-exclamation-triangle mr-2"></i>${i18n.t('aiChatError')}`);
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+function addMessageToChat(sender, content, isLoading = false) {
+  const messagesContainer = document.getElementById('ai-chat-messages');
+  const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  const messageClass = sender === 'user' 
+    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white ml-auto' 
+    : 'bg-white border border-gray-200 text-gray-800';
+  
+  const messageHtml = `
+    <div id="${messageId}" class="flex ${sender === 'user' ? 'justify-end' : 'justify-start'}">
+      <div class="${messageClass} rounded-2xl px-4 py-3 max-w-[80%] shadow-sm">
+        ${sender === 'ai' ? '<i class="fas fa-robot mr-2 text-purple-600"></i>' : ''}
+        <span class="whitespace-pre-wrap">${content}</span>
+      </div>
+    </div>
+  `;
+  
+  messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  
+  return messageId;
+}
+
+function removeMessageFromChat(messageId) {
+  const message = document.getElementById(messageId);
+  if (message) {
+    message.remove();
+  }
+}
+
+function showPredictedQuestions(questions) {
+  const container = document.getElementById('ai-predicted-questions');
+  const questionsList = document.getElementById('predicted-questions-list');
+  
+  questionsList.innerHTML = '';
+  questions.forEach(q => {
+    const questionBtn = document.createElement('button');
+    questionBtn.className = 'px-3 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm hover:bg-purple-100 transition border border-purple-200';
+    questionBtn.innerHTML = `<i class="fas fa-comment-dots mr-1"></i>${q}`;
+    questionBtn.onclick = () => {
+      sendAIQuestion(q);
+      container.classList.add('hidden');
+    };
+    questionsList.appendChild(questionBtn);
+  });
+  
+  container.classList.remove('hidden');
 }

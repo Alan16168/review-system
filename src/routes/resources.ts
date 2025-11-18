@@ -1336,4 +1336,159 @@ function generateMockAIArticles(keywords: string[], lang: string) {
   return articles;
 }
 
+// AI Chat - Use Gemini to answer user questions
+resources.post('/ai-chat', async (c) => {
+  try {
+    const geminiApiKey = c.env.GEMINI_API_KEY;
+    const { question } = await c.req.json();
+    
+    // Get language from header or default to Chinese
+    const lang = c.req.header('X-Language') || 'zh';
+    
+    // Validate input
+    if (!question || question.trim() === '') {
+      return c.json({ error: 'Question is required' }, 400);
+    }
+    
+    // If Gemini API key not configured, return mock response
+    if (!geminiApiKey) {
+      console.log('Gemini API key not configured, returning mock response');
+      return c.json({
+        answer: generateMockAnswer(question, lang),
+        nextQuestions: generateMockNextQuestions(question, lang),
+        source: 'mock'
+      });
+    }
+    
+    // Build prompt for Gemini
+    const prompt = `作为系统复盘资深专家，回答以下问题：
+
+【用户问题】
+${question}
+
+【输出要求】
+请以JSON格式输出，包含以下字段：
+1. "perspectives": 数组，包含2-3个不同角度的回答（每个角度包含 "title" 和 "content" 字段）
+2. "nextQuestions": 数组，包含3个用户可能会问的下一个问题
+
+示例格式：
+{
+  "perspectives": [
+    {
+      "title": "角度一标题",
+      "content": "从这个角度的详细回答..."
+    },
+    {
+      "title": "角度二标题", 
+      "content": "从这个角度的详细回答..."
+    }
+  ],
+  "nextQuestions": [
+    "预测的问题1",
+    "预测的问题2",
+    "预测的问题3"
+  ]
+}
+
+请只返回JSON数据，不要其他解释文字。`;
+
+    // Call Gemini API
+    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + geminiApiKey, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      })
+    });
+    
+    if (!geminiResponse.ok) {
+      throw new Error(`Gemini API error: ${geminiResponse.status}`);
+    }
+    
+    const geminiData = await geminiResponse.json();
+    const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!aiText) {
+      throw new Error('No response from Gemini');
+    }
+    
+    // Parse JSON from AI response
+    let result;
+    try {
+      // Extract JSON from markdown code blocks if present
+      const jsonMatch = aiText.match(/```json\s*([\s\S]*?)\s*```/) || aiText.match(/\{[\s\S]*\}/);
+      const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : aiText;
+      result = JSON.parse(jsonText);
+      
+      // Format the answer from perspectives
+      const answer = result.perspectives.map((p: any, index: number) => 
+        `**${p.title}**\n${p.content}`
+      ).join('\n\n');
+      
+      return c.json({
+        answer: answer,
+        nextQuestions: result.nextQuestions || [],
+        source: 'gemini_ai'
+      });
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError);
+      console.log('AI response text:', aiText);
+      // Return mock data if parsing fails
+      return c.json({
+        answer: generateMockAnswer(question, lang),
+        nextQuestions: generateMockNextQuestions(question, lang),
+        source: 'mock_fallback'
+      });
+    }
+    
+  } catch (error) {
+    console.error('AI chat error:', error);
+    const lang = c.req.header('X-Language') || 'zh';
+    const { question } = await c.req.json();
+    
+    return c.json({
+      answer: generateMockAnswer(question, lang),
+      nextQuestions: generateMockNextQuestions(question, lang),
+      source: 'error_fallback'
+    });
+  }
+});
+
+// Generate mock answer for testing
+function generateMockAnswer(question: string, lang: string = 'zh'): string {
+  const perspectives = [
+    {
+      title: '从方法论角度',
+      content: `针对"${question}"这个问题，建议采用系统化的复盘方法。首先要明确目标和预期，然后收集相关数据和事实，再进行深入分析，最后总结经验教训并制定改进措施。`
+    },
+    {
+      title: '从实践经验角度',
+      content: `根据以往的实践经验，处理"${question}"时需要注意以下几点：保持客观性，避免个人偏见；注重数据支撑，而非主观臆断；重视团队讨论，集思广益；及时记录和跟进改进措施。`
+    },
+    {
+      title: '从工具应用角度',
+      content: `解决"${question}"可以运用多种工具和框架，例如：PDCA循环、五问法（5 Whys）、鱼骨图分析、SWOT分析等。选择合适的工具能够帮助更系统地分析问题并找到解决方案。`
+    }
+  ];
+  
+  return perspectives.map((p, index) => 
+    `**${p.title}**\n${p.content}`
+  ).join('\n\n');
+}
+
+// Generate mock next questions
+function generateMockNextQuestions(question: string, lang: string = 'zh'): string[] {
+  return [
+    '如何建立有效的复盘机制？',
+    '复盘过程中常见的误区有哪些？',
+    '如何确保复盘结果能够落地执行？'
+  ];
+}
+
 export default resources;
