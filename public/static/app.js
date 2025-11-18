@@ -12458,7 +12458,7 @@ function displayKeywords(keywords) {
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${kw.id}</td>
       <td class="px-6 py-4 text-sm text-gray-900">${escapeHtml(kw.keyword)}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        ${kw.language === 'zh' ? '中文' : kw.language === 'en' ? 'English' : kw.language === 'ja' ? '日本語' : 'Español'}
+        ${kw.language === 'zh' ? '中文' : kw.language === 'en' ? 'English' : kw.language === 'fr' ? 'Français' : kw.language === 'ja' ? '日本語' : kw.language === 'es' ? 'Español' : kw.language}
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

@@ -39,7 +39,7 @@ const translations = {
     'dashboard': '工作台',
     'myReviews': '我的复盘',
     'publicReviews': '公开复盘',
-    'publicReviewsManagement': '公开复盘管理',
+    'publicReviewsManagement': '公开复盘',
     'noPublicReviews': '暂无公开复盘',
     'confirmDeleteReview': '确认删除此复盘吗？此操作不可撤销。',
     'teams': '团队',
@@ -288,7 +288,7 @@ const translations = {
     'amount': '金额',
     'status': '状态',
     'paymentDate': '支付日期',
-    'subscriptionManagement': '订阅管理',
+    'subscriptionManagement': '订阅',
     'pricingSettings': '价格设置',
     'updatePricing': '更新价格',
     'annualPrice': '高级用户年费（美元）',
@@ -400,7 +400,7 @@ const translations = {
     'premiumFeature': '仅高级用户和管理员可创建团队',
     
     // Admin
-    'userManagement': '用户管理',
+    'userManagement': '用户',
     'systemStats': '系统统计',
     'totalUsers': '总用户数',
     'totalReviews': '总复盘数',
@@ -523,7 +523,7 @@ const translations = {
     'testimonial3Name': '陈浩',
     'testimonial3Role': '团队Lead',
     'testimonial3Text': '团队协作功能很实用，大家可以共同参与复盘，形成集体智慧。',
-    'testimonialsManagement': '留言管理',
+    'testimonialsManagement': '留言',
     'addTestimonial': '添加留言',
     'editTestimonial': '编辑留言',
     'noTestimonials': '欢迎留言',
@@ -641,7 +641,7 @@ const translations = {
     'selectLanguage': '选择语言',
     
     // Template Management
-    'templateManagement': '模板管理',
+    'templateManagement': '模板',
     'templates': '模板',
     'templateName': '模板名称',
     'templateOwner': '模板可见性',
@@ -742,7 +742,7 @@ const translations = {
     'answerCannotBeEmpty': '答案不能为空',
     
     // Keywords Management
-    'keywordsManagement': '关键词设置',
+    'keywordsManagement': '关键词',
     'searchKeywords': '搜索关键词',
     'addKeyword': '添加关键词',
     'editKeyword': '编辑关键词',
@@ -821,7 +821,7 @@ const translations = {
     'dashboard': 'Dashboard',
     'myReviews': 'My Reviews',
     'publicReviews': 'Public Reviews',
-    'publicReviewsManagement': 'Public Reviews Management',
+    'publicReviewsManagement': 'Public Reviews',
     'noPublicReviews': 'No public reviews yet',
     'confirmDeleteReview': 'Are you sure you want to delete this review? This action cannot be undone.',
     'teams': 'Teams',
@@ -1070,7 +1070,7 @@ const translations = {
     'amount': 'Amount',
     'status': 'Status',
     'paymentDate': 'Payment Date',
-    'subscriptionManagement': 'Subscription Management',
+    'subscriptionManagement': 'Subscriptions',
     'upgradeAccount': 'Upgrade Account',
     'upgradeToPremiumDesc': 'Upgrade to Premium to create teams, invite members, and collaborate on reviews',
     'upgradeToPremiumConfirm': 'Upgrading to Premium will give you access to create teams, invite members, and more advanced features.\n\nPlease contact the administrator to upgrade your account.',
@@ -1183,7 +1183,7 @@ const translations = {
     'premiumFeature': 'Premium & Admin only',
     
     // Admin
-    'userManagement': 'User Management',
+    'userManagement': 'Users',
     'systemStats': 'System Statistics',
     'totalUsers': 'Total Users',
     'totalReviews': 'Total Reviews',
@@ -1306,7 +1306,7 @@ const translations = {
     'testimonial3Name': '陳浩',
     'testimonial3Role': 'チームリーダー',
     'testimonial3Text': 'チームコラボレーション機能は非常に実用的です。全員がレビューに参加し、集合知を形成できます。',
-    'testimonialsManagement': 'Testimonials Management',
+    'testimonialsManagement': 'Testimonials',
     'addTestimonial': 'メッセージを追加',
     'editTestimonial': 'メッセージを編集',
     'noTestimonials': 'Welcome to Leave a Message',
@@ -1416,7 +1416,7 @@ const translations = {
     'selectLanguage': 'Select Language',
     
     // Template Management
-    'templateManagement': 'Template Management',
+    'templateManagement': 'Templates',
     'templates': 'Templates',
     'templateName': 'Template Name',
     'templateOwner': 'Template Visibility',
@@ -1517,7 +1517,7 @@ const translations = {
     'answerCannotBeEmpty': 'Answer cannot be empty',
     
     // Keywords Management
-    'keywordsManagement': 'Keywords Management',
+    'keywordsManagement': 'Keywords',
     'searchKeywords': 'Search Keywords',
     'addKeyword': 'Add Keyword',
     'editKeyword': 'Edit Keyword',
@@ -1596,7 +1596,7 @@ const translations = {
     'dashboard': 'ダッシュボード',
     'myReviews': 'マイレビュー',
     'publicReviews': '公開レビュー',
-    'publicReviewsManagement': '公開レビュー管理',
+    'publicReviewsManagement': '公開レビュー',
     'noPublicReviews': 'まだ公開レビューはありません',
     'confirmDeleteReview': 'このレビューを削除してもよろしいですか？この操作は元に戻せません。',
     'teams': 'チーム',
@@ -1842,7 +1842,7 @@ const translations = {
     'amount': 'Amount',
     'status': 'ステータス',
     'paymentDate': 'Payment Date',
-    'subscriptionManagement': 'サブスクリプション管理',
+    'subscriptionManagement': 'サブスクリプション',
     'upgradeAccount': 'Upgrade Account',
     'upgradeToPremiumDesc': 'Upgrade to Premium to create teams, invite members, and collaborate on reviews',
     'upgradeToPremiumConfirm': 'Upgrading to Premium will give you access to create teams, invite members, and more advanced features.\n\nPlease contact the administrator to upgrade your account.',
@@ -1955,7 +1955,7 @@ const translations = {
     'premiumFeature': 'Premium & Admin only',
     
     // Admin
-    'userManagement': 'ユーザー管理',
+    'userManagement': 'ユーザー',
     'systemStats': 'システム統計',
     'totalUsers': '総ユーザー数',
     'totalReviews': '総レビュー数',
@@ -2078,7 +2078,7 @@ const translations = {
     'testimonial3Name': '陳浩',
     'testimonial3Role': 'チームリーダー',
     'testimonial3Text': 'チームコラボレーション機能は非常に実用的です。全員がレビューに参加し、集合知を形成できます。',
-    'testimonialsManagement': '推薦文管理',
+    'testimonialsManagement': '推薦文',
     'addTestimonial': 'メッセージを追加',
     'editTestimonial': 'メッセージを編集',
     'noTestimonials': 'メッセージをお寄せください',
@@ -2188,7 +2188,7 @@ const translations = {
     'selectLanguage': 'Select Language',
     
     // Template Management
-    'templateManagement': 'テンプレート管理',
+    'templateManagement': 'テンプレート',
     'templates': 'Templates',
     'templateName': 'テンプレート名',
     'templateOwner': 'テンプレートの可視性',
@@ -2289,7 +2289,7 @@ const translations = {
     'answerCannotBeEmpty': '回答は空にできません',
     
     // Keywords Management
-    'keywordsManagement': 'キーワード設定',
+    'keywordsManagement': 'キーワード',
     'searchKeywords': '検索キーワード',
     'addKeyword': 'キーワード追加',
     'editKeyword': 'キーワード編集',
@@ -2368,7 +2368,7 @@ const translations = {
     'dashboard': 'Panel de control',
     'myReviews': 'Mis revisiones',
     'publicReviews': 'Revisiones Públicas',
-    'publicReviewsManagement': 'Gestión de Revisiones Públicas',
+    'publicReviewsManagement': 'Revisiones Públicas',
     'noPublicReviews': 'Aún no hay revisiones públicas',
     'confirmDeleteReview': '¿Está seguro de que desea eliminar esta revisión? Esta acción no se puede deshacer.',
     'teams': 'Equipos',
@@ -2614,7 +2614,7 @@ const translations = {
     'amount': 'Amount',
     'status': 'Estado',
     'paymentDate': 'Payment Date',
-    'subscriptionManagement': 'Gestión de Suscripciones',
+    'subscriptionManagement': 'Suscripciones',
     'upgradeAccount': 'Upgrade Account',
     'upgradeToPremiumDesc': 'Upgrade to Premium to create teams, invite members, and collaborate on reviews',
     'upgradeToPremiumConfirm': 'Upgrading to Premium will give you access to create teams, invite members, and more advanced features.\n\nPlease contact the administrator to upgrade your account.',
@@ -2727,7 +2727,7 @@ const translations = {
     'premiumFeature': 'Premium & Admin only',
     
     // Admin
-    'userManagement': 'Gestión de Usuarios',
+    'userManagement': 'Usuarios',
     'systemStats': 'Estadísticas del Sistema',
     'totalUsers': 'Total de Usuarios',
     'totalReviews': 'Total de Revisiones',
@@ -2850,7 +2850,7 @@ const translations = {
     'testimonial3Name': 'Hao Chen',
     'testimonial3Role': 'Líder de Equipo',
     'testimonial3Text': 'Las funciones de colaboración en equipo son muy prácticas. Todos pueden participar en revisiones y formar sabiduría colectiva.',
-    'testimonialsManagement': 'Gestión de Testimonios',
+    'testimonialsManagement': 'Testimonios',
     'addTestimonial': 'Agregar Testimonio',
     'editTestimonial': 'Editar Testimonio',
     'noTestimonials': 'Bienvenido a Dejar un Mensaje',
@@ -2960,7 +2960,7 @@ const translations = {
     'selectLanguage': 'Select Language',
     
     // Template Management
-    'templateManagement': 'Gestión de Plantillas',
+    'templateManagement': 'Plantillas',
     'templates': 'Templates',
     'templateName': 'Nombre de Plantilla',
     'templateOwner': 'Visibilidad de Plantilla',
@@ -3061,7 +3061,7 @@ const translations = {
     'answerCannotBeEmpty': 'La respuesta no puede estar vacía',
     
     // Keywords Management
-    'keywordsManagement': 'Gestión de Palabras Clave',
+    'keywordsManagement': 'Palabras Clave',
     'searchKeywords': 'Buscar Palabras Clave',
     'addKeyword': 'Agregar Palabra Clave',
     'editKeyword': 'Editar Palabra Clave',
@@ -3139,7 +3139,12 @@ const translations = {
     'dashboard': 'Tableau de bord',
     'myReviews': 'Mes examens',
     'publicReviews': 'Examens publics',
-    'publicReviewsManagement': 'Gestion des examens publics',
+    'publicReviewsManagement': 'Examens publics',
+    'userManagement': 'Utilisateurs',
+    'templateManagement': 'Modèles',
+    'testimonialsManagement': 'Témoignages',
+    'subscriptionManagement': 'Abonnements',
+    'keywordsManagement': 'Mots-clés',
     'noPublicReviews': 'Aucun examen public pour le moment',
     'confirmDeleteReview': 'Êtes-vous sûr de vouloir supprimer cet examen ? Cette action est irréversible.',
     'teams': 'Équipes',
