@@ -143,12 +143,14 @@
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
 - **版本**: ✅ **V6.12.0 - 模板价格系统 + 繁體中文支持（2025-11-18）**
-- **Git Commit**: 待提交
+- **Git Commit**: 47e63a7 (V6.12.0: 添加模板价格系统 + 繁體中文语言支持)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
-- **状态**: ✅ 本地测试成功，待部署到生产环境
+- **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-18
+- **部署 URL**: https://8251984f.review-system.pages.dev
+- **主站 URL**: https://review-system.pages.dev (将自动更新)
 - **数据库迁移**: ✅ Migration 0040 已应用（添加 price 字段到 templates 表）
-- **功能状态**: ✅ 模板价格系统 + 6种语言支持
+- **功能状态**: ✅ 模板价格系统 + 6种语言支持（zh/zh-TW/en/fr/ja/es）
 - **最新更新**: ✅ **V6.12.0 - 模板价格系统 + 繁體中文语言支持**（2025-11-18）
   - ✅ **模板价格系统**：
     - 数据库：添加 price 字段（REAL 类型，默认 0.0，单位 USD）
