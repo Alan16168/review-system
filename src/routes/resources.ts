@@ -1339,7 +1339,8 @@ function generateMockAIArticles(keywords: string[], lang: string) {
 // AI Chat - Use Gemini to answer user questions
 resources.post('/ai-chat', async (c) => {
   try {
-    const geminiApiKey = c.env.GEMINI_API_KEY;
+    // Try to get API key from GEMINI_API_KEY or fallback to GOOGLE_API_KEY
+    const geminiApiKey = c.env.GEMINI_API_KEY || c.env.GOOGLE_API_KEY;
     const { question } = await c.req.json();
     
     // Get language from header or default to Chinese
@@ -1359,6 +1360,8 @@ resources.post('/ai-chat', async (c) => {
         source: 'mock'
       });
     }
+    
+    console.log('Using API Key for Gemini (from ' + (c.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_API_KEY') + ')');
     
     // Build prompt for Gemini
     const prompt = `作为系统复盘资深专家，回答以下问题：
@@ -1392,6 +1395,11 @@ ${question}
 
 请只返回JSON数据，不要其他解释文字。`;
 
+    // Log the prompt for debugging
+    console.log('==================== AI Chat Prompt ====================');
+    console.log(prompt);
+    console.log('========================================================');
+
     // Call Gemini API
     const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + geminiApiKey, {
       method: 'POST',
@@ -1414,6 +1422,12 @@ ${question}
     const geminiData = await geminiResponse.json();
     const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
     
+    // Log the Gemini response for debugging
+    console.log('==================== Gemini Response ====================');
+    console.log('Status:', geminiResponse.status);
+    console.log('AI Text:', aiText);
+    console.log('=========================================================');
+    
     if (!aiText) {
       throw new Error('No response from Gemini');
     }
@@ -1425,6 +1439,10 @@ ${question}
       const jsonMatch = aiText.match(/```json\s*([\s\S]*?)\s*```/) || aiText.match(/\{[\s\S]*\}/);
       const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : aiText;
       result = JSON.parse(jsonText);
+      
+      console.log('==================== Parsed Result ====================');
+      console.log(JSON.stringify(result, null, 2));
+      console.log('=======================================================');
       
       // Format the answer from perspectives
       const answer = result.perspectives.map((p: any, index: number) => 
