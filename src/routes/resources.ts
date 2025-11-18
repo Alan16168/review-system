@@ -1188,8 +1188,8 @@ Requirements:
 4. Return only JSON data, no other explanation text`;
     }
 
-    // Call Gemini API
-    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + geminiApiKey, {
+    // Call Gemini API - using gemini-2.5-flash (latest stable model)
+    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + geminiApiKey, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1336,6 +1336,81 @@ function generateMockAIArticles(keywords: string[], lang: string) {
   return articles;
 }
 
+// Helper function to call Gemini API with retry logic
+async function callGeminiWithRetry(apiKey: string, question: string, maxRetries: number = 3): Promise<string> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[Attempt ${attempt}/${maxRetries}] Calling Gemini API...`);
+      
+      const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: question
+            }]
+          }]
+        })
+      });
+      
+      if (!geminiResponse.ok) {
+        const errorText = await geminiResponse.text();
+        console.error(`[Attempt ${attempt}] Gemini API error: ${geminiResponse.status} - ${errorText}`);
+        lastError = new Error(`Gemini API error: ${geminiResponse.status}`);
+        
+        // If not the last attempt, wait before retrying
+        if (attempt < maxRetries) {
+          const waitTime = attempt * 1000; // Incremental backoff: 1s, 2s, 3s
+          console.log(`[Attempt ${attempt}] Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+        throw lastError;
+      }
+      
+      const geminiData = await geminiResponse.json();
+      const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!aiText) {
+        console.error(`[Attempt ${attempt}] No response text from Gemini`);
+        lastError = new Error('No response from Gemini');
+        
+        if (attempt < maxRetries) {
+          const waitTime = attempt * 1000;
+          console.log(`[Attempt ${attempt}] Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+        throw lastError;
+      }
+      
+      console.log(`[Attempt ${attempt}] Success! Received response from Gemini`);
+      return aiText;
+      
+    } catch (error) {
+      console.error(`[Attempt ${attempt}] Error:`, error);
+      lastError = error as Error;
+      
+      // If not the last attempt, wait before retrying
+      if (attempt < maxRetries) {
+        const waitTime = attempt * 1000;
+        console.log(`[Attempt ${attempt}] Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      throw lastError;
+    }
+  }
+  
+  throw lastError || new Error('Failed to get response from Gemini after retries');
+}
+
 // AI Chat - Use Gemini to answer user questions
 resources.post('/ai-chat', async (c) => {
   try {
@@ -1362,111 +1437,27 @@ resources.post('/ai-chat', async (c) => {
     }
     
     console.log('Using API Key for Gemini (from ' + (c.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : 'GOOGLE_API_KEY') + ')');
-    
-    // Build prompt for Gemini
-    const prompt = `作为系统复盘资深专家，回答以下问题：
+    console.log('==================== AI Chat Question ====================');
+    console.log('Question:', question);
+    console.log('==========================================================');
 
-【用户问题】
-${question}
-
-【输出要求】
-请以JSON格式输出，包含以下字段：
-1. "perspectives": 数组，包含2-3个不同角度的回答（每个角度包含 "title" 和 "content" 字段）
-2. "nextQuestions": 数组，包含3个用户可能会问的下一个问题
-
-示例格式：
-{
-  "perspectives": [
-    {
-      "title": "角度一标题",
-      "content": "从这个角度的详细回答..."
-    },
-    {
-      "title": "角度二标题", 
-      "content": "从这个角度的详细回答..."
-    }
-  ],
-  "nextQuestions": [
-    "预测的问题1",
-    "预测的问题2",
-    "预测的问题3"
-  ]
-}
-
-请只返回JSON数据，不要其他解释文字。`;
-
-    // Log the prompt for debugging
-    console.log('==================== AI Chat Prompt ====================');
-    console.log(prompt);
-    console.log('========================================================');
-
-    // Call Gemini API
-    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + geminiApiKey, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      })
-    });
-    
-    if (!geminiResponse.ok) {
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
-    }
-    
-    const geminiData = await geminiResponse.json();
-    const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Call Gemini API with automatic retry (3 attempts total)
+    const aiText = await callGeminiWithRetry(geminiApiKey, question, 3);
     
     // Log the Gemini response for debugging
     console.log('==================== Gemini Response ====================');
-    console.log('Status:', geminiResponse.status);
-    console.log('AI Text:', aiText);
+    console.log('AI Text:', aiText?.substring(0, 200) + (aiText?.length > 200 ? '...' : ''));
     console.log('=========================================================');
     
-    if (!aiText) {
-      throw new Error('No response from Gemini');
-    }
-    
-    // Parse JSON from AI response
-    let result;
-    try {
-      // Extract JSON from markdown code blocks if present
-      const jsonMatch = aiText.match(/```json\s*([\s\S]*?)\s*```/) || aiText.match(/\{[\s\S]*\}/);
-      const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : aiText;
-      result = JSON.parse(jsonText);
-      
-      console.log('==================== Parsed Result ====================');
-      console.log(JSON.stringify(result, null, 2));
-      console.log('=======================================================');
-      
-      // Format the answer from perspectives
-      const answer = result.perspectives.map((p: any, index: number) => 
-        `**${p.title}**\n${p.content}`
-      ).join('\n\n');
-      
-      return c.json({
-        answer: answer,
-        nextQuestions: result.nextQuestions || [],
-        source: 'gemini_ai'
-      });
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      console.log('AI response text:', aiText);
-      // Return mock data if parsing fails
-      return c.json({
-        answer: generateMockAnswer(question, lang),
-        nextQuestions: generateMockNextQuestions(question, lang),
-        source: 'mock_fallback'
-      });
-    }
+    // Return the AI response directly without parsing
+    return c.json({
+      answer: aiText,
+      nextQuestions: [],  // No predicted questions for direct mode
+      source: 'gemini_ai'
+    });
     
   } catch (error) {
-    console.error('AI chat error:', error);
+    console.error('AI chat error after all retries:', error);
     const lang = c.req.header('X-Language') || 'zh';
     const { question } = await c.req.json();
     
@@ -1478,35 +1469,22 @@ ${question}
   }
 });
 
-// Generate mock answer for testing
+// Generate mock answer for testing - Simple direct response
 function generateMockAnswer(question: string, lang: string = 'zh'): string {
-  const perspectives = [
-    {
-      title: '从方法论角度',
-      content: `针对"${question}"这个问题，建议采用系统化的复盘方法。首先要明确目标和预期，然后收集相关数据和事实，再进行深入分析，最后总结经验教训并制定改进措施。`
-    },
-    {
-      title: '从实践经验角度',
-      content: `根据以往的实践经验，处理"${question}"时需要注意以下几点：保持客观性，避免个人偏见；注重数据支撑，而非主观臆断；重视团队讨论，集思广益；及时记录和跟进改进措施。`
-    },
-    {
-      title: '从工具应用角度',
-      content: `解决"${question}"可以运用多种工具和框架，例如：PDCA循环、五问法（5 Whys）、鱼骨图分析、SWOT分析等。选择合适的工具能够帮助更系统地分析问题并找到解决方案。`
-    }
-  ];
-  
-  return perspectives.map((p, index) => 
-    `**${p.title}**\n${p.content}`
-  ).join('\n\n');
+  if (lang === 'zh') {
+    return `抱歉，AI服务暂时不可用。您的问题是："${question}"。请稍后重试，或联系管理员检查API配置。`;
+  } else if (lang === 'ja') {
+    return `申し訳ございません。AIサービスが一時的に利用できません。あなたの質問は：「${question}」です。後でもう一度お試しいただくか、管理者にAPIの設定を確認してください。`;
+  } else if (lang === 'es') {
+    return `Lo siento, el servicio de IA no está disponible temporalmente. Su pregunta es: "${question}". Por favor, inténtelo más tarde o contacte al administrador para verificar la configuración de la API.`;
+  } else {
+    return `Sorry, the AI service is temporarily unavailable. Your question is: "${question}". Please try again later or contact the administrator to check the API configuration.`;
+  }
 }
 
-// Generate mock next questions
+// Generate mock next questions - Return empty array as we no longer generate predicted questions
 function generateMockNextQuestions(question: string, lang: string = 'zh'): string[] {
-  return [
-    '如何建立有效的复盘机制？',
-    '复盘过程中常见的误区有哪些？',
-    '如何确保复盘结果能够落地执行？'
-  ];
+  return [];
 }
 
 export default resources;
