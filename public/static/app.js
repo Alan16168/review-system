@@ -12435,6 +12435,7 @@ function closeKeywordModal() {
 
 async function handleAddKeyword(event) {
   event.preventDefault();
+  event.stopPropagation();
   
   const keyword = document.getElementById('keyword-text').value;
   const language = document.getElementById('keyword-language').value;
@@ -12454,8 +12455,9 @@ async function handleAddKeyword(event) {
       }
     });
 
-    showSuccess(i18n.t('keywordAddedSuccess'));
+    // Close modal first
     closeKeywordModal();
+    showSuccess(i18n.t('keywordAddedSuccess'));
     await loadKeywords();
   } catch (error) {
     console.error('Failed to add keyword:', error);
@@ -12527,6 +12529,7 @@ function showEditKeywordModal(id) {
 
 async function handleEditKeyword(event, id) {
   event.preventDefault();
+  event.stopPropagation();
   
   const keyword = document.getElementById('edit-keyword-text').value;
   const language = document.getElementById('edit-keyword-language').value;
@@ -12546,8 +12549,9 @@ async function handleEditKeyword(event, id) {
       }
     });
 
-    showSuccess(i18n.t('keywordUpdatedSuccess'));
+    // Close modal first
     closeKeywordModal();
+    showSuccess(i18n.t('keywordUpdatedSuccess'));
     await loadKeywords();
   } catch (error) {
     console.error('Failed to update keyword:', error);
