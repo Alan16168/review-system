@@ -1110,7 +1110,14 @@ resources.get('/ai-query', async (c) => {
     `).bind(lang).all();
     
     const keywords = keywordsResult.results && keywordsResult.results.length > 0
-      ? keywordsResult.results.map((row: any) => row.keyword)
+      ? keywordsResult.results.map((row: any) => {
+          // Clean up keywords - remove site: prefix
+          let keyword = row.keyword;
+          if (keyword.startsWith('site:')) {
+            keyword = keyword.replace(/^site:[^\s]+\s+/, '');
+          }
+          return keyword.trim();
+        })
       : [];
     
     console.log(`AI Query - Keywords: ${keywords.join(', ')}`);
@@ -1236,7 +1243,14 @@ Requirements:
     `).bind(c.req.query('lang') || 'zh').all();
     
     const keywords = keywordsResult.results && keywordsResult.results.length > 0
-      ? keywordsResult.results.map((row: any) => row.keyword)
+      ? keywordsResult.results.map((row: any) => {
+          // Clean up keywords - remove site: prefix
+          let keyword = row.keyword;
+          if (keyword.startsWith('site:')) {
+            keyword = keyword.replace(/^site:[^\s]+\s+/, '');
+          }
+          return keyword.trim();
+        })
       : [];
     
     return c.json({
@@ -1265,8 +1279,15 @@ function generateMockAIArticles(keywords: string[], lang: string) {
       '深度解析', '实战指南', '经验总结', '系统方法',
       '框架应用', '持续改进'
     ];
-    // Chinese: Use multiple platforms
-    searchEngine = 'baidu'; // Will be handled in URL generation
+    // Chinese: Use multiple Chinese platforms
+    const chinesePlatforms = [
+      'https://www.zhihu.com/search?q=',
+      'https://www.jianshu.com/search?q=',
+      'https://so.csdn.net/so/search?q=',
+      'https://juejin.cn/search?query=',
+      'https://www.cnblogs.com/search?Keywords='
+    ];
+    searchEngine = 'chinese_platforms';
     titleTemplate = (k, t) => `${k}的${t}`;
     descTemplate = (k, t) => `深入探讨${k}相关的${t}，通过实际案例和系统化的方法，帮助您更好地理解和应用${k}的核心理念。`;
   } else {
