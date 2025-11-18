@@ -10,12 +10,15 @@ templates.use('/*', authMiddleware);
 function getLanguage(c: any): string {
   // Try X-Language header first
   const xLanguage = c.req.header('X-Language');
-  if (xLanguage && (xLanguage === 'en' || xLanguage === 'zh')) {
+  if (xLanguage && ['en', 'zh', 'zh-TW', 'fr', 'ja', 'es'].includes(xLanguage)) {
     return xLanguage;
   }
   
   // Try Accept-Language header
   const acceptLanguage = c.req.header('Accept-Language') || '';
+  if (acceptLanguage.includes('zh-TW') || acceptLanguage.includes('zh-Hant')) {
+    return 'zh-TW';
+  }
   if (acceptLanguage.includes('zh')) {
     return 'zh';
   }
@@ -39,7 +42,8 @@ templates.get('/', async (c) => {
         is_default,
         owner,
         created_by,
-        created_at
+        created_at,
+        price
       FROM templates
       WHERE is_active = 1
         AND (
@@ -106,7 +110,8 @@ templates.get('/:id', async (c) => {
         is_default,
         owner,
         created_by,
-        created_at
+        created_at,
+        price
       FROM templates
       WHERE id = ? 
         AND is_active = 1
@@ -174,6 +179,7 @@ templates.get('/admin/all', premiumOrAdmin, async (c) => {
         t.created_at,
         t.updated_at,
         t.created_by,
+        t.price,
         u.username as creator_name,
         u.role as creator_role
       FROM templates t
@@ -232,7 +238,8 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
         is_active,
         owner,
         created_at,
-        updated_at
+        updated_at,
+        price
       FROM templates
       WHERE id = ?
     `).bind(templateId).first();
@@ -280,7 +287,7 @@ templates.post('/', premiumOrAdmin, async (c) => {
       return c.json({ error: 'User not authenticated' }, 401);
     }
     
-    const { name, description, is_default, owner } = await c.req.json();
+    const { name, description, is_default, owner, price } = await c.req.json();
 
     if (!name) {
       return c.json({ error: 'Template name is required' }, 400);
@@ -289,6 +296,15 @@ templates.post('/', premiumOrAdmin, async (c) => {
     // Validate owner value
     if (owner && !['private', 'team', 'public'].includes(owner)) {
       return c.json({ error: 'Invalid owner value' }, 400);
+    }
+
+    // Validate and parse price (default to 0.0 if not provided)
+    let templatePrice = 0.0;
+    if (price !== undefined && price !== null) {
+      templatePrice = parseFloat(price);
+      if (isNaN(templatePrice) || templatePrice < 0) {
+        return c.json({ error: 'Price must be a non-negative number' }, 400);
+      }
     }
 
     // Only admin users can set templates as default
@@ -304,14 +320,15 @@ templates.post('/', premiumOrAdmin, async (c) => {
 
     // Insert new template with creator
     const result = await c.env.DB.prepare(`
-      INSERT INTO templates (name, description, is_default, is_active, owner, created_by)
-      VALUES (?, ?, ?, 1, ?, ?)
+      INSERT INTO templates (name, description, is_default, is_active, owner, created_by, price)
+      VALUES (?, ?, ?, 1, ?, ?, ?)
     `).bind(
       name,
       description || null,
       actualIsDefault ? 1 : 0,
       owner || 'public',
-      user.id
+      user.id,
+      templatePrice
     ).run();
 
     return c.json({ 
@@ -329,11 +346,20 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
   try {
     const user = c.get('user') as any;
     const templateId = c.req.param('id');
-    const { name, description, is_default, is_active, owner } = await c.req.json();
+    const { name, description, is_default, is_active, owner, price } = await c.req.json();
 
     // Validate owner value
     if (owner && !['private', 'team', 'public'].includes(owner)) {
       return c.json({ error: 'Invalid owner value' }, 400);
+    }
+
+    // Validate and parse price (keep existing value if not provided)
+    let templatePrice: number | undefined = undefined;
+    if (price !== undefined && price !== null) {
+      templatePrice = parseFloat(price);
+      if (isNaN(templatePrice) || templatePrice < 0) {
+        return c.json({ error: 'Price must be a non-negative number' }, 400);
+      }
     }
 
     // Check if template exists and get creator
@@ -362,24 +388,46 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
       `).bind(templateId).run();
     }
 
-    // Update template
-    await c.env.DB.prepare(`
-      UPDATE templates
-      SET name = ?,
-          description = ?,
-          is_default = ?,
-          is_active = ?,
-          owner = ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(
-      name,
-      description || null,
-      actualIsDefault ? 1 : 0,
-      is_active ? 1 : 0,
-      owner || 'public',
-      templateId
-    ).run();
+    // Update template with price
+    const updateQuery = templatePrice !== undefined
+      ? `UPDATE templates
+         SET name = ?,
+             description = ?,
+             is_default = ?,
+             is_active = ?,
+             owner = ?,
+             price = ?,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`
+      : `UPDATE templates
+         SET name = ?,
+             description = ?,
+             is_default = ?,
+             is_active = ?,
+             owner = ?,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`;
+    
+    const updateParams = templatePrice !== undefined
+      ? [
+          name,
+          description || null,
+          actualIsDefault ? 1 : 0,
+          is_active ? 1 : 0,
+          owner || 'public',
+          templatePrice,
+          templateId
+        ]
+      : [
+          name,
+          description || null,
+          actualIsDefault ? 1 : 0,
+          is_active ? 1 : 0,
+          owner || 'public',
+          templateId
+        ];
+    
+    await c.env.DB.prepare(updateQuery).bind(...updateParams).run();
 
     return c.json({ message: 'Template updated successfully' });
   } catch (error) {

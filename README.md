@@ -4,16 +4,16 @@
 [![GitHub stars](https://img.shields.io/github/stars/Alan16168/review-system?style=social)](https://github.com/Alan16168/review-system)
 [![Cloudflare Pages](https://img.shields.io/badge/Deployed%20on-Cloudflare%20Pages-orange)](https://review-system.pages.dev)
 
-一个帮助个人和团队进行深度复盘的全栈 Web 应用系统，支持4种语言（中文、英语、日语、西班牙语）。
+一个帮助个人和团队进行深度复盘的全栈 Web 应用系统，支持6种语言（简体中文、繁體中文、English、Français、日本語、Español）。
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V6.11.9 - 修复所有语言页尾翻译（2025-11-18）  
-**📝 模板系统**: ✅ 支持私人/团队/公开三种可见性级别  
+**✅ 当前版本**: V6.12.0 - 模板价格系统 + 繁體中文支持（2025-11-18）  
+**📝 模板系统**: ✅ 支持私人/团队/公开三种可见性级别 + 价格设置  
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
-**🌍 多语言**: ✅ 完整的中英日西语支持  
+**🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 
 ## 🌟 项目概述
@@ -142,7 +142,43 @@
 - **最新部署 ID**: https://3a763bb7.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.11.9 - 修复所有语言页尾翻译（2025-11-18）**
+- **版本**: ✅ **V6.12.0 - 模板价格系统 + 繁體中文支持（2025-11-18）**
+- **Git Commit**: 待提交
+- **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
+- **状态**: ✅ 本地测试成功，待部署到生产环境
+- **部署日期**: 2025-11-18
+- **数据库迁移**: ✅ Migration 0040 已应用（添加 price 字段到 templates 表）
+- **功能状态**: ✅ 模板价格系统 + 6种语言支持
+- **最新更新**: ✅ **V6.12.0 - 模板价格系统 + 繁體中文语言支持**（2025-11-18）
+  - ✅ **模板价格系统**：
+    - 数据库：添加 price 字段（REAL 类型，默认 0.0，单位 USD）
+    - 后端 API：templates 创建/编辑/查询接口支持 price 参数
+    - 价格验证：确保价格为非负数
+    - 前端 UI：
+      - 创建模板：添加价格输入框（$符号前缀，USD后缀）
+      - 编辑模板：显示并可修改价格
+      - 模板列表：新增价格列，免费模板显示绿色"免费"标签
+    - i18n 翻译：所有6种语言添加 templatePrice 和 free 翻译键
+  - ✅ **繁體中文语言支持**：
+    - 添加完整的繁體中文翻译（zh-TW）：~785 行翻译
+    - 使用 opencc-js 自动转换简体中文到繁體中文（台湾标准）
+    - 语言选择器：所有下拉菜单添加"繁體中文"选项（位于"简体中文"下方）
+    - 语言代码：zh-TW（台湾旗帜图标 🇹🇼）
+    - 支持范围：完整的 UI 翻译，包括所有功能模块
+  - ✅ **多语言增强**：
+    - 从5种语言扩展到6种语言（zh/zh-TW/en/fr/ja/es）
+    - 所有语言选择器统一更新
+    - 后端 getLanguage() 函数支持 zh-TW 识别
+  - **技术实现**：
+    - Migration: `migrations/0040_add_template_price.sql`
+    - Backend: `src/routes/templates.ts` 所有 CRUD 端点更新
+    - Frontend: `public/static/app.js` 模板表单和列表更新
+    - i18n: `public/static/i18n.js` 添加 zh-TW 完整翻译
+    - 转换工具: `convert_zh_tw.cjs` 使用 opencc-js 自动转换
+  - **部署 URL**: 待部署到 https://review-system.pages.dev
+  - **开发测试 URL**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
+
+- **上一版本**: ✅ **V6.11.9 - 修复所有语言页尾翻译（2025-11-18）**
 - **Git Commit**: 5307204 (修复法语、日语、西班牙语页尾翻译)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）

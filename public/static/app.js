@@ -5306,6 +5306,7 @@ function renderNavigation() {
                   i18n.getCurrentLanguage() === 'fr' ? 'Français' :
                   i18n.getCurrentLanguage() === 'es' ? 'Español' :
                   i18n.getCurrentLanguage() === 'zh' ? '简体中文' :
+                  i18n.getCurrentLanguage() === 'zh-TW' ? '繁體中文' :
                   '日本語'
                 }</span>
                 <i class="fas fa-chevron-down ml-1 text-xs"></i>
@@ -5330,6 +5331,11 @@ function renderNavigation() {
                   <span class="mr-2">🇨🇳</span>
                   <span>简体中文</span>
                   ${i18n.getCurrentLanguage() === 'zh' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                </button>
+                <button onclick="handleLanguageSwitch('zh-TW', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'zh-TW' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                  <span class="mr-2">🇹🇼</span>
+                  <span>繁體中文</span>
+                  ${i18n.getCurrentLanguage() === 'zh-TW' ? '<i class="fas fa-check ml-auto"></i>' : ''}
                 </button>
                 <button onclick="handleLanguageSwitch('ja', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'ja' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
                   <span class="mr-2">🇯🇵</span>
@@ -8153,6 +8159,9 @@ function renderTemplatesTable(templates) {
               ${i18n.t('questionCount')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('templatePrice')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ${i18n.t('templateOwner')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -8190,6 +8199,12 @@ function renderTemplatesTable(templates) {
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="text-sm text-gray-900">${template.question_count}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm font-medium text-gray-900">
+                  ${template.price > 0 ? `$${parseFloat(template.price).toFixed(2)}` : 
+                    `<span class="text-green-600">${i18n.t('free')}</span>`}
+                </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -8280,6 +8295,18 @@ function showCreateTemplateModal() {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('templatePrice')}
+              </label>
+              <div class="flex items-center">
+                <span class="text-gray-600 mr-2">$</span>
+                <input type="number" id="template-price" min="0" step="0.01" value="0"
+                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="0.00">
+                <span class="text-gray-600 ml-2">USD</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('templateOwner')}
               </label>
               <select id="template-owner" 
@@ -8327,9 +8354,11 @@ async function handleCreateTemplate(e) {
   e.preventDefault();
   
   const isDefaultCheckbox = document.getElementById('template-is-default');
+  const priceValue = parseFloat(document.getElementById('template-price').value) || 0;
   const data = {
     name: document.getElementById('template-name').value,
     description: document.getElementById('template-description').value || null,
+    price: priceValue,
     is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false,
     owner: document.getElementById('template-owner').value
   };
@@ -8379,6 +8408,18 @@ async function showEditTemplateModal(templateId) {
                 </label>
                 <textarea id="template-description" rows="3"
                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(template.description || '')}</textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  ${i18n.t('templatePrice')}
+                </label>
+                <div class="flex items-center">
+                  <span class="text-gray-600 mr-2">$</span>
+                  <input type="number" id="template-price" min="0" step="0.01" value="${template.price || 0}"
+                         class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                         placeholder="0.00">
+                  <span class="text-gray-600 ml-2">USD</span>
+                </div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -8439,9 +8480,11 @@ async function handleUpdateTemplate(e, templateId) {
   e.preventDefault();
   
   const isDefaultCheckbox = document.getElementById('template-is-default');
+  const priceValue = parseFloat(document.getElementById('template-price').value) || 0;
   const data = {
     name: document.getElementById('template-name').value,
     description: document.getElementById('template-description').value || null,
+    price: priceValue,
     is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false,
     is_active: document.getElementById('template-is-active').checked,
     owner: document.getElementById('template-owner').value
@@ -9402,6 +9445,7 @@ async function showEditUserModal(userId) {
                   <option value="fr" ${user.language === 'fr' ? 'selected' : ''}>Français</option>
                   <option value="es" ${user.language === 'es' ? 'selected' : ''}>Español</option>
                   <option value="zh" ${user.language === 'zh' ? 'selected' : ''}>简体中文</option>
+                  <option value="zh-TW" ${user.language === 'zh-TW' ? 'selected' : ''}>繁體中文</option>
                   <option value="ja" ${user.language === 'ja' ? 'selected' : ''}>日本語</option>
                 </select>
               </div>
@@ -12344,6 +12388,7 @@ async function showKeywordsManagement(container) {
             <option value="fr">Français (French)</option>
             <option value="es">Español (Spanish)</option>
             <option value="zh">简体中文 (Simplified Chinese)</option>
+            <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
             <option value="ja">日本語 (Japanese)</option>
           </select>
         </div>
@@ -12544,6 +12589,7 @@ function showAddKeywordModal() {
               <option value="fr">Français (French)</option>
               <option value="es">Español (Spanish)</option>
               <option value="zh">简体中文 (Simplified Chinese)</option>
+              <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
               <option value="ja">日本語 (Japanese)</option>
             </select>
           </div>
@@ -12646,6 +12692,7 @@ function showEditKeywordModal(id) {
               <option value="fr" ${keyword.language === 'fr' ? 'selected' : ''}>Français (French)</option>
               <option value="es" ${keyword.language === 'es' ? 'selected' : ''}>Español (Spanish)</option>
               <option value="zh" ${keyword.language === 'zh' ? 'selected' : ''}>简体中文 (Simplified Chinese)</option>
+              <option value="zh-TW" ${keyword.language === 'zh-TW' ? 'selected' : ''}>繁體中文 (Traditional Chinese)</option>
               <option value="ja" ${keyword.language === 'ja' ? 'selected' : ''}>日本語 (Japanese)</option>
             </select>
           </div>
