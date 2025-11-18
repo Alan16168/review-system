@@ -12252,14 +12252,6 @@ async function showKeywordsManagement(container) {
   `;
 
   await loadKeywords();
-  
-  // Set default language filter to current language
-  const currentLang = i18n.locale;
-  const filterLangSelect = document.getElementById('filter-language');
-  if (filterLangSelect && currentLang) {
-    filterLangSelect.value = currentLang;
-    filterKeywords(); // Apply filter immediately
-  }
 }
 
 let allKeywords = [];
@@ -12275,11 +12267,29 @@ async function loadKeywords() {
 
     allKeywords = response.data.keywords;
     
-    // Don't display all keywords immediately
-    // displayKeywords will be called by filterKeywords() after setting the language filter
+    // Set default language filter to current language after data is loaded
+    const currentLang = i18n.locale;
+    const filterLangSelect = document.getElementById('filter-language');
+    if (filterLangSelect && currentLang) {
+      filterLangSelect.value = currentLang;
+    }
+    
+    // Apply filter to display keywords
+    filterKeywords();
   } catch (error) {
     console.error('Failed to load keywords:', error);
     showError(i18n.t('loadError'));
+    // Display empty state on error
+    const tbody = document.getElementById('keywords-table-body');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="px-6 py-4 text-center text-red-500">
+            ${i18n.t('loadError')}
+          </td>
+        </tr>
+      `;
+    }
   }
 }
 
