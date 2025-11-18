@@ -12367,58 +12367,70 @@ function filterKeywords() {
 }
 
 function showAddKeywordModal() {
-  showModal(`
-    <div class="p-6">
-      <h2 class="text-2xl font-bold mb-4">${i18n.t('addKeyword')}</h2>
-      <form id="add-keyword-form" onsubmit="handleAddKeyword(event)">
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keyword')}</label>
-          <input type="text" id="keyword-text" required
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                 placeholder="${i18n.t('keyword')}">
-        </div>
-        
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
-          <select id="keyword-language" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="zh">中文 (Chinese)</option>
-            <option value="en">English</option>
-            <option value="ja">日本語 (Japanese)</option>
-            <option value="es">Español (Spanish)</option>
-          </select>
-        </div>
-        
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keywordType')}</label>
-          <select id="keyword-type" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="article">${i18n.t('articleKeyword')}</option>
-            <option value="video">${i18n.t('videoKeyword')}</option>
-          </select>
-        </div>
-        
-        <div class="mb-4">
-          <label class="flex items-center">
-            <input type="checkbox" id="keyword-active" checked
-                   class="mr-2 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-            <span class="text-sm font-medium text-gray-700">${i18n.t('keywordActive')}</span>
-          </label>
-        </div>
-        
-        <div class="flex justify-end space-x-3">
-          <button type="button" onclick="closeModal()" 
-                  class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-            ${i18n.t('cancel')}
-          </button>
-          <button type="submit" 
-                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-            ${i18n.t('add')}
-          </button>
-        </div>
-      </form>
+  const modalHtml = `
+    <div id="keyword-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         onclick="if(event.target === this) closeKeywordModal()">
+      <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-4">${i18n.t('addKeyword')}</h2>
+        <form id="add-keyword-form" onsubmit="handleAddKeyword(event)">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keyword')}</label>
+            <input type="text" id="keyword-text" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                   placeholder="${i18n.t('keyword')}">
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
+            <select id="keyword-language" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="zh">中文 (Chinese)</option>
+              <option value="en">English</option>
+              <option value="ja">日本語 (Japanese)</option>
+              <option value="es">Español (Spanish)</option>
+            </select>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keywordType')}</label>
+            <select id="keyword-type" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="article">${i18n.t('articleKeyword')}</option>
+              <option value="video">${i18n.t('videoKeyword')}</option>
+            </select>
+          </div>
+          
+          <div class="mb-4">
+            <label class="flex items-center">
+              <input type="checkbox" id="keyword-active" checked
+                     class="mr-2 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+              <span class="text-sm font-medium text-gray-700">${i18n.t('keywordActive')}</span>
+            </label>
+          </div>
+          
+          <div class="flex justify-end space-x-3">
+            <button type="button" onclick="closeKeywordModal()" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+              ${i18n.t('cancel')}
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              ${i18n.t('add')}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-  `);
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeKeywordModal() {
+  const modal = document.getElementById('keyword-modal');
+  if (modal) {
+    modal.remove();
+  }
 }
 
 async function handleAddKeyword(event) {
@@ -12443,7 +12455,7 @@ async function handleAddKeyword(event) {
     });
 
     showSuccess(i18n.t('keywordAddedSuccess'));
-    closeModal();
+    closeKeywordModal();
     await loadKeywords();
   } catch (error) {
     console.error('Failed to add keyword:', error);
@@ -12455,57 +12467,62 @@ function showEditKeywordModal(id) {
   const keyword = allKeywords.find(kw => kw.id === id);
   if (!keyword) return;
 
-  showModal(`
-    <div class="p-6">
-      <h2 class="text-2xl font-bold mb-4">${i18n.t('editKeyword')}</h2>
-      <form id="edit-keyword-form" onsubmit="handleEditKeyword(event, ${id})">
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keyword')}</label>
-          <input type="text" id="edit-keyword-text" value="${escapeHtml(keyword.keyword)}" required
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-        </div>
-        
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
-          <select id="edit-keyword-language" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="zh" ${keyword.language === 'zh' ? 'selected' : ''}>中文 (Chinese)</option>
-            <option value="en" ${keyword.language === 'en' ? 'selected' : ''}>English</option>
-            <option value="ja" ${keyword.language === 'ja' ? 'selected' : ''}>日本語 (Japanese)</option>
-            <option value="es" ${keyword.language === 'es' ? 'selected' : ''}>Español (Spanish)</option>
-          </select>
-        </div>
-        
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keywordType')}</label>
-          <select id="edit-keyword-type" required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="article" ${keyword.type === 'article' ? 'selected' : ''}>${i18n.t('articleKeyword')}</option>
-            <option value="video" ${keyword.type === 'video' ? 'selected' : ''}>${i18n.t('videoKeyword')}</option>
-          </select>
-        </div>
-        
-        <div class="mb-4">
-          <label class="flex items-center">
-            <input type="checkbox" id="edit-keyword-active" ${keyword.is_active ? 'checked' : ''}
-                   class="mr-2 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-            <span class="text-sm font-medium text-gray-700">${i18n.t('keywordActive')}</span>
-          </label>
-        </div>
-        
-        <div class="flex justify-end space-x-3">
-          <button type="button" onclick="closeModal()" 
-                  class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-            ${i18n.t('cancel')}
-          </button>
-          <button type="submit" 
-                  class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-            ${i18n.t('save')}
-          </button>
-        </div>
-      </form>
+  const modalHtml = `
+    <div id="keyword-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         onclick="if(event.target === this) closeKeywordModal()">
+      <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-4">${i18n.t('editKeyword')}</h2>
+        <form id="edit-keyword-form" onsubmit="handleEditKeyword(event, ${id})">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keyword')}</label>
+            <input type="text" id="edit-keyword-text" value="${escapeHtml(keyword.keyword)}" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
+            <select id="edit-keyword-language" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="zh" ${keyword.language === 'zh' ? 'selected' : ''}>中文 (Chinese)</option>
+              <option value="en" ${keyword.language === 'en' ? 'selected' : ''}>English</option>
+              <option value="ja" ${keyword.language === 'ja' ? 'selected' : ''}>日本語 (Japanese)</option>
+              <option value="es" ${keyword.language === 'es' ? 'selected' : ''}>Español (Spanish)</option>
+            </select>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('keywordType')}</label>
+            <select id="edit-keyword-type" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="article" ${keyword.type === 'article' ? 'selected' : ''}>${i18n.t('articleKeyword')}</option>
+              <option value="video" ${keyword.type === 'video' ? 'selected' : ''}>${i18n.t('videoKeyword')}</option>
+            </select>
+          </div>
+          
+          <div class="mb-4">
+            <label class="flex items-center">
+              <input type="checkbox" id="edit-keyword-active" ${keyword.is_active ? 'checked' : ''}
+                     class="mr-2 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+              <span class="text-sm font-medium text-gray-700">${i18n.t('keywordActive')}</span>
+            </label>
+          </div>
+          
+          <div class="flex justify-end space-x-3">
+            <button type="button" onclick="closeKeywordModal()" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+              ${i18n.t('cancel')}
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              ${i18n.t('save')}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-  `);
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
 async function handleEditKeyword(event, id) {
@@ -12530,7 +12547,7 @@ async function handleEditKeyword(event, id) {
     });
 
     showSuccess(i18n.t('keywordUpdatedSuccess'));
-    closeModal();
+    closeKeywordModal();
     await loadKeywords();
   } catch (error) {
     console.error('Failed to update keyword:', error);
