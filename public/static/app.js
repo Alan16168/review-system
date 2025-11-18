@@ -335,10 +335,12 @@ async function showHomePage() {
                     class="px-6 py-3 rounded-lg font-medium transition inactive-tab">
               <i class="fas fa-robot mr-2"></i>${i18n.t('aiQuery')}
             </button>
+            ${(currentUser && (currentUser.role === 'premium' || currentUser.role === 'admin')) ? `
             <button onclick="openAIChat()" id="btn-ai-chat"
                     class="px-6 py-3 rounded-lg font-medium transition bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700">
               <i class="fas fa-comments mr-2"></i>${i18n.t('aiChat')}
             </button>
+            ` : ''}
           </div>
 
           <!-- Articles Tab -->
@@ -5300,33 +5302,33 @@ function renderNavigation() {
                       class="text-gray-600 hover:text-indigo-600 flex items-center px-2 py-1 rounded-lg hover:bg-gray-100 text-sm">
                 <i class="fas fa-language mr-2"></i>
                 <span class="font-medium">${
-                  i18n.getCurrentLanguage() === 'zh' ? '中文' :
                   i18n.getCurrentLanguage() === 'en' ? 'English' :
-                  i18n.getCurrentLanguage() === 'ja' ? '日本語' :
-                  'Español'
+                  i18n.getCurrentLanguage() === 'es' ? 'Español' :
+                  i18n.getCurrentLanguage() === 'zh' ? '简体中文' :
+                  '日本語'
                 }</span>
                 <i class="fas fa-chevron-down ml-1 text-xs"></i>
               </button>
               <div id="language-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
-                <button onclick="handleLanguageSwitch('zh', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'zh' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
-                  <span class="mr-2">🇨🇳</span>
-                  <span>中文</span>
-                  ${i18n.getCurrentLanguage() === 'zh' ? '<i class="fas fa-check ml-auto"></i>' : ''}
-                </button>
                 <button onclick="handleLanguageSwitch('en', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'en' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
                   <span class="mr-2">🇬🇧</span>
                   <span>English</span>
                   ${i18n.getCurrentLanguage() === 'en' ? '<i class="fas fa-check ml-auto"></i>' : ''}
                 </button>
-                <button onclick="handleLanguageSwitch('ja', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'ja' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
-                  <span class="mr-2">🇯🇵</span>
-                  <span>日本語</span>
-                  ${i18n.getCurrentLanguage() === 'ja' ? '<i class="fas fa-check ml-auto"></i>' : ''}
-                </button>
                 <button onclick="handleLanguageSwitch('es', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'es' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
                   <span class="mr-2">🇪🇸</span>
                   <span>Español</span>
                   ${i18n.getCurrentLanguage() === 'es' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                </button>
+                <button onclick="handleLanguageSwitch('zh', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'zh' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                  <span class="mr-2">🇨🇳</span>
+                  <span>简体中文</span>
+                  ${i18n.getCurrentLanguage() === 'zh' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                </button>
+                <button onclick="handleLanguageSwitch('ja', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'ja' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                  <span class="mr-2">🇯🇵</span>
+                  <span>日本語</span>
+                  ${i18n.getCurrentLanguage() === 'ja' ? '<i class="fas fa-check ml-auto"></i>' : ''}
                 </button>
               </div>
             </div>
@@ -9390,10 +9392,10 @@ async function showEditUserModal(userId) {
                 </label>
                 <select id="user-language"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                  <option value="zh" ${user.language === 'zh' ? 'selected' : ''}>中文</option>
                   <option value="en" ${user.language === 'en' ? 'selected' : ''}>English</option>
-                  <option value="ja" ${user.language === 'ja' ? 'selected' : ''}>日本語</option>
                   <option value="es" ${user.language === 'es' ? 'selected' : ''}>Español</option>
+                  <option value="zh" ${user.language === 'zh' ? 'selected' : ''}>简体中文</option>
+                  <option value="ja" ${user.language === 'ja' ? 'selected' : ''}>日本語</option>
                 </select>
               </div>
               
@@ -12331,10 +12333,10 @@ async function showKeywordsManagement(container) {
           <select id="filter-language" onchange="filterKeywords()" 
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
             <option value="">${i18n.t('all')}</option>
-            <option value="zh">中文 (Chinese)</option>
             <option value="en">English</option>
-            <option value="ja">日本語 (Japanese)</option>
             <option value="es">Español (Spanish)</option>
+            <option value="zh">简体中文 (Simplified Chinese)</option>
+            <option value="ja">日本語 (Japanese)</option>
           </select>
         </div>
         <div>
@@ -12530,10 +12532,10 @@ function showAddKeywordModal() {
             <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
             <select id="keyword-language" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="zh">中文 (Chinese)</option>
               <option value="en">English</option>
-              <option value="ja">日本語 (Japanese)</option>
               <option value="es">Español (Spanish)</option>
+              <option value="zh">简体中文 (Simplified Chinese)</option>
+              <option value="ja">日本語 (Japanese)</option>
             </select>
           </div>
           
@@ -12631,10 +12633,10 @@ function showEditKeywordModal(id) {
             <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
             <select id="edit-keyword-language" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="zh" ${keyword.language === 'zh' ? 'selected' : ''}>中文 (Chinese)</option>
               <option value="en" ${keyword.language === 'en' ? 'selected' : ''}>English</option>
-              <option value="ja" ${keyword.language === 'ja' ? 'selected' : ''}>日本語 (Japanese)</option>
               <option value="es" ${keyword.language === 'es' ? 'selected' : ''}>Español (Spanish)</option>
+              <option value="zh" ${keyword.language === 'zh' ? 'selected' : ''}>简体中文 (Simplified Chinese)</option>
+              <option value="ja" ${keyword.language === 'ja' ? 'selected' : ''}>日本語 (Japanese)</option>
             </select>
           </div>
           
