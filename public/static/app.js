@@ -12274,7 +12274,9 @@ async function loadKeywords() {
     });
 
     allKeywords = response.data.keywords;
-    displayKeywords(allKeywords);
+    
+    // Don't display all keywords immediately
+    // displayKeywords will be called by filterKeywords() after setting the language filter
   } catch (error) {
     console.error('Failed to load keywords:', error);
     showError(i18n.t('loadError'));
