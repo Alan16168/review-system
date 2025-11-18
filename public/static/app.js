@@ -359,17 +359,14 @@ async function showHomePage() {
 
           <!-- AI Query Tab -->
           <div id="ai-query-content" class="tab-content hidden max-w-4xl mx-auto">
-            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-6 mb-6">
-              <div class="flex items-center gap-3 mb-4">
-                <i class="fas fa-robot text-3xl text-purple-600"></i>
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 mb-6">
+              <div class="flex items-center gap-3">
+                <i class="fas fa-robot text-2xl text-purple-600"></i>
                 <div>
                   <h3 class="text-lg font-semibold text-gray-900">${i18n.t('aiQuery')}</h3>
                   <p class="text-sm text-gray-600">${i18n.t('aiQueryPlaceholder')}</p>
                 </div>
               </div>
-              <button onclick="startAIQuery()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition">
-                <i class="fas fa-magic mr-2"></i>${i18n.t('startAIQuery')}
-              </button>
             </div>
             <div id="ai-results" class="space-y-2">
               <!-- AI结果将显示在这里 -->
@@ -641,6 +638,11 @@ function showResourceTab(tab) {
   } else if (tab === 'ai-query') {
     aiQueryTab.className = 'px-6 py-3 rounded-lg font-medium transition active-tab';
     aiQueryContent.classList.remove('hidden');
+    // Auto-start AI query when tab is shown (only if not already loaded)
+    if (!aiQueryContent.dataset.loaded) {
+      startAIQuery();
+      aiQueryContent.dataset.loaded = 'true';
+    }
   }
 }
 
@@ -779,8 +781,11 @@ async function startAIQuery() {
       </div>
     `;
     
-    // Call AI query API
-    const response = await axios.get('/api/resources/ai-query');
+    // Get current language
+    const currentLang = localStorage.getItem('language') || 'zh';
+    
+    // Call AI query API with language parameter
+    const response = await axios.get(`/api/resources/ai-query?lang=${currentLang}`);
     const { articles, keywords } = response.data;
     
     if (!articles || articles.length === 0) {

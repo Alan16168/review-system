@@ -1135,15 +1135,51 @@ resources.get('/ai-query', async (c) => {
       });
     }
     
-    // Build prompt for Gemini
-    const keywordsText = keywords.join('、');
-    const prompt = `请作为专业的复盘专家，为我查找10篇关于（${keywordsText}）的文章，列出文章名字，简介，链接方式。
+    // Build prompt for Gemini based on language
+    const keywordsSeparator = lang === 'zh' ? '、' : ', ';
+    const keywordsText = keywords.join(keywordsSeparator);
+    
+    let prompt = '';
+    let platforms = '';
+    
+    if (lang === 'zh') {
+      platforms = '知乎、简书、CSDN、微信公众号、博客园、掉金、思否';
+      prompt = `请作为专业的复盘专家，为我查找10篇关于（${keywordsText}）的文章，列出文章名字、简介、链接方式。
 
 要求：
 1. 每篇文章包含：标题、简介（50-100字）、文章链接（真实可访问的链接）
-2. 文章应该来自知乎、简书、CSDN、公众号等中文平台
+2. 文章应该来自${platforms}等中文平台
 3. 返回JSON格式：[{"title": "文章标题", "description": "文章简介", "url": "文章链接"}]
 4. 只返回JSON数据，不要其他解释文字`;
+    } else if (lang === 'ja') {
+      platforms = 'Qiita, Zenn, note, Hatena Blog';
+      prompt = `Please act as a professional review expert and find 10 articles about (${keywordsText}). List article titles, descriptions, and URLs.
+
+Requirements:
+1. Each article includes: title, description (50-100 words), article URL (real accessible link)
+2. Articles should be from ${platforms} and other Japanese platforms
+3. Return JSON format: [{"title": "Article Title", "description": "Article Description", "url": "Article URL"}]
+4. Return only JSON data, no other explanation text`;
+    } else if (lang === 'es') {
+      platforms = 'Medium, Dev.to, Blogger';
+      prompt = `Please act as a professional review expert and find 10 articles about (${keywordsText}). List article titles, descriptions, and URLs.
+
+Requirements:
+1. Each article includes: title, description (50-100 words), article URL (real accessible link)
+2. Articles should be from ${platforms} and other Spanish platforms
+3. Return JSON format: [{"title": "Article Title", "description": "Article Description", "url": "Article URL"}]
+4. Return only JSON data, no other explanation text`;
+    } else {
+      // English and other languages
+      platforms = 'Medium, Dev.to, Hacker News, Substack';
+      prompt = `Please act as a professional review expert and find 10 articles about (${keywordsText}). List article titles, descriptions, and URLs.
+
+Requirements:
+1. Each article includes: title, description (50-100 words), article URL (real accessible link)
+2. Articles should be from ${platforms} and other English platforms
+3. Return JSON format: [{"title": "Article Title", "description": "Article Description", "url": "Article URL"}]
+4. Return only JSON data, no other explanation text`;
+    }
 
     // Call Gemini API
     const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + geminiApiKey, {
@@ -1211,27 +1247,69 @@ resources.get('/ai-query', async (c) => {
   }
 });
 
-// Generate mock AI articles based on keywords
+// Generate mock AI articles based on keywords and language
 function generateMockAIArticles(keywords: string[], lang: string) {
   if (keywords.length === 0) return [];
   
   const articles = [];
-  const topics = [
-    '方法论与实践', '案例分析', '工具与模板', '最佳实践', 
-    '深度解析', '实战指南', '经验总结', '系统方法',
-    '框架应用', '持续改进'
-  ];
   
+  // Define topics and search engine based on language
+  let topics: string[];
+  let searchEngine: string;
+  let titleTemplate: (keyword: string, topic: string) => string;
+  let descTemplate: (keyword: string, topic: string) => string;
+  
+  if (lang === 'zh') {
+    topics = [
+      '方法论与实践', '案例分析', '工具与模板', '最佳实践',
+      '深度解析', '实战指南', '经验总结', '系统方法',
+      '框架应用', '持续改进'
+    ];
+    // Chinese: Use multiple platforms
+    searchEngine = 'baidu'; // Will be handled in URL generation
+    titleTemplate = (k, t) => `${k}的${t}`;
+    descTemplate = (k, t) => `深入探讨${k}相关的${t}，通过实际案例和系统化的方法，帮助您更好地理解和应用${k}的核心理念。`;
+  } else {
+    // Other languages: Use Google
+    topics = [
+      'Methodology & Practice', 'Case Analysis', 'Tools & Templates', 'Best Practices',
+      'In-depth Analysis', 'Practical Guide', 'Experience Summary', 'Systematic Methods',
+      'Framework Application', 'Continuous Improvement'
+    ];
+    searchEngine = 'google';
+    titleTemplate = (k, t) => `${k}: ${t}`;
+    descTemplate = (k, t) => `Explore ${t.toLowerCase()} related to ${k} through practical cases and systematic methods to better understand and apply core concepts.`;
+  }
+  
+  // Generate articles based on keywords and topics
   for (let i = 0; i < Math.min(10, keywords.length * 2); i++) {
     const keyword = keywords[i % keywords.length];
     const topic = topics[i % topics.length];
-    const encodedKeyword = encodeURIComponent(`${keyword} ${topic}`);
+    const title = titleTemplate(keyword, topic);
+    const description = descTemplate(keyword, topic);
     
-    articles.push({
-      title: `${keyword}的${topic}`,
-      description: `深入探讨${keyword}相关的${topic}，通过实际案例和系统化的方法，帮助您更好地理解和应用${keyword}的核心理念。`,
-      url: `https://www.baidu.com/s?wd=${encodedKeyword}`
-    });
+    let url = '';
+    if (lang === 'zh') {
+      // Chinese: Use various platforms randomly
+      const platforms = [
+        'https://www.baidu.com/s?wd=',
+        'https://www.zhihu.com/search?q=',
+        'https://www.jianshu.com/search?q=',
+        'https://so.csdn.net/so/search?q=',
+        'https://www.baidu.com/s?wd=site:juejin.cn+',
+        'https://www.baidu.com/s?wd=site:segmentfault.com+',
+        'https://www.baidu.com/s?wd=site:cnblogs.com+'
+      ];
+      const platform = platforms[i % platforms.length];
+      const encodedQuery = encodeURIComponent(`${keyword} ${topic}`);
+      url = `${platform}${encodedQuery}`;
+    } else {
+      // Other languages: Use Google search
+      const encodedQuery = encodeURIComponent(`${keyword} ${topic}`);
+      url = `https://www.google.com/search?q=${encodedQuery}`;
+    }
+    
+    articles.push({ title, description, url });
   }
   
   return articles;
