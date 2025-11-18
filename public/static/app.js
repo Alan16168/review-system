@@ -5303,6 +5303,7 @@ function renderNavigation() {
                 <i class="fas fa-language mr-2"></i>
                 <span class="font-medium">${
                   i18n.getCurrentLanguage() === 'en' ? 'English' :
+                  i18n.getCurrentLanguage() === 'fr' ? 'Français' :
                   i18n.getCurrentLanguage() === 'es' ? 'Español' :
                   i18n.getCurrentLanguage() === 'zh' ? '简体中文' :
                   '日本語'
@@ -5314,6 +5315,11 @@ function renderNavigation() {
                   <span class="mr-2">🇬🇧</span>
                   <span>English</span>
                   ${i18n.getCurrentLanguage() === 'en' ? '<i class="fas fa-check ml-auto"></i>' : ''}
+                </button>
+                <button onclick="handleLanguageSwitch('fr', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'fr' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
+                  <span class="mr-2">🇫🇷</span>
+                  <span>Français</span>
+                  ${i18n.getCurrentLanguage() === 'fr' ? '<i class="fas fa-check ml-auto"></i>' : ''}
                 </button>
                 <button onclick="handleLanguageSwitch('es', 'language-menu')" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center text-sm ${i18n.getCurrentLanguage() === 'es' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}">
                   <span class="mr-2">🇪🇸</span>
@@ -9393,6 +9399,7 @@ async function showEditUserModal(userId) {
                 <select id="user-language"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                   <option value="en" ${user.language === 'en' ? 'selected' : ''}>English</option>
+                  <option value="fr" ${user.language === 'fr' ? 'selected' : ''}>Français</option>
                   <option value="es" ${user.language === 'es' ? 'selected' : ''}>Español</option>
                   <option value="zh" ${user.language === 'zh' ? 'selected' : ''}>简体中文</option>
                   <option value="ja" ${user.language === 'ja' ? 'selected' : ''}>日本語</option>
@@ -12334,6 +12341,7 @@ async function showKeywordsManagement(container) {
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
             <option value="">${i18n.t('all')}</option>
             <option value="en">English</option>
+            <option value="fr">Français (French)</option>
             <option value="es">Español (Spanish)</option>
             <option value="zh">简体中文 (Simplified Chinese)</option>
             <option value="ja">日本語 (Japanese)</option>
@@ -12533,6 +12541,7 @@ function showAddKeywordModal() {
             <select id="keyword-language" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               <option value="en">English</option>
+              <option value="fr">Français (French)</option>
               <option value="es">Español (Spanish)</option>
               <option value="zh">简体中文 (Simplified Chinese)</option>
               <option value="ja">日本語 (Japanese)</option>
@@ -12634,6 +12643,7 @@ function showEditKeywordModal(id) {
             <select id="edit-keyword-language" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
               <option value="en" ${keyword.language === 'en' ? 'selected' : ''}>English</option>
+              <option value="fr" ${keyword.language === 'fr' ? 'selected' : ''}>Français (French)</option>
               <option value="es" ${keyword.language === 'es' ? 'selected' : ''}>Español (Spanish)</option>
               <option value="zh" ${keyword.language === 'zh' ? 'selected' : ''}>简体中文 (Simplified Chinese)</option>
               <option value="ja" ${keyword.language === 'ja' ? 'selected' : ''}>日本語 (Japanese)</option>
