@@ -616,10 +616,12 @@ async function loadArticles(refresh = false) {
   try {
     // Always fetch fresh articles when refreshing, or fetch if not cached
     if (refresh || cachedArticles.length === 0) {
+      const currentLang = i18n.getCurrentLanguage();
+      console.log(`Loading articles with language: ${currentLang}, refresh: ${refresh}`);
       const response = await axios.get('/api/resources/articles');
-      const { articles, source } = response.data;
+      const { articles, source, language } = response.data;
       cachedArticles = articles;
-      console.log(`Articles loaded from: ${source}`);
+      console.log(`Articles loaded from: ${source}, language: ${language}, count: ${articles.length}`);
     }
     
     // Select 6 random articles (refresh all 6 when clicking update)
@@ -670,10 +672,12 @@ async function loadVideos(refresh = false) {
   try {
     // Always fetch fresh videos when refreshing, or fetch if not cached
     if (refresh || cachedVideos.length === 0) {
+      const currentLang = i18n.getCurrentLanguage();
+      console.log(`Loading videos with language: ${currentLang}, refresh: ${refresh}`);
       const response = await axios.get('/api/resources/videos');
-      const { videos, source } = response.data;
+      const { videos, source, language } = response.data;
       cachedVideos = videos;
-      console.log(`Videos loaded from: ${source}`);
+      console.log(`Videos loaded from: ${source}, language: ${language}, count: ${videos.length}`);
     }
     
     // Select 6 random videos (refresh all 6 when clicking update)
