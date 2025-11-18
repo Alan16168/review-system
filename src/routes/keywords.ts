@@ -77,7 +77,7 @@ keywords.post('/', async (c) => {
     }
 
     // Validate language
-    if (!['zh', 'zh-TW', 'en', 'ja', 'es'].includes(language)) {
+    if (!['zh', 'zh-TW', 'en', 'fr', 'ja', 'es'].includes(language)) {
       return c.json({ error: 'Invalid language' }, 400);
     }
 
@@ -123,7 +123,7 @@ keywords.put('/:id', async (c) => {
     }
 
     // Validate language
-    if (!['zh', 'zh-TW', 'en', 'ja', 'es'].includes(language)) {
+    if (!['zh', 'zh-TW', 'en', 'fr', 'ja', 'es'].includes(language)) {
       return c.json({ error: 'Invalid language' }, 400);
     }
 

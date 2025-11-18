@@ -157,7 +157,7 @@ admin.put('/users/:id', async (c) => {
     }
 
     // Validate language if provided
-    if (language && !['zh', 'zh-TW', 'en', 'ja', 'es'].includes(language)) {
+    if (language && !['zh', 'zh-TW', 'en', 'fr', 'ja', 'es'].includes(language)) {
       return c.json({ error: 'Invalid language' }, 400);
     }
 

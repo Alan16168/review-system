@@ -467,8 +467,8 @@ auth.put('/settings', authMiddleware, async (c) => {
     const { username, email, language } = await c.req.json();
     
     // Validate language
-    if (language && !['zh', 'zh-TW', 'en', 'ja', 'es'].includes(language)) {
-      return c.json({ error: 'Invalid language. Must be "zh", "zh-TW", "en", "ja", or "es"' }, 400);
+    if (language && !['zh', 'zh-TW', 'en', 'fr', 'ja', 'es'].includes(language)) {
+      return c.json({ error: 'Invalid language. Must be "zh", "zh-TW", "en", "fr", "ja", or "es"' }, 400);
     }
     
     // Check if email is already taken by another user
