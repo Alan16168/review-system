@@ -12252,6 +12252,14 @@ async function showKeywordsManagement(container) {
   `;
 
   await loadKeywords();
+  
+  // Set default language filter to current language
+  const currentLang = i18n.locale;
+  const filterLangSelect = document.getElementById('filter-language');
+  if (filterLangSelect && currentLang) {
+    filterLangSelect.value = currentLang;
+    filterKeywords(); // Apply filter immediately
+  }
 }
 
 let allKeywords = [];
