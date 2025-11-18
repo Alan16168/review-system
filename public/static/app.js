@@ -9638,7 +9638,7 @@ async function showResetPasswordModal(userId) {
             </div>
           </div>
           
-          <form id="reset-password-form" onsubmit="handleResetPassword(event, ${userId})">
+          <form id="reset-password-form" onsubmit="handleAdminResetPassword(event, ${userId})">
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -9677,7 +9677,7 @@ async function showResetPasswordModal(userId) {
   }
 }
 
-async function handleResetPassword(e, userId) {
+async function handleAdminResetPassword(e, userId) {
   e.preventDefault();
   
   const newPassword = document.getElementById('reset-new-password').value;
