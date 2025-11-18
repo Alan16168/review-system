@@ -12352,9 +12352,20 @@ function displayKeywords(keywords) {
 }
 
 function filterKeywords() {
-  const language = document.getElementById('filter-language').value;
-  const type = document.getElementById('filter-type').value;
-  const status = document.getElementById('filter-status').value;
+  const languageEl = document.getElementById('filter-language');
+  const typeEl = document.getElementById('filter-type');
+  const statusEl = document.getElementById('filter-status');
+  
+  // If elements don't exist, display all keywords
+  if (!languageEl || !typeEl || !statusEl) {
+    console.log('Filter elements not found, displaying all keywords');
+    displayKeywords(allKeywords);
+    return;
+  }
+  
+  const language = languageEl.value;
+  const type = typeEl.value;
+  const status = statusEl.value;
 
   const filtered = allKeywords.filter(kw => {
     if (language && kw.language !== language) return false;
