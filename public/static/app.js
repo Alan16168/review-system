@@ -619,9 +619,12 @@ async function loadArticles(refresh = false) {
       const currentLang = i18n.getCurrentLanguage();
       console.log(`Loading articles with language: ${currentLang}, refresh: ${refresh}`);
       const response = await axios.get('/api/resources/articles');
-      const { articles, source, language } = response.data;
+      const { articles, source, language, keywords } = response.data;
       cachedArticles = articles;
       console.log(`Articles loaded from: ${source}, language: ${language}, count: ${articles.length}`);
+      if (keywords && keywords.length > 0) {
+        console.log(`Using keywords: ${keywords.join(', ')}`);
+      }
     }
     
     // Select 6 random articles (refresh all 6 when clicking update)
@@ -675,9 +678,12 @@ async function loadVideos(refresh = false) {
       const currentLang = i18n.getCurrentLanguage();
       console.log(`Loading videos with language: ${currentLang}, refresh: ${refresh}`);
       const response = await axios.get('/api/resources/videos');
-      const { videos, source, language } = response.data;
+      const { videos, source, language, keywords } = response.data;
       cachedVideos = videos;
       console.log(`Videos loaded from: ${source}, language: ${language}, count: ${videos.length}`);
+      if (keywords && keywords.length > 0) {
+        console.log(`Using keywords: ${keywords.join(', ')}`);
+      }
     }
     
     // Select 6 random videos (refresh all 6 when clicking update)
