@@ -12268,10 +12268,12 @@ async function loadKeywords() {
     allKeywords = response.data.keywords;
     
     // Set default language filter to current language after data is loaded
-    const currentLang = i18n.locale;
+    const currentLang = i18n.getCurrentLanguage();
+    console.log('Current language:', currentLang); // Debug log
     const filterLangSelect = document.getElementById('filter-language');
     if (filterLangSelect && currentLang) {
       filterLangSelect.value = currentLang;
+      console.log('Set filter to:', currentLang); // Debug log
     }
     
     // Apply filter to display keywords
