@@ -138,18 +138,35 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://36e8e166.review-system.pages.dev
+- **最新部署 ID**: https://4805645f.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.8.0 - 修复打印功能答案显示**
-- **Git Commit**: TBD (修复打印功能currentUserId获取)
+- **版本**: ✅ **V6.11.1 - 关键词管理系统修复（视频关键词更新）**
+- **Git Commit**: a635a00 (修复视频关键词更新功能)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
-- **部署日期**: 2025-11-17
-- **部署时间**: 最新部署 - V6.7.9（修复creator_id字段错误）
+- **部署日期**: 2025-11-18
+- **部署时间**: 最新部署 - V6.11.1（关键词管理系统修复）
 - **数据库迁移**: ✅ Migration 0036 已完全应用（所有迁移均已同步）
 - **功能状态**: ✅ 打印功能完整 + 打印权限过滤 + 打印动态格式化 + 私人答案过滤 + 必填字段验证
-- **最新更新**: ✅ **V6.10.0 - 真正的移动端汉堡菜单**（2025-11-17）
+- **最新更新**: ✅ **V6.11.1 - 关键词管理系统修复**（2025-11-18）
+  - ✅ **视频关键词更新功能修复**：修复点击"更新视频"按钮后不使用最新数据库关键词的问题
+    - **问题原因**：
+      1. 后端API响应缺少 `language` 字段，导致前端显示 `language: undefined`
+      2. `mock_fallback` 分支使用默认数据而不查询数据库关键词
+      3. YouTube API 配置后返回0结果时进入 fallback 但不使用关键词
+    - **解决方案**：
+      1. 为所有API响应添加 `language` 字段（mock_with_keywords、mock_fallback、error_fallback）
+      2. 修复 `mock_fallback` 分支以查询数据库关键词并生成基于关键词的内容
+      3. 文章和视频端点均修复，确保关键词功能完整
+    - **测试验证**：
+      - ✅ 中文视频关键词：3个关键词 → 9个视频（3×3）
+      - ✅ language 字段正确返回："zh"
+      - ✅ 控制台日志："API fallback - using keywords: ..."
+      - ✅ 用户可实时添加/编辑/删除关键词，更新后立即生效
+    - **Git commit**: a635a00
+
+- **上一版本**: ✅ **V6.10.0 - 真正的移动端汉堡菜单**（2025-11-17）
   - ✅ **实现完整的汉堡菜单**：真正的移动端导航体验
     - **桌面端**：保持原有的顶部导航栏（hidden md:flex）
     - **移动端**：显示汉堡菜单按钮（md:hidden）
