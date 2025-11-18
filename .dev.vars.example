@@ -14,5 +14,17 @@ GOOGLE_SEARCH_ENGINE_ID=your-search-engine-id
 # YouTube Data API（可选 - 用于视频信息）
 YOUTUBE_API_KEY=your-youtube-api-key
 
+# Gemini API Key（可选 - 用于AI对话功能）
+# 获取方式：https://makersuite.google.com/app/apikey
+GEMINI_API_KEY=your-gemini-api-key
+
+# Resend Email API Key（可选 - 用于邮件通知）
+RESEND_API_KEY=your-resend-api-key
+
+# PayPal 配置（可选 - 用于订阅支付）
+PAYPAL_MODE=sandbox
+PAYPAL_CLIENT_ID=your-paypal-client-id
+PAYPAL_CLIENT_SECRET=your-paypal-client-secret
+
 # JWT Secret（可选 - 默认使用固定值）
 # JWT_SECRET=your-custom-jwt-secret
