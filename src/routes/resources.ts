@@ -38,6 +38,7 @@ resources.get('/articles', async (c) => {
       return c.json({ 
         articles: getMockArticles(lang, keywords),
         source: 'mock_with_keywords',
+        language: lang,
         keywords: keywords
       });
     }
@@ -126,9 +127,24 @@ resources.get('/articles', async (c) => {
     const uniqueArticles = Array.from(new Map(allArticles.map(a => [a.url, a])).values()).slice(0, 10);
     
     if (uniqueArticles.length === 0) {
+      // Get keywords from database for fallback mock data
+      const keywordsResult = await c.env.DB.prepare(`
+        SELECT keyword FROM search_keywords 
+        WHERE language = ? AND type = 'article' AND is_active = 1
+        ORDER BY id
+      `).bind(lang).all();
+      
+      const keywords = keywordsResult.results && keywordsResult.results.length > 0
+        ? keywordsResult.results.map((row: any) => row.keyword)
+        : [];
+      
+      console.log(`API fallback - using keywords: ${keywords.join(', ')}`);
+      
       return c.json({ 
-        articles: getMockArticles(lang),
-        source: 'mock_fallback'
+        articles: getMockArticles(lang, keywords),
+        source: 'mock_fallback',
+        language: lang,
+        keywords: keywords
       });
     }
 
@@ -142,7 +158,8 @@ resources.get('/articles', async (c) => {
     const lang = c.req.header('X-Language') || c.req.query('lang') || 'en';
     return c.json({ 
       articles: getMockArticles(lang),
-      source: 'error_fallback'
+      source: 'error_fallback',
+      language: lang
     });
   }
 });
@@ -175,6 +192,7 @@ resources.get('/videos', async (c) => {
       return c.json({ 
         videos: getMockVideos(lang, keywords),
         source: 'mock_with_keywords',
+        language: lang,
         keywords: keywords
       });
     }
@@ -241,9 +259,24 @@ resources.get('/videos', async (c) => {
     const uniqueVideos = Array.from(new Map(allVideos.map(v => [v.url, v])).values()).slice(0, 10);
     
     if (uniqueVideos.length === 0) {
+      // Get keywords from database for fallback mock data
+      const keywordsResult = await c.env.DB.prepare(`
+        SELECT keyword FROM search_keywords 
+        WHERE language = ? AND type = 'video' AND is_active = 1
+        ORDER BY id
+      `).bind(lang).all();
+      
+      const keywords = keywordsResult.results && keywordsResult.results.length > 0
+        ? keywordsResult.results.map((row: any) => row.keyword)
+        : [];
+      
+      console.log(`API fallback - using keywords: ${keywords.join(', ')}`);
+      
       return c.json({ 
-        videos: getMockVideos(lang),
-        source: 'mock_fallback'
+        videos: getMockVideos(lang, keywords),
+        source: 'mock_fallback',
+        language: lang,
+        keywords: keywords
       });
     }
 
@@ -257,7 +290,8 @@ resources.get('/videos', async (c) => {
     const lang = c.req.header('X-Language') || c.req.query('lang') || 'en';
     return c.json({ 
       videos: getMockVideos(lang),
-      source: 'error_fallback'
+      source: 'error_fallback',
+      language: lang
     });
   }
 });
