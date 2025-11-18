@@ -139,11 +139,11 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://72fc71e8.review-system.pages.dev
+- **最新部署 ID**: https://94023cca.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.11.6 - 法语关键词数据库支持（2025-11-18）**
-- **Git Commit**: da7cbe5 (添加法语关键词到search_keywords数据库)
+- **版本**: ✅ **V6.11.7 - 法语翻译完善（2025-11-18）**
+- **Git Commit**: 864b68d (修复法语翻译 - systemTitle, heroTitle, heroSubtitle 和 admin)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
 - **部署日期**: 2025-11-18
