@@ -12257,6 +12257,7 @@ async function showKeywordsManagement(container) {
 let allKeywords = [];
 
 async function loadKeywords() {
+  console.log('Loading keywords...');
   try {
     const response = await axios.get('/api/keywords', {
       headers: {
@@ -12265,7 +12266,8 @@ async function loadKeywords() {
       }
     });
 
-    allKeywords = response.data.keywords;
+    allKeywords = response.data.keywords || [];
+    console.log('Loaded keywords:', allKeywords.length);
     
     // Set default language filter to current language after data is loaded
     const currentLang = i18n.getCurrentLanguage();
@@ -12280,14 +12282,15 @@ async function loadKeywords() {
     filterKeywords();
   } catch (error) {
     console.error('Failed to load keywords:', error);
-    showError(i18n.t('loadError'));
+    const errorMsg = i18n.t('loadError') || '加载失败';
+    showError(errorMsg);
     // Display empty state on error
     const tbody = document.getElementById('keywords-table-body');
     if (tbody) {
       tbody.innerHTML = `
         <tr>
           <td colspan="6" class="px-6 py-4 text-center text-red-500">
-            ${i18n.t('loadError')}
+            ${errorMsg}
           </td>
         </tr>
       `;
@@ -12333,17 +12336,17 @@ function displayKeywords(keywords) {
       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
         <button onclick="toggleKeywordStatus(${kw.id})" 
                 class="text-yellow-600 hover:text-yellow-900" 
-                title="${i18n.t('toggleStatus')}">
+                title="${i18n.t('toggleStatus') || '切换状态'}">
           <i class="fas fa-toggle-${kw.is_active ? 'on' : 'off'}"></i>
         </button>
         <button onclick="showEditKeywordModal(${kw.id})" 
                 class="text-indigo-600 hover:text-indigo-900" 
-                title="${i18n.t('edit')}">
+                title="${i18n.t('edit') || '编辑'}">
           <i class="fas fa-edit"></i>
         </button>
         <button onclick="deleteKeyword(${kw.id})" 
                 class="text-red-600 hover:text-red-900" 
-                title="${i18n.t('delete')}">
+                title="${i18n.t('delete') || '删除'}">
           <i class="fas fa-trash"></i>
         </button>
       </td>
@@ -12359,7 +12362,7 @@ function filterKeywords() {
   // If elements don't exist, display all keywords
   if (!languageEl || !typeEl || !statusEl) {
     console.log('Filter elements not found, displaying all keywords');
-    displayKeywords(allKeywords);
+    displayKeywords(allKeywords || []);
     return;
   }
   
@@ -12367,13 +12370,14 @@ function filterKeywords() {
   const type = typeEl.value;
   const status = statusEl.value;
 
-  const filtered = allKeywords.filter(kw => {
+  const filtered = (allKeywords || []).filter(kw => {
     if (language && kw.language !== language) return false;
     if (type && kw.type !== type) return false;
     if (status !== '' && kw.is_active !== parseInt(status)) return false;
     return true;
   });
 
+  console.log('Filtering keywords:', { total: allKeywords?.length, filtered: filtered.length, language, type, status });
   displayKeywords(filtered);
 }
 
@@ -12571,7 +12575,8 @@ async function handleEditKeyword(event, id) {
 }
 
 async function deleteKeyword(id) {
-  if (!confirm(i18n.t('confirmDeleteKeyword'))) return;
+  const confirmMessage = i18n.t('confirmDeleteKeyword') || '确定要删除此关键词吗？';
+  if (!confirm(confirmMessage)) return;
 
   try {
     await axios.delete(`/api/keywords/${id}`, {
@@ -12581,11 +12586,16 @@ async function deleteKeyword(id) {
       }
     });
 
-    showSuccess(i18n.t('keywordDeletedSuccess'));
+    const successMessage = i18n.t('keywordDeletedSuccess') || '关键词删除成功';
+    showSuccess(successMessage);
+    
+    // Force reload keywords list
+    console.log('Keyword deleted, reloading list...');
     await loadKeywords();
   } catch (error) {
     console.error('Failed to delete keyword:', error);
-    showError(error.response?.data?.error || i18n.t('operationFailed'));
+    const errorMessage = error.response?.data?.error || i18n.t('operationFailed') || '操作失败';
+    showError(errorMessage);
   }
 }
 
