@@ -18,12 +18,27 @@ resources.get('/articles', async (c) => {
     // Get language from header or query param
     const lang = c.req.header('X-Language') || c.req.query('lang') || 'en';
 
-    // If API keys not configured, return mock data
+    // If API keys not configured, return mock data based on database keywords
     if (!apiKey || !searchEngineId) {
-      console.log('Google API keys not configured, returning mock data');
+      console.log('Google API keys not configured, returning keyword-based mock data');
+      
+      // Get keywords from database even for mock data
+      const keywordsResult = await c.env.DB.prepare(`
+        SELECT keyword FROM search_keywords 
+        WHERE language = ? AND type = 'article' AND is_active = 1
+        ORDER BY id
+      `).bind(lang).all();
+      
+      const keywords = keywordsResult.results && keywordsResult.results.length > 0
+        ? keywordsResult.results.map((row: any) => row.keyword)
+        : [];
+      
+      console.log(`Mock data using keywords: ${keywords.join(', ')}`);
+      
       return c.json({ 
-        articles: getMockArticles(lang),
-        source: 'mock'
+        articles: getMockArticles(lang, keywords),
+        source: 'mock_with_keywords',
+        keywords: keywords
       });
     }
 
@@ -140,12 +155,27 @@ resources.get('/videos', async (c) => {
     // Get language from header or query param
     const lang = c.req.header('X-Language') || c.req.query('lang') || 'en';
 
-    // If API key not configured, return mock data
+    // If API key not configured, return mock data based on database keywords
     if (!apiKey) {
-      console.log('YouTube API key not configured, returning mock data');
+      console.log('YouTube API key not configured, returning keyword-based mock data');
+      
+      // Get keywords from database even for mock data
+      const keywordsResult = await c.env.DB.prepare(`
+        SELECT keyword FROM search_keywords 
+        WHERE language = ? AND type = 'video' AND is_active = 1
+        ORDER BY id
+      `).bind(lang).all();
+      
+      const keywords = keywordsResult.results && keywordsResult.results.length > 0
+        ? keywordsResult.results.map((row: any) => row.keyword)
+        : [];
+      
+      console.log(`Mock video data using keywords: ${keywords.join(', ')}`);
+      
       return c.json({ 
-        videos: getMockVideos(lang),
-        source: 'mock'
+        videos: getMockVideos(lang, keywords),
+        source: 'mock_with_keywords',
+        keywords: keywords
       });
     }
 
@@ -243,7 +273,34 @@ function formatViewCount(views: number): string {
 }
 
 // Mock data functions
-function getMockArticles(lang: string = 'en') {
+function getMockArticles(lang: string = 'en', keywords: string[] = []) {
+  // If keywords provided, generate keyword-specific mock articles
+  if (keywords.length > 0) {
+    const keywordArticles: any[] = [];
+    keywords.forEach((keyword, index) => {
+      keywordArticles.push({
+        title: `${keyword} - 深度分析与研究`,
+        description: `关于"${keyword}"的系统性分析和研究，探讨相关背景、影响因素和未来趋势。`,
+        url: `https://wenku.baidu.com/view/keyword-${index + 1}.html`,
+        image: `https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=${encodeURIComponent(keyword)}`
+      });
+      keywordArticles.push({
+        title: `${keyword} - 最新动态追踪`,
+        description: `实时追踪"${keyword}"的最新发展动态，分析热点事件和重要信息。`,
+        url: `https://wenku.baidu.com/view/keyword-${index + 1}-latest.html`,
+        image: `https://via.placeholder.com/400x250/7C3AED/FFFFFF?text=${encodeURIComponent(keyword)}`
+      });
+      keywordArticles.push({
+        title: `${keyword} - 专家观点解读`,
+        description: `业内专家对"${keyword}"的深入解读，提供专业视角和独到见解。`,
+        url: `https://wenku.baidu.com/view/keyword-${index + 1}-expert.html`,
+        image: `https://via.placeholder.com/400x250/EC4899/FFFFFF?text=${encodeURIComponent(keyword)}`
+      });
+    });
+    return keywordArticles.slice(0, 10);
+  }
+  
+  // Default mock articles if no keywords
   if (lang === 'ja') {
     return [
       {
@@ -668,7 +725,37 @@ function getMockArticles(lang: string = 'en') {
   ];
 }
 
-function getMockVideos(lang: string = 'en') {
+function getMockVideos(lang: string = 'en', keywords: string[] = []) {
+  // If keywords provided, generate keyword-specific mock videos
+  if (keywords.length > 0) {
+    const keywordVideos: any[] = [];
+    keywords.forEach((keyword, index) => {
+      keywordVideos.push({
+        title: `${keyword} - 深度解析【官方频道】`,
+        channel: '新闻解读',
+        views: '120万',
+        thumbnail: `https://via.placeholder.com/400x225/DC2626/FFFFFF?text=${encodeURIComponent(keyword)}`,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword)}`
+      });
+      keywordVideos.push({
+        title: `${keyword} 最新报道 | 权威解读`,
+        channel: '时事观察',
+        views: '85万',
+        thumbnail: `https://via.placeholder.com/400x225/7C3AED/FFFFFF?text=${encodeURIComponent(keyword)}`,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword)}+新闻`
+      });
+      keywordVideos.push({
+        title: `关于${keyword}你必须知道的事`,
+        channel: '专家视角',
+        views: '65万',
+        thumbnail: `https://via.placeholder.com/400x225/059669/FFFFFF?text=${encodeURIComponent(keyword)}`,
+        url: `https://www.youtube.com/results?search_query=${encodeURIComponent(keyword)}+分析`
+      });
+    });
+    return keywordVideos.slice(0, 10);
+  }
+  
+  // Default mock videos if no keywords
   if (lang === 'ja') {
     return [
       {
