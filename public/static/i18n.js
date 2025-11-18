@@ -464,8 +464,13 @@ const translations = {
     'learningResources': '学习资源库',
     'articles': '精选文章',
     'videos': '视频教程',
+    'aiQuery': 'AI 查询',
     'loadingArticles': '加载文章中...',
     'loadingVideos': '加载视频中...',
+    'loadingAIResults': 'AI 正在分析中...',
+    'aiQueryPlaceholder': 'AI 将基于关键词为您查找相关文章...',
+    'startAIQuery': '开始 AI 查询',
+    'aiQueryError': 'AI 查询失败，请稍后重试',
     'readMore': '阅读更多',
     
     // About
@@ -1229,8 +1234,13 @@ const translations = {
     'learningResources': 'Learning Resources',
     'articles': 'Articles',
     'videos': 'Videos',
+    'aiQuery': 'AI Query',
     'loadingArticles': 'Loading articles...',
     'loadingVideos': 'Loading videos...',
+    'loadingAIResults': 'AI is analyzing...',
+    'aiQueryPlaceholder': 'AI will find relevant articles based on keywords...',
+    'startAIQuery': 'Start AI Query',
+    'aiQueryError': 'AI query failed, please try again later',
     'readMore': 'Read More',
     
     // About
@@ -1983,8 +1993,13 @@ const translations = {
     'learningResources': '学習リソース',
     'articles': '記事',
     'videos': 'ビデオ',
+    'aiQuery': 'AI クエリ',
     'loadingArticles': '記事を読み込み中...',
     'loadingVideos': 'ビデオを読み込み中...',
+    'loadingAIResults': 'AIが分析中...',
+    'aiQueryPlaceholder': 'AIがキーワードに基づいて関連記事を検索します...',
+    'startAIQuery': 'AI クエリを開始',
+    'aiQueryError': 'AI クエリに失敗しました。後でもう一度お試しください',
     'readMore': '続きを読む',
     
     // About
@@ -2737,8 +2752,13 @@ const translations = {
     'learningResources': 'Recursos de Aprendizaje',
     'articles': 'Artículos',
     'videos': 'Videos',
+    'aiQuery': 'Consulta AI',
     'loadingArticles': 'Cargando artículos...',
     'loadingVideos': 'Cargando videos...',
+    'loadingAIResults': 'AI está analizando...',
+    'aiQueryPlaceholder': 'AI encontrará artículos relevantes basados en palabras clave...',
+    'startAIQuery': 'Iniciar Consulta AI',
+    'aiQueryError': 'Consulta AI falló, por favor intente más tarde',
     'readMore': 'Leer Más',
     
     // About

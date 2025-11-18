@@ -331,6 +331,10 @@ async function showHomePage() {
                     class="px-6 py-3 rounded-lg font-medium transition inactive-tab">
               <i class="fas fa-video mr-2"></i>${i18n.t('videos')}
             </button>
+            <button onclick="showResourceTab('ai-query')" id="tab-ai-query"
+                    class="px-6 py-3 rounded-lg font-medium transition inactive-tab">
+              <i class="fas fa-robot mr-2"></i>${i18n.t('aiQuery')}
+            </button>
           </div>
 
           <!-- Articles Tab -->
@@ -350,6 +354,25 @@ async function showHomePage() {
                 <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
                 <p class="text-gray-600">${i18n.t('loadingVideos')}</p>
               </div>
+            </div>
+          </div>
+
+          <!-- AI Query Tab -->
+          <div id="ai-query-content" class="tab-content hidden max-w-4xl mx-auto">
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-6 mb-6">
+              <div class="flex items-center gap-3 mb-4">
+                <i class="fas fa-robot text-3xl text-purple-600"></i>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">${i18n.t('aiQuery')}</h3>
+                  <p class="text-sm text-gray-600">${i18n.t('aiQueryPlaceholder')}</p>
+                </div>
+              </div>
+              <button onclick="startAIQuery()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition">
+                <i class="fas fa-magic mr-2"></i>${i18n.t('startAIQuery')}
+              </button>
+            </div>
+            <div id="ai-results" class="space-y-2">
+              <!-- AI结果将显示在这里 -->
             </div>
           </div>
         </div>
@@ -590,22 +613,34 @@ function goToSlide(index) {
 function showResourceTab(tab) {
   const articlesTab = document.getElementById('tab-articles');
   const videosTab = document.getElementById('tab-videos');
+  const aiQueryTab = document.getElementById('tab-ai-query');
   const articlesContent = document.getElementById('articles-content');
   const videosContent = document.getElementById('videos-content');
+  const aiQueryContent = document.getElementById('ai-query-content');
 
+  // Reset all tabs to inactive
+  articlesTab.className = 'px-6 py-3 rounded-lg font-medium transition inactive-tab';
+  videosTab.className = 'px-6 py-3 rounded-lg font-medium transition inactive-tab';
+  aiQueryTab.className = 'px-6 py-3 rounded-lg font-medium transition inactive-tab';
+  
+  // Hide all content
+  articlesContent.classList.add('hidden');
+  videosContent.classList.add('hidden');
+  aiQueryContent.classList.add('hidden');
+
+  // Show selected tab
   if (tab === 'articles') {
     articlesTab.className = 'px-6 py-3 rounded-lg font-medium transition active-tab';
-    videosTab.className = 'px-6 py-3 rounded-lg font-medium transition inactive-tab';
     articlesContent.classList.remove('hidden');
-    videosContent.classList.add('hidden');
-  } else {
-    articlesTab.className = 'px-6 py-3 rounded-lg font-medium transition inactive-tab';
+  } else if (tab === 'videos') {
     videosTab.className = 'px-6 py-3 rounded-lg font-medium transition active-tab';
-    articlesContent.classList.add('hidden');
     videosContent.classList.remove('hidden');
     if (!videosContent.dataset.loaded) {
       loadVideos();
     }
+  } else if (tab === 'ai-query') {
+    aiQueryTab.className = 'px-6 py-3 rounded-lg font-medium transition active-tab';
+    aiQueryContent.classList.remove('hidden');
   }
 }
 
@@ -725,6 +760,83 @@ async function loadVideos(refresh = false) {
       <div class="text-center py-12">
         <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
         <p class="text-gray-600">${i18n.t('loadError')}</p>
+      </div>
+    `;
+  }
+}
+
+// Start AI Query - Get keywords and query Gemini for article recommendations
+async function startAIQuery() {
+  const aiResults = document.getElementById('ai-results');
+  
+  try {
+    // Show loading state
+    aiResults.innerHTML = `
+      <div class="text-center py-12">
+        <i class="fas fa-robot fa-spin text-5xl text-purple-600 mb-4"></i>
+        <p class="text-gray-600 text-lg">${i18n.t('loadingAIResults')}</p>
+        <p class="text-gray-500 text-sm mt-2">AI 正在分析关键词并搜索相关文章...</p>
+      </div>
+    `;
+    
+    // Call AI query API
+    const response = await axios.get('/api/resources/ai-query');
+    const { articles, keywords } = response.data;
+    
+    if (!articles || articles.length === 0) {
+      aiResults.innerHTML = `
+        <div class="text-center py-12">
+          <i class="fas fa-info-circle text-4xl text-gray-400 mb-4"></i>
+          <p class="text-gray-600">暂无结果</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Display AI-generated articles
+    aiResults.innerHTML = `
+      <div class="bg-white rounded-lg p-4 mb-4">
+        <div class="flex items-center gap-2 text-sm text-gray-600 mb-3">
+          <i class="fas fa-tags text-purple-600"></i>
+          <span>基于关键词: <strong>${keywords.join(', ')}</strong></span>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-3">
+        ${articles.map((article, index) => `
+          <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-4">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold">
+                ${index + 1}
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-semibold text-gray-900 mb-2">${escapeHtml(article.title)}</h3>
+                <p class="text-sm text-gray-600 mb-3 line-clamp-2">${escapeHtml(article.description || article.summary)}</p>
+                ${article.url ? `
+                  <a href="${article.url}" target="_blank" class="inline-flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 font-medium">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>查看文章</span>
+                  </a>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="text-center mt-6">
+        <button onclick="startAIQuery()" class="text-purple-600 hover:text-purple-800 text-sm font-medium transition">
+          <i class="fas fa-sync-alt mr-1"></i>重新查询
+        </button>
+      </div>
+    `;
+  } catch (error) {
+    console.error('AI query failed:', error);
+    aiResults.innerHTML = `
+      <div class="text-center py-12">
+        <i class="fas fa-exclamation-triangle text-4xl text-red-600 mb-4"></i>
+        <p class="text-gray-600">${i18n.t('aiQueryError')}</p>
+        <button onclick="startAIQuery()" class="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition">
+          <i class="fas fa-redo mr-2"></i>重试
+        </button>
       </div>
     `;
   }

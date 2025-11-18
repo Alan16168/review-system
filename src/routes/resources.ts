@@ -5,6 +5,7 @@ type Bindings = {
   GOOGLE_API_KEY?: string;
   GOOGLE_SEARCH_ENGINE_ID?: string;
   YOUTUBE_API_KEY?: string;
+  GEMINI_API_KEY?: string;
 };
 
 const resources = new Hono<{ Bindings: Bindings }>();
@@ -1091,6 +1092,149 @@ function getMockVideos(lang: string = 'en', keywords: string[] = []) {
       url: 'https://www.youtube.com/watch?v=v2PaZ8Nl2T4'
     }
   ];
+}
+
+// AI Query - Use Gemini to find articles based on keywords
+resources.get('/ai-query', async (c) => {
+  try {
+    const geminiApiKey = c.env.GEMINI_API_KEY;
+    
+    // Get language from header or query param
+    const lang = c.req.header('X-Language') || c.req.query('lang') || 'zh';
+    
+    // Get keywords from database
+    const keywordsResult = await c.env.DB.prepare(`
+      SELECT keyword FROM search_keywords 
+      WHERE language = ? AND type = 'article' AND is_active = 1
+      ORDER BY id
+    `).bind(lang).all();
+    
+    const keywords = keywordsResult.results && keywordsResult.results.length > 0
+      ? keywordsResult.results.map((row: any) => row.keyword)
+      : [];
+    
+    console.log(`AI Query - Keywords: ${keywords.join(', ')}`);
+    
+    // If no keywords, return error
+    if (keywords.length === 0) {
+      return c.json({ 
+        error: 'No keywords found',
+        articles: [],
+        keywords: []
+      });
+    }
+    
+    // If Gemini API key not configured, return mock AI results
+    if (!geminiApiKey) {
+      console.log('Gemini API key not configured, returning mock AI results');
+      const mockAIArticles = generateMockAIArticles(keywords, lang);
+      return c.json({
+        articles: mockAIArticles,
+        keywords: keywords,
+        source: 'mock_ai'
+      });
+    }
+    
+    // Build prompt for Gemini
+    const keywordsText = keywords.join('、');
+    const prompt = `请作为专业的复盘专家，为我查找10篇关于（${keywordsText}）的文章，列出文章名字，简介，链接方式。
+
+要求：
+1. 每篇文章包含：标题、简介（50-100字）、文章链接（真实可访问的链接）
+2. 文章应该来自知乎、简书、CSDN、公众号等中文平台
+3. 返回JSON格式：[{"title": "文章标题", "description": "文章简介", "url": "文章链接"}]
+4. 只返回JSON数据，不要其他解释文字`;
+
+    // Call Gemini API
+    const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + geminiApiKey, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      })
+    });
+    
+    if (!geminiResponse.ok) {
+      throw new Error(`Gemini API error: ${geminiResponse.status}`);
+    }
+    
+    const geminiData = await geminiResponse.json();
+    const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!aiText) {
+      throw new Error('No response from Gemini');
+    }
+    
+    // Parse JSON from AI response
+    let articles = [];
+    try {
+      // Extract JSON from markdown code blocks if present
+      const jsonMatch = aiText.match(/```json\s*([\s\S]*?)\s*```/) || aiText.match(/\[[\s\S]*\]/);
+      const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : aiText;
+      articles = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError);
+      // Return mock data if parsing fails
+      articles = generateMockAIArticles(keywords, lang);
+    }
+    
+    return c.json({
+      articles: articles.slice(0, 10),
+      keywords: keywords,
+      source: 'gemini_ai'
+    });
+    
+  } catch (error) {
+    console.error('AI query error:', error);
+    // Return mock data on error
+    const keywordsResult = await c.env.DB.prepare(`
+      SELECT keyword FROM search_keywords 
+      WHERE language = ? AND type = 'article' AND is_active = 1
+      ORDER BY id
+    `).bind(c.req.query('lang') || 'zh').all();
+    
+    const keywords = keywordsResult.results && keywordsResult.results.length > 0
+      ? keywordsResult.results.map((row: any) => row.keyword)
+      : [];
+    
+    return c.json({
+      articles: generateMockAIArticles(keywords, c.req.query('lang') || 'zh'),
+      keywords: keywords,
+      source: 'error_fallback'
+    });
+  }
+});
+
+// Generate mock AI articles based on keywords
+function generateMockAIArticles(keywords: string[], lang: string) {
+  if (keywords.length === 0) return [];
+  
+  const articles = [];
+  const topics = [
+    '方法论与实践', '案例分析', '工具与模板', '最佳实践', 
+    '深度解析', '实战指南', '经验总结', '系统方法',
+    '框架应用', '持续改进'
+  ];
+  
+  for (let i = 0; i < Math.min(10, keywords.length * 2); i++) {
+    const keyword = keywords[i % keywords.length];
+    const topic = topics[i % topics.length];
+    const encodedKeyword = encodeURIComponent(`${keyword} ${topic}`);
+    
+    articles.push({
+      title: `${keyword}的${topic}`,
+      description: `深入探讨${keyword}相关的${topic}，通过实际案例和系统化的方法，帮助您更好地理解和应用${keyword}的核心理念。`,
+      url: `https://www.baidu.com/s?wd=${encodedKeyword}`
+    });
+  }
+  
+  return articles;
 }
 
 export default resources;
