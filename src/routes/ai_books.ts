@@ -578,6 +578,16 @@ app.put('/:id', async (c) => {
     console.log('PUT /api/ai-books/:id - Body:', JSON.stringify(body));
     console.log('PUT /api/ai-books/:id - BookId:', bookId, 'UserId:', user.id);
 
+    // Verify book belongs to user
+    const book: any = await c.env.DB.prepare(`
+      SELECT * FROM ai_books WHERE id = ? AND user_id = ?
+    `).bind(bookId, user.id).first();
+
+    if (!book) {
+      console.log('PUT /api/ai-books/:id - Book not found');
+      return c.json({ success: false, error: 'Book not found' }, 404);
+    }
+
     await c.env.DB.prepare(`
       UPDATE ai_books 
       SET title = ?, description = ?, author_name = ?,
@@ -586,16 +596,16 @@ app.put('/:id', async (c) => {
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND user_id = ?
     `).bind(
-      body.title,
-      body.description,
-      body.author_name || null,
-      body.target_word_count || null,
-      body.tone || null,
-      body.audience || null,
-      body.preface || null,
-      body.introduction || null,
-      body.conclusion || null,
-      body.afterword || null,
+      body.title !== undefined ? body.title : book.title,
+      body.description !== undefined ? body.description : book.description,
+      body.author_name !== undefined ? (body.author_name || null) : book.author_name,
+      body.target_word_count !== undefined ? (body.target_word_count || null) : book.target_word_count,
+      body.tone !== undefined ? (body.tone || null) : book.tone,
+      body.audience !== undefined ? (body.audience || null) : book.audience,
+      body.preface !== undefined ? (body.preface || null) : book.preface,
+      body.introduction !== undefined ? (body.introduction || null) : book.introduction,
+      body.conclusion !== undefined ? (body.conclusion || null) : book.conclusion,
+      body.afterword !== undefined ? (body.afterword || null) : book.afterword,
       bookId,
       user.id
     ).run();
