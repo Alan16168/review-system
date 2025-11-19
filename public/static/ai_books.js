@@ -1253,6 +1253,8 @@ const AIBooksManager = {
       selector: '#tinymceEditor',
       height: 500,
       language: 'zh_CN',
+      promotion: false, // 隐藏域名警告和升级提示
+      branding: false,  // 隐藏 "Powered by TinyMCE"
       menubar: 'file edit view insert format tools table',
       plugins: [
         'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
