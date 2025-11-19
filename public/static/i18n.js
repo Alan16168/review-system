@@ -4439,23 +4439,23 @@ const translations = {
     
     // Contact
     'contactUs': 'Contactez-nous',
-    'phone': 'Phone',
-    'address': 'Address',
+    'phone': 'Téléphone',
+    'address': 'Adresse',
     'addressText': 'Richmond BC',
-    'followUs': 'Follow Us',
+    'followUs': 'Suivez-nous',
     
     // Footer
-    'footerDescription': 'Professional review management platform for continuous personal and team growth',
-    'product': 'Product',
-    'features': 'Features',
-    'pricing': 'Pricing',
-    'company': 'Company',
-    'legal': 'Legal',
+    'footerDescription': 'Plateforme professionnelle de gestion des revues pour la croissance personnelle et d\'équipe continue',
+    'product': 'Produit',
+    'features': 'Fonctionnalités',
+    'pricing': 'Tarification',
+    'company': 'Entreprise',
+    'legal': 'Légal',
     'termsOfService': 'Conditions d\'utilisation',
     'privacyPolicy': 'Politique de confidentialité',
-    'allRightsReserved': 'All Rights Reserved',
-    'backToHome': 'Back to Home',
-    'lastUpdated': 'Last Updated',
+    'allRightsReserved': 'Tous droits réservés',
+    'backToHome': 'Retour à l\'accueil',
+    'lastUpdated': 'Dernière mise à jour',
     
     // Articles
     'article1Title': 'Harvard Business Review: Learning to Learn',
