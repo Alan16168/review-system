@@ -21,6 +21,7 @@ import aiBooks from './routes/ai_books';
 import aiChapters from './routes/ai_chapters';
 import aiSections from './routes/ai_sections';
 import aiGeneration from './routes/ai_generation';
+import aiExport from './routes/ai_export';
 
 type Bindings = {
   DB: D1Database;
@@ -67,6 +68,7 @@ app.route('/api/ai-books', aiBooks);
 app.route('/api/ai-chapters', aiChapters);
 app.route('/api/ai-sections', aiSections);
 app.route('/api/ai-generation', aiGeneration);
+app.route('/api/ai-export', aiExport);
 
 // Diagnostic page - serve directly
 app.get('/diagnostic.html', (c) => {
