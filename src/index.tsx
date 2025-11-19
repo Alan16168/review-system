@@ -16,6 +16,11 @@ import invitations from './routes/invitations';
 import calendar from './routes/calendar';
 import answerSets from './routes/answer_sets';
 import keywords from './routes/keywords';
+// Manhattan Project Phase 1 - AI Writing System
+import aiBooks from './routes/ai_books';
+import aiChapters from './routes/ai_chapters';
+import aiSections from './routes/ai_sections';
+import aiGeneration from './routes/ai_generation';
 
 type Bindings = {
   DB: D1Database;
@@ -29,6 +34,7 @@ type Bindings = {
   PAYPAL_CLIENT_ID?: string;
   PAYPAL_CLIENT_SECRET?: string;
   PAYPAL_MODE?: string;
+  GEMINI_API_KEY?: string; // Manhattan Project - AI Writing System
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -55,6 +61,12 @@ app.route('/api/invitations', invitations);
 app.route('/api/calendar', calendar);
 app.route('/api/answer-sets', answerSets);
 app.route('/api/keywords', keywords);
+
+// Manhattan Project Phase 1 - AI Writing System Routes
+app.route('/api/ai-books', aiBooks);
+app.route('/api/ai-chapters', aiChapters);
+app.route('/api/ai-sections', aiSections);
+app.route('/api/ai-generation', aiGeneration);
 
 // Diagnostic page - serve directly
 app.get('/diagnostic.html', (c) => {
