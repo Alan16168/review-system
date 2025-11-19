@@ -1164,6 +1164,16 @@ const AIBooksManager = {
       return;
     }
     
+    // Detect if content is Markdown and convert to HTML
+    let contentForEditor = section.content || '';
+    let isMarkdownContent = false;
+    if (contentForEditor && this.isMarkdown(contentForEditor)) {
+      console.log('检测到 Markdown 格式，转换为 HTML...');
+      contentForEditor = marked.parse(contentForEditor);
+      isMarkdownContent = true;
+      console.log('转换完成');
+    }
+    
     // Create modal HTML with TinyMCE Editor
     const modalHtml = `
       <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="editSectionModal">
@@ -1187,7 +1197,7 @@ const AIBooksManager = {
                 <i class="fas fa-file-alt mr-1"></i>小节内容
               </label>
               <!-- TinyMCE Editor -->
-              <textarea id="tinymceEditor">${section.content || ''}</textarea>
+              <textarea id="tinymceEditor">${contentForEditor}</textarea>
               <div class="mt-3 flex justify-between items-center">
                 <small class="text-gray-500">
                   <i class="fas fa-info-circle"></i>
@@ -1401,6 +1411,54 @@ const AIBooksManager = {
       console.error('Error deleting book:', error);
       alert('删除失败: ' + (error.response?.data?.message || error.message));
     }
+  },
+  
+  // ============================================================
+  // Helper: Check if content is Markdown
+  // ============================================================
+  isMarkdown(content) {
+    if (!content) return false;
+    
+    // Check for common Markdown patterns
+    const markdownPatterns = [
+      /^#{1,6}\s+/m,        // Headers: # ## ###
+      /\*\*.*?\*\*/,        // Bold: **text**
+      /__.*?__/,            // Bold: __text__
+      /\*.*?\*/,            // Italic: *text*
+      /_.*?_/,              // Italic: _text_
+      /^\s*[-*+]\s+/m,      // Unordered list: - * +
+      /^\s*\d+\.\s+/m,      // Ordered list: 1. 2.
+      /\[.*?\]\(.*?\)/,     // Links: [text](url)
+      /!\[.*?\]\(.*?\)/,    // Images: ![alt](url)
+      /^>\s+/m,             // Blockquote: >
+      /`.*?`/,              // Inline code: `code`
+      /^```/m               // Code block: ```
+    ];
+    
+    // If content has HTML tags, it's already HTML
+    if (/<[a-z][\s\S]*>/i.test(content)) {
+      return false;
+    }
+    
+    // Check if at least 2 Markdown patterns match
+    let matches = 0;
+    for (const pattern of markdownPatterns) {
+      if (pattern.test(content)) {
+        matches++;
+        if (matches >= 2) return true;
+      }
+    }
+    
+    return false;
+  },
+  
+  // ============================================================
+  // Helper: Escape HTML for safe insertion
+  // ============================================================
+  escapeHtml(html) {
+    const div = document.createElement('div');
+    div.textContent = html;
+    return div.innerHTML;
   }
 };
 
