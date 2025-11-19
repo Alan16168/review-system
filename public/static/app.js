@@ -5283,6 +5283,12 @@ function renderNavigation() {
               <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 transition">
                 <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
               </button>
+              <button onclick="AIBooksManager.renderBooksPage()" class="text-gray-700 hover:text-indigo-600 transition">
+                <i class="fas fa-book-open mr-1"></i>AI写作
+              </button>
+              <button onclick="MarketplaceManager.renderMarketplacePage()" class="text-gray-700 hover:text-indigo-600 transition">
+                <i class="fas fa-store mr-1"></i>商城
+              </button>
               ${currentUser.role === 'premium' || currentUser.role === 'admin' ? `
                 <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 transition">
                   <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
@@ -5407,6 +5413,14 @@ function renderNavigation() {
                 <button onclick="showTeams(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
                   <i class="fas fa-users w-6 text-indigo-600"></i>
                   <span class="ml-3">${i18n.t('teams')}</span>
+                </button>
+                <button onclick="AIBooksManager.renderBooksPage(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
+                  <i class="fas fa-book-open w-6 text-indigo-600"></i>
+                  <span class="ml-3">AI写作</span>
+                </button>
+                <button onclick="MarketplaceManager.renderMarketplacePage(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
+                  <i class="fas fa-store w-6 text-indigo-600"></i>
+                  <span class="ml-3">商城</span>
                 </button>
                 ${currentUser.role === 'premium' || currentUser.role === 'admin' ? `
                   <button onclick="showAdmin(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
