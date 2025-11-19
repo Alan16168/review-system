@@ -1327,7 +1327,7 @@ const AIBooksManager = {
         
         // Send HTML content to backend
         const response = await axios.put(
-          `/api/ai-sections/${sectionId}`,
+          `/api/ai-books/${this.currentBook.id}/sections/${sectionId}`,
           { content: htmlContent }
         );
         
