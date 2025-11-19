@@ -314,6 +314,33 @@ async function showHomePage() {
         </div>
       </section>
 
+      <!-- AI Writing Assistant CTA Section -->
+      <section class="py-12 bg-gradient-to-r from-purple-600 to-indigo-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center">
+            <div class="inline-block bg-white/20 rounded-full px-4 py-2 mb-4">
+              <span class="text-white text-sm font-medium">
+                <i class="fas fa-sparkles mr-2"></i>NEW - 测试功能
+              </span>
+            </div>
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+              <i class="fas fa-robot mr-3"></i>AI智能写作助手
+            </h2>
+            <p class="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+              使用AI技术快速创建专业书籍、技术文档、用户指南等。智能章节规划，自动内容生成。
+            </p>
+            <button onclick="AIBooksManager.renderBooksPage()" 
+                    class="bg-white text-purple-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition text-lg font-bold shadow-xl transform hover:scale-105">
+              <i class="fas fa-magic mr-2"></i>开始创作
+              <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+            <p class="mt-4 text-white/70 text-sm">
+              <i class="fas fa-info-circle mr-1"></i>免费测试中 - 无需登录即可体验
+            </p>
+          </div>
+        </div>
+      </section>
+
       <!-- Resources Section -->
       <section id="resources" class="py-16 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -12990,3 +13017,88 @@ function showPredictedQuestions(questions) {
   
   container.classList.remove('hidden');
 }
+
+// ============================================================
+// Prompt Editing Modal - Global utility for editing AI prompts
+// ============================================================
+window.showPromptEditor = function(title, initialPrompt, onConfirm) {
+  return new Promise((resolve) => {
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    overlay.onclick = (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        resolve(null);
+      }
+    };
+    
+    // Create modal content
+    const modal = document.createElement('div');
+    modal.className = 'bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col';
+    modal.onclick = (e) => e.stopPropagation();
+    
+    modal.innerHTML = `
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-edit mr-2 text-blue-600"></i>${title}
+        </h3>
+        <p class="text-sm text-gray-600 mt-1">
+          <i class="fas fa-info-circle mr-1"></i>您可以编辑下方的Prompt，调整后点击"确认生成"
+        </p>
+      </div>
+      
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <textarea id="prompt-editor" 
+          class="w-full h-full min-h-[400px] p-4 border border-gray-300 rounded-lg font-mono text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="在此编辑AI Prompt...">${initialPrompt}</textarea>
+      </div>
+      
+      <div class="border-t border-gray-200 px-6 py-4 flex justify-end space-x-3 bg-gray-50">
+        <button id="cancel-prompt" 
+          class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">
+          <i class="fas fa-times mr-2"></i>取消
+        </button>
+        <button id="confirm-prompt" 
+          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+          <i class="fas fa-check mr-2"></i>确认生成
+        </button>
+      </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // Focus textarea
+    const textarea = modal.querySelector('#prompt-editor');
+    textarea.focus();
+    textarea.setSelectionRange(0, 0);
+    
+    // Cancel button
+    modal.querySelector('#cancel-prompt').onclick = () => {
+      overlay.remove();
+      resolve(null);
+    };
+    
+    // Confirm button
+    modal.querySelector('#confirm-prompt').onclick = () => {
+      const editedPrompt = textarea.value.trim();
+      if (!editedPrompt) {
+        showNotification('Prompt不能为空', 'warning');
+        return;
+      }
+      overlay.remove();
+      resolve(editedPrompt);
+    };
+    
+    // ESC key to close
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        overlay.remove();
+        document.removeEventListener('keydown', handleEscape);
+        resolve(null);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+  });
+};

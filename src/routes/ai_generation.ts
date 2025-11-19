@@ -18,7 +18,7 @@ const app = new Hono<{ Bindings: Bindings }>()
 // Call Gemini API
 async function callGeminiAPI(apiKey: string, prompt: string, temperature = 0.7, maxTokens = 4096): Promise<string> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
