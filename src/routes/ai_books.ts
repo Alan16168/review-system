@@ -654,26 +654,80 @@ app.put('/:id/chapters/:chapterId', async (c) => {
 app.put('/:id/sections/:sectionId', async (c) => {
   try {
     const user = await getUserFromToken(c);
+    const bookId = c.req.param('id');
     const sectionId = c.req.param('sectionId');
     const body = await c.req.json();
 
-    const wordCount = (body.content || '').replace(/\s/g, '').length;
+    console.log('PUT /api/ai-books/:id/sections/:sectionId - BookId:', bookId, 'SectionId:', sectionId);
+    console.log('PUT /api/ai-books/:id/sections/:sectionId - Body:', JSON.stringify(body));
 
-    await c.env.DB.prepare(`
-      UPDATE ai_sections 
-      SET title = ?, description = ?, content = ?, current_word_count = ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(
-      body.title,
-      body.description,
-      body.content,
-      wordCount,
-      sectionId
-    ).run();
+    // Verify section belongs to this book and user
+    const section: any = await c.env.DB.prepare(`
+      SELECT s.* FROM ai_sections s
+      JOIN ai_chapters c ON s.chapter_id = c.id
+      JOIN ai_books b ON s.book_id = b.id
+      WHERE s.id = ? AND s.book_id = ? AND b.user_id = ?
+    `).bind(sectionId, bookId, user.id).first();
 
+    if (!section) {
+      console.log('PUT /api/ai-books/:id/sections/:sectionId - Section not found');
+      return c.json({ success: false, error: 'Section not found' }, 404);
+    }
+
+    // Build dynamic UPDATE query with only provided fields
+    const updates: string[] = [];
+    const params: any[] = [];
+
+    if (body.title !== undefined) {
+      updates.push('title = ?');
+      params.push(body.title || ''); // Convert undefined/null to empty string
+    }
+
+    if (body.description !== undefined) {
+      updates.push('description = ?');
+      params.push(body.description || ''); // Convert undefined/null to empty string
+    }
+
+    if (body.content !== undefined) {
+      const content = body.content || '';
+      const wordCount = content.replace(/\s/g, '').length;
+      updates.push('content = ?');
+      params.push(content);
+      updates.push('current_word_count = ?');
+      params.push(wordCount);
+    }
+
+    if (updates.length === 0) {
+      console.log('PUT /api/ai-books/:id/sections/:sectionId - No fields to update');
+      return c.json({ success: false, error: 'No fields to update' }, 400);
+    }
+
+    // Add updated_at timestamp
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(sectionId);
+
+    const query = `UPDATE ai_sections SET ${updates.join(', ')} WHERE id = ?`;
+    console.log('PUT /api/ai-books/:id/sections/:sectionId - Query:', query);
+    console.log('PUT /api/ai-books/:id/sections/:sectionId - Params:', JSON.stringify(params));
+
+    await c.env.DB.prepare(query).bind(...params).run();
+
+    // Update book word count if content was modified
+    if (body.content !== undefined) {
+      const totalWords: any = await c.env.DB.prepare(`
+        SELECT SUM(current_word_count) as total FROM ai_sections WHERE book_id = ?
+      `).bind(bookId).first();
+
+      await c.env.DB.prepare(`
+        UPDATE ai_books SET current_word_count = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(totalWords?.total || 0, bookId).run();
+    }
+
+    console.log('PUT /api/ai-books/:id/sections/:sectionId - Update successful');
     return c.json({ success: true });
   } catch (error: any) {
+    console.error('PUT /api/ai-books/:id/sections/:sectionId - Error:', error.message, error.stack);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
