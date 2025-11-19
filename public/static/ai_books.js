@@ -1252,8 +1252,7 @@ const AIBooksManager = {
     tinymce.init({
       selector: '#tinymceEditor',
       height: 500,
-      language: 'zh-Hans',
-      language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n@23.10.9/langs6/zh-Hans.js',
+      language: 'zh_CN',
       menubar: 'file edit view insert format tools table',
       plugins: [
         'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
