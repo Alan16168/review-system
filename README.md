@@ -16,6 +16,33 @@
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 
+---
+
+## 🚀 曼哈顿计划 (Manhattan Project)
+
+**Review System 商业化战略计划** - 3个月内实现年收入$449,724的Marketplace转型计划
+
+📋 **完整计划**: [MANHATTAN_PROJECT.md](./MANHATTAN_PROJECT.md)  
+⚡ **快速参考**: [MANHATTAN_PROJECT_QUICK_REF.md](./MANHATTAN_PROJECT_QUICK_REF.md)
+
+**核心策略**:
+- 🎯 **策略1**: 分层产品结构（免费模板 → 付费模板 → AI服务）
+- 💳 **策略2**: 订阅制 + 信用点混合模式（4个订阅层级 + 灵活付费）
+- 📊 **策略3**: AI使用量追踪 + 智能推荐系统
+
+**收入目标**:
+- 📈 月收入: $37,477
+- 📈 年收入: $449,724
+- 📈 付费转化率: 30%
+
+**实施时间表**: 9-13周（3个月）
+- Phase 1 (2-3周): Marketplace基础 + 支付系统
+- Phase 2 (3-4周): AI写作助手 + AI视频生成
+- Phase 3 (2-3周): 多层订阅 + 使用统计
+- Phase 4 (2-3周): 优化 + 企业功能
+
+---
+
 ## 🌟 项目概述
 
 ### 项目名称
