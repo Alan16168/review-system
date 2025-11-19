@@ -531,8 +531,14 @@ const AIBooksManager = {
                       <div class="flex space-x-2">
                         ${section.content ? `
                         <button onclick="AIBooksManager.editSection(${section.id})" 
-                          class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition text-sm">
-                          <i class="fas fa-edit"></i>
+                          class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition text-sm"
+                          title="编辑内容">
+                          <i class="fas fa-edit mr-1"></i>编辑
+                        </button>
+                        <button onclick="AIBooksManager.regenerateSectionContent(${section.id})" 
+                          class="bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 transition text-sm"
+                          title="AI重新生成内容">
+                          <i class="fas fa-sync-alt mr-1"></i>重新生成
                         </button>
                         ` : `
                         <button onclick="AIBooksManager.generateSectionContent(${section.id})" 
@@ -1150,6 +1156,53 @@ const AIBooksManager = {
     } catch (error) {
       console.error('Error generating content:', error);
       alert('生成内容失败: ' + (error.response?.data?.message || error.message));
+    }
+  },
+  
+  // ============================================================
+  // Regenerate section content (重新生成小节内容)
+  // ============================================================
+  async regenerateSectionContent(sectionId) {
+    // Find section
+    let section = null;
+    for (const chapter of this.currentBook.chapters || []) {
+      section = (chapter.sections || []).find(s => s.id === sectionId);
+      if (section) break;
+    }
+    
+    if (!section) {
+      showNotification('未找到该小节', 'error');
+      return;
+    }
+    
+    // Confirm overwrite
+    if (!confirm(`⚠️ 重新生成将覆盖现有内容！\n\n当前内容：${section.current_word_count || 0}字\n\n确定要重新生成吗？原内容将无法恢复。`)) {
+      return;
+    }
+    
+    const targetWords = prompt('请输入目标字数:', section.target_word_count || '1000');
+    if (!targetWords) return;
+    
+    if (!confirm(`确定要重新生成约${targetWords}字的内容吗？AI将生成全新的专业内容，预计需要30-60秒。`)) {
+      return;
+    }
+    
+    try {
+      showNotification(`🤖 AI正在重新生成约${targetWords}字的内容，请耐心等待...`, 'info');
+      
+      const response = await axios.post(
+        `/api/ai-books/${this.currentBook.id}/sections/${sectionId}/generate-content`,
+        { target_word_count: parseInt(targetWords) }
+      );
+      
+      if (response.data.success) {
+        showNotification('✅ 内容重新生成成功！', 'success');
+        // Reload book to show new content
+        await this.openBook(this.currentBook.id);
+      }
+    } catch (error) {
+      console.error('Error regenerating content:', error);
+      showNotification('重新生成失败: ' + (error.response?.data?.error || error.message), 'error');
     }
   },
   
