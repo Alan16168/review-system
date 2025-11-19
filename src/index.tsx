@@ -16,12 +16,9 @@ import invitations from './routes/invitations';
 import calendar from './routes/calendar';
 import answerSets from './routes/answer_sets';
 import keywords from './routes/keywords';
-// Manhattan Project Phase 1 - AI Writing System
+// Manhattan Project Phase 1 - AI Writing System & Marketplace
 import aiBooks from './routes/ai_books';
-import aiChapters from './routes/ai_chapters';
-import aiSections from './routes/ai_sections';
-import aiGeneration from './routes/ai_generation';
-import aiExport from './routes/ai_export';
+import marketplace from './routes/marketplace';
 
 type Bindings = {
   DB: D1Database;
@@ -63,12 +60,9 @@ app.route('/api/calendar', calendar);
 app.route('/api/answer-sets', answerSets);
 app.route('/api/keywords', keywords);
 
-// Manhattan Project Phase 1 - AI Writing System Routes
+// Manhattan Project Phase 1 - AI Writing System & Marketplace Routes
 app.route('/api/ai-books', aiBooks);
-app.route('/api/ai-chapters', aiChapters);
-app.route('/api/ai-sections', aiSections);
-app.route('/api/ai-generation', aiGeneration);
-app.route('/api/ai-export', aiExport);
+app.route('/api/marketplace', marketplace);
 
 // Diagnostic page - serve directly
 app.get('/diagnostic.html', (c) => {
@@ -317,9 +311,8 @@ app.get('/', (c) => {
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/i18n.js"></script>
-        <!-- Manhattan Project - AI Writing & Marketplace -->
+        <!-- Manhattan Project - AI Writing System -->
         <script src="/static/ai_books.js"></script>
-        <script src="/static/marketplace.js"></script>
         <script src="/static/app.js"></script>
     </body>
     </html>
