@@ -1154,7 +1154,7 @@ const AIBooksManager = {
   },
   
   // ============================================================
-  // Edit section content with Quill Editor
+  // Edit section content with TinyMCE Editor (支持表格和图片)
   // ============================================================
   async editSection(sectionId) {
     // Find the section
@@ -1164,17 +1164,17 @@ const AIBooksManager = {
       return;
     }
     
-    // Create modal HTML with Quill Editor
+    // Create modal HTML with TinyMCE Editor
     const modalHtml = `
       <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="editSectionModal">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-7xl mx-4 max-h-[95vh] flex flex-col">
           <!-- Header -->
           <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 class="text-2xl font-bold text-gray-800">
               <i class="fas fa-edit mr-2 text-blue-600"></i>
               编辑内容：${section.title || '第' + section.section_number + '节'}
             </h2>
-            <button onclick="document.getElementById('editSectionModal').remove()" 
+            <button onclick="AIBooksManager.closeSectionEditor()" 
               class="text-gray-500 hover:text-gray-700 text-2xl">
               <i class="fas fa-times"></i>
             </button>
@@ -1186,14 +1186,12 @@ const AIBooksManager = {
               <label class="block text-sm font-semibold text-gray-700 mb-2">
                 <i class="fas fa-file-alt mr-1"></i>小节内容
               </label>
-              <!-- Quill Editor -->
-              <div id="quillEditor" style="height: 400px; background: white;">
-                ${section.content || '<p><br></p>'}
-              </div>
-              <div class="mt-2 flex justify-between items-center">
+              <!-- TinyMCE Editor -->
+              <textarea id="tinymceEditor">${section.content || ''}</textarea>
+              <div class="mt-3 flex justify-between items-center">
                 <small class="text-gray-500">
                   <i class="fas fa-info-circle"></i>
-                  支持富文本格式：标题、加粗、斜体、列表、链接等
+                  支持富文本格式：<strong>表格</strong>、图片、标题、加粗、斜体、列表、链接等
                 </small>
                 <div class="flex items-center space-x-4">
                   <span class="text-sm text-gray-600">
@@ -1212,7 +1210,7 @@ const AIBooksManager = {
           
           <!-- Footer -->
           <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50">
-            <button onclick="document.getElementById('editSectionModal').remove()" 
+            <button onclick="AIBooksManager.closeSectionEditor()" 
               class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition">
               <i class="fas fa-times mr-2"></i>取消
             </button>
@@ -1227,30 +1225,6 @@ const AIBooksManager = {
     
     // Add modal to page
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Initialize Quill Editor with rich text toolbar
-    const quill = new Quill('#quillEditor', {
-      theme: 'snow',
-      modules: {
-        toolbar: [
-          [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ 'color': [] }, { 'background': [] }],
-          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-          [{ 'indent': '-1'}, { 'indent': '+1' }],
-          [{ 'align': [] }],
-          ['link', 'image'],
-          ['blockquote', 'code-block'],
-          ['clean']
-        ]
-      },
-      placeholder: '请输入小节内容...'
-    });
-    
-    // Set initial content (HTML format)
-    if (section.content) {
-      quill.root.innerHTML = section.content;
-    }
     
     // Word count calculation function (supports Chinese and English)
     const calculateWordCount = (htmlContent) => {
@@ -1274,18 +1248,71 @@ const AIBooksManager = {
       return chineseCount + englishCount;
     };
     
-    // Update word count on text change
-    const wordCountBadge = document.getElementById('currentWordCount');
-    quill.on('text-change', () => {
-      const htmlContent = quill.root.innerHTML;
-      const wordCount = calculateWordCount(htmlContent);
-      wordCountBadge.textContent = wordCount;
+    // Initialize TinyMCE Editor with full features
+    tinymce.init({
+      selector: '#tinymceEditor',
+      height: 500,
+      language: 'zh-Hans',
+      language_url: 'https://cdn.jsdelivr.net/npm/tinymce-i18n@23.10.9/langs6/zh-Hans.js',
+      menubar: 'file edit view insert format tools table',
+      plugins: [
+        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+      ],
+      toolbar: 'undo redo | blocks | ' +
+        'bold italic forecolor backcolor | alignleft aligncenter ' +
+        'alignright alignjustify | bullist numlist outdent indent | ' +
+        'table tabledelete | tableprops tablerowprops tablecellprops | ' +
+        'tableinsertrowbefore tableinsertrowafter tabledeleterow | ' +
+        'tableinsertcolbefore tableinsertcolafter tabledeletecol | ' +
+        'image link | removeformat | code | help',
+      table_toolbar: 'tableprops tabledelete | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+      table_appearance_options: true,
+      table_grid: true,
+      table_resize_bars: true,
+      table_use_colgroups: true,
+      content_style: 'body { font-family: "Microsoft YaHei", Arial, sans-serif; font-size: 14px; line-height: 1.8; }' +
+        'table { border-collapse: collapse; width: 100%; }' +
+        'table td, table th { border: 1px solid #ddd; padding: 8px; }' +
+        'table th { background-color: #f2f2f2; font-weight: bold; }',
+      // 图片处理：转换为 base64 嵌入
+      images_upload_handler: (blobInfo, progress) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve(reader.result);
+        };
+        reader.onerror = () => {
+          reject('图片读取失败');
+        };
+        reader.readAsDataURL(blobInfo.blob());
+      }),
+      automatic_uploads: true,
+      file_picker_types: 'image',
+      image_advtab: true,
+      image_caption: true,
+      // 更新字数统计
+      setup: (editor) => {
+        editor.on('init', () => {
+          // 初始化时更新字数
+          const content = editor.getContent();
+          const wordCount = calculateWordCount(content);
+          document.getElementById('currentWordCount').textContent = wordCount;
+        });
+        
+        editor.on('input change', () => {
+          const content = editor.getContent();
+          const wordCount = calculateWordCount(content);
+          document.getElementById('currentWordCount').textContent = wordCount;
+        });
+      }
     });
     
     // Save button handler
     document.getElementById('saveSectionContentBtn').addEventListener('click', async () => {
-      const htmlContent = quill.root.innerHTML.trim();
-      const textContent = quill.getText().trim();
+      const editor = tinymce.get('tinymceEditor');
+      const htmlContent = editor.getContent();
+      const textContent = editor.getContent({ format: 'text' }).trim();
       
       if (!textContent || textContent.length === 0) {
         showNotification('内容不能为空！', 'warning');
@@ -1310,8 +1337,8 @@ const AIBooksManager = {
           section.content = htmlContent;
           section.current_word_count = calculateWordCount(htmlContent);
           
-          // Close modal
-          document.getElementById('editSectionModal').remove();
+          // Close modal and cleanup TinyMCE
+          this.closeSectionEditor();
           
           // Re-render book view
           await this.openBook(this.currentBook.id);
@@ -1326,6 +1353,23 @@ const AIBooksManager = {
         saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存内容';
       }
     });
+  },
+  
+  // ============================================================
+  // Close section editor and cleanup TinyMCE
+  // ============================================================
+  closeSectionEditor() {
+    // Remove TinyMCE instance
+    const editor = tinymce.get('tinymceEditor');
+    if (editor) {
+      editor.remove();
+    }
+    
+    // Remove modal
+    const modal = document.getElementById('editSectionModal');
+    if (modal) {
+      modal.remove();
+    }
   },
   
   // ============================================================
