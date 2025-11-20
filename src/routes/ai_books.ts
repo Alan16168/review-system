@@ -79,7 +79,7 @@ async function checkBookCreationLimit(c: any, userId: number, tier: string): Pro
 
 async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number = 8192, temperature: number = 0.7): Promise<string> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -96,11 +96,19 @@ async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number =
   );
 
   if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('Gemini API error:', response.status, errorText);
+    throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
   }
 
   const data: any = await response.json();
-  return data.candidates[0]?.content?.parts[0]?.text || '';
+  
+  if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+    console.error('Unexpected API response format:', JSON.stringify(data));
+    throw new Error('Invalid API response format');
+  }
+  
+  return data.candidates[0].content.parts[0].text;
 }
 
 // ============================================================================
