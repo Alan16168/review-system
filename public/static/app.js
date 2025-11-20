@@ -13522,7 +13522,7 @@ async function showMarketplaceManagement(container) {
 
 async function loadMarketplaceProducts() {
   try {
-    const response = await axios.get('/api/marketplace/products');
+    const response = await axios.get('/api/marketplace/products/all');
     const products = response.data.products || [];
 
     const container = document.getElementById('marketplace-products-list');
@@ -13557,22 +13557,21 @@ async function loadMarketplaceProducts() {
                 <td class="px-6 py-4">
                   <div class="flex items-center">
                     <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <i class="fas fa-${getCategoryIcon(product.category)} text-white text-xl"></i>
+                      <i class="fas fa-${getCategoryIcon(product.product_type)} text-white text-xl"></i>
                     </div>
                     <div class="ml-4">
                       <div class="text-sm font-medium text-gray-900">${product.name}</div>
-                      <div class="text-sm text-gray-500">${product.description.substring(0, 50)}...</div>
+                      <div class="text-sm text-gray-500">${(product.description || '').substring(0, 50)}...</div>
                     </div>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getCategoryBadgeColor(product.category)}">
-                    ${getCategoryName(product.category)}
+                  <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getCategoryBadgeColor(product.product_type)}">
+                    ${getCategoryName(product.product_type)}
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-bold text-gray-900">¥${product.price}</div>
-                  ${product.original_price ? `<div class="text-xs text-gray-500 line-through">¥${product.original_price}</div>` : ''}
+                  <div class="text-sm font-bold text-gray-900">$${product.price_usd || 0}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
@@ -13615,26 +13614,40 @@ async function loadMarketplaceProducts() {
 
 function getCategoryIcon(category) {
   const icons = {
-    'ai_agent': 'robot',
+    'ai_service': 'robot',
     'template': 'file-alt',
+    'book_template': 'book',
     'other': 'box'
   };
   return icons[category] || 'box';
 }
 
 function getCategoryName(category) {
+  // Use i18n if available
+  if (typeof i18n !== 'undefined') {
+    const keys = {
+      'ai_service': 'aiAgent',
+      'template': 'templates',
+      'book_template': 'templates',
+      'other': 'other'
+    };
+    return i18n.t(keys[category] || 'other');
+  }
+  // Fallback
   const names = {
-    'ai_agent': 'AI 智能体',
-    'template': '模板',
-    'other': '其他'
+    'ai_service': 'AI Agent',
+    'template': 'Template',
+    'book_template': 'Book Template',
+    'other': 'Other'
   };
   return names[category] || category;
 }
 
 function getCategoryBadgeColor(category) {
   const colors = {
-    'ai_agent': 'bg-purple-100 text-purple-800',
+    'ai_service': 'bg-purple-100 text-purple-800',
     'template': 'bg-blue-100 text-blue-800',
+    'book_template': 'bg-green-100 text-green-800',
     'other': 'bg-gray-100 text-gray-800'
   };
   return colors[category] || 'bg-gray-100 text-gray-800';
@@ -13673,37 +13686,20 @@ function showCreateProductModal() {
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
-            <select id="product-category" required
+            <select id="product-type" required
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="ai_agent">AI 智能体</option>
-              <option value="template">模板</option>
-              <option value="other">其他</option>
+              <option value="ai_service">AI Service</option>
+              <option value="template">Template</option>
+              <option value="book_template">Book Template</option>
             </select>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">价格 (¥) *</label>
-            <input type="number" id="product-price" required min="0" step="0.01"
+            <label class="block text-sm font-medium text-gray-700 mb-1">价格 ($) *</label>
+            <input type="number" id="product-price-usd" required min="0" step="0.01"
                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                   placeholder="99.00">
+                   placeholder="9.99">
           </div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">原价 (¥)</label>
-          <input type="number" id="product-original-price" min="0" step="0.01"
-                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                 placeholder="199.00（可选，用于显示折扣）">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">功能菜单标识</label>
-          <input type="text" id="product-feature-menu"
-                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                 placeholder="例如：ai-books（用于解锁对应功能菜单）">
-          <p class="text-xs text-gray-500 mt-1">
-            <i class="fas fa-info-circle"></i> 用户购买后将自动显示对应的功能菜单
-          </p>
         </div>
 
         <div class="flex items-center space-x-2">
@@ -13733,24 +13729,21 @@ async function handleCreateProduct(e) {
   e.preventDefault();
 
   const data = {
+    product_type: document.getElementById('product-type').value,
     name: document.getElementById('product-name').value,
     description: document.getElementById('product-description').value,
-    category: document.getElementById('product-category').value,
-    price: parseFloat(document.getElementById('product-price').value),
-    original_price: document.getElementById('product-original-price').value ? 
-                    parseFloat(document.getElementById('product-original-price').value) : null,
-    feature_menu: document.getElementById('product-feature-menu').value || null,
+    price_usd: parseFloat(document.getElementById('product-price-usd').value),
     is_active: document.getElementById('product-is-active').checked
   };
 
   try {
     await axios.post('/api/marketplace/products', data);
-    showNotification('✅ 产品创建成功！', 'success');
+    showNotification(i18n.t('productCreated') || '✅ 产品创建成功！', 'success');
     closeProductModal();
     await loadMarketplaceProducts();
   } catch (error) {
     console.error('Error creating product:', error);
-    showNotification('创建失败: ' + (error.response?.data?.error || error.message), 'error');
+    showNotification((i18n.t('operationFailed') || '创建失败') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
 
@@ -13869,18 +13862,16 @@ async function handleUpdateProduct(e, productId) {
 }
 
 async function toggleProductStatus(productId, currentStatus) {
-  const action = currentStatus ? '下架' : '上架';
-  if (!confirm(`确定要${action}这个产品吗？`)) return;
+  const action = currentStatus ? i18n.t('unpublish') || '下架' : i18n.t('publish') || '上架';
+  if (!confirm((currentStatus ? i18n.t('confirmUnpublishProduct') : i18n.t('confirmPublishProduct')) || `确定要${action}这个产品吗？`)) return;
 
   try {
-    await axios.put(`/api/marketplace/products/${productId}`, {
-      is_active: !currentStatus
-    });
-    showNotification(`✅ 产品已${action}！`, 'success');
+    const response = await axios.post(`/api/marketplace/products/${productId}/toggle-status`);
+    showNotification(response.data.message || `✅ 产品已${action}！`, 'success');
     await loadMarketplaceProducts();
   } catch (error) {
     console.error('Error toggling product status:', error);
-    showNotification('操作失败: ' + (error.response?.data?.error || error.message), 'error');
+    showNotification((i18n.t('operationFailed') || '操作失败') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
 
