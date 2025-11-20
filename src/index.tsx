@@ -290,6 +290,101 @@ app.get('/diagnostic.html', (c) => {
 </html>`);
 });
 
+// MarketPlace Admin page
+app.get('/marketplace-admin.html', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketPlace 管理后台 - Review System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <style>
+      .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      @keyframes fade-in {
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+      }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/" class="text-xl font-bold text-blue-600">
+                        <i class="fas fa-store mr-2"></i>MarketPlace 管理
+                    </a>
+                    <div class="flex space-x-4">
+                        <button onclick="MarketplaceAdmin.switchView('products')"
+                            class="admin-tab px-3 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
+                            <i class="fas fa-shopping-bag mr-2"></i>产品管理
+                        </button>
+                        <button onclick="MarketplaceAdmin.switchView('templates')"
+                            class="admin-tab px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                            <i class="fas fa-file-alt mr-2"></i>写作模板
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-home mr-2"></i>返回首页
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div id="admin-content">
+            <div class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+                <p class="text-gray-600">加载中...</p>
+            </div>
+        </div>
+    </div>
+    <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    <script src="/static/i18n.js"></script>
+    <script src="/static/marketplace_admin.js"></script>
+    <script>
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            const bgColors = {
+                'success': 'bg-green-500',
+                'error': 'bg-red-500',
+                'warning': 'bg-yellow-500',
+                'info': 'bg-blue-500'
+            };
+            notification.className = \`\${bgColors[type] || bgColors.info} text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3 animate-fade-in\`;
+            notification.innerHTML = \`
+                <span>\${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            \`;
+            container.appendChild(notification);
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.3s';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+        window.showNotification = showNotification;
+    </script>
+</body>
+</html>`);
+});
+
 // Main page - Login/Dashboard
 app.get('/', (c) => {
   // Get PayPal Client ID from environment variables
