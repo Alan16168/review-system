@@ -48,7 +48,7 @@ async function checkBookCreationLimit(c: any, userId: number, tier: string): Pro
 // AI Generation Helper using Gemini API
 // ============================================================================
 
-async function callGeminiAPI(apiKey: string, prompt: string): Promise<string> {
+async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number = 8192): Promise<string> {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
@@ -60,7 +60,7 @@ async function callGeminiAPI(apiKey: string, prompt: string): Promise<string> {
         }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 2048,
+          maxOutputTokens: maxTokens,
         }
       })
     }
@@ -507,6 +507,14 @@ app.post('/:id/sections/:sectionId/generate-content', async (c) => {
 
     const targetWords = body.target_word_count || section.target_word_count || 1000;
 
+    // Calculate required tokens based on target word count
+    // For Chinese: 1 character ≈ 2-3 tokens, use 3 for safety margin
+    // Add 20% buffer for formatting and markdown
+    const estimatedTokens = Math.ceil(targetWords * 3 * 1.2);
+    const maxTokens = Math.min(estimatedTokens, 8192); // Gemini API limit
+
+    console.log(`Generating content: target=${targetWords} words, estimated tokens=${estimatedTokens}, max tokens=${maxTokens}`);
+
     // Build comprehensive prompt
     const prompt = `你是一位专业的内容创作者。
 
@@ -522,17 +530,18 @@ app.post('/:id/sections/:sectionId/generate-content', async (c) => {
 请为这个小节生成约${targetWords}字的详细内容。
 
 要求：
-1. 内容要专业、准确
+1. 内容要专业、准确，务必生成足够的字数（目标${targetWords}字）
 2. 语言风格：${book.tone}
 3. 目标读者：${book.audience}
 4. 内容要围绕小节主题深入展开
 5. 可以包含案例、数据、分析等
 6. 使用Markdown格式，包含适当的段落、标题、列表等
+7. 如果内容不够${targetWords}字，请继续扩展细节、案例和解释
 
 请直接输出内容，不要JSON格式。`;
 
     const apiKey = c.env.GEMINI_API_KEY;
-    const content = await callGeminiAPI(apiKey!, prompt);
+    const content = await callGeminiAPI(apiKey!, prompt, maxTokens);
 
     // Calculate word count (简单统计中文字符)
     const wordCount = content.replace(/\s/g, '').length;
