@@ -12,13 +12,14 @@ const app = new Hono<{ Bindings: Bindings }>();
 // ============================================================================
 
 async function getUserFromToken(c: any): Promise<any> {
-  // TEMPORARY: Use default user ID 1 for testing
+  // TEMPORARY: Find and use the first admin user for testing
+  // In production, this should use JWT token authentication
   const user = await c.env.DB.prepare(
-    'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE id = ?'
-  ).bind(1).first();
+    'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE is_admin = 1 LIMIT 1'
+  ).first();
   
   if (!user) {
-    throw new HTTPException(401, { message: 'User not found' });
+    throw new HTTPException(401, { message: 'No admin user found' });
   }
   
   return user;
