@@ -13907,3 +13907,207 @@ function closeProductModal() {
   const modal = document.getElementById('product-modal');
   if (modal) modal.remove();
 }
+
+// ============================================================
+// MarketPlace User Frontend
+// ============================================================
+
+const MarketplaceManager = {
+  async renderMarketplacePage() {
+    // Auto-save draft before leaving create review page
+    await autoSaveDraftBeforeNavigation();
+    
+    currentView = 'marketplace';
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+      <div class="min-h-screen bg-gray-50">
+        ${renderNavigation()}
+        
+        <div class="max-w-7xl mx-auto px-4 py-8">
+          <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">
+              <i class="fas fa-store mr-3 text-indigo-600"></i>MarketPlace 商城
+            </h1>
+            <p class="text-gray-600">探索并购买 AI 工具、模板和其他服务</p>
+          </div>
+
+          <!-- Category Filters -->
+          <div class="mb-6 flex flex-wrap gap-3">
+            <button onclick="MarketplaceManager.filterByCategory('all')" 
+                    class="category-filter-btn active px-4 py-2 rounded-lg font-medium transition"
+                    data-category="all">
+              <i class="fas fa-th mr-2"></i>全部
+            </button>
+            <button onclick="MarketplaceManager.filterByCategory('ai_agent')" 
+                    class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
+                    data-category="ai_agent">
+              <i class="fas fa-robot mr-2"></i>AI 智能体
+            </button>
+            <button onclick="MarketplaceManager.filterByCategory('template')" 
+                    class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
+                    data-category="template">
+              <i class="fas fa-file-alt mr-2"></i>模板
+            </button>
+            <button onclick="MarketplaceManager.filterByCategory('other')" 
+                    class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
+                    data-category="other">
+              <i class="fas fa-box mr-2"></i>其他
+            </button>
+          </div>
+
+          <!-- Products Grid -->
+          <div id="marketplace-products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="text-center py-12 col-span-full">
+              <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+              <p class="text-gray-600">加载商品中...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add styles for category filter buttons
+    const style = document.createElement('style');
+    style.textContent = `
+      .category-filter-btn {
+        background: white;
+        border: 2px solid #e5e7eb;
+        color: #6b7280;
+      }
+      .category-filter-btn:hover {
+        border-color: #818cf8;
+        color: #4f46e5;
+      }
+      .category-filter-btn.active {
+        background: linear-gradient(to right, #6366f1, #8b5cf6);
+        border-color: #6366f1;
+        color: white;
+      }
+    `;
+    document.head.appendChild(style);
+
+    await this.loadProducts();
+  },
+
+  currentCategory: 'all',
+  allProducts: [],
+
+  async loadProducts() {
+    try {
+      const response = await axios.get('/api/marketplace/products');
+      this.allProducts = response.data.products || [];
+      this.renderProducts();
+    } catch (error) {
+      console.error('Error loading marketplace products:', error);
+      document.getElementById('marketplace-products-grid').innerHTML = `
+        <div class="col-span-full text-center py-12 bg-red-50 rounded-lg border border-red-200">
+          <i class="fas fa-exclamation-circle text-red-500 text-4xl mb-4"></i>
+          <p class="text-red-700">加载失败: ${error.response?.data?.error || error.message}</p>
+        </div>
+      `;
+    }
+  },
+
+  filterByCategory(category) {
+    this.currentCategory = category;
+    
+    // Update active button
+    document.querySelectorAll('.category-filter-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.querySelector(`[data-category="${category}"]`).classList.add('active');
+    
+    this.renderProducts();
+  },
+
+  renderProducts() {
+    const container = document.getElementById('marketplace-products-grid');
+    
+    // Filter products
+    let products = this.allProducts.filter(p => p.is_active);
+    if (this.currentCategory !== 'all') {
+      products = products.filter(p => p.category === this.currentCategory);
+    }
+
+    if (products.length === 0) {
+      container.innerHTML = `
+        <div class="col-span-full text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <i class="fas fa-box-open text-gray-400 text-5xl mb-4"></i>
+          <p class="text-gray-600 text-lg">暂无商品</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = products.map(product => `
+      <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden">
+        <!-- Product Header with Icon -->
+        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 text-center">
+          <div class="w-20 h-20 mx-auto bg-white rounded-full flex items-center justify-center mb-4">
+            <i class="fas fa-${this.getCategoryIcon(product.category)} text-indigo-600 text-3xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">${product.name}</h3>
+          <span class="inline-block px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">
+            ${this.getCategoryName(product.category)}
+          </span>
+        </div>
+
+        <!-- Product Body -->
+        <div class="p-6">
+          <p class="text-gray-600 mb-4 line-clamp-3">${product.description}</p>
+          
+          <!-- Price -->
+          <div class="mb-4">
+            <div class="flex items-end gap-2">
+              <span class="text-3xl font-bold text-indigo-600">¥${product.price}</span>
+              ${product.original_price ? `
+                <span class="text-lg text-gray-400 line-through mb-1">¥${product.original_price}</span>
+              ` : ''}
+            </div>
+            ${product.original_price ? `
+              <span class="text-sm text-green-600 font-medium">
+                省 ¥${(product.original_price - product.price).toFixed(2)}
+              </span>
+            ` : ''}
+          </div>
+
+          <!-- Sales Count -->
+          <div class="flex items-center text-sm text-gray-500 mb-4">
+            <i class="fas fa-shopping-cart mr-2"></i>
+            已售 ${product.sales_count || 0} 件
+          </div>
+
+          <!-- Purchase Button -->
+          <button onclick="MarketplaceManager.purchaseProduct(${product.id})" 
+                  class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition">
+            <i class="fas fa-shopping-bag mr-2"></i>立即购买
+          </button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  getCategoryIcon(category) {
+    const icons = {
+      'ai_agent': 'robot',
+      'template': 'file-alt',
+      'other': 'box'
+    };
+    return icons[category] || 'box';
+  },
+
+  getCategoryName(category) {
+    const names = {
+      'ai_agent': 'AI 智能体',
+      'template': '模板',
+      'other': '其他'
+    };
+    return names[category] || category;
+  },
+
+  async purchaseProduct(productId) {
+    // TODO: Implement purchase logic
+    showNotification('购买功能开发中...', 'info');
+  }
+};
