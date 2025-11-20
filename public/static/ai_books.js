@@ -1272,22 +1272,84 @@ const AIBooksManager = {
   // Generate section content (Level 3)
   // ============================================================
   async generateSectionContent(sectionId) {
-    // Find section
+    // Find section and chapter
     let section = null;
-    for (const chapter of this.currentBook.chapters || []) {
-      section = (chapter.sections || []).find(s => s.id === sectionId);
-      if (section) break;
+    let chapter = null;
+    for (const c of this.currentBook.chapters || []) {
+      section = (c.sections || []).find(s => s.id === sectionId);
+      if (section) {
+        chapter = c;
+        break;
+      }
     }
     
-    if (!section) {
+    if (!section || !chapter) {
       showNotification('未找到该小节', 'error');
       return;
     }
     
-    const targetWords = prompt('请输入目标字数:', section.target_word_count || '1000');
+    // Ask for target word count
+    const targetWords = prompt('请输入目标字数（建议1000-2000字）:', section.target_word_count || '1000');
     if (!targetWords) return;
     
-    if (!confirm(`确定要生成约${targetWords}字的内容吗？AI将生成详细的专业内容，预计需要30-60秒。`)) {
+    const targetWordsInt = parseInt(targetWords);
+    if (isNaN(targetWordsInt) || targetWordsInt < 100 || targetWordsInt > 10000) {
+      showNotification('❌ 字数必须在100-10000之间', 'error');
+      return;
+    }
+    
+    // Build initial prompt
+    const book = this.currentBook;
+    const minWords = Math.floor(targetWordsInt * 0.9);
+    const maxWords = Math.ceil(targetWordsInt * 1.1);
+    
+    const initialPrompt = `你是一位专业的内容创作者。请严格按照字数要求生成内容。
+
+【书籍信息】
+书籍主题：${book.title}
+主题描述：${book.description || '（无描述）'}
+
+【章节信息】
+章节：${chapter.title}
+章节描述：${chapter.description || '（无描述）'}
+
+【小节信息】
+当前小节：${section.title}
+小节描述：${section.description || '（无描述）'}
+
+【核心任务】
+请为这个小节生成${targetWordsInt}字左右的完整内容（允许误差±10%，即${minWords}-${maxWords}字）。
+
+【内容要求】
+1. ⚠️ 字数控制：生成内容必须在${minWords}-${maxWords}字范围内（不包含markdown标记符号）
+2. 专业性：内容要专业、准确、有深度
+3. 语言风格：${book.tone || '专业严谨'}
+4. 目标读者：${book.audience || '专业人士'}
+5. 结构完整：内容必须有完整的开头、正文和结尾，不能突然中断
+6. 格式规范：使用Markdown格式，包含：
+   - 适当的小标题（## 或 ###）
+   - 段落分隔（空行）
+   - 列表（有序或无序）
+   - 重点标记（**粗体**）
+7. 内容充实：可以包含案例、数据、分析、对比等
+
+【特别要求】
+- ✅ 必须有明确的结论或总结段落
+- ✅ 内容要完整，不能戛然而止
+- ✅ 如果接近字数上限，要用简洁的方式收尾
+- ❌ 不要包含"未完待续"、"下一节将"等字样
+- ❌ 不要超出规定字数范围
+
+请直接输出内容（纯文本+Markdown），不要JSON格式，不要前言说明。`;
+
+    // Show editable prompt modal
+    const finalPrompt = await window.showPromptEditor('编辑生成内容的Prompt', initialPrompt);
+    
+    if (!finalPrompt) {
+      return; // User cancelled
+    }
+    
+    if (!confirm(`确定要生成约${targetWords}字的内容吗？\n\nAI将生成详细的专业内容，预计需要30-60秒。`)) {
       return;
     }
     
@@ -1296,17 +1358,23 @@ const AIBooksManager = {
       
       const response = await axios.post(
         `/api/ai-books/${this.currentBook.id}/sections/${sectionId}/generate-content`,
-        { target_word_count: parseInt(targetWords) }
+        { 
+          target_word_count: targetWordsInt,
+          prompt: finalPrompt
+        }
       );
       
       if (response.data.success) {
-        showNotification('内容生成成功！', 'success');
+        showNotification(`✅ 内容生成成功！实际生成${response.data.word_count}字`, 'success');
         // Reload book
         await this.openBook(this.currentBook.id);
+      } else {
+        throw new Error(response.data.error || '生成失败');
       }
     } catch (error) {
       console.error('Error generating content:', error);
-      alert('生成内容失败: ' + (error.response?.data?.message || error.message));
+      const errorMsg = error.response?.data?.error || error.message || '生成内容失败';
+      showNotification(`❌ ${errorMsg}`, 'error');
     }
   },
   
@@ -1314,28 +1382,88 @@ const AIBooksManager = {
   // Regenerate section content (重新生成小节内容)
   // ============================================================
   async regenerateSectionContent(sectionId) {
-    // Find section
+    // Find section and chapter
     let section = null;
-    for (const chapter of this.currentBook.chapters || []) {
-      section = (chapter.sections || []).find(s => s.id === sectionId);
-      if (section) break;
+    let chapter = null;
+    for (const c of this.currentBook.chapters || []) {
+      section = (c.sections || []).find(s => s.id === sectionId);
+      if (section) {
+        chapter = c;
+        break;
+      }
     }
     
-    if (!section) {
+    if (!section || !chapter) {
       showNotification('未找到该小节', 'error');
       return;
     }
     
-    // Confirm overwrite
-    if (!confirm(`⚠️ 重新生成将覆盖现有内容！\n\n当前内容：${section.current_word_count || 0}字\n\n确定要重新生成吗？原内容将无法恢复。`)) {
+    // Confirm overwrite with double confirmation
+    if (!confirm(`⚠️ 警告：重新生成将覆盖现有内容！\n\n当前内容：${section.current_word_count || 0}字\n\n确定要重新生成吗？原内容将永久丢失，无法恢复。`)) {
       return;
     }
     
-    const targetWords = prompt('请输入目标字数:', section.target_word_count || '1000');
+    // Double confirmation
+    if (!confirm(`⚠️ 最后确认\n\n您即将删除"${section.title}"的所有内容。\n此操作不可撤销！\n\n是否确定继续？`)) {
+      return;
+    }
+    
+    // Ask for target word count
+    const targetWords = prompt('请输入目标字数（建议1000-2000字）:', section.target_word_count || '1000');
     if (!targetWords) return;
     
-    if (!confirm(`确定要重新生成约${targetWords}字的内容吗？AI将生成全新的专业内容，预计需要30-60秒。`)) {
+    const targetWordsInt = parseInt(targetWords);
+    if (isNaN(targetWordsInt) || targetWordsInt < 100 || targetWordsInt > 10000) {
+      showNotification('❌ 字数必须在100-10000之间', 'error');
       return;
+    }
+    
+    // Build initial prompt
+    const book = this.currentBook;
+    const minWords = Math.floor(targetWordsInt * 0.9);
+    const maxWords = Math.ceil(targetWordsInt * 1.1);
+    
+    const initialPrompt = `你是一位专业的内容创作者。请严格按照字数要求重新生成内容。
+
+【书籍信息】
+书籍主题：${book.title}
+主题描述：${book.description || '（无描述）'}
+
+【章节信息】
+章节：${chapter.title}
+章节描述：${chapter.description || '（无描述）'}
+
+【小节信息】
+当前小节：${section.title}
+小节描述：${section.description || '（无描述）'}
+
+【核心任务】
+请为这个小节重新生成${targetWordsInt}字左右的完整内容（允许误差±10%，即${minWords}-${maxWords}字）。
+
+【内容要求】
+1. ⚠️ 字数控制：生成内容必须在${minWords}-${maxWords}字范围内（不包含markdown标记符号）
+2. 专业性：内容要专业、准确、有深度
+3. 语言风格：${book.tone || '专业严谨'}
+4. 目标读者：${book.audience || '专业人士'}
+5. 结构完整：内容必须有完整的开头、正文和结尾，不能突然中断
+6. 格式规范：使用Markdown格式，包含适当的小标题、段落、列表、重点标记
+7. 内容充实：可以包含案例、数据、分析、对比等
+8. 创新角度：尽量提供新的视角和见解，不要与之前的内容雷同
+
+【特别要求】
+- ✅ 必须有明确的结论或总结段落
+- ✅ 内容要完整，不能戛然而止
+- ✅ 如果接近字数上限，要用简洁的方式收尾
+- ❌ 不要包含"未完待续"、"下一节将"等字样
+- ❌ 不要超出规定字数范围
+
+请直接输出内容（纯文本+Markdown），不要JSON格式，不要前言说明。`;
+
+    // Show editable prompt modal
+    const finalPrompt = await window.showPromptEditor('编辑重新生成内容的Prompt', initialPrompt);
+    
+    if (!finalPrompt) {
+      return; // User cancelled
     }
     
     try {
@@ -1343,7 +1471,10 @@ const AIBooksManager = {
       
       const response = await axios.post(
         `/api/ai-books/${this.currentBook.id}/sections/${sectionId}/generate-content`,
-        { target_word_count: parseInt(targetWords) }
+        { 
+          target_word_count: targetWordsInt,
+          prompt: finalPrompt
+        }
       );
       
       if (response.data.success) {

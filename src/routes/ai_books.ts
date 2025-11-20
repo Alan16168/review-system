@@ -710,8 +710,8 @@ app.post('/:id/sections/:sectionId/generate-content', async (c) => {
 
     console.log(`Generating content: target=${targetWords} words, estimated tokens=${estimatedTokens}, max tokens=${maxTokens}, system max=${systemMaxTokens}`);
 
-    // Build comprehensive prompt with strict word count control
-    const prompt = `你是一位专业的内容创作者。请严格按照字数要求生成内容。
+    // Use custom prompt if provided, otherwise build default prompt
+    const prompt = body.prompt || `你是一位专业的内容创作者。请严格按照字数要求生成内容。
 
 【书籍信息】
 书籍主题：${book.title}
