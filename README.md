@@ -175,19 +175,60 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://3a763bb7.review-system.pages.dev
+- **最新部署 ID**: https://d8dcce73.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V6.12.0 - 模板价格系统 + 繁體中文支持（2025-11-18）**
-- **Git Commit**: 47e63a7 (V6.12.0: 添加模板价格系统 + 繁體中文语言支持)
+- **版本**: ✅ **V7.0.1 - MarketPlace 管理界面 + AI Books/MarketPlace API 修复（2025-11-20）**
+- **Git Commit**: 298fccc (Add MarketPlace management tab in admin panel)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
-- **部署日期**: 2025-11-18
-- **部署 URL**: https://8251984f.review-system.pages.dev
+- **部署日期**: 2025-11-20
+- **部署 URL**: https://d8dcce73.review-system.pages.dev
 - **主站 URL**: https://review-system.pages.dev (将自动更新)
-- **数据库迁移**: ✅ Migration 0040 已应用（添加 price 字段到 templates 表）
-- **功能状态**: ✅ 模板价格系统 + 6种语言支持（zh/zh-TW/en/fr/ja/es）
-- **最新更新**: ✅ **V6.12.0 - 模板价格系统 + 繁體中文语言支持**（2025-11-18）
+- **数据库迁移**: ✅ Migration 0047 已应用（添加 is_admin 字段到 users 表）
+- **功能状态**: ✅ MarketPlace 完整管理界面 + AI Books/MarketPlace 后端修复
+- **最新更新**: ✅ **V7.0.1 - MarketPlace 管理界面 + 后端 API 修复**（2025-11-20）
+  - ✅ **管理后台新增 "MarketPlace 管理" 标签页**:
+    - 完整的产品列表视图（表格展示）
+    - 产品分类标签（AI 智能体、模板、其他）
+    - 产品状态显示（上架中/已下架）
+    - 销量统计显示
+  - ✅ **完整的 CRUD 操作**:
+    - 添加产品：模态框表单，支持所有字段
+    - 编辑产品：加载现有数据，支持修改
+    - 上架/下架：一键切换产品状态
+    - 删除产品：带确认提示的删除功能
+  - ✅ **产品字段支持**:
+    - 产品名称、描述（必填）
+    - 分类选择（AI 智能体/模板/其他）
+    - 价格设置（¥ CNY）
+    - 原价设置（可选，用于显示折扣）
+    - 功能菜单标识（用于解锁对应功能）
+    - 上架状态（默认上架）
+  - ✅ **后端 API 修复**:
+    - 修复 `src/routes/ai_books.ts`: 将硬编码 user ID=1 改为查找第一个管理员
+    - 修复 `src/routes/marketplace.ts`: 同样修改为查找管理员用户
+    - 解决生产数据库最小用户 ID=3 导致的 500 错误
+    - AI Books API 现在返回正常（虽然书籍列表为空）
+    - MarketPlace API 正常返回 8 个产品数据
+  - ✅ **UI/UX 优化**:
+    - 产品卡片图标（根据分类显示不同图标）
+    - 分类标签颜色（紫色/蓝色/灰色）
+    - 价格显示（折扣价/原价）
+    - 响应式表格设计
+    - 空状态提示（暂无产品）
+  - ✅ **国际化支持**:
+    - 所有界面文字支持中文显示
+    - 产品管理相关的所有文本
+  - **技术改进**:
+    - 动态表单验证
+    - 安全的数据清理（escapeHtml）
+    - 完整的错误处理
+    - 友好的用户提示
+  - **部署 URL**: https://d8dcce73.review-system.pages.dev
+  - **Git commit**: 298fccc
+
+- **上一版本**: ✅ **V6.12.0 - 模板价格系统 + 繁體中文支持**（2025-11-18）
   - ✅ **模板价格系统**：
     - 数据库：添加 price 字段（REAL 类型，默认 0.0，单位 USD）
     - 后端 API：templates 创建/编辑/查询接口支持 price 参数
