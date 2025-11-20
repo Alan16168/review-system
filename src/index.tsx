@@ -16,6 +16,7 @@ import invitations from './routes/invitations';
 import calendar from './routes/calendar';
 import answerSets from './routes/answer_sets';
 import keywords from './routes/keywords';
+import systemSettings from './routes/system_settings';
 // Manhattan Project Phase 1 - AI Writing System & Marketplace
 import aiBooks from './routes/ai_books';
 import marketplace from './routes/marketplace';
@@ -59,6 +60,7 @@ app.route('/api/invitations', invitations);
 app.route('/api/calendar', calendar);
 app.route('/api/answer-sets', answerSets);
 app.route('/api/keywords', keywords);
+app.route('/api/system-settings', systemSettings);
 
 // Manhattan Project Phase 1 - AI Writing System & Marketplace Routes
 app.route('/api/ai-books', aiBooks);

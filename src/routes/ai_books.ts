@@ -27,6 +27,35 @@ async function getUserFromToken(c: any): Promise<any> {
 }
 
 // ============================================================================
+// Helper: Get system setting
+// ============================================================================
+
+async function getSystemSetting(DB: D1Database, key: string, defaultValue: any): Promise<any> {
+  try {
+    const setting: any = await DB.prepare(`
+      SELECT setting_value, setting_type FROM system_settings WHERE setting_key = ?
+    `).bind(key).first();
+
+    if (!setting) {
+      return defaultValue;
+    }
+
+    // Parse value based on type
+    if (setting.setting_type === 'number') {
+      return parseFloat(setting.setting_value);
+    } else if (setting.setting_type === 'boolean') {
+      return setting.setting_value === 'true';
+    } else if (setting.setting_type === 'json') {
+      return JSON.parse(setting.setting_value);
+    }
+    return setting.setting_value;
+  } catch (error) {
+    console.error(`Error getting setting ${key}:`, error);
+    return defaultValue;
+  }
+}
+
+// ============================================================================
 // Helper: Check subscription limits
 // ============================================================================
 
@@ -48,7 +77,7 @@ async function checkBookCreationLimit(c: any, userId: number, tier: string): Pro
 // AI Generation Helper using Gemini API
 // ============================================================================
 
-async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number = 8192): Promise<string> {
+async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number = 8192, temperature: number = 0.7): Promise<string> {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
@@ -59,7 +88,7 @@ async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number =
           parts: [{ text: prompt }]
         }],
         generationConfig: {
-          temperature: 0.7,
+          temperature: temperature,
           maxOutputTokens: maxTokens,
         }
       })
@@ -505,15 +534,28 @@ app.post('/:id/sections/:sectionId/generate-content', async (c) => {
       return c.json({ success: false, error: 'Not found' }, 404);
     }
 
+    // Get system settings
+    const systemMaxTokens = await getSystemSetting(c.env.DB, 'ai_max_output_tokens', 8192);
+    const systemTemperature = await getSystemSetting(c.env.DB, 'ai_temperature', 0.7);
+    const systemEnabled = await getSystemSetting(c.env.DB, 'ai_enabled', true);
+
+    // Check if AI is enabled
+    if (!systemEnabled) {
+      return c.json({ 
+        success: false, 
+        error: 'AI 写作功能已被管理员禁用' 
+      }, 503);
+    }
+
     const targetWords = body.target_word_count || section.target_word_count || 1000;
 
     // Calculate required tokens based on target word count
     // For Chinese: 1 character ≈ 2-3 tokens, use 3 for safety margin
     // Add 20% buffer for formatting and markdown
     const estimatedTokens = Math.ceil(targetWords * 3 * 1.2);
-    const maxTokens = Math.min(estimatedTokens, 8192); // Gemini API limit
+    const maxTokens = Math.min(estimatedTokens, systemMaxTokens); // Use system setting
 
-    console.log(`Generating content: target=${targetWords} words, estimated tokens=${estimatedTokens}, max tokens=${maxTokens}`);
+    console.log(`Generating content: target=${targetWords} words, estimated tokens=${estimatedTokens}, max tokens=${maxTokens}, system max=${systemMaxTokens}`);
 
     // Build comprehensive prompt
     const prompt = `你是一位专业的内容创作者。
@@ -541,7 +583,7 @@ app.post('/:id/sections/:sectionId/generate-content', async (c) => {
 请直接输出内容，不要JSON格式。`;
 
     const apiKey = c.env.GEMINI_API_KEY;
-    const content = await callGeminiAPI(apiKey!, prompt, maxTokens);
+    const content = await callGeminiAPI(apiKey!, prompt, maxTokens, systemTemperature);
 
     // Calculate word count (简单统计中文字符)
     const wordCount = content.replace(/\s/g, '').length;

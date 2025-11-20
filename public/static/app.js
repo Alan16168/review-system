@@ -6331,6 +6331,11 @@ async function showAdmin() {
                         data-tab="keywords">
                   <i class="fas fa-key mr-2"></i>${i18n.t('keywordsManagement')}
                 </button>
+                <button onclick="showAdminTab('aiSettings')" 
+                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
+                        data-tab="aiSettings">
+                  <i class="fas fa-robot mr-2"></i>AI 写作设置
+                </button>
               ` : ''}
             </nav>
           </div>
@@ -6401,6 +6406,9 @@ async function showAdminTab(tab) {
       break;
     case 'keywords':
       await showKeywordsManagement(content);
+      break;
+    case 'aiSettings':
+      await showAISettingsManagement(content);
       break;
   }
 }
@@ -13102,3 +13110,331 @@ window.showPromptEditor = function(title, initialPrompt, onConfirm) {
     document.addEventListener('keydown', handleEscape);
   });
 };
+
+// ============================================================================
+// AI Settings Management
+// ============================================================================
+async function showAISettingsManagement(container) {
+  container.innerHTML = `
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-robot mr-2"></i>AI 智能写作助手设置
+          </h2>
+          <p class="text-sm text-gray-600 mt-1">配置 AI 生成内容的参数</p>
+        </div>
+        <button onclick="saveAISettings()" 
+                class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+          <i class="fas fa-save mr-2"></i>保存设置
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div id="ai-settings-content">
+        <div class="text-center py-12">
+          <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+          <p class="text-gray-600">加载设置中...</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await loadAISettings();
+}
+
+async function loadAISettings() {
+  try {
+    const response = await axios.get('/api/system-settings/category/ai_writing');
+    const settings = response.data.settings;
+
+    const contentDiv = document.getElementById('ai-settings-content');
+    contentDiv.innerHTML = `
+      <div class="space-y-6">
+        <!-- Max Output Tokens Setting -->
+        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <label class="block text-lg font-semibold text-gray-800 mb-2">
+                <i class="fas fa-cogs mr-2 text-indigo-600"></i>
+                最大输出 Token 数量
+              </label>
+              <p class="text-sm text-gray-600 mb-4">
+                控制 AI 生成内容的最大长度。Token 数量越大，可以生成的内容越长。
+              </p>
+            </div>
+            <span class="ml-4 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
+              核心参数
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Token 数量
+              </label>
+              <input 
+                type="number" 
+                id="ai_max_output_tokens" 
+                value="${getSettingValue(settings, 'ai_max_output_tokens')}"
+                min="1000"
+                max="8192"
+                step="512"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg font-mono"
+                oninput="updateTokenPreview(this.value)"
+              >
+              <p class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-info-circle mr-1"></i>
+                范围：1000 - 8192（Gemini API 上限）
+              </p>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h4 class="text-sm font-medium text-gray-700 mb-3">
+                <i class="fas fa-calculator mr-2 text-green-600"></i>
+                预估生成能力
+              </h4>
+              <div id="token-preview" class="space-y-2">
+                <!-- Will be populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="text-sm font-medium text-blue-800 mb-2">
+              <i class="fas fa-lightbulb mr-2"></i>Token 与字数关系
+            </h4>
+            <div class="text-sm text-blue-700 space-y-1">
+              <p>• <strong>中文内容</strong>：1 个中文字 ≈ 2-3 tokens</p>
+              <p>• <strong>英文内容</strong>：1 个英文单词 ≈ 1-2 tokens</p>
+              <p>• <strong>2048 tokens</strong>：约 700-1000 中文字</p>
+              <p>• <strong>8192 tokens</strong>：约 2700-4000 中文字</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Temperature Setting -->
+        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+          <label class="block text-lg font-semibold text-gray-800 mb-2">
+            <i class="fas fa-thermometer-half mr-2 text-orange-600"></i>
+            创意度 (Temperature)
+          </label>
+          <p class="text-sm text-gray-600 mb-4">
+            控制 AI 生成内容的随机性和创意性。值越高越有创意，值越低越稳定一致。
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <input 
+                type="range" 
+                id="ai_temperature" 
+                value="${getSettingValue(settings, 'ai_temperature')}"
+                min="0"
+                max="1"
+                step="0.1"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                oninput="updateTemperatureDisplay(this.value)"
+              >
+              <div class="flex justify-between text-xs text-gray-500 mt-2">
+                <span>保守 (0)</span>
+                <span id="temperature-value" class="font-mono text-lg text-indigo-600">${getSettingValue(settings, 'ai_temperature')}</span>
+                <span>创意 (1)</span>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                推荐设置
+              </h4>
+              <div class="text-sm text-gray-600 space-y-1">
+                <p>• <strong>0.3-0.5</strong>：专业文档、技术文章</p>
+                <p>• <strong>0.7</strong>：一般内容（推荐）</p>
+                <p>• <strong>0.8-1.0</strong>：创意写作、营销文案</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Default Word Count Setting -->
+        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+          <label class="block text-lg font-semibold text-gray-800 mb-2">
+            <i class="fas fa-text-width mr-2 text-purple-600"></i>
+            默认目标字数
+          </label>
+          <p class="text-sm text-gray-600 mb-4">
+            创建新小节时的默认字数设置。
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <input 
+                type="number" 
+                id="ai_default_word_count" 
+                value="${getSettingValue(settings, 'ai_default_word_count')}"
+                min="100"
+                max="5000"
+                step="100"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-lg font-mono"
+              >
+              <p class="text-xs text-gray-500 mt-2">
+                <i class="fas fa-info-circle mr-1"></i>
+                范围：100 - 5000 字
+              </p>
+            </div>
+
+            <div class="col-span-2 bg-white rounded-lg p-4 border border-gray-200">
+              <h4 class="text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-book-open mr-2 text-green-600"></i>
+                字数建议
+              </h4>
+              <div class="text-sm text-gray-600 space-y-1">
+                <p>• <strong>500-1000 字</strong>：简介、概述性内容</p>
+                <p>• <strong>1000-2000 字</strong>：标准文章长度（推荐）</p>
+                <p>• <strong>2000-3000 字</strong>：深度分析、详细说明</p>
+                <p class="text-orange-600">⚠️ 超过 3000 字可能受 Token 限制影响</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Enabled Toggle -->
+        <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <label class="block text-lg font-semibold text-gray-800 mb-2">
+                <i class="fas fa-power-off mr-2 text-green-600"></i>
+                启用 AI 写作功能
+              </label>
+              <p class="text-sm text-gray-600">
+                全局开关，关闭后用户将无法使用 AI 写作助手功能。
+              </p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer ml-4">
+              <input 
+                type="checkbox" 
+                id="ai_enabled" 
+                ${getSettingValue(settings, 'ai_enabled') === 'true' ? 'checked' : ''}
+                class="sr-only peer"
+              >
+              <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Warning Message -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div class="flex items-start">
+            <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+            <div class="flex-1 text-sm text-yellow-800">
+              <p class="font-medium mb-1">重要提示</p>
+              <ul class="list-disc list-inside space-y-1">
+                <li>修改这些设置将影响所有用户的 AI 内容生成</li>
+                <li>建议在非高峰期修改，并提前通知用户</li>
+                <li>修改后立即生效，无需重启服务</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Initialize preview
+    updateTokenPreview(getSettingValue(settings, 'ai_max_output_tokens'));
+  } catch (error) {
+    console.error('Error loading AI settings:', error);
+    document.getElementById('ai-settings-content').innerHTML = `
+      <div class="text-center py-12 text-red-600">
+        <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
+        <p class="text-lg font-medium">加载设置失败</p>
+        <p class="text-sm mt-2">${error.response?.data?.error || error.message}</p>
+      </div>
+    `;
+  }
+}
+
+function getSettingValue(settings, key) {
+  const setting = settings.find(s => s.setting_key === key);
+  return setting ? setting.setting_value : '';
+}
+
+function updateTokenPreview(tokens) {
+  const tokenNum = parseInt(tokens) || 8192;
+  const minChars = Math.floor(tokenNum / 3);
+  const maxChars = Math.floor(tokenNum / 2);
+  
+  document.getElementById('token-preview').innerHTML = `
+    <div class="flex items-center justify-between py-2 border-b border-gray-200">
+      <span class="text-sm text-gray-600">中文字数范围：</span>
+      <span class="text-sm font-mono font-medium text-gray-800">${minChars} - ${maxChars} 字</span>
+    </div>
+    <div class="flex items-center justify-between py-2 border-b border-gray-200">
+      <span class="text-sm text-gray-600">推荐目标字数：</span>
+      <span class="text-sm font-mono font-medium text-indigo-600">${Math.floor((minChars + maxChars) / 2)} 字</span>
+    </div>
+    <div class="flex items-center justify-between py-2">
+      <span class="text-sm text-gray-600">生成速度：</span>
+      <span class="text-sm font-medium text-gray-800">${Math.ceil(tokenNum / 100)} - ${Math.ceil(tokenNum / 50)} 秒</span>
+    </div>
+  `;
+}
+
+function updateTemperatureDisplay(value) {
+  document.getElementById('temperature-value').textContent = parseFloat(value).toFixed(1);
+}
+
+async function saveAISettings() {
+  try {
+    const maxTokens = document.getElementById('ai_max_output_tokens').value;
+    const temperature = document.getElementById('ai_temperature').value;
+    const defaultWordCount = document.getElementById('ai_default_word_count').value;
+    const enabled = document.getElementById('ai_enabled').checked;
+
+    // Validate
+    const tokensNum = parseInt(maxTokens);
+    if (tokensNum < 1000 || tokensNum > 8192) {
+      showNotification('Token 数量必须在 1000-8192 之间', 'error');
+      return;
+    }
+
+    const tempNum = parseFloat(temperature);
+    if (tempNum < 0 || tempNum > 1) {
+      showNotification('创意度必须在 0-1 之间', 'error');
+      return;
+    }
+
+    const wordCountNum = parseInt(defaultWordCount);
+    if (wordCountNum < 100 || wordCountNum > 5000) {
+      showNotification('默认字数必须在 100-5000 之间', 'error');
+      return;
+    }
+
+    // Show loading
+    const saveBtn = event.target;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>保存中...';
+
+    // Batch update
+    const response = await axios.put('/api/system-settings/batch/update', {
+      settings: [
+        { key: 'ai_max_output_tokens', value: maxTokens },
+        { key: 'ai_temperature', value: temperature },
+        { key: 'ai_default_word_count', value: defaultWordCount },
+        { key: 'ai_enabled', value: enabled }
+      ]
+    });
+
+    if (response.data.success) {
+      showNotification('✅ AI 设置已保存！', 'success');
+      setTimeout(() => {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存设置';
+      }, 1000);
+    }
+  } catch (error) {
+    console.error('Error saving AI settings:', error);
+    showNotification('保存失败: ' + (error.response?.data?.error || error.message), 'error');
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存设置';
+  }
+}
