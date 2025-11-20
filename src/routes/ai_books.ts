@@ -702,43 +702,98 @@ app.post('/:id/sections/:sectionId/generate-content', async (c) => {
     const targetWords = body.target_word_count || section.target_word_count || 1000;
 
     // Calculate required tokens based on target word count
-    // For Chinese: 1 character ≈ 2-3 tokens (average: 2.5)
-    // We use 2.5 as the conversion factor to match user's expected word count
-    const estimatedTokens = Math.ceil(targetWords * 2.5);
-    const maxTokens = Math.min(estimatedTokens, systemMaxTokens); // Use system setting
+    // CORRECTED: For Chinese, 1 token ≈ 0.5-0.7 characters (average: 0.6)
+    // So to generate N Chinese characters, we need approximately N / 0.6 tokens
+    // Adding 20% buffer for formatting, markdown, and completion
+    const estimatedTokens = Math.ceil((targetWords / 0.6) * 1.2);
+    const maxTokens = Math.min(estimatedTokens, systemMaxTokens);
 
     console.log(`Generating content: target=${targetWords} words, estimated tokens=${estimatedTokens}, max tokens=${maxTokens}, system max=${systemMaxTokens}`);
 
-    // Build comprehensive prompt
-    const prompt = `你是一位专业的内容创作者。
+    // Build comprehensive prompt with strict word count control
+    const prompt = `你是一位专业的内容创作者。请严格按照字数要求生成内容。
 
+【书籍信息】
 书籍主题：${book.title}
 主题描述：${book.description}
 
+【章节信息】
 章节：${section.chapter_title}
 章节描述：${section.chapter_description}
 
+【小节信息】
 当前小节：${section.title}
 小节描述：${section.description}
 
-请为这个小节生成约${targetWords}字的详细内容。
+【核心任务】
+请为这个小节生成${targetWords}字左右的完整内容（允许误差±10%，即${Math.floor(targetWords * 0.9)}-${Math.ceil(targetWords * 1.1)}字）。
 
-要求：
-1. 内容要专业、准确，务必生成足够的字数（目标${targetWords}字）
-2. 语言风格：${book.tone}
-3. 目标读者：${book.audience}
-4. 内容要围绕小节主题深入展开
-5. 可以包含案例、数据、分析等
-6. 使用Markdown格式，包含适当的段落、标题、列表等
-7. 如果内容不够${targetWords}字，请继续扩展细节、案例和解释
+【内容要求】
+1. ⚠️ 字数控制：生成内容必须在${Math.floor(targetWords * 0.9)}-${Math.ceil(targetWords * 1.1)}字范围内（不包含markdown标记符号）
+2. 专业性：内容要专业、准确、有深度
+3. 语言风格：${book.tone || '专业严谨'}
+4. 目标读者：${book.audience || '专业人士'}
+5. 结构完整：内容必须有完整的开头、正文和结尾，不能突然中断
+6. 格式规范：使用Markdown格式，包含：
+   - 适当的小标题（## 或 ###）
+   - 段落分隔（空行）
+   - 列表（有序或无序）
+   - 重点标记（**粗体**）
+7. 内容充实：可以包含案例、数据、分析、对比等
 
-请直接输出内容，不要JSON格式。`;
+【特别要求】
+- ✅ 必须有明确的结论或总结段落
+- ✅ 内容要完整，不能戛然而止
+- ✅ 如果接近字数上限，要用简洁的方式收尾
+- ❌ 不要包含"未完待续"、"下一节将"等字样
+- ❌ 不要超出规定字数范围
+
+请直接输出内容（纯文本+Markdown），不要JSON格式，不要前言说明。`;
 
     const apiKey = c.env.GEMINI_API_KEY;
-    const content = await callGeminiAPI(apiKey!, prompt, maxTokens, systemTemperature);
+    let content = await callGeminiAPI(apiKey!, prompt, maxTokens, systemTemperature);
 
-    // Calculate word count (简单统计中文字符)
-    const wordCount = content.replace(/\s/g, '').length;
+    // Calculate word count (统计中文字符，不包含空格、标点和markdown符号)
+    let wordCount = content.replace(/\s/g, '').replace(/[#*\->`\[\]()]/g, '').length;
+
+    console.log(`Generated content: ${wordCount} words (target: ${targetWords}, range: ${Math.floor(targetWords * 0.9)}-${Math.ceil(targetWords * 1.1)})`);
+
+    // Check if content seems incomplete (ends abruptly without proper conclusion)
+    const incompleteIndicators = [
+      /[，、：；][^。！？\n]*$/,  // Ends with comma or colon without sentence ending
+      /^\s*[\d一二三四五六七八九十]+[\.\)、]/m,  // Ends with a list item marker at the end
+      /\*\*[^*]+$/,  // Ends with unclosed bold marker
+      /```[^`]*$/  // Ends with unclosed code block
+    ];
+    
+    const seemsIncomplete = incompleteIndicators.some(pattern => pattern.test(content.trim()));
+    
+    // If content is significantly under target or seems incomplete, append a conclusion
+    if (wordCount < targetWords * 0.85 || seemsIncomplete) {
+      console.log(`Content seems incomplete (${wordCount} words, incomplete indicators: ${seemsIncomplete}), adding conclusion...`);
+      
+      const conclusionPrompt = `请为以下内容补充一个简短但完整的结尾段落（约${Math.min(200, targetWords - wordCount)}字）：
+
+${content}
+
+要求：
+1. 总结上述内容的核心要点
+2. 给出实践建议或展望
+3. 确保内容完整收尾，不能突然中断
+4. 字数：约${Math.min(200, targetWords - wordCount)}字
+
+只输出结尾段落内容（不要重复前文，不要"综上所述"等过渡词），直接从正文内容开始。`;
+
+      try {
+        const conclusion = await callGeminiAPI(apiKey!, conclusionPrompt, 500, systemTemperature);
+        content = content + '\n\n' + conclusion.trim();
+        wordCount = content.replace(/\s/g, '').replace(/[#*\->`\[\]()]/g, '').length;
+        console.log(`After adding conclusion: ${wordCount} words`);
+      } catch (conclusionError) {
+        console.error('Failed to generate conclusion:', conclusionError);
+        // Continue without conclusion if it fails
+      }
+    }
 
     // Update section
     await c.env.DB.prepare(`
