@@ -78,8 +78,10 @@ async function checkBookCreationLimit(c: any, userId: number, tier: string): Pro
 // ============================================================================
 
 async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number = 8192, temperature: number = 0.7): Promise<string> {
+  // Use gemini-2.5-flash (matches other routes for consistency)
+  // Note: This model may use "thinking tokens" which can consume quota quickly
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
