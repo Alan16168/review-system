@@ -550,9 +550,9 @@ app.post('/:id/sections/:sectionId/generate-content', async (c) => {
     const targetWords = body.target_word_count || section.target_word_count || 1000;
 
     // Calculate required tokens based on target word count
-    // For Chinese: 1 character ≈ 2-3 tokens, use 3 for safety margin
-    // Add 20% buffer for formatting and markdown
-    const estimatedTokens = Math.ceil(targetWords * 3 * 1.2);
+    // For Chinese: 1 character ≈ 2-3 tokens (average: 2.5)
+    // We use 2.5 as the conversion factor to match user's expected word count
+    const estimatedTokens = Math.ceil(targetWords * 2.5);
     const maxTokens = Math.min(estimatedTokens, systemMaxTokens); // Use system setting
 
     console.log(`Generating content: target=${targetWords} words, estimated tokens=${estimatedTokens}, max tokens=${maxTokens}, system max=${systemMaxTokens}`);
