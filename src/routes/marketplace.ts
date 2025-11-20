@@ -15,23 +15,29 @@ async function getUserFromToken(c: any): Promise<any> {
   // Get token from header
   const authHeader = c.req.header('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // TEMPORARY: Use default user for testing
+    // TEMPORARY: Find and use the first admin user for testing
     const user = await c.env.DB.prepare(
-      'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE id = ?'
-    ).bind(1).first();
+      'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE is_admin = 1 LIMIT 1'
+    ).first();
+    
+    if (!user) {
+      throw new HTTPException(401, { message: 'No admin user found' });
+    }
+    
     return user;
   }
 
   const token = authHeader.substring(7);
   
   try {
-    // TODO: Implement proper JWT verification
+    // TEMPORARY: Find and use the first admin user for testing
+    // In production, this should use JWT token authentication
     const user = await c.env.DB.prepare(
-      'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE id = ?'
-    ).bind(1).first();
+      'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE is_admin = 1 LIMIT 1'
+    ).first();
     
     if (!user) {
-      throw new HTTPException(401, { message: 'User not found' });
+      throw new HTTPException(401, { message: 'No admin user found' });
     }
     
     return user;
