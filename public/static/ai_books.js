@@ -23,6 +23,11 @@ const AIBooksManager = {
       <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div class="mb-4">
+            <button onclick="showHomePage()" class="text-gray-600 hover:text-gray-800 transition">
+              <i class="fas fa-arrow-left mr-2"></i>返回首页
+            </button>
+          </div>
           <div class="flex justify-between items-center">
             <div>
               <h1 class="text-3xl font-bold text-gray-800 mb-2">
@@ -466,10 +471,17 @@ const AIBooksManager = {
                     <i class="fas fa-edit"></i>
                   </button>
                 </h3>
-                <button onclick="AIBooksManager.toggleChapter(${chapter.id})" 
-                  class="text-white hover:text-blue-100">
-                  <i id="chapter-icon-${chapter.id}" class="fas fa-chevron-down"></i>
-                </button>
+                <div class="flex items-center space-x-2">
+                  <button onclick="AIBooksManager.regenerateSingleChapter(${chapter.id})" 
+                    class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg transition text-sm"
+                    title="重新生成此章节">
+                    <i class="fas fa-sync-alt mr-1"></i>重新生成
+                  </button>
+                  <button onclick="AIBooksManager.toggleChapter(${chapter.id})" 
+                    class="text-white hover:text-blue-100">
+                    <i id="chapter-icon-${chapter.id}" class="fas fa-chevron-down"></i>
+                  </button>
+                </div>
               </div>
               <div class="mt-2">
                 <div class="text-xs text-blue-200 mb-1">章节描述（写作关键点）：</div>
@@ -632,6 +644,101 @@ const AIBooksManager = {
     } catch (error) {
       console.error('Error updating chapter description:', error);
       showNotification('更新失败: ' + (error.response?.data?.error || error.message), 'error');
+    }
+  },
+  
+  // ============================================================
+  // Regenerate single chapter
+  // ============================================================
+  async regenerateSingleChapter(chapterId) {
+    const chapter = (this.currentBook.chapters || []).find(c => c.id === chapterId);
+    if (!chapter) {
+      showNotification('未找到章节', 'error');
+      return;
+    }
+    
+    // Check if there are existing sections
+    if (chapter.sections && chapter.sections.length > 0) {
+      const confirmDelete = confirm(
+        `⚠️ 重新生成将删除"第${chapter.chapter_number}章"的所有小节内容。\n\n确定要继续吗？`
+      );
+      if (!confirmDelete) {
+        return;
+      }
+    }
+    
+    // Build initial prompt
+    const book = this.currentBook;
+    const initialPrompt = `你是一位专业的书籍大纲规划专家。
+
+书籍主题：${book.title}
+主题描述：${book.description}
+目标字数：${book.target_word_count}字
+语气风格：${book.tone}
+目标读者：${book.audience}
+
+当前章节：第${chapter.chapter_number}章
+原标题：${chapter.title}
+原描述：${chapter.description || '（无描述）'}
+
+请为这个章节重新生成标题和描述。
+
+要求：
+1. 章节标题50字以内
+2. 章节描述要清晰明确，为后续生成小节提供指导
+3. 请按照JSON格式返回：
+{
+  "title": "新的章节标题",
+  "description": "新的章节描述（50字内）"
+}
+
+只返回JSON，不要其他说明文字。`;
+
+    // Show editable prompt modal
+    const finalPrompt = await window.showPromptEditor('编辑重新生成章节的Prompt', initialPrompt);
+    
+    if (!finalPrompt) {
+      return; // User cancelled
+    }
+    
+    try {
+      showNotification(`🤖 AI正在重新生成第${chapter.chapter_number}章...`, 'info');
+      
+      // Call API to regenerate chapter
+      const response = await axios.post(
+        `/api/ai-books/${this.currentBook.id}/chapters/${chapterId}/regenerate`,
+        { prompt: finalPrompt }
+      );
+      
+      if (response.data.success) {
+        // Update local chapter data
+        chapter.title = response.data.chapter.title;
+        chapter.description = response.data.chapter.description;
+        chapter.sections = []; // Clear sections
+        
+        // Update UI
+        const titleElem = document.getElementById(`chapter-title-${chapterId}`);
+        const descElem = document.getElementById(`chapter-description-${chapterId}`);
+        
+        if (titleElem) {
+          titleElem.textContent = chapter.title;
+        }
+        if (descElem) {
+          descElem.textContent = chapter.description || '暂无描述 - 点击编辑添加写作关键点';
+          descElem.className = `text-blue-100 text-sm ${!chapter.description ? 'italic' : ''}`;
+        }
+        
+        // Refresh the chapter content area
+        this.renderBookEditor();
+        
+        showNotification(`✅ 第${chapter.chapter_number}章已重新生成！`, 'success');
+      } else {
+        throw new Error(response.data.error || '重新生成失败');
+      }
+    } catch (error) {
+      console.error('Error regenerating chapter:', error);
+      const errorMsg = error.response?.data?.error || error.message || '重新生成章节失败';
+      showNotification(`❌ ${errorMsg}`, 'error');
     }
   },
   
