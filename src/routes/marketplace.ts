@@ -1,43 +1,34 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { verifyToken } from '../utils/auth';
 
 type Bindings = {
   DB: D1Database;
+  JWT_SECRET?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
 
 // ============================================================================
-// Helper: Get user from token (simplified for now)
+// Helper: Get user from token
 // ============================================================================
 
 async function getUserFromToken(c: any): Promise<any> {
-  // Get token from header
   const authHeader = c.req.header('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // TEMPORARY: Find and use the first admin user for testing
-    const user = await c.env.DB.prepare(
-      'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE is_admin = 1 LIMIT 1'
-    ).first();
-    
-    if (!user) {
-      throw new HTTPException(401, { message: 'No admin user found' });
-    }
-    
-    return user;
+    throw new HTTPException(401, { message: 'Unauthorized' });
   }
 
   const token = authHeader.substring(7);
   
   try {
-    // TEMPORARY: Find and use the first admin user for testing
-    // In production, this should use JWT token authentication
+    const decoded = verifyToken(token, c.env.JWT_SECRET);
     const user = await c.env.DB.prepare(
-      'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE is_admin = 1 LIMIT 1'
-    ).first();
+      'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE id = ?'
+    ).bind(decoded.id).first();
     
     if (!user) {
-      throw new HTTPException(401, { message: 'No admin user found' });
+      throw new HTTPException(401, { message: 'User not found' });
     }
     
     return user;
@@ -47,7 +38,7 @@ async function getUserFromToken(c: any): Promise<any> {
 }
 
 // ============================================================================
-// GET /api/marketplace/products - List all products
+// GET /api/marketplace/products - List all products (public)
 // ============================================================================
 
 app.get('/products', async (c) => {
@@ -98,7 +89,34 @@ app.get('/products', async (c) => {
 });
 
 // ============================================================================
-// GET /api/marketplace/products/:id - Get product details
+// GET /api/marketplace/products/all - List ALL products including inactive (Admin only)
+// ============================================================================
+
+app.get('/products/all', async (c) => {
+  try {
+    const user = await getUserFromToken(c);
+    
+    if (!user.is_admin) {
+      return c.json({ success: false, error: 'Admin access required' }, 403);
+    }
+    
+    const products = await c.env.DB.prepare(`
+      SELECT * FROM marketplace_products
+      ORDER BY created_at DESC
+    `).all();
+    
+    return c.json({
+      success: true,
+      products: products.results || []
+    });
+  } catch (error: any) {
+    console.error('Error fetching all products:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================================================
+// GET /api/marketplace/products/:id - Get product details (public)
 // ============================================================================
 
 app.get('/products/:id', async (c) => {
@@ -158,7 +176,7 @@ app.post('/products', async (c) => {
       body.name_en || null,
       body.description || null,
       body.description_en || null,
-      body.price_usd || 0.0,
+      parseFloat(body.price_usd) || 0.0,
       body.is_free ? 1 : 0,
       body.is_subscription ? 1 : 0,
       body.subscription_tier || null,
@@ -225,6 +243,8 @@ app.put('/products/:id', async (c) => {
         // Convert boolean fields
         if (['is_free', 'is_subscription', 'is_active', 'is_featured'].includes(field)) {
           params.push(body[field] ? 1 : 0);
+        } else if (field === 'price_usd') {
+          params.push(parseFloat(body[field]) || 0.0);
         } else {
           params.push(body[field]);
         }
@@ -248,6 +268,47 @@ app.put('/products/:id', async (c) => {
     });
   } catch (error: any) {
     console.error('Error updating product:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================================================
+// POST /api/marketplace/products/:id/toggle-status - Toggle product active status (Admin only)
+// ============================================================================
+
+app.post('/products/:id/toggle-status', async (c) => {
+  try {
+    const user = await getUserFromToken(c);
+    
+    if (!user.is_admin) {
+      return c.json({ success: false, error: 'Admin access required' }, 403);
+    }
+    
+    const productId = c.req.param('id');
+    
+    // Get current status
+    const product: any = await c.env.DB.prepare(
+      'SELECT is_active FROM marketplace_products WHERE id = ?'
+    ).bind(productId).first();
+    
+    if (!product) {
+      return c.json({ success: false, error: 'Product not found' }, 404);
+    }
+    
+    // Toggle status
+    const newStatus = product.is_active === 1 ? 0 : 1;
+    
+    await c.env.DB.prepare(
+      'UPDATE marketplace_products SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(newStatus, productId).run();
+    
+    return c.json({
+      success: true,
+      is_active: newStatus === 1,
+      message: newStatus === 1 ? 'Product published' : 'Product unpublished'
+    });
+  } catch (error: any) {
+    console.error('Error toggling product status:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
@@ -281,6 +342,192 @@ app.delete('/products/:id', async (c) => {
 });
 
 // ============================================================================
+// GET /api/marketplace/cart - Get user's shopping cart
+// ============================================================================
+
+app.get('/cart', async (c) => {
+  try {
+    const user = await getUserFromToken(c);
+    
+    const cartItems = await c.env.DB.prepare(`
+      SELECT 
+        sc.id as cart_id,
+        sc.quantity,
+        sc.added_at,
+        p.*
+      FROM shopping_cart sc
+      JOIN marketplace_products p ON sc.product_id = p.id
+      WHERE sc.user_id = ?
+      ORDER BY sc.added_at DESC
+    `).bind(user.id).all();
+    
+    return c.json({
+      success: true,
+      cart_items: cartItems.results || []
+    });
+  } catch (error: any) {
+    console.error('Error fetching cart:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================================================
+// POST /api/marketplace/cart/add - Add product to cart
+// ============================================================================
+
+app.post('/cart/add', async (c) => {
+  try {
+    const user = await getUserFromToken(c);
+    const body = await c.req.json();
+    
+    const { product_id } = body;
+    
+    if (!product_id) {
+      return c.json({ success: false, error: 'Product ID is required' }, 400);
+    }
+    
+    // Check if product exists and is active
+    const product = await c.env.DB.prepare(
+      'SELECT id, is_active FROM marketplace_products WHERE id = ?'
+    ).bind(product_id).first();
+    
+    if (!product) {
+      return c.json({ success: false, error: 'Product not found' }, 404);
+    }
+    
+    if (!(product as any).is_active) {
+      return c.json({ success: false, error: 'Product is not available' }, 400);
+    }
+    
+    // Check if already purchased
+    const existingPurchase = await c.env.DB.prepare(
+      'SELECT id FROM user_purchases WHERE user_id = ? AND product_id = ?'
+    ).bind(user.id, product_id).first();
+    
+    if (existingPurchase) {
+      return c.json({ 
+        success: false, 
+        error: 'You have already purchased this product' 
+      }, 400);
+    }
+    
+    // Check if already in cart
+    const existingCart = await c.env.DB.prepare(
+      'SELECT id FROM shopping_cart WHERE user_id = ? AND product_id = ?'
+    ).bind(user.id, product_id).first();
+    
+    if (existingCart) {
+      return c.json({ 
+        success: false, 
+        error: 'Product is already in your cart' 
+      }, 400);
+    }
+    
+    // Add to cart
+    await c.env.DB.prepare(`
+      INSERT INTO shopping_cart (user_id, product_id, quantity)
+      VALUES (?, ?, 1)
+    `).bind(user.id, product_id).run();
+    
+    return c.json({
+      success: true,
+      message: 'Product added to cart'
+    });
+  } catch (error: any) {
+    console.error('Error adding to cart:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================================================
+// DELETE /api/marketplace/cart/:cartId - Remove item from cart
+// ============================================================================
+
+app.delete('/cart/:cartId', async (c) => {
+  try {
+    const user = await getUserFromToken(c);
+    const cartId = c.req.param('cartId');
+    
+    await c.env.DB.prepare(
+      'DELETE FROM shopping_cart WHERE id = ? AND user_id = ?'
+    ).bind(cartId, user.id).run();
+    
+    return c.json({
+      success: true,
+      message: 'Item removed from cart'
+    });
+  } catch (error: any) {
+    console.error('Error removing from cart:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================================================
+// POST /api/marketplace/checkout - Checkout and purchase all items in cart
+// ============================================================================
+
+app.post('/checkout', async (c) => {
+  try {
+    const user = await getUserFromToken(c);
+    
+    // Get all cart items with product details
+    const cartItems: any = await c.env.DB.prepare(`
+      SELECT 
+        sc.id as cart_id,
+        sc.product_id,
+        p.product_type,
+        p.name,
+        p.price_usd
+      FROM shopping_cart sc
+      JOIN marketplace_products p ON sc.product_id = p.id
+      WHERE sc.user_id = ? AND p.is_active = 1
+    `).bind(user.id).all();
+    
+    if (!cartItems.results || cartItems.results.length === 0) {
+      return c.json({ success: false, error: 'Cart is empty' }, 400);
+    }
+    
+    // Create purchase records for each item
+    const purchaseIds = [];
+    
+    for (const item of cartItems.results) {
+      const result = await c.env.DB.prepare(`
+        INSERT INTO user_purchases (
+          user_id, product_id, product_type, product_name, price_paid, status
+        ) VALUES (?, ?, ?, ?, ?, 'completed')
+      `).bind(
+        user.id,
+        item.product_id,
+        item.product_type,
+        item.name,
+        item.price_usd
+      ).run();
+      
+      purchaseIds.push(result.meta.last_row_id);
+      
+      // Update product purchase count
+      await c.env.DB.prepare(
+        'UPDATE marketplace_products SET purchase_count = purchase_count + 1 WHERE id = ?'
+      ).bind(item.product_id).run();
+    }
+    
+    // Clear cart
+    await c.env.DB.prepare(
+      'DELETE FROM shopping_cart WHERE user_id = ?'
+    ).bind(user.id).run();
+    
+    return c.json({
+      success: true,
+      purchase_count: purchaseIds.length,
+      message: 'Purchase completed successfully'
+    });
+  } catch (error: any) {
+    console.error('Error during checkout:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================================================
 // GET /api/marketplace/my-purchases - Get user's purchased products
 // ============================================================================
 
@@ -290,18 +537,13 @@ app.get('/my-purchases', async (c) => {
     
     const purchases = await c.env.DB.prepare(`
       SELECT 
-        mp.id as purchase_id,
-        mp.purchase_type,
-        mp.amount_usd,
-        mp.payment_status,
-        mp.subscription_start,
-        mp.subscription_end,
-        mp.purchased_at,
-        p.*
-      FROM marketplace_purchases mp
-      JOIN marketplace_products p ON mp.product_id = p.id
-      WHERE mp.user_id = ?
-      ORDER BY mp.purchased_at DESC
+        up.*,
+        p.description,
+        p.image_url
+      FROM user_purchases up
+      LEFT JOIN marketplace_products p ON up.product_id = p.id
+      WHERE up.user_id = ?
+      ORDER BY up.purchase_date DESC
     `).bind(user.id).all();
     
     return c.json({
@@ -315,156 +557,31 @@ app.get('/my-purchases', async (c) => {
 });
 
 // ============================================================================
-// POST /api/marketplace/purchase - Purchase a product
+// GET /api/marketplace/my-agents - Get user's purchased AI agents
 // ============================================================================
 
-app.post('/purchase', async (c) => {
+app.get('/my-agents', async (c) => {
   try {
     const user = await getUserFromToken(c);
-    const body = await c.req.json();
     
-    const { product_id, payment_method = 'paypal' } = body;
-    
-    if (!product_id) {
-      return c.json({ success: false, error: 'Product ID is required' }, 400);
-    }
-    
-    // Get product details
-    const product: any = await c.env.DB.prepare(
-      'SELECT * FROM marketplace_products WHERE id = ? AND is_active = 1'
-    ).bind(product_id).first();
-    
-    if (!product) {
-      return c.json({ success: false, error: 'Product not found or inactive' }, 404);
-    }
-    
-    // Check if already purchased (for one-time products)
-    if (!product.is_subscription) {
-      const existingPurchase = await c.env.DB.prepare(
-        'SELECT id FROM marketplace_purchases WHERE user_id = ? AND product_id = ?'
-      ).bind(user.id, product_id).first();
-      
-      if (existingPurchase) {
-        return c.json({ 
-          success: false, 
-          error: 'You have already purchased this product' 
-        }, 400);
-      }
-    }
-    
-    // Determine purchase type and amount
-    let purchaseType = 'one_time';
-    let amountUsd = product.price_usd || 0;
-    let subscriptionStart = null;
-    let subscriptionEnd = null;
-    
-    if (product.is_subscription) {
-      purchaseType = 'subscription';
-      subscriptionStart = new Date().toISOString().split('T')[0];
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 1); // 1 month subscription
-      subscriptionEnd = endDate.toISOString().split('T')[0];
-    }
-    
-    if (product.is_free) {
-      amountUsd = 0;
-    }
-    
-    // Create purchase record
-    const result = await c.env.DB.prepare(`
-      INSERT INTO marketplace_purchases (
-        user_id, product_id, purchase_type, amount_usd,
-        payment_method, payment_status,
-        subscription_start, subscription_end, auto_renew
-      ) VALUES (?, ?, ?, ?, ?, 'completed', ?, ?, 0)
-    `).bind(
-      user.id,
-      product_id,
-      purchaseType,
-      amountUsd,
-      payment_method,
-      subscriptionStart,
-      subscriptionEnd
-    ).run();
-    
-    // Update product purchase count
-    await c.env.DB.prepare(
-      'UPDATE marketplace_products SET purchase_count = purchase_count + 1 WHERE id = ?'
-    ).bind(product_id).run();
-    
-    // If subscription, update user's subscription tier
-    if (product.is_subscription && product.subscription_tier) {
-      await c.env.DB.prepare(
-        'UPDATE users SET subscription_tier = ?, subscription_expires = ? WHERE id = ?'
-      ).bind(product.subscription_tier, subscriptionEnd, user.id).run();
-    }
-    
-    return c.json({
-      success: true,
-      purchase_id: result.meta.last_row_id,
-      message: 'Purchase completed successfully'
-    });
-  } catch (error: any) {
-    console.error('Error processing purchase:', error);
-    return c.json({ success: false, error: error.message }, 500);
-  }
-});
-
-// ============================================================================
-// GET /api/marketplace/check-access/:productId - Check if user has access
-// ============================================================================
-
-app.get('/check-access/:productId', async (c) => {
-  try {
-    const user = await getUserFromToken(c);
-    const productId = c.req.param('productId');
-    
-    // Check if user has purchased this product
-    const purchase: any = await c.env.DB.prepare(`
+    const agents = await c.env.DB.prepare(`
       SELECT 
-        mp.*,
-        p.is_subscription,
-        p.product_type
-      FROM marketplace_purchases mp
-      JOIN marketplace_products p ON mp.product_id = p.id
-      WHERE mp.user_id = ? AND mp.product_id = ?
-      ORDER BY mp.purchased_at DESC
-      LIMIT 1
-    `).bind(user.id, productId).first();
-    
-    if (!purchase) {
-      return c.json({
-        success: true,
-        has_access: false,
-        message: 'Product not purchased'
-      });
-    }
-    
-    // Check if subscription is still valid
-    if (purchase.is_subscription && purchase.subscription_end) {
-      const endDate = new Date(purchase.subscription_end);
-      const now = new Date();
-      
-      if (now > endDate) {
-        return c.json({
-          success: true,
-          has_access: false,
-          message: 'Subscription expired',
-          expired_at: purchase.subscription_end
-        });
-      }
-    }
+        up.*,
+        p.description,
+        p.image_url,
+        p.features_json
+      FROM user_purchases up
+      JOIN marketplace_products p ON up.product_id = p.id
+      WHERE up.user_id = ? AND up.product_type = 'ai_service'
+      ORDER BY up.purchase_date DESC
+    `).bind(user.id).all();
     
     return c.json({
       success: true,
-      has_access: true,
-      purchase_info: {
-        purchased_at: purchase.purchased_at,
-        subscription_end: purchase.subscription_end
-      }
+      agents: agents.results || []
     });
   } catch (error: any) {
-    console.error('Error checking access:', error);
+    console.error('Error fetching agents:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
