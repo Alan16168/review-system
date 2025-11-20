@@ -5348,9 +5348,6 @@ function renderNavigation() {
               <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 transition">
                 <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
               </button>
-              <button onclick="AIBooksManager.renderBooksPage()" class="text-gray-700 hover:text-indigo-600 transition">
-                <i class="fas fa-book-open mr-1"></i>${i18n.t('aiWriting')}
-              </button>
               <div class="relative inline-block">
                 <button onclick="toggleDropdown('marketplace-dropdown')" class="text-gray-700 hover:text-indigo-600 transition flex items-center">
                   <i class="fas fa-store mr-1"></i>${i18n.t('marketplace')}
@@ -5484,10 +5481,6 @@ function renderNavigation() {
                 <button onclick="showTeams(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
                   <i class="fas fa-users w-6 text-indigo-600"></i>
                   <span class="ml-3">${i18n.t('teams')}</span>
-                </button>
-                <button onclick="AIBooksManager.renderBooksPage(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
-                  <i class="fas fa-book-open w-6 text-indigo-600"></i>
-                  <span class="ml-3">AI写作</span>
                 </button>
                 <button onclick="MarketplaceManager.renderMarketplacePage(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
                   <i class="fas fa-store w-6 text-indigo-600"></i>
