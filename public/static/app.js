@@ -1186,7 +1186,7 @@ function showRegister() {
 }
 
 // Show Dashboard
-async function showDashboard() {
+async function showDashboard(tab = 'my-reviews') {
   // Auto-save draft before leaving create review page
   await autoSaveDraftBeforeNavigation();
   
@@ -1198,10 +1198,32 @@ async function showDashboard() {
 
       <!-- Content -->
       <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Tab Navigation -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+          <div class="border-b border-gray-200">
+            <nav class="flex -mb-px">
+              <button onclick="showDashboard('my-reviews')" 
+                      id="tab-my-reviews"
+                      class="tab-button ${tab === 'my-reviews' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} 
+                             whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('myReviews')}
+              </button>
+              <button onclick="showDashboard('public-reviews')" 
+                      id="tab-public-reviews"
+                      class="tab-button ${tab === 'public-reviews' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} 
+                             whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                <i class="fas fa-globe mr-2"></i>${i18n.t('publicReviews')}
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Tab Content -->
         <div id="dashboard-content">
+          ${tab === 'my-reviews' ? `
           <!-- Stats Cards -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition" onclick="showReviews()">
+            <div class="bg-white rounded-lg shadow-lg p-6">
               <div class="flex items-center justify-between">
                 <div>
                   <p class="text-gray-500 mb-1">${i18n.t('myReviews')}</p>
@@ -1313,12 +1335,34 @@ async function showDashboard() {
               </div>
             </div>
           </div>
+          ` : `
+          <!-- Public Reviews Tab Content -->
+          <div class="mb-6">
+            <div class="mb-4">
+              <p class="text-gray-600">
+                ${i18n.t('publicReviewsDesc') || '查看所有公开的复盘，供学习和参考'}
+              </p>
+            </div>
+
+            <!-- Public Reviews List -->
+            <div id="public-reviews-container" class="bg-white rounded-lg shadow-md">
+              <div class="p-8 text-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+                <p class="text-gray-600">${i18n.t('loading')}</p>
+              </div>
+            </div>
+          </div>
+          `}
         </div>
       </div>
     </div>
   `;
   
-  await loadDashboardData();
+  if (tab === 'my-reviews') {
+    await loadDashboardData();
+  } else if (tab === 'public-reviews') {
+    await loadPublicReviews();
+  }
   window.scrollTo(0, 0); // Scroll to top of page
 }
 
@@ -5301,12 +5345,6 @@ function renderNavigation() {
               <button onclick="showDashboard()" class="text-gray-700 hover:text-indigo-600 transition">
                 <i class="fas fa-home mr-1"></i>${i18n.t('dashboard')}
               </button>
-              <button onclick="showReviews()" class="text-gray-700 hover:text-indigo-600 transition">
-                <i class="fas fa-clipboard-list mr-1"></i>${i18n.t('myReviews')}
-              </button>
-              <button onclick="showPublicReviews()" class="text-gray-700 hover:text-indigo-600 transition">
-                <i class="fas fa-globe mr-1"></i>${i18n.t('publicReviews')}
-              </button>
               <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 transition">
                 <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
               </button>
@@ -5428,14 +5466,6 @@ function renderNavigation() {
                 <button onclick="showDashboard(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
                   <i class="fas fa-home w-6 text-indigo-600"></i>
                   <span class="ml-3">${i18n.t('dashboard')}</span>
-                </button>
-                <button onclick="showReviews(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
-                  <i class="fas fa-clipboard-list w-6 text-indigo-600"></i>
-                  <span class="ml-3">${i18n.t('myReviews')}</span>
-                </button>
-                <button onclick="showPublicReviews(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
-                  <i class="fas fa-globe w-6 text-indigo-600"></i>
-                  <span class="ml-3">${i18n.t('publicReviews')}</span>
                 </button>
                 <button onclick="showTeams(); closeMobileMenu();" class="w-full text-left px-6 py-3 hover:bg-gray-100 flex items-center text-gray-700">
                   <i class="fas fa-users w-6 text-indigo-600"></i>
