@@ -9632,6 +9632,8 @@ async function showEditUserModal(userId) {
 async function handleUpdateUser(e, userId) {
   e.preventDefault();
   
+  console.log('[handleUpdateUser] Starting update for user ID:', userId);
+  
   const subscriptionExpiresValue = document.getElementById('user-subscription-expires').value;
   const referredByEmail = document.getElementById('user-referred-by').value;
   const loginCountValue = document.getElementById('user-login-count').value;
@@ -9660,17 +9662,31 @@ async function handleUpdateUser(e, userId) {
     login_count: loginCountValue ? parseInt(loginCountValue) : 0
   };
 
+  console.log('[handleUpdateUser] Data to send:', data);
+
   try {
-    await axios.put(`/api/admin/users/${userId}`, data);
-    showNotification(i18n.t('userUpdated'), 'success');
+    console.log('[handleUpdateUser] Sending PUT request...');
+    const response = await axios.put(`/api/admin/users/${userId}`, data);
+    console.log('[handleUpdateUser] Response received:', response.data);
+    
+    showNotification(i18n.t('userUpdated') || '用户已更新', 'success');
+    
+    console.log('[handleUpdateUser] Closing modal...');
     closeUserModal();
+    
+    console.log('[handleUpdateUser] Reloading user table...');
     await loadUsersTable();
+    
+    console.log('[handleUpdateUser] Update complete!');
   } catch (error) {
+    console.error('[handleUpdateUser] Error occurred:', error);
+    console.error('[handleUpdateUser] Error response:', error.response?.data);
+    
     const errorMsg = error.response?.data?.error || error.message;
     if (errorMsg.includes('Email already') || errorMsg.includes('already in use')) {
-      showNotification(i18n.t('emailInUse'), 'error');
+      showNotification(i18n.t('emailInUse') || '邮箱已被使用', 'error');
     } else {
-      showNotification(i18n.t('operationFailed') + ': ' + errorMsg, 'error');
+      showNotification((i18n.t('operationFailed') || '操作失败') + ': ' + errorMsg, 'error');
     }
   }
 }
