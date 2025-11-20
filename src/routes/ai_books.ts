@@ -382,119 +382,6 @@ app.post('/:id/generate-chapters', async (c) => {
 });
 
 // ============================================================================
-// POST /api/ai-books/:id/chapters/:chapterId/regenerate - Regenerate Single Chapter
-// ============================================================================
-
-app.post('/:id/chapters/:chapterId/regenerate', async (c) => {
-  try {
-    const user = await getUserFromToken(c);
-    const bookId = c.req.param('id');
-    const chapterId = c.req.param('chapterId');
-    const body = await c.req.json();
-
-    console.log('POST regenerate-chapter - BookId:', bookId, 'ChapterId:', chapterId);
-
-    // Get book and chapter
-    const book: any = await c.env.DB.prepare(`
-      SELECT * FROM ai_books WHERE id = ? AND user_id = ?
-    `).bind(bookId, user.id).first();
-
-    const chapter: any = await c.env.DB.prepare(`
-      SELECT * FROM ai_chapters WHERE id = ? AND book_id = ?
-    `).bind(chapterId, bookId).first();
-
-    if (!book || !chapter) {
-      console.log('POST regenerate-chapter - Book or chapter not found');
-      return c.json({ success: false, error: 'Book or chapter not found' }, 404);
-    }
-
-    // Delete existing sections for this chapter
-    await c.env.DB.prepare(`
-      DELETE FROM ai_sections WHERE chapter_id = ?
-    `).bind(chapterId).run();
-
-    // Use custom prompt if provided
-    const prompt = body.prompt || `你是一位专业的书籍大纲规划专家。
-
-书籍主题：${book.title}
-主题描述：${book.description}
-目标字数：${book.target_word_count}字
-语气风格：${book.tone}
-目标读者：${book.audience}
-
-当前章节：第${chapter.chapter_number}章
-原标题：${chapter.title}
-原描述：${chapter.description || '（无描述）'}
-
-请为这个章节重新生成标题和描述。
-
-要求：
-1. 章节标题50字以内
-2. 章节描述要清晰明确，为后续生成小节提供指导
-3. 请按照JSON格式返回：
-{
-  "title": "新的章节标题",
-  "description": "新的章节描述（50字内）"
-}
-
-只返回JSON，不要其他说明文字。`;
-
-    // Call Gemini API
-    const apiKey = c.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return c.json({
-        success: false,
-        error: 'Gemini API key not configured'
-      }, 500);
-    }
-
-    let data: any;
-    
-    try {
-      const response = await callGeminiAPI(apiKey, prompt);
-      
-      // Parse JSON from response
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('Failed to parse AI response');
-      }
-
-      data = JSON.parse(jsonMatch[0]);
-    } catch (apiError: any) {
-      // If API fails, use mock data
-      console.log('Gemini API failed, using mock data:', apiError.message);
-      
-      data = {
-        title: `${chapter.title}（已重新生成）`,
-        description: `本章节经过AI重新生成，内容更加精炼和专业。`
-      };
-    }
-
-    // Update chapter with new title and description
-    await c.env.DB.prepare(`
-      UPDATE ai_chapters 
-      SET title = ?, description = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(data.title, data.description, chapterId).run();
-
-    // Get updated chapter
-    const updatedChapter = await c.env.DB.prepare(`
-      SELECT * FROM ai_chapters WHERE id = ?
-    `).bind(chapterId).first();
-
-    return c.json({
-      success: true,
-      chapter: updatedChapter,
-      message: 'Chapter regenerated successfully'
-    });
-
-  } catch (error: any) {
-    console.error('Error regenerating chapter:', error);
-    return c.json({ success: false, error: error.message }, 500);
-  }
-});
-
-// ============================================================================
 // POST /api/ai-books/:id/chapters/:chapterId/generate-sections - Generate Sections (Level 2)
 // ============================================================================
 
@@ -616,6 +503,150 @@ app.post('/:id/chapters/:chapterId/generate-sections', async (c) => {
     });
   } catch (error: any) {
     console.error('POST generate-sections - Error:', error.message, error.stack);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ============================================================================
+// POST /api/ai-books/:id/chapters/:chapterId/regenerate-sections - Regenerate Sections
+// ============================================================================
+
+app.post('/:id/chapters/:chapterId/regenerate-sections', async (c) => {
+  try {
+    const user = await getUserFromToken(c);
+    const bookId = c.req.param('id');
+    const chapterId = c.req.param('chapterId');
+    const body = await c.req.json();
+
+    console.log('POST regenerate-sections - BookId:', bookId, 'ChapterId:', chapterId);
+
+    // Get book and chapter
+    const book: any = await c.env.DB.prepare(`
+      SELECT * FROM ai_books WHERE id = ? AND user_id = ?
+    `).bind(bookId, user.id).first();
+
+    const chapter: any = await c.env.DB.prepare(`
+      SELECT * FROM ai_chapters WHERE id = ? AND book_id = ?
+    `).bind(chapterId, bookId).first();
+
+    if (!book || !chapter) {
+      console.log('POST regenerate-sections - Book or chapter not found');
+      return c.json({ success: false, error: 'Book or chapter not found' }, 404);
+    }
+
+    // Delete all existing sections for this chapter (including content)
+    await c.env.DB.prepare(`
+      DELETE FROM ai_sections WHERE chapter_id = ?
+    `).bind(chapterId).run();
+
+    const numSections = body.num_sections || 5;
+
+    // Use custom prompt if provided
+    const prompt = body.prompt || `你是一位专业的书籍内容规划专家。
+
+书籍主题：${book.title}
+主题描述：${book.description}
+
+当前章节：第${chapter.chapter_number}章 - ${chapter.title}
+章节描述：${chapter.description || '无'}
+
+请为这个章节重新生成${numSections}个小节标题。
+
+要求：
+1. 每个小节标题50字以内
+2. 小节内容要围绕章节主题展开
+3. 小节之间要有逻辑关系和递进性
+4. 请按照JSON格式返回：
+{
+  "sections": [
+    {"number": 1, "title": "小节标题", "description": "小节简介（50字内）"},
+    {"number": 2, "title": "小节标题", "description": "小节简介（50字内）"},
+    ...
+  ]
+}
+
+只返回JSON，不要其他说明文字。`;
+
+    console.log('POST regenerate-sections - Calling Gemini API...');
+    const apiKey = c.env.GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      return c.json({
+        success: false,
+        error: 'Gemini API key not configured'
+      }, 500);
+    }
+    
+    let data: any;
+    
+    try {
+      const response = await callGeminiAPI(apiKey, prompt);
+      console.log('POST regenerate-sections - Gemini response:', response.substring(0, 500));
+      
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('POST regenerate-sections - No JSON found in response');
+        throw new Error('Failed to parse AI response');
+      }
+      
+      data = JSON.parse(jsonMatch[0]);
+    } catch (apiError: any) {
+      // If API fails, use mock data
+      console.log('Gemini API failed, using mock data:', apiError.message);
+      
+      const mockSections = [];
+      for (let i = 1; i <= numSections; i++) {
+        mockSections.push({
+          number: i,
+          title: `${chapter.title} - 小节${i}`,
+          description: `本小节将深入探讨第${i}个重要主题。`
+        });
+      }
+      
+      data = { sections: mockSections };
+    }
+
+    // Insert new sections
+    const insertedSections = [];
+    for (const section of data.sections) {
+      const result = await c.env.DB.prepare(`
+        INSERT INTO ai_sections (
+          chapter_id, book_id, section_number, title, description,
+          sort_order, status, target_word_count
+        ) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)
+      `).bind(
+        chapterId,
+        bookId,
+        section.number,
+        section.title,
+        section.description || '',
+        section.number,
+        body.target_word_count || 1000
+      ).run();
+      
+      insertedSections.push({
+        id: result.meta.last_row_id,
+        section_number: section.number,
+        title: section.title,
+        description: section.description || '',
+        status: 'draft',
+        current_word_count: 0,
+        target_word_count: body.target_word_count || 1000
+      });
+    }
+
+    // Update chapter status
+    await c.env.DB.prepare(`
+      UPDATE ai_chapters SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
+    `).bind(chapterId).run();
+
+    return c.json({
+      success: true,
+      sections: insertedSections,
+      message: 'Sections regenerated successfully'
+    });
+  } catch (error: any) {
+    console.error('POST regenerate-sections - Error:', error.message, error.stack);
     return c.json({ success: false, error: error.message }, 500);
   }
 });

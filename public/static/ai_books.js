@@ -657,87 +657,131 @@ const AIBooksManager = {
       return;
     }
     
-    // Check if there are existing sections
-    if (chapter.sections && chapter.sections.length > 0) {
+    // CRITICAL: Check if there are existing sections with generated content
+    const hasGeneratedContent = chapter.sections && chapter.sections.some(s => s.content && s.content.trim().length > 0);
+    
+    if (hasGeneratedContent) {
+      const confirmRegenerate = confirm(
+        `⚠️ 警告：重新生成小节将会覆盖已有内容！\n\n` +
+        `第${chapter.chapter_number}章当前有 ${chapter.sections.length} 个小节，其中部分小节已经生成了内容。\n\n` +
+        `重新生成将：\n` +
+        `1. 删除所有现有小节\n` +
+        `2. 重新生成新的小节大纲\n` +
+        `3. 已生成的内容将永久丢失\n\n` +
+        `确定要继续吗？`
+      );
+      
+      if (!confirmRegenerate) {
+        showNotification('已取消重新生成操作', 'info');
+        return;
+      }
+      
+      // Double confirmation for safety
+      const doubleConfirm = confirm(
+        `⚠️ 最后确认\n\n` +
+        `您即将删除第${chapter.chapter_number}章的所有小节和内容。\n` +
+        `此操作不可撤销！\n\n` +
+        `是否确定继续？`
+      );
+      
+      if (!doubleConfirm) {
+        showNotification('已取消重新生成操作', 'info');
+        return;
+      }
+    } else if (chapter.sections && chapter.sections.length > 0) {
+      // Sections exist but no content generated yet
       const confirmDelete = confirm(
-        `⚠️ 重新生成将删除"第${chapter.chapter_number}章"的所有小节内容。\n\n确定要继续吗？`
+        `⚠️ 第${chapter.chapter_number}章当前有 ${chapter.sections.length} 个小节（尚未生成内容）。\n\n` +
+        `重新生成将删除这些小节大纲。\n\n` +
+        `确定要继续吗？`
       );
       if (!confirmDelete) {
         return;
       }
     }
     
-    // Build initial prompt
+    // Prompt user for number of sections
+    const numSectionsInput = prompt(
+      `请输入要为"第${chapter.chapter_number}章: ${chapter.title}"生成的小节数量：\n\n` +
+      `建议：3-10个小节\n` +
+      `当前章节描述：${chapter.description || '无'}`,
+      '5'
+    );
+    
+    if (!numSectionsInput) {
+      return; // User cancelled
+    }
+    
+    const numSections = parseInt(numSectionsInput);
+    
+    if (isNaN(numSections) || numSections < 1 || numSections > 20) {
+      showNotification('小节数量必须在1-20之间', 'warning');
+      return;
+    }
+    
+    // Build initial prompt for sections
     const book = this.currentBook;
-    const initialPrompt = `你是一位专业的书籍大纲规划专家。
+    const initialPrompt = `你是一位专业的书籍内容规划专家。
 
 书籍主题：${book.title}
 主题描述：${book.description}
-目标字数：${book.target_word_count}字
-语气风格：${book.tone}
-目标读者：${book.audience}
 
-当前章节：第${chapter.chapter_number}章
-原标题：${chapter.title}
-原描述：${chapter.description || '（无描述）'}
+当前章节：第${chapter.chapter_number}章 - ${chapter.title}
+章节描述：${chapter.description || '无'}
 
-请为这个章节重新生成标题和描述。
+请为这个章节重新生成${numSections}个小节标题。
 
 要求：
-1. 章节标题50字以内
-2. 章节描述要清晰明确，为后续生成小节提供指导
-3. 请按照JSON格式返回：
+1. 每个小节标题50字以内
+2. 小节内容要围绕章节主题展开
+3. 小节之间要有逻辑关系和递进性
+4. 请按照JSON格式返回：
 {
-  "title": "新的章节标题",
-  "description": "新的章节描述（50字内）"
+  "sections": [
+    {"number": 1, "title": "小节标题", "description": "小节简介（50字内）"},
+    {"number": 2, "title": "小节标题", "description": "小节简介（50字内）"},
+    ...
+  ]
 }
 
 只返回JSON，不要其他说明文字。`;
 
     // Show editable prompt modal
-    const finalPrompt = await window.showPromptEditor('编辑重新生成章节的Prompt', initialPrompt);
+    const finalPrompt = await window.showPromptEditor('编辑重新生成小节的Prompt', initialPrompt);
     
     if (!finalPrompt) {
       return; // User cancelled
     }
     
     try {
-      showNotification(`🤖 AI正在重新生成第${chapter.chapter_number}章...`, 'info');
+      showNotification(`🤖 AI正在为第${chapter.chapter_number}章重新生成${numSections}个小节...`, 'info');
       
-      // Call API to regenerate chapter
+      // Call API to regenerate sections
       const response = await axios.post(
-        `/api/ai-books/${this.currentBook.id}/chapters/${chapterId}/regenerate`,
-        { prompt: finalPrompt }
+        `/api/ai-books/${this.currentBook.id}/chapters/${chapterId}/regenerate-sections`,
+        { 
+          num_sections: numSections,
+          prompt: finalPrompt 
+        }
       );
       
       if (response.data.success) {
-        // Update local chapter data
-        chapter.title = response.data.chapter.title;
-        chapter.description = response.data.chapter.description;
-        chapter.sections = []; // Clear sections
+        // Update local chapter data with new sections
+        chapter.sections = response.data.sections.map(s => ({
+          ...s,
+          sections: [] // Empty sections array for consistency
+        }));
         
-        // Update UI
-        const titleElem = document.getElementById(`chapter-title-${chapterId}`);
-        const descElem = document.getElementById(`chapter-description-${chapterId}`);
-        
-        if (titleElem) {
-          titleElem.textContent = chapter.title;
-        }
-        if (descElem) {
-          descElem.textContent = chapter.description || '暂无描述 - 点击编辑添加写作关键点';
-          descElem.className = `text-blue-100 text-sm ${!chapter.description ? 'italic' : ''}`;
-        }
-        
-        // Refresh the chapter content area
+        // Refresh the entire book editor to show new sections
         this.renderBookEditor();
         
-        showNotification(`✅ 第${chapter.chapter_number}章已重新生成！`, 'success');
+        showNotification(`✅ 第${chapter.chapter_number}章的小节已重新生成！共${response.data.sections.length}个小节。`, 'success');
       } else {
         throw new Error(response.data.error || '重新生成失败');
       }
     } catch (error) {
-      console.error('Error regenerating chapter:', error);
-      const errorMsg = error.response?.data?.error || error.message || '重新生成章节失败';
+      console.error('Error regenerating sections:', error);
+      const errorMsg = error.response?.data?.error || error.message || '重新生成小节失败';
       showNotification(`❌ ${errorMsg}`, 'error');
     }
   },
