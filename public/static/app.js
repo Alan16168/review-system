@@ -5349,11 +5349,25 @@ function renderNavigation() {
                 <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
               </button>
               <button onclick="AIBooksManager.renderBooksPage()" class="text-gray-700 hover:text-indigo-600 transition">
-                <i class="fas fa-book-open mr-1"></i>AI写作
+                <i class="fas fa-book-open mr-1"></i>${i18n.t('aiWriting')}
               </button>
               <button onclick="MarketplaceManager.renderMarketplacePage()" class="text-gray-700 hover:text-indigo-600 transition">
-                <i class="fas fa-store mr-1"></i>商城
+                <i class="fas fa-store mr-1"></i>${i18n.t('marketplace')}
               </button>
+              <div class="relative inline-block">
+                <button onclick="toggleDropdown('agents-dropdown')" class="text-gray-700 hover:text-indigo-600 transition flex items-center">
+                  <i class="fas fa-robot mr-1"></i>${i18n.t('aiAgents')}
+                  <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                </button>
+                <div id="agents-dropdown" class="hidden absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
+                  <button onclick="MarketplaceManager.renderMyAgentsPage(); toggleDropdown('agents-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
+                    <i class="fas fa-robot mr-2"></i>${i18n.t('myAgents')}
+                  </button>
+                  <button onclick="MarketplaceManager.renderMyPurchasesPage(); toggleDropdown('agents-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
+                    <i class="fas fa-shopping-bag mr-2"></i>${i18n.t('myOtherPurchases')}
+                  </button>
+                </div>
+              </div>
               ${currentUser.role === 'premium' || currentUser.role === 'admin' ? `
                 <button onclick="showAdmin()" class="text-gray-700 hover:text-indigo-600 transition">
                   <i class="fas fa-cog mr-1"></i>${i18n.t('admin')}
@@ -5625,6 +5639,27 @@ function toggleLanguageMenu(menuId = 'language-menu') {
     menu.classList.toggle('hidden');
   }
 }
+
+// Generic dropdown toggle function
+function toggleDropdown(dropdownId) {
+  const dropdown = document.getElementById(dropdownId);
+  if (dropdown) {
+    dropdown.classList.toggle('hidden');
+  }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const dropdowns = document.querySelectorAll('[id$="-dropdown"]');
+  dropdowns.forEach(dropdown => {
+    if (!dropdown.classList.contains('hidden')) {
+      const button = event.target.closest(`button[onclick*="${dropdown.id}"]`);
+      if (!dropdown.contains(event.target) && !button) {
+        dropdown.classList.add('hidden');
+      }
+    }
+  });
+});
 
 // Close language menu when clicking outside
 document.addEventListener('click', function(event) {
@@ -10290,15 +10325,15 @@ async function updateCartCount() {
 // Show shopping cart modal
 async function showCart() {
   try {
-    const response = await axios.get('/api/cart');
-    const items = response.data.items || [];
+    const response = await axios.get('/api/marketplace/cart');
+    const items = response.data.cart_items || [];
     
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.id = 'cart-modal';
     
     // Calculate total
-    const total = items.reduce((sum, item) => sum + parseFloat(item.price_usd), 0);
+    const total = items.reduce((sum, item) => sum + parseFloat(item.price_usd || 0), 0);
     
     modal.innerHTML = `
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -10325,19 +10360,18 @@ async function showCart() {
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:shadow-md transition">
                   <div class="flex-1">
                     <div class="flex items-center mb-2">
-                      <i class="fas ${item.item_type === 'upgrade' ? 'fa-arrow-up text-purple-500' : 'fa-sync-alt text-green-500'} text-xl mr-3"></i>
+                      <i class="fas fa-box text-indigo-500 text-xl mr-3"></i>
                       <h3 class="font-semibold text-lg text-gray-800">
-                        ${i18n.getCurrentLanguage() === 'en' && item.description_en ? item.description_en : item.description}
+                        ${item.name || item.product_name}
                       </h3>
                     </div>
                     <p class="text-sm text-gray-600 ml-8">
-                      <i class="fas fa-crown text-yellow-500 mr-1"></i>
-                      ${i18n.t('premiumUser') || '高级用户'} - ${item.duration_days} ${i18n.t('days') || '天'}
+                      ${item.description || ''}
                     </p>
                   </div>
                   <div class="flex items-center space-x-4">
                     <span class="text-2xl font-bold text-indigo-600">$${item.price_usd}</span>
-                    <button onclick="removeFromCart(${item.id})" 
+                    <button onclick="removeFromCart(${item.cart_id})" 
                             class="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-full transition">
                       <i class="fas fa-trash"></i>
                     </button>
@@ -10394,12 +10428,12 @@ function closeCart() {
 }
 
 // Remove item from cart
-async function removeFromCart(itemId) {
+async function removeFromCart(cartId) {
   try {
-    await axios.delete(`/api/cart/${itemId}`);
+    await axios.delete(`/api/marketplace/cart/${cartId}`);
     showNotification(i18n.t('removeFromCart') || '已从购物车移除', 'success');
     closeCart();
-    await updateCartCount();
+    await MarketplaceManager.updateCartCount();
     // Reopen cart to show updated list
     setTimeout(() => showCart(), 300);
   } catch (error) {
@@ -10408,29 +10442,17 @@ async function removeFromCart(itemId) {
   }
 }
 
-// Clear entire cart
+// Clear entire cart - Not implemented for marketplace
 async function clearCart() {
-  if (!confirm(i18n.t('confirmClearCart') || '确定要清空购物车吗？')) {
-    return;
-  }
-  
-  try {
-    await axios.delete('/api/cart');
-    showNotification(i18n.t('clearCart') || '购物车已清空', 'success');
-    closeCart();
-    await updateCartCount();
-  } catch (error) {
-    console.error('Clear cart error:', error);
-    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
-  }
+  showNotification('Clear cart feature coming soon', 'info');
 }
 
-// Proceed to checkout with PayPal
+// Proceed to checkout with marketplace API
 async function proceedToCheckout() {
   try {
     // Get cart items
-    const cartResponse = await axios.get('/api/cart');
-    const items = cartResponse.data.items || [];
+    const cartResponse = await axios.get('/api/marketplace/cart');
+    const items = cartResponse.data.cart_items || [];
     
     if (items.length === 0) {
       showNotification(i18n.t('cartEmpty') || '购物车是空的', 'error');
@@ -10458,7 +10480,7 @@ async function proceedToCheckout() {
             <p class="text-sm text-gray-600 mb-2">${i18n.t('orderSummary') || '订单摘要'}:</p>
             ${items.map(item => `
               <div class="flex justify-between text-sm mb-1">
-                <span>${i18n.getCurrentLanguage() === 'en' && item.description_en ? item.description_en : item.description}</span>
+                <span>${item.name || item.product_name}</span>
                 <span class="font-semibold">$${item.price_usd}</span>
               </div>
             `).join('')}
@@ -10615,7 +10637,8 @@ async function confirmCheckout() {
     }
     
     // Show confirmation dialog
-    if (!confirm(i18n.t('confirmPayment') + '?\n\n' + (i18n.t('total') || '总计') + ': $' + items.reduce((sum, item) => sum + parseFloat(item.price_usd), 0).toFixed(2))) {
+    const total = items.reduce((sum, item) => sum + parseFloat(item.price_usd || 0), 0).toFixed(2);
+    if (!confirm(i18n.t('confirmPayment') + '?\n\n' + (i18n.t('total') || '总计') + ': $' + total)) {
       return;
     }
     
@@ -10628,54 +10651,25 @@ async function confirmCheckout() {
     
     showNotification(i18n.t('processingPayment') || '正在处理支付...', 'info');
     
-    // Create PayPal order
-    const orderResponse = await axios.post('/api/payment/cart/create-order', {
-      items: items.map(item => ({
-        id: item.id,
-        tier: item.subscription_tier,
-        item_type: item.item_type,
-        price_usd: item.price_usd,
-        duration_days: item.duration_days
-      }))
-    });
-    
-    const orderId = orderResponse.data.orderId;
-    
-    // In a real scenario, we would redirect to PayPal
-    // For testing in sandbox mode, we'll simulate a successful payment
-    // In production, you MUST use the PayPal button or redirect to PayPal approval URL
-    
     // Simulate payment delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Note: In production, this capture should only happen after PayPal approval
-    // This is a simplified flow for testing purposes
-    const captureResponse = await axios.post('/api/payment/cart/capture-order', {
-      orderId: orderId
-    });
+    // Process marketplace checkout
+    const checkoutResponse = await axios.post('/api/marketplace/checkout');
     
     showNotification(i18n.t('paymentSuccess') || '支付成功！', 'success');
     closeCheckout();
     
-    // Clear cart
-    await axios.delete('/api/cart');
-    await updateCartCount();
+    // Update cart count
+    await MarketplaceManager.updateCartCount();
     
-    // IMPORTANT: Refresh user info from server before reload
-    // This updates the user role and subscription status in localStorage
-    try {
-      const userResponse = await axios.get('/api/auth/settings');
-      const updatedUser = userResponse.data;
-      // Update localStorage with new user info
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      currentUser = updatedUser;
-    } catch (err) {
-      console.error('Failed to refresh user info:', err);
-    }
-    
-    // Reload page to show updated menu and permissions
+    // Refresh the current page to show updated purchases
     setTimeout(() => {
-      window.location.reload();
+      if (currentView === 'marketplace') {
+        MarketplaceManager.renderMarketplacePage();
+      } else {
+        window.location.reload();
+      }
     }, 1500);
     
   } catch (error) {
@@ -13927,9 +13921,9 @@ const MarketplaceManager = {
         <div class="max-w-7xl mx-auto px-4 py-8">
           <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-800 mb-2">
-              <i class="fas fa-store mr-3 text-indigo-600"></i>MarketPlace 商城
+              <i class="fas fa-store mr-3 text-indigo-600"></i>${i18n.t('marketplaceTitle')}
             </h1>
-            <p class="text-gray-600">探索并购买 AI 工具、模板和其他服务</p>
+            <p class="text-gray-600">${i18n.t('marketplaceSubtitle')}</p>
           </div>
 
           <!-- Category Filters -->
@@ -13937,22 +13931,22 @@ const MarketplaceManager = {
             <button onclick="MarketplaceManager.filterByCategory('all')" 
                     class="category-filter-btn active px-4 py-2 rounded-lg font-medium transition"
                     data-category="all">
-              <i class="fas fa-th mr-2"></i>全部
+              <i class="fas fa-th mr-2"></i>${i18n.t('allProducts')}
             </button>
-            <button onclick="MarketplaceManager.filterByCategory('ai_agent')" 
+            <button onclick="MarketplaceManager.filterByCategory('ai_service')" 
                     class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
-                    data-category="ai_agent">
-              <i class="fas fa-robot mr-2"></i>AI 智能体
+                    data-category="ai_service">
+              <i class="fas fa-robot mr-2"></i>${i18n.t('aiAgent')}
             </button>
             <button onclick="MarketplaceManager.filterByCategory('template')" 
                     class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
                     data-category="template">
-              <i class="fas fa-file-alt mr-2"></i>模板
+              <i class="fas fa-file-alt mr-2"></i>${i18n.t('templates')}
             </button>
             <button onclick="MarketplaceManager.filterByCategory('other')" 
                     class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
                     data-category="other">
-              <i class="fas fa-box mr-2"></i>其他
+              <i class="fas fa-box mr-2"></i>${i18n.t('other')}
             </button>
           </div>
 
@@ -14040,74 +14034,280 @@ const MarketplaceManager = {
       return;
     }
 
-    container.innerHTML = products.map(product => `
-      <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden">
-        <!-- Product Header with Icon -->
-        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 text-center">
-          <div class="w-20 h-20 mx-auto bg-white rounded-full flex items-center justify-center mb-4">
-            <i class="fas fa-${this.getCategoryIcon(product.category)} text-indigo-600 text-3xl"></i>
-          </div>
-          <h3 class="text-xl font-bold text-white mb-2">${product.name}</h3>
-          <span class="inline-block px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">
-            ${this.getCategoryName(product.category)}
-          </span>
-        </div>
-
-        <!-- Product Body -->
-        <div class="p-6">
-          <p class="text-gray-600 mb-4 line-clamp-3">${product.description}</p>
-          
-          <!-- Price -->
-          <div class="mb-4">
-            <div class="flex items-end gap-2">
-              <span class="text-3xl font-bold text-indigo-600">¥${product.price}</span>
-              ${product.original_price ? `
-                <span class="text-lg text-gray-400 line-through mb-1">¥${product.original_price}</span>
-              ` : ''}
+    container.innerHTML = products.map(product => {
+      const isLoggedIn = !!currentUser;
+      const displayPrice = isLoggedIn ? product.price_usd : (product.original_price_usd || product.price_usd);
+      
+      return `
+        <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer"
+             onclick="MarketplaceManager.showProductDetails(${product.id})">
+          <!-- Product Header with Icon -->
+          <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 text-center">
+            <div class="w-20 h-20 mx-auto bg-white rounded-full flex items-center justify-center mb-4">
+              <i class="fas fa-${this.getCategoryIcon(product.product_type)} text-indigo-600 text-3xl"></i>
             </div>
-            ${product.original_price ? `
-              <span class="text-sm text-green-600 font-medium">
-                省 ¥${(product.original_price - product.price).toFixed(2)}
-              </span>
-            ` : ''}
+            <h3 class="text-xl font-bold text-white mb-2">${product.name}</h3>
+            <span class="inline-block px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">
+              ${this.getCategoryName(product.product_type)}
+            </span>
           </div>
 
-          <!-- Sales Count -->
-          <div class="flex items-center text-sm text-gray-500 mb-4">
-            <i class="fas fa-shopping-cart mr-2"></i>
-            已售 ${product.sales_count || 0} 件
-          </div>
+          <!-- Product Body -->
+          <div class="p-6">
+            <p class="text-gray-600 mb-4 line-clamp-3">${product.description || ''}</p>
+            
+            <!-- Price -->
+            <div class="mb-4">
+              <div class="flex items-end gap-2">
+                <span class="text-3xl font-bold text-indigo-600">$${displayPrice}</span>
+              </div>
+            </div>
 
-          <!-- Purchase Button -->
-          <button onclick="MarketplaceManager.purchaseProduct(${product.id})" 
-                  class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition">
-            <i class="fas fa-shopping-bag mr-2"></i>立即购买
-          </button>
+            <!-- Sales Count -->
+            <div class="flex items-center text-sm text-gray-500 mb-4">
+              <i class="fas fa-shopping-cart mr-2"></i>
+              ${i18n.t('sold')} ${product.purchase_count || 0} ${i18n.t('items')}
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2">
+              <button onclick="event.stopPropagation(); MarketplaceManager.addToCart(${product.id})" 
+                      class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition">
+                <i class="fas fa-cart-plus mr-2"></i>${i18n.t('addToCart')}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   },
 
   getCategoryIcon(category) {
     const icons = {
-      'ai_agent': 'robot',
+      'ai_service': 'robot',
       'template': 'file-alt',
+      'book_template': 'book',
       'other': 'box'
     };
     return icons[category] || 'box';
   },
 
   getCategoryName(category) {
-    const names = {
-      'ai_agent': 'AI 智能体',
-      'template': '模板',
-      'other': '其他'
+    // Use i18n for category names
+    const keys = {
+      'ai_service': 'aiAgent',
+      'template': 'templates',
+      'book_template': 'templates',
+      'other': 'other'
     };
-    return names[category] || category;
+    return i18n.t(keys[category] || 'other');
   },
 
-  async purchaseProduct(productId) {
-    // TODO: Implement purchase logic
-    showNotification('购买功能开发中...', 'info');
+  async addToCart(productId) {
+    try {
+      await axios.post('/api/marketplace/cart/add', { product_id: productId });
+      showNotification(i18n.t('productAddedToCart') || '已加入购物车', 'success');
+      await this.updateCartCount();
+    } catch (error) {
+      showNotification(error.response?.data?.error || 'Failed to add to cart', 'error');
+    }
+  },
+
+  async updateCartCount() {
+    try {
+      const response = await axios.get('/api/marketplace/cart');
+      const count = response.data.cart_items?.length || 0;
+      const badge = document.getElementById('cart-count');
+      if (badge) {
+        badge.textContent = count;
+        badge.classList.toggle('hidden', count === 0);
+      }
+    } catch (error) {
+      console.error('Error updating cart count:', error);
+    }
+  },
+
+  async showProductDetails(productId) {
+    try {
+      const response = await axios.get(`/api/marketplace/products/${productId}`);
+      const product = response.data.product;
+      
+      // Show modal with product details
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+      modal.innerHTML = `
+        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+              <h2 class="text-2xl font-bold">${product.name}</h2>
+              <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-2xl"></i>
+              </button>
+            </div>
+            <p class="text-gray-600 mb-4">${product.description}</p>
+            <div class="mb-4">
+              <span class="text-3xl font-bold text-indigo-600">$${product.price_usd}</span>
+            </div>
+            <div class="flex gap-3">
+              <button onclick="MarketplaceManager.addToCart(${product.id}); this.closest('.fixed').remove();" 
+                      class="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700">
+                ${i18n.t('addToCart')}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    } catch (error) {
+      showNotification('Failed to load product details', 'error');
+    }
+  },
+
+  async renderMyAgentsPage() {
+    await autoSaveDraftBeforeNavigation();
+    currentView = 'my-agents';
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+      <div class="min-h-screen bg-gray-50">
+        ${renderNavigation()}
+        <div class="max-w-7xl mx-auto px-4 py-8">
+          <h1 class="text-3xl font-bold text-gray-800 mb-6">
+            <i class="fas fa-robot mr-3 text-indigo-600"></i>${i18n.t('myAgents')}
+          </h1>
+          <div id="my-agents-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="text-center py-12 col-span-full">
+              <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+              <p class="text-gray-600">${i18n.t('loading')}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    await this.loadMyAgents();
+  },
+
+  async loadMyAgents() {
+    try {
+      const response = await axios.get('/api/marketplace/my-agents');
+      const agents = response.data.agents || [];
+      const container = document.getElementById('my-agents-grid');
+      
+      if (agents.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <i class="fas fa-robot text-gray-400 text-5xl mb-4"></i>
+            <p class="text-gray-600 text-lg">${i18n.t('noAgents') || '暂无智能体'}</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = agents.map(agent => `
+        <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition p-6">
+          <h3 class="text-xl font-bold mb-2">${agent.product_name}</h3>
+          <p class="text-gray-600 mb-4">${agent.description || ''}</p>
+          <div class="text-sm text-gray-500 mb-4">
+            ${i18n.t('purchaseDate')}: ${new Date(agent.purchase_date).toLocaleDateString()}
+          </div>
+          <button onclick="alert('Agent functionality coming soon')" 
+                  class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+            <i class="fas fa-play mr-2"></i>${i18n.t('run') || '运行'}
+          </button>
+        </div>
+      `).join('');
+    } catch (error) {
+      console.error('Error loading agents:', error);
+      document.getElementById('my-agents-grid').innerHTML = `
+        <div class="col-span-full text-center py-12 bg-red-50 rounded-lg">
+          <p class="text-red-700">${error.response?.data?.error || error.message}</p>
+        </div>
+      `;
+    }
+  },
+
+  async renderMyPurchasesPage() {
+    await autoSaveDraftBeforeNavigation();
+    currentView = 'my-purchases';
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+      <div class="min-h-screen bg-gray-50">
+        ${renderNavigation()}
+        <div class="max-w-7xl mx-auto px-4 py-8">
+          <h1 class="text-3xl font-bold text-gray-800 mb-6">
+            <i class="fas fa-shopping-bag mr-3 text-indigo-600"></i>${i18n.t('myOtherPurchases')}
+          </h1>
+          <div id="my-purchases-list">
+            <div class="text-center py-12">
+              <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+              <p class="text-gray-600">${i18n.t('loading')}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    await this.loadMyPurchases();
+  },
+
+  async loadMyPurchases() {
+    try {
+      const response = await axios.get('/api/marketplace/my-purchases');
+      const purchases = response.data.purchases || [];
+      const container = document.getElementById('my-purchases-list');
+      
+      if (purchases.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <i class="fas fa-shopping-bag text-gray-400 text-5xl mb-4"></i>
+            <p class="text-gray-600 text-lg">${i18n.t('noPurchases')}</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = `
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('productName')}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('category')}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('price')}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('purchaseDate')}</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${purchases.map(purchase => `
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">${purchase.product_name}</div>
+                    <div class="text-sm text-gray-500">${purchase.description || ''}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${this.getCategoryName(purchase.product_type)}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    $${purchase.price_paid}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${new Date(purchase.purchase_date).toLocaleDateString()}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error loading purchases:', error);
+      document.getElementById('my-purchases-list').innerHTML = `
+        <div class="text-center py-12 bg-red-50 rounded-lg">
+          <p class="text-red-700">${error.response?.data?.error || error.message}</p>
+        </div>
+      `;
+    }
   }
 };
