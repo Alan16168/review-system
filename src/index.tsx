@@ -20,6 +20,7 @@ import systemSettings from './routes/system_settings';
 // Manhattan Project Phase 1 - AI Writing System & Marketplace
 import aiBooks from './routes/ai_books';
 import marketplace from './routes/marketplace';
+import writingTemplates from './routes/writing_templates';
 
 type Bindings = {
   DB: D1Database;
@@ -65,6 +66,7 @@ app.route('/api/system-settings', systemSettings);
 // Manhattan Project Phase 1 - AI Writing System & Marketplace Routes
 app.route('/api/ai-books', aiBooks);
 app.route('/api/marketplace', marketplace);
+app.route('/api/writing-templates', writingTemplates);
 
 // Diagnostic page - serve directly
 app.get('/diagnostic.html', (c) => {
