@@ -13864,12 +13864,6 @@ async function editMarketplaceProduct(productId) {
             </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">功能菜单标识</label>
-            <input type="text" id="product-feature-menu" value="${product.feature_menu || ''}"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-          </div>
-
           <div class="flex items-center space-x-2">
             <input type="checkbox" id="product-is-active" ${product.is_active ? 'checked' : ''}
                    class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
