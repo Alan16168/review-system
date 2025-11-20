@@ -79,7 +79,7 @@ async function checkBookCreationLimit(c: any, userId: number, tier: string): Pro
 
 async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number = 8192, temperature: number = 0.7): Promise<string> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -103,12 +103,33 @@ async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number =
 
   const data: any = await response.json();
   
-  if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-    console.error('Unexpected API response format:', JSON.stringify(data));
-    throw new Error('Invalid API response format');
+  // Check if response has candidates
+  if (!data.candidates || data.candidates.length === 0) {
+    console.error('No candidates in API response:', JSON.stringify(data));
+    throw new Error('AI returned no candidates');
   }
   
-  return data.candidates[0].content.parts[0].text;
+  const candidate = data.candidates[0];
+  
+  // Check finish reason
+  if (candidate.finishReason === 'MAX_TOKENS') {
+    console.warn('API response hit MAX_TOKENS limit. Content may be truncated.');
+    // Try to get partial text if available
+    const parts = candidate.content?.parts;
+    if (parts && parts.length > 0 && parts[0].text) {
+      return parts[0].text;
+    }
+    throw new Error('Content generation exceeded token limit. Please reduce target word count or simplify the prompt.');
+  }
+  
+  // Get text from response
+  const text = candidate.content?.parts?.[0]?.text;
+  if (!text) {
+    console.error('No text in API response:', JSON.stringify(data));
+    throw new Error('AI returned empty content');
+  }
+  
+  return text;
 }
 
 // ============================================================================
@@ -702,10 +723,11 @@ app.post('/:id/sections/:sectionId/generate-content', async (c) => {
     const targetWords = body.target_word_count || section.target_word_count || 1000;
 
     // Calculate required tokens based on target word count
-    // CORRECTED: For Chinese, 1 token ≈ 0.5-0.7 characters (average: 0.6)
-    // So to generate N Chinese characters, we need approximately N / 0.6 tokens
-    // Adding 20% buffer for formatting, markdown, and completion
-    const estimatedTokens = Math.ceil((targetWords / 0.6) * 1.2);
+    // For Chinese: 1 token ≈ 0.5-0.7 characters (conservative: 0.5)
+    // For N Chinese characters, need approximately N / 0.5 = 2N tokens
+    // Adding 50% buffer for formatting, markdown, and proper completion
+    // Formula: tokens = (targetWords / 0.5) * 1.5 = targetWords * 3
+    const estimatedTokens = Math.ceil(targetWords * 3);
     const maxTokens = Math.min(estimatedTokens, systemMaxTokens);
 
     console.log(`Generating content: target=${targetWords} words, estimated tokens=${estimatedTokens}, max tokens=${maxTokens}, system max=${systemMaxTokens}`);
