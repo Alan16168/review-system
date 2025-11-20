@@ -436,7 +436,7 @@ app.post('/content', async (c) => {
     
     const targetWords = target_word_count || section.target_word_count || 1000
     
-    // Build comprehensive prompt
+    // Build comprehensive prompt with strict word count control
     const prompt = `你是一位专业的内容创作者。
 
 书籍主题：${section.book_title}
@@ -448,9 +448,9 @@ app.post('/content', async (c) => {
 当前小节：${section.section_number}. ${section.title}
 小节描述：${section.description || '无'}
 
-请为这个小节生成约${targetWords}字的详细内容。
+⚠️ 字数要求：必须严格控制在 ${targetWords} 字左右（上下浮动不超过10%，即${Math.floor(targetWords * 0.9)}-${Math.ceil(targetWords * 1.1)}字）
 
-要求：
+内容要求：
 1. 内容要专业、准确、有深度
 2. 语言风格：${section.tone}
 3. 目标读者：${section.audience}
@@ -458,8 +458,14 @@ app.post('/content', async (c) => {
 5. 可以包含案例、数据、分析、示例等
 6. 使用Markdown格式，包含适当的段落、标题、列表等
 7. 内容要有条理性和可读性
+8. **字数控制优先级最高**：如果内容过长，请精简；如果过短，请适当扩展
 
-请直接输出内容，不要JSON格式，不要前言后语。`
+字数计算规则：
+- 中文字符：每个汉字算1个字
+- 英文单词：每个单词算1个字
+- 标点符号和空格不计入字数
+
+请直接输出内容，不要JSON格式，不要前言后语。生成完成后请自己检查字数是否符合要求。`
     
     // Call Gemini API with higher token limit for content
     const startTime = Date.now()
@@ -575,23 +581,31 @@ app.post('/preface', async (c) => {
     
     const targetWords = target_word_count || 500
     
-    // Build prompt
+    // Build prompt with strict word count control
     const prompt = `你是一位专业的作家。
 
 书籍主题：${book.title}
 主题描述：${book.description || '无'}
 作者：${book.author_name || '匿名'}
 
-请为这本书撰写一篇约${targetWords}字的前言。
+⚠️ 字数要求：必须严格控制在 ${targetWords} 字左右（上下浮动不超过10%，即${Math.floor(targetWords * 0.9)}-${Math.ceil(targetWords * 1.1)}字）
 
-要求：
+请为这本书撰写前言。
+
+内容要求：
 1. 介绍本书的创作背景和动机
 2. 说明本书的主要内容和价值
 3. 阐述本书适合哪些读者
 4. 语言风格：${book.tone}
 5. 使用Markdown格式
+6. **字数控制优先级最高**：如果内容过长，请精简；如果过短，请适当扩展
 
-请直接输出前言内容，不要JSON格式。`
+字数计算规则：
+- 中文字符：每个汉字算1个字
+- 英文单词：每个单词算1个字
+- 标点符号和空格不计入字数
+
+请直接输出前言内容，不要JSON格式。生成完成后请自己检查字数是否符合要求。`
     
     // Call Gemini API
     const startTime = Date.now()
@@ -673,23 +687,31 @@ app.post('/afterword', async (c) => {
     
     const targetWords = target_word_count || 300
     
-    // Build prompt
+    // Build prompt with strict word count control
     const prompt = `你是一位专业的作家。
 
 书籍主题：${book.title}
 主题描述：${book.description || '无'}
 作者：${book.author_name || '匿名'}
 
-请为这本书撰写一篇约${targetWords}字的后记。
+⚠️ 字数要求：必须严格控制在 ${targetWords} 字左右（上下浮动不超过10%，即${Math.floor(targetWords * 0.9)}-${Math.ceil(targetWords * 1.1)}字）
 
-要求：
+请为这本书撰写后记。
+
+内容要求：
 1. 总结全书的核心内容
 2. 分享创作感悟和心得
 3. 感谢读者并展望未来
 4. 语言风格：${book.tone}
 5. 使用Markdown格式
+6. **字数控制优先级最高**：如果内容过长，请精简；如果过短，请适当扩展
 
-请直接输出后记内容，不要JSON格式。`
+字数计算规则：
+- 中文字符：每个汉字算1个字
+- 英文单词：每个单词算1个字
+- 标点符号和空格不计入字数
+
+请直接输出后记内容，不要JSON格式。生成完成后请自己检查字数是否符合要求。`
     
     // Call Gemini API
     const startTime = Date.now()
