@@ -11,10 +11,10 @@ Field systemicInstructions not available because it's only allowed to be set on 
 
 ## 根本原因
 
-### 问题 1: 错误的模型名称
-- **旧代码**: `gemini-2.5-flash`
-- **问题**: 这个模型名称不存在，导致 API 调用失败
-- **正确**: `gemini-1.5-flash`
+### 问题 1: 模型名称验证
+- **最初错误**: 使用了 `gemini-2.5-flash`（实际上这个模型存在）
+- **第一次修复尝试**: 改为 `gemini-1.5-flash`（但这个模型在 v1beta API 中不可用）
+- **最终正确**: `gemini-2.5-flash`（通过 API 列表验证确认可用）
 
 ### 问题 2: 缺少错误处理
 - API 响应格式错误时没有详细的错误信息
@@ -22,18 +22,24 @@ Field systemicInstructions not available because it's only allowed to be set on 
 
 ## 解决方案
 
-### 1. 修正模型名称
+### 1. 验证并使用正确的模型名称
 
+通过调用 Gemini API 的模型列表接口验证可用模型：
+
+```bash
+curl "https://generativelanguage.googleapis.com/v1beta/models?key=YOUR_API_KEY"
+```
+
+可用的 Gemini 模型包括：
+- `gemini-2.5-flash` ✅ (推荐 - 最新最快)
+- `gemini-2.5-pro` ✅ (更强大)
+- `gemini-2.0-flash` ✅
+- 等等...
+
+**最终使用**:
 ```typescript
-// 之前 (错误)
 const response = await fetch(
   `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-  // ...
-);
-
-// 之后 (正确)
-const response = await fetch(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
   // ...
 );
 ```
@@ -77,7 +83,7 @@ async function callGeminiAPI(
   temperature: number = 0.7
 ): Promise<string> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -130,10 +136,12 @@ async function callGeminiAPI(
 
 ### Gemini API 模型列表
 
-当前可用的 Gemini 模型：
-- `gemini-1.5-flash` ✅ (推荐，快速且便宜)
-- `gemini-1.5-pro` ✅ (更强大，更慢)
-- `gemini-1.0-pro` ✅ (旧版本)
+当前可用的 Gemini 模型（v1beta API）：
+- `gemini-2.5-flash` ✅ (推荐 - 最新最快最便宜)
+- `gemini-2.5-pro` ✅ (最强大的模型)
+- `gemini-2.0-flash` ✅ (平衡性能和成本)
+- `gemini-2.0-flash-lite` ✅ (轻量级版本)
+- 其他实验性模型...
 
 ### API 速率限制
 
