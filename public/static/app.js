@@ -10328,12 +10328,25 @@ async function showCart() {
     const response = await axios.get('/api/marketplace/cart');
     const items = response.data.cart_items || [];
     
+    // 为每个商品计算用户应付价格
+    items.forEach(item => {
+      let userPrice = item.price_user || 0;
+      if (currentUser && currentUser.subscription_tier) {
+        if (currentUser.subscription_tier === 'super') {
+          userPrice = item.price_super || item.price_user || 0;
+        } else if (currentUser.subscription_tier === 'premium') {
+          userPrice = item.price_premium || item.price_user || 0;
+        }
+      }
+      item.user_price = userPrice;
+    });
+    
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.id = 'cart-modal';
     
-    // Calculate total
-    const total = items.reduce((sum, item) => sum + parseFloat(item.price_usd || 0), 0);
+    // Calculate total using user's price tier
+    const total = items.reduce((sum, item) => sum + parseFloat(item.user_price || 0), 0);
     
     modal.innerHTML = `
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -10370,7 +10383,7 @@ async function showCart() {
                     </p>
                   </div>
                   <div class="flex items-center space-x-4">
-                    <span class="text-2xl font-bold text-indigo-600">$${item.price_usd}</span>
+                    <span class="text-2xl font-bold text-indigo-600">$${item.user_price}</span>
                     <button onclick="removeFromCart(${item.cart_id})" 
                             class="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-full transition">
                       <i class="fas fa-trash"></i>
@@ -10459,11 +10472,24 @@ async function proceedToCheckout() {
       return;
     }
     
+    // 为每个商品计算用户应付价格
+    items.forEach(item => {
+      let userPrice = item.price_user || 0;
+      if (currentUser && currentUser.subscription_tier) {
+        if (currentUser.subscription_tier === 'super') {
+          userPrice = item.price_super || item.price_user || 0;
+        } else if (currentUser.subscription_tier === 'premium') {
+          userPrice = item.price_premium || item.price_user || 0;
+        }
+      }
+      item.user_price = userPrice;
+    });
+    
     // Close cart modal
     closeCart();
     
-    // Show checkout modal with PayPal
-    const total = items.reduce((sum, item) => sum + parseFloat(item.price_usd), 0);
+    // Show checkout modal with PayPal - use user's tiered pricing
+    const total = items.reduce((sum, item) => sum + parseFloat(item.user_price), 0);
     
     const checkoutModal = document.createElement('div');
     checkoutModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
@@ -10481,7 +10507,7 @@ async function proceedToCheckout() {
             ${items.map(item => `
               <div class="flex justify-between text-sm mb-1">
                 <span>${item.name || item.product_name}</span>
-                <span class="font-semibold">$${item.price_usd}</span>
+                <span class="font-semibold">$${item.user_price}</span>
               </div>
             `).join('')}
             <div class="border-t border-gray-300 mt-3 pt-3 flex justify-between font-bold text-lg">
@@ -13571,7 +13597,11 @@ async function loadMarketplaceProducts() {
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-bold text-gray-900">$${product.price_usd || 0}</div>
+                  <div class="text-xs text-gray-900">
+                    <div>普通: <span class="font-semibold">$${product.price_user || 0}</span></div>
+                    <div>高级: <span class="font-semibold">$${product.price_premium || 0}</span></div>
+                    <div>超级: <span class="font-semibold">$${product.price_super || 0}</span></div>
+                  </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
@@ -13694,11 +13724,30 @@ function showCreateProductModal() {
             </select>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">价格 ($) *</label>
-            <input type="number" id="product-price-usd" required min="0" step="0.01"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                   placeholder="9.99">
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <label class="block text-sm font-medium text-gray-700">定价设置 *</label>
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">普通会员价 ($)</label>
+              <input type="number" id="product-price-user" required min="0" step="0.01"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="9.99">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">高级会员价 ($)</label>
+              <input type="number" id="product-price-premium" required min="0" step="0.01"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="7.99">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">超级会员价 ($)</label>
+              <input type="number" id="product-price-super" required min="0" step="0.01"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="5.99">
+            </div>
           </div>
         </div>
 
@@ -13732,7 +13781,9 @@ async function handleCreateProduct(e) {
     product_type: document.getElementById('product-type').value,
     name: document.getElementById('product-name').value,
     description: document.getElementById('product-description').value,
-    price_usd: parseFloat(document.getElementById('product-price-usd').value),
+    price_user: parseFloat(document.getElementById('product-price-user').value),
+    price_premium: parseFloat(document.getElementById('product-price-premium').value),
+    price_super: parseFloat(document.getElementById('product-price-super').value),
     is_active: document.getElementById('product-is-active').checked
   };
 
@@ -13779,28 +13830,38 @@ async function editMarketplaceProduct(productId) {
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${product.description}</textarea>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
-              <select id="product-category" required
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                <option value="ai_agent" ${product.category === 'ai_agent' ? 'selected' : ''}>AI 智能体</option>
-                <option value="template" ${product.category === 'template' ? 'selected' : ''}>模板</option>
-                <option value="other" ${product.category === 'other' ? 'selected' : ''}>其他</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">价格 (¥) *</label>
-              <input type="number" id="product-price" required min="0" step="0.01" value="${product.price}"
-                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
+            <select id="product-category" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+              <option value="ai_agent" ${product.category === 'ai_agent' ? 'selected' : ''}>AI 智能体</option>
+              <option value="template" ${product.category === 'template' ? 'selected' : ''}>模板</option>
+              <option value="other" ${product.category === 'other' ? 'selected' : ''}>其他</option>
+            </select>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">原价 (¥)</label>
-            <input type="number" id="product-original-price" min="0" step="0.01" value="${product.original_price || ''}"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <div class="space-y-3">
+            <label class="block text-sm font-medium text-gray-700">定价设置 *</label>
+            <div class="grid grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">普通会员价 ($)</label>
+                <input type="number" id="product-price-user" required min="0" step="0.01" value="${product.price_user || 0}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="9.99">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">高级会员价 ($)</label>
+                <input type="number" id="product-price-premium" required min="0" step="0.01" value="${product.price_premium || 0}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="7.99">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">超级会员价 ($)</label>
+                <input type="number" id="product-price-super" required min="0" step="0.01" value="${product.price_super || 0}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="5.99">
+              </div>
+            </div>
           </div>
 
           <div>
@@ -13843,10 +13904,9 @@ async function handleUpdateProduct(e, productId) {
     name: document.getElementById('product-name').value,
     description: document.getElementById('product-description').value,
     category: document.getElementById('product-category').value,
-    price: parseFloat(document.getElementById('product-price').value),
-    original_price: document.getElementById('product-original-price').value ? 
-                    parseFloat(document.getElementById('product-original-price').value) : null,
-    feature_menu: document.getElementById('product-feature-menu').value || null,
+    price_user: parseFloat(document.getElementById('product-price-user').value),
+    price_premium: parseFloat(document.getElementById('product-price-premium').value),
+    price_super: parseFloat(document.getElementById('product-price-super').value),
     is_active: document.getElementById('product-is-active').checked
   };
 
@@ -14027,7 +14087,15 @@ const MarketplaceManager = {
 
     container.innerHTML = products.map(product => {
       const isLoggedIn = !!currentUser;
-      const displayPrice = isLoggedIn ? product.price_usd : (product.original_price_usd || product.price_usd);
+      // 根据用户会员等级显示相应价格
+      let displayPrice = product.price_user || 0;
+      if (isLoggedIn && currentUser.subscription_tier) {
+        if (currentUser.subscription_tier === 'super') {
+          displayPrice = product.price_super || product.price_user || 0;
+        } else if (currentUser.subscription_tier === 'premium') {
+          displayPrice = product.price_premium || product.price_user || 0;
+        }
+      }
       
       return `
         <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer"
@@ -14123,6 +14191,16 @@ const MarketplaceManager = {
       const response = await axios.get(`/api/marketplace/products/${productId}`);
       const product = response.data.product;
       
+      // 根据用户会员等级显示相应价格
+      let displayPrice = product.price_user || 0;
+      if (currentUser && currentUser.subscription_tier) {
+        if (currentUser.subscription_tier === 'super') {
+          displayPrice = product.price_super || product.price_user || 0;
+        } else if (currentUser.subscription_tier === 'premium') {
+          displayPrice = product.price_premium || product.price_user || 0;
+        }
+      }
+      
       // Show modal with product details
       const modal = document.createElement('div');
       modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
@@ -14137,7 +14215,7 @@ const MarketplaceManager = {
             </div>
             <p class="text-gray-600 mb-4">${product.description}</p>
             <div class="mb-4">
-              <span class="text-3xl font-bold text-indigo-600">$${product.price_usd}</span>
+              <span class="text-3xl font-bold text-indigo-600">$${displayPrice}</span>
             </div>
             <div class="flex gap-3">
               <button onclick="MarketplaceManager.addToCart(${product.id}); this.closest('.fixed').remove();" 

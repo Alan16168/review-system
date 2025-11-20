@@ -166,17 +166,19 @@ app.post('/products', async (c) => {
     const result = await c.env.DB.prepare(`
       INSERT INTO marketplace_products (
         product_type, name, name_en, description, description_en,
-        price_usd, is_free, is_subscription, subscription_tier,
+        price_user, price_premium, price_super, is_free, is_subscription, subscription_tier,
         credits_cost, features_json, category, tags, image_url,
         demo_url, is_active, is_featured, sort_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       body.product_type,
       body.name,
       body.name_en || null,
       body.description || null,
       body.description_en || null,
-      parseFloat(body.price_usd) || 0.0,
+      parseFloat(body.price_user) || 0.0,
+      parseFloat(body.price_premium) || 0.0,
+      parseFloat(body.price_super) || 0.0,
       body.is_free ? 1 : 0,
       body.is_subscription ? 1 : 0,
       body.subscription_tier || null,
@@ -232,7 +234,7 @@ app.put('/products/:id', async (c) => {
     
     const fields = [
       'product_type', 'name', 'name_en', 'description', 'description_en',
-      'price_usd', 'is_free', 'is_subscription', 'subscription_tier',
+      'price_user', 'price_premium', 'price_super', 'is_free', 'is_subscription', 'subscription_tier',
       'credits_cost', 'features_json', 'category', 'tags', 'image_url',
       'demo_url', 'is_active', 'is_featured', 'sort_order'
     ];
@@ -243,7 +245,7 @@ app.put('/products/:id', async (c) => {
         // Convert boolean fields
         if (['is_free', 'is_subscription', 'is_active', 'is_featured'].includes(field)) {
           params.push(body[field] ? 1 : 0);
-        } else if (field === 'price_usd') {
+        } else if (['price_user', 'price_premium', 'price_super'].includes(field)) {
           params.push(parseFloat(body[field]) || 0.0);
         } else {
           params.push(body[field]);
@@ -470,14 +472,16 @@ app.post('/checkout', async (c) => {
   try {
     const user = await getUserFromToken(c);
     
-    // Get all cart items with product details
+    // Get all cart items with product details including tiered pricing
     const cartItems: any = await c.env.DB.prepare(`
       SELECT 
         sc.id as cart_id,
         sc.product_id,
         p.product_type,
         p.name,
-        p.price_usd
+        p.price_user,
+        p.price_premium,
+        p.price_super
       FROM shopping_cart sc
       JOIN marketplace_products p ON sc.product_id = p.id
       WHERE sc.user_id = ? AND p.is_active = 1
@@ -491,6 +495,14 @@ app.post('/checkout', async (c) => {
     const purchaseIds = [];
     
     for (const item of cartItems.results) {
+      // Determine price based on user's subscription tier
+      let priceToPay = parseFloat(item.price_user) || 0;
+      if (user.subscription_tier === 'super') {
+        priceToPay = parseFloat(item.price_super) || parseFloat(item.price_user) || 0;
+      } else if (user.subscription_tier === 'premium') {
+        priceToPay = parseFloat(item.price_premium) || parseFloat(item.price_user) || 0;
+      }
+      
       const result = await c.env.DB.prepare(`
         INSERT INTO user_purchases (
           user_id, product_id, product_type, product_name, price_paid, status
@@ -500,7 +512,7 @@ app.post('/checkout', async (c) => {
         item.product_id,
         item.product_type,
         item.name,
-        item.price_usd
+        priceToPay
       ).run();
       
       purchaseIds.push(result.meta.last_row_id);
