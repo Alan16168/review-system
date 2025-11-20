@@ -13,17 +13,42 @@ const app = new Hono<{ Bindings: Bindings }>();
 // ============================================================================
 
 async function getUserFromToken(c: any): Promise<any> {
-  // TEMPORARY: Find and use the first admin user for testing
-  // In production, this should use JWT token authentication
-  const user = await c.env.DB.prepare(
-    'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE is_admin = 1 LIMIT 1'
-  ).first();
+  try {
+    // Get token from Authorization header
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new HTTPException(401, { message: 'No authorization token provided' });
+    }
 
-  if (!user) {
-    throw new HTTPException(401, { message: 'No admin user found' });
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    // Decode JWT token (simple decode without verification for now)
+    // In production, should use proper JWT verification with JWT_SECRET
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new HTTPException(401, { message: 'Invalid token format' });
+    }
+    
+    const payload = JSON.parse(atob(parts[1]));
+    
+    if (!payload.id) {
+      throw new HTTPException(401, { message: 'Invalid token payload' });
+    }
+
+    // Get user from database using token's user ID
+    const user = await c.env.DB.prepare(
+      'SELECT id, email, username, subscription_tier, is_admin, role FROM users WHERE id = ?'
+    ).bind(payload.id).first();
+
+    if (!user) {
+      throw new HTTPException(401, { message: 'User not found' });
+    }
+
+    return user;
+  } catch (error: any) {
+    console.error('getUserFromToken error:', error.message);
+    throw new HTTPException(401, { message: error.message || 'Authentication failed' });
   }
-
-  return user;
 }
 
 // ============================================================================
