@@ -786,6 +786,7 @@ const translations = {
     
     // MarketPlace
     'marketplace': '商城',
+    'marketplaceStore': 'MarketPlace 商城',
     'marketplaceTitle': 'MarketPlace 商城',
     'marketplaceSubtitle': '探索并购买 AI 工具、模板和其他服务',
     'allProducts': '全部',
@@ -1683,6 +1684,7 @@ const translations = {
     
     // MarketPlace
     'marketplace': 'MarketPlace',
+    'marketplaceStore': 'MarketPlace Store',
     'marketplaceTitle': 'MarketPlace',
     'marketplaceSubtitle': 'Explore and purchase AI tools, templates, and other services',
     'allProducts': 'All',
@@ -2577,6 +2579,7 @@ const translations = {
     
     // MarketPlace
     'marketplace': 'マーケットプレイス',
+    'marketplaceStore': 'マーケットプレイス',
     'marketplaceTitle': 'マーケットプレイス',
     'marketplaceSubtitle': 'AIツール、テンプレート、その他のサービスを探索して購入',
     'allProducts': 'すべて',
