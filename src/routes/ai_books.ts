@@ -29,7 +29,14 @@ async function getUserFromToken(c: any): Promise<any> {
       throw new HTTPException(401, { message: 'Invalid token format' });
     }
     
-    const payload = JSON.parse(atob(parts[1]));
+    // Convert base64url to base64
+    let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    // Add padding if needed
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    
+    const payload = JSON.parse(atob(base64));
     
     if (!payload.id) {
       throw new HTTPException(401, { message: 'Invalid token payload' });
