@@ -1362,13 +1362,20 @@ const AIBooksManager = {
     try {
       showNotification(`🤖 AI正在生成约${targetWords}字的内容，请耐心等待...`, 'info');
       
-      const response = await axios.post(
-        `/api/ai-books/${this.currentBook.id}/sections/${sectionId}/generate-content`,
-        { 
-          target_word_count: targetWordsInt,
-          prompt: finalPrompt
-        }
-      );
+      const apiUrl = `/api/ai-books/${this.currentBook.id}/sections/${sectionId}/generate-content`;
+      console.log(`[generateSectionContent] Calling API: ${apiUrl}`);
+      console.log(`[generateSectionContent] Request body:`, { 
+        target_word_count: targetWordsInt,
+        prompt_length: finalPrompt.length 
+      });
+      
+      const response = await axios.post(apiUrl, { 
+        target_word_count: targetWordsInt,
+        prompt: finalPrompt
+      });
+      
+      console.log(`[generateSectionContent] Response status:`, response.status);
+      console.log(`[generateSectionContent] Response data:`, response.data);
       
       if (response.data.success) {
         showNotification(`✅ 内容生成成功！实际生成${response.data.word_count}字`, 'success');
@@ -1378,8 +1385,22 @@ const AIBooksManager = {
         throw new Error(response.data.error || '生成失败');
       }
     } catch (error) {
-      console.error('Error generating content:', error);
-      const errorMsg = error.response?.data?.error || error.message || '生成内容失败';
+      console.error('[generateSectionContent] Error occurred:', error);
+      console.error('[generateSectionContent] Error details:', {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      
+      let errorMsg = '生成内容失败';
+      if (error.response) {
+        errorMsg = error.response.data?.error || error.response.statusText || errorMsg;
+        errorMsg += ` (HTTP ${error.response.status})`;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
       showNotification(`❌ ${errorMsg}`, 'error');
     }
   },
@@ -1479,22 +1500,46 @@ const AIBooksManager = {
     try {
       showNotification(`🤖 AI正在重新生成约${targetWords}字的内容，请耐心等待...`, 'info');
       
-      const response = await axios.post(
-        `/api/ai-books/${this.currentBook.id}/sections/${sectionId}/generate-content`,
-        { 
-          target_word_count: targetWordsInt,
-          prompt: finalPrompt
-        }
-      );
+      const apiUrl = `/api/ai-books/${this.currentBook.id}/sections/${sectionId}/generate-content`;
+      console.log(`[regenerateSectionContent] Calling API: ${apiUrl}`);
+      console.log(`[regenerateSectionContent] Request body:`, { 
+        target_word_count: targetWordsInt,
+        prompt_length: finalPrompt.length 
+      });
+      
+      const response = await axios.post(apiUrl, { 
+        target_word_count: targetWordsInt,
+        prompt: finalPrompt
+      });
+      
+      console.log(`[regenerateSectionContent] Response status:`, response.status);
+      console.log(`[regenerateSectionContent] Response data:`, response.data);
       
       if (response.data.success) {
         showNotification('✅ 内容重新生成成功！', 'success');
         // Reload book to show new content
         await this.openBook(this.currentBook.id);
+      } else {
+        throw new Error(response.data.error || '重新生成失败');
       }
     } catch (error) {
-      console.error('Error regenerating content:', error);
-      showNotification('重新生成失败: ' + (error.response?.data?.error || error.message), 'error');
+      console.error('[regenerateSectionContent] Error occurred:', error);
+      console.error('[regenerateSectionContent] Error details:', {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      
+      let errorMsg = '重新生成失败';
+      if (error.response) {
+        errorMsg = error.response.data?.error || error.response.statusText || errorMsg;
+        errorMsg += ` (HTTP ${error.response.status})`;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      showNotification(`❌ ${errorMsg}`, 'error');
     }
   },
   
