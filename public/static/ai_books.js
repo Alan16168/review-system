@@ -472,11 +472,13 @@ const AIBooksManager = {
                   </button>
                 </h3>
                 <div class="flex items-center space-x-2">
+                  ${chapter.sections && chapter.sections.length > 0 ? `
                   <button onclick="AIBooksManager.regenerateSingleChapter(${chapter.id})" 
                     class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg transition text-sm"
-                    title="重新生成此章节">
+                    title="重新生成此章节的小节">
                     <i class="fas fa-sync-alt mr-1"></i>重新生成
                   </button>
+                  ` : ''}
                   <button onclick="AIBooksManager.toggleChapter(${chapter.id})" 
                     class="text-white hover:text-blue-100">
                     <i id="chapter-icon-${chapter.id}" class="fas fa-chevron-down"></i>
