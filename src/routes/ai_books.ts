@@ -38,6 +38,11 @@ async function getUserFromToken(c: any): Promise<any> {
     
     const payload = JSON.parse(atob(base64));
     
+    // Check token expiration
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      throw new HTTPException(401, { message: 'Token expired. Please login again.' });
+    }
+    
     if (!payload.id) {
       throw new HTTPException(401, { message: 'Invalid token payload' });
     }
