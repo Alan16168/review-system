@@ -41,9 +41,14 @@ app.get('/', async (c) => {
       WHERE t.is_active = 1
     `;
     
-    if (!user || user.role !== 'admin') {
+    // Only add owner filter if user exists and is not admin
+    if (user && user.role !== 'admin') {
       query += ` AND (t.is_public = 1 OR t.owner_id = ?)`;
+    } else if (!user) {
+      // If no user, only show public templates
+      query += ` AND t.is_public = 1`;
     }
+    // If user is admin, show all active templates (no additional filter)
     
     query += ` ORDER BY t.is_featured DESC, t.sort_order ASC, t.created_at DESC`;
     
