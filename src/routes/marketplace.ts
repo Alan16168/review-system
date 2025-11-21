@@ -77,7 +77,7 @@ app.get('/products', async (c) => {
     const marketplaceProducts = await c.env.DB.prepare(query).bind(...params).all();
     let products: any[] = marketplaceProducts.results || [];
     
-    // Get paid review templates (price > 0) and add them as products
+    // Get public review templates and add them as products
     if (!category || category === 'review_template') {
       const templates = await c.env.DB.prepare(`
         SELECT 
@@ -107,7 +107,7 @@ app.get('/products', async (c) => {
           created_at,
           updated_at
         FROM templates
-        WHERE price > 0 AND is_active = 1
+        WHERE visibility = 'public' AND is_active = 1
         ORDER BY created_at DESC
       `).all();
       
@@ -605,8 +605,8 @@ app.get('/my-purchases', async (c) => {
     const purchases = await c.env.DB.prepare(`
       SELECT 
         up.*,
-        p.description,
-        p.image_url
+        COALESCE(p.description, '') as description,
+        COALESCE(p.image_url, NULL) as image_url
       FROM user_purchases up
       LEFT JOIN marketplace_products p ON up.product_id = p.id
       WHERE up.user_id = ?
