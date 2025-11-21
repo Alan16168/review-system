@@ -14528,6 +14528,11 @@ const MarketplaceManager = {
                     data-category="ai_service">
               <i class="fas fa-robot mr-2"></i>智能体
             </button>
+            <button onclick="MarketplaceManager.filterByCategory('writing_template')" 
+                    class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
+                    data-category="writing_template">
+              <i class="fas fa-pen mr-2"></i>写作模板
+            </button>
             <button onclick="MarketplaceManager.filterByCategory('review_template')" 
                     class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
                     data-category="review_template">
