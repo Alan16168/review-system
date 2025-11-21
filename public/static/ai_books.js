@@ -140,6 +140,35 @@ const AIBooksManager = {
                     </select>
                   </div>
                 </div>
+
+                <!-- Writing Template Selection -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    写作模板
+                    <span class="text-gray-500 text-xs ml-2">(可选，选择模板可提供更好的AI生成效果)</span>
+                  </label>
+                  <select id="book-template"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onchange="AIBooksManager.onTemplateChange()">
+                    <option value="">不使用模板</option>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    选择模板后，将根据模板预设参数优化AI生成内容
+                  </p>
+                </div>
+
+                <!-- Template Fields Container (will be populated when template is selected) -->
+                <div id="template-fields-container" class="hidden">
+                  <div class="border-t border-gray-200 pt-4 mt-2">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">
+                      <i class="fas fa-clipboard-list mr-2"></i>模板字段
+                    </h4>
+                    <div id="template-fields" class="space-y-3">
+                      <!-- Template fields will be dynamically inserted here -->
+                    </div>
+                  </div>
+                </div>
                 
                 <div class="flex justify-end space-x-3 pt-4">
                   <button type="button" onclick="AIBooksManager.hideCreateBookModal()"
@@ -284,8 +313,154 @@ const AIBooksManager = {
   // ============================================================
   // Modal controls
   // ============================================================
-  showCreateBookModal() {
+  async showCreateBookModal() {
     document.getElementById('create-book-modal').classList.remove('hidden');
+    // Load available writing templates
+    await this.loadTemplatesForSelection();
+  },
+
+  async loadTemplatesForSelection() {
+    try {
+      const response = await axios.get('/api/writing-templates');
+      const templates = response.data.templates || [];
+      
+      const templateSelect = document.getElementById('book-template');
+      templateSelect.innerHTML = '<option value="">不使用模板</option>';
+      
+      templates.forEach(template => {
+        const option = document.createElement('option');
+        option.value = template.id;
+        option.textContent = `${template.name} - ${template.description || ''}`;
+        option.dataset.template = JSON.stringify(template);
+        templateSelect.appendChild(option);
+      });
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    }
+  },
+
+  onTemplateChange() {
+    const templateSelect = document.getElementById('book-template');
+    const templateId = templateSelect.value;
+    
+    if (!templateId) {
+      // Hide template fields if no template selected
+      document.getElementById('template-fields-container').classList.add('hidden');
+      return;
+    }
+    
+    // Get selected template data
+    const selectedOption = templateSelect.options[templateSelect.selectedIndex];
+    const templateData = JSON.parse(selectedOption.dataset.template || '{}');
+    
+    // Apply template default settings
+    if (templateData.default_tone) {
+      document.getElementById('book-tone').value = templateData.default_tone;
+    }
+    if (templateData.default_audience) {
+      document.getElementById('book-audience').value = templateData.default_audience;
+    }
+    if (templateData.default_language) {
+      document.getElementById('book-language').value = templateData.default_language;
+    }
+    if (templateData.default_target_words) {
+      document.getElementById('book-word-count').value = templateData.default_target_words;
+    }
+    
+    // Load template fields
+    this.loadTemplateFields(templateId);
+  },
+
+  async loadTemplateFields(templateId) {
+    try {
+      const response = await axios.get(`/api/writing-templates/${templateId}`);
+      const template = response.data.template;
+      const fields = template.fields || [];
+      
+      const fieldsContainer = document.getElementById('template-fields');
+      const containerDiv = document.getElementById('template-fields-container');
+      
+      if (fields.length === 0) {
+        containerDiv.classList.add('hidden');
+        return;
+      }
+      
+      containerDiv.classList.remove('hidden');
+      fieldsContainer.innerHTML = '';
+      
+      fields.forEach(field => {
+        const fieldHtml = this.renderTemplateField(field);
+        fieldsContainer.insertAdjacentHTML('beforeend', fieldHtml);
+      });
+    } catch (error) {
+      console.error('Error loading template fields:', error);
+    }
+  },
+
+  renderTemplateField(field) {
+    let inputHtml = '';
+    
+    switch (field.field_type) {
+      case 'text':
+        inputHtml = `
+          <input type="text" 
+                 id="template-field-${field.id}" 
+                 ${field.is_required ? 'required' : ''}
+                 placeholder="${field.placeholder || ''}"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        `;
+        break;
+      case 'textarea':
+        inputHtml = `
+          <textarea id="template-field-${field.id}" 
+                    rows="3"
+                    ${field.is_required ? 'required' : ''}
+                    placeholder="${field.placeholder || ''}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+        `;
+        break;
+      case 'number':
+        inputHtml = `
+          <input type="number" 
+                 id="template-field-${field.id}" 
+                 ${field.is_required ? 'required' : ''}
+                 ${field.min_length ? `min="${field.min_length}"` : ''}
+                 ${field.max_length ? `max="${field.max_length}"` : ''}
+                 placeholder="${field.placeholder || ''}"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        `;
+        break;
+      case 'select':
+        const options = field.options_json ? JSON.parse(field.options_json) : [];
+        inputHtml = `
+          <select id="template-field-${field.id}" 
+                  ${field.is_required ? 'required' : ''}
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option value="">请选择...</option>
+            ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+          </select>
+        `;
+        break;
+      default:
+        inputHtml = `
+          <input type="text" 
+                 id="template-field-${field.id}" 
+                 ${field.is_required ? 'required' : ''}
+                 placeholder="${field.placeholder || ''}"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        `;
+    }
+    
+    return `
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          ${field.label}
+          ${field.is_required ? '<span class="text-red-500">*</span>' : ''}
+        </label>
+        ${inputHtml}
+        ${field.help_text ? `<p class="text-xs text-gray-500 mt-1">${field.help_text}</p>` : ''}
+      </div>
+    `;
   },
   
   hideCreateBookModal() {
@@ -293,6 +468,7 @@ const AIBooksManager = {
     document.getElementById('create-book-form').reset();
     document.getElementById('title-count').textContent = '0';
     document.getElementById('description-count').textContent = '0';
+    document.getElementById('template-fields-container').classList.add('hidden');
   },
   
   // ============================================================
@@ -308,6 +484,7 @@ const AIBooksManager = {
     const language = document.getElementById('book-language').value;
     const tone = document.getElementById('book-tone').value;
     const audience = document.getElementById('book-audience').value;
+    const templateId = document.getElementById('book-template').value || null;
     
     if (title.length > 50) {
       alert('书名不能超过50字');
@@ -317,6 +494,20 @@ const AIBooksManager = {
     if (description.length > 500) {
       alert('主题描述不能超过500字');
       return;
+    }
+    
+    // Collect template field values if template is selected
+    let templateMetadata = null;
+    if (templateId) {
+      templateMetadata = {};
+      const templateFieldsContainer = document.getElementById('template-fields');
+      if (templateFieldsContainer) {
+        const fieldInputs = templateFieldsContainer.querySelectorAll('[id^="template-field-"]');
+        fieldInputs.forEach(input => {
+          const fieldId = input.id.replace('template-field-', '');
+          templateMetadata[fieldId] = input.value;
+        });
+      }
     }
     
     try {
@@ -333,7 +524,9 @@ const AIBooksManager = {
         target_word_count: wordCount,
         language,
         tone,
-        audience
+        audience,
+        template_id: templateId,
+        template_metadata: templateMetadata ? JSON.stringify(templateMetadata) : null
       }, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
