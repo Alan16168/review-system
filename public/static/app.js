@@ -14464,10 +14464,12 @@ async function loadWritingTemplates() {
               管理AI写作助手使用的模板，设置默认参数和自定义字段
             </p>
           </div>
-          <button onclick="showCreateWritingTemplateModal()" 
-                  class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-            <i class="fas fa-plus mr-2"></i>创建模板
-          </button>
+          ${window.currentUser && window.currentUser.role === 'admin' ? `
+            <button onclick="showCreateWritingTemplateModal()" 
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+              <i class="fas fa-plus mr-2"></i>创建模板
+            </button>
+          ` : ''}
         </div>
 
         <!-- Templates Grid -->
@@ -14476,10 +14478,14 @@ async function loadWritingTemplates() {
             <div class="col-span-full text-center py-12 bg-gray-50 rounded-lg">
               <i class="fas fa-file-alt text-4xl text-gray-400 mb-4"></i>
               <p class="text-gray-600">暂无写作模板</p>
-              <button onclick="showCreateWritingTemplateModal()" 
-                      class="mt-4 text-indigo-600 hover:text-indigo-700">
-                <i class="fas fa-plus mr-2"></i>创建第一个模板
-              </button>
+              ${window.currentUser && window.currentUser.role === 'admin' ? `
+                <button onclick="showCreateWritingTemplateModal()" 
+                        class="mt-4 text-indigo-600 hover:text-indigo-700">
+                  <i class="fas fa-plus mr-2"></i>创建第一个模板
+                </button>
+              ` : `
+                <p class="text-sm text-gray-500 mt-2">请联系管理员添加模板</p>
+              `}
             </div>
           ` : templates.map(template => `
             <div class="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
@@ -14804,7 +14810,14 @@ async function submitWritingTemplate(event) {
     }
   } catch (error) {
     console.error('Error creating template:', error);
-    showNotification('创建失败: ' + (error.response?.data?.error || error.message), 'error');
+    let errorMsg = error.response?.data?.error || error.message;
+    
+    // Provide more user-friendly error messages
+    if (error.response?.status === 403) {
+      errorMsg = '创建模板需要管理员权限。请联系系统管理员。';
+    }
+    
+    showNotification('创建失败: ' + errorMsg, 'error');
   }
 }
 
