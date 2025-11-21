@@ -5354,14 +5354,8 @@ function renderNavigation() {
                   <i class="fas fa-chevron-down ml-1 text-xs"></i>
                 </button>
                 <div id="marketplace-dropdown" class="hidden absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
-                  <button onclick="AgentsPage.switchView('marketplace'); AgentsPage.init(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
-                    <i class="fas fa-robot mr-2"></i>智能体商城
-                  </button>
-                  <button onclick="AgentsPage.switchView('my-agents'); AgentsPage.init(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
+                  <button onclick="AgentsPage.init(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
                     <i class="fas fa-robot mr-2"></i>${i18n.t('myAgents')}
-                  </button>
-                  <button onclick="AIBooksManager.renderBooksPage(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
-                    <i class="fas fa-book-open mr-2"></i>${i18n.t('aiWriting')}
                   </button>
                   <button onclick="MarketplaceManager.renderMarketplacePage(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
                     <i class="fas fa-store mr-2"></i>${i18n.t('marketplaceStore')}
