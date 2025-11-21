@@ -5387,11 +5387,11 @@ function renderNavigation() {
                   <button onclick="AgentsPage.init(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
                     <i class="fas fa-robot mr-2"></i>${i18n.t('myAgents')}
                   </button>
-                  <button onclick="MarketplaceManager.renderMarketplacePage(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
-                    <i class="fas fa-store mr-2"></i>${i18n.t('marketplaceStore')}
-                  </button>
                   <button onclick="MarketplaceManager.renderMyPurchasesPage(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
                     <i class="fas fa-shopping-bag mr-2"></i>${i18n.t('myOtherPurchases')}
+                  </button>
+                  <button onclick="MarketplaceManager.renderMarketplacePage(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
+                    <i class="fas fa-store mr-2"></i>${i18n.t('marketplaceStore')}
                   </button>
                 </div>
               </div>
