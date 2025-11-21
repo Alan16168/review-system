@@ -672,29 +672,97 @@ app.post('/checkout', async (c) => {
       return c.json({ success: false, error: 'User not found' }, 404);
     }
     
-    // Get all cart items with product details including tiered pricing
-    const cartItems: any = await c.env.DB.prepare(`
-      SELECT 
-        sc.id as cart_id,
-        sc.product_id,
-        p.product_type,
-        p.name,
-        p.price_user,
-        p.price_premium,
-        p.price_super
-      FROM shopping_cart sc
-      JOIN marketplace_products p ON sc.product_id = p.id
-      WHERE sc.user_id = ? AND p.is_active = 1
+    // Get all cart items (raw product_ids)
+    const cartItemsRaw: any = await c.env.DB.prepare(`
+      SELECT id as cart_id, product_id
+      FROM shopping_cart
+      WHERE user_id = ?
     `).bind(user.id).all();
     
-    if (!cartItems.results || cartItems.results.length === 0) {
+    if (!cartItemsRaw.results || cartItemsRaw.results.length === 0) {
       return c.json({ success: false, error: 'Cart is empty' }, 400);
+    }
+    
+    // Fetch product details for each cart item
+    const cartItems = [];
+    for (const cartItem of cartItemsRaw.results) {
+      const productId = cartItem.product_id;
+      let product: any = null;
+      
+      // Check if writing template (wt_)
+      if (typeof productId === 'string' && productId.startsWith('wt_')) {
+        const templateId = parseInt(productId.substring(3));
+        product = await c.env.DB.prepare(`
+          SELECT 
+            id,
+            name,
+            price_user,
+            price_premium,
+            price_super,
+            'writing_template' as product_type,
+            is_active
+          FROM ai_writing_templates
+          WHERE id = ?
+        `).bind(templateId).first();
+        
+        if (product) {
+          product.id = productId; // Keep prefixed ID
+        }
+      } 
+      // Check if review template (t_)
+      else if (typeof productId === 'string' && productId.startsWith('t_')) {
+        const templateId = parseInt(productId.substring(2));
+        product = await c.env.DB.prepare(`
+          SELECT 
+            id,
+            name,
+            price as price_user,
+            price as price_premium,
+            price as price_super,
+            'review_template' as product_type,
+            is_active
+          FROM templates
+          WHERE id = ?
+        `).bind(templateId).first();
+        
+        if (product) {
+          product.id = productId; // Keep prefixed ID
+        }
+      }
+      // Regular marketplace product
+      else {
+        product = await c.env.DB.prepare(`
+          SELECT 
+            id,
+            name,
+            price_user,
+            price_premium,
+            price_super,
+            product_type,
+            is_active
+          FROM marketplace_products
+          WHERE id = ?
+        `).bind(productId).first();
+      }
+      
+      // Only add active products
+      if (product && product.is_active) {
+        cartItems.push({
+          cart_id: cartItem.cart_id,
+          product_id: productId,
+          ...product
+        });
+      }
+    }
+    
+    if (cartItems.length === 0) {
+      return c.json({ success: false, error: 'No active products in cart' }, 400);
     }
     
     // Create purchase records for each item
     const purchaseIds = [];
     
-    for (const item of cartItems.results) {
+    for (const item of cartItems) {
       // Determine price based on user's subscription tier
       let priceToPay = parseFloat(item.price_user) || 0;
       if (user.subscription_tier === 'super') {
@@ -717,28 +785,36 @@ app.post('/checkout', async (c) => {
       
       purchaseIds.push(result.meta.last_row_id);
       
-      // Update product purchase count
-      await c.env.DB.prepare(
-        'UPDATE marketplace_products SET purchase_count = purchase_count + 1 WHERE id = ?'
-      ).bind(item.product_id).run();
+      // Update product purchase count (only for marketplace products)
+      if (!item.product_id.toString().startsWith('wt_') && !item.product_id.toString().startsWith('t_')) {
+        await c.env.DB.prepare(
+          'UPDATE marketplace_products SET purchase_count = purchase_count + 1 WHERE id = ?'
+        ).bind(item.product_id).run();
+      }
       
       // Add buyer to appropriate buyers table based on product type
       if (item.product_type === 'review_template') {
-        // Extract template ID from product_id (format: 't_123' or just '123')
-        const templateId = item.product_id.toString().replace(/^t_/, '');
+        // Extract template ID from product_id (format: 't_123')
+        const templateId = parseInt(item.product_id.toString().replace(/^t_/, ''));
         await c.env.DB.prepare(`
           INSERT OR IGNORE INTO template_buyers (template_id, user_email, purchase_price)
           VALUES (?, ?, ?)
-        `).bind(parseInt(templateId), userInfo.email, priceToPay).run();
+        `).bind(templateId, userInfo.email, priceToPay).run();
       } else if (item.product_type === 'writing_template') {
-        // Extract writing template ID from product_id (format: 'wt_123' or just '123')
-        const templateId = item.product_id.toString().replace(/^wt_/, '');
+        // Extract writing template ID from product_id (format: 'wt_123')
+        const templateId = parseInt(item.product_id.toString().replace(/^wt_/, ''));
         await c.env.DB.prepare(`
           INSERT OR IGNORE INTO writing_template_buyers (template_id, user_email, purchase_price)
           VALUES (?, ?, ?)
-        `).bind(parseInt(templateId), userInfo.email, priceToPay).run();
+        `).bind(templateId, userInfo.email, priceToPay).run();
+      } else if (item.product_type === 'ai_service') {
+        // For ai_service (智能体), use product_buyers table
+        await c.env.DB.prepare(`
+          INSERT OR IGNORE INTO product_buyers (product_id, user_email, purchase_price)
+          VALUES (?, ?, ?)
+        `).bind(item.product_id, userInfo.email, priceToPay).run();
       } else {
-        // For ai_agent and other product types, use product_buyers table
+        // For other product types, use product_buyers table
         await c.env.DB.prepare(`
           INSERT OR IGNORE INTO product_buyers (product_id, user_email, purchase_price)
           VALUES (?, ?, ?)
@@ -774,7 +850,7 @@ app.get('/my-purchases', async (c) => {
       return c.json({ success: false, error: 'Unauthorized' }, 401);
     }
     
-    // Get all purchases excluding ai_service (智能体)
+    // Get all purchases (including all product types)
     const purchasesRaw = await c.env.DB.prepare(`
       SELECT 
         id,
@@ -786,7 +862,7 @@ app.get('/my-purchases', async (c) => {
         status,
         purchase_date
       FROM user_purchases
-      WHERE user_id = ? AND (product_type IS NULL OR product_type != 'ai_service')
+      WHERE user_id = ?
       ORDER BY purchase_date DESC
     `).bind(user.id).all();
     

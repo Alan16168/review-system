@@ -14630,66 +14630,124 @@ const MarketplaceManager = {
       return;
     }
 
-    container.innerHTML = products.map(product => {
-      const isLoggedIn = !!currentUser;
-      // 根据用户会员等级显示相应价格
-      let displayPrice = product.price_user || 0;
-      if (isLoggedIn && currentUser.subscription_tier) {
-        if (currentUser.subscription_tier === 'super') {
-          displayPrice = product.price_super || product.price_user || 0;
-        } else if (currentUser.subscription_tier === 'premium') {
-          displayPrice = product.price_premium || product.price_user || 0;
-        }
-      }
+    // If "all" category is selected, render by category groups
+    if (this.currentCategory === 'all') {
+      const categoryOrder = ['ai_service', 'review_template', 'writing_template', 'other'];
+      const categoryLabels = {
+        'ai_service': '智能体',
+        'review_template': '复盘模板',
+        'writing_template': '写作模板',
+        'other': '其他产品'
+      };
+      const categoryIcons = {
+        'ai_service': 'robot',
+        'review_template': 'file-alt',
+        'writing_template': 'pen',
+        'other': 'box'
+      };
       
-      return `
-        <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer"
-             onclick="MarketplaceManager.showProductDetails('${product.id}')">
-          <!-- Product Header with Icon -->
-          <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 text-center">
-            <div class="w-20 h-20 mx-auto bg-white rounded-full flex items-center justify-center mb-4">
-              <i class="fas fa-${this.getCategoryIcon(product.category || product.product_type)} text-indigo-600 text-3xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-white mb-2">${product.name}</h3>
-            <span class="inline-block px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">
-              ${this.getCategoryName(product.category || product.product_type)}
-            </span>
-          </div>
-
-          <!-- Product Body -->
-          <div class="p-6">
-            <p class="text-gray-600 mb-4 line-clamp-3">${product.description || ''}</p>
-            
-            <!-- Price -->
-            <div class="mb-4">
-              <div class="flex items-end gap-2">
-                <span class="text-3xl font-bold text-indigo-600">$${displayPrice}</span>
+      // Group products by type
+      const productsByType = {};
+      products.forEach(p => {
+        const type = p.product_type || 'other';
+        if (!productsByType[type]) {
+          productsByType[type] = [];
+        }
+        productsByType[type].push(p);
+      });
+      
+      // Render categorized products
+      let html = '';
+      categoryOrder.forEach(type => {
+        const categoryProducts = productsByType[type] || [];
+        if (categoryProducts.length > 0) {
+          html += `
+            <div class="col-span-full mb-8">
+              <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-${categoryIcons[type]} mr-3 text-indigo-600"></i>
+                ${categoryLabels[type] || type}
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${categoryProducts.map(product => this.renderProductCard(product)).join('')}
               </div>
             </div>
-
-            <!-- Sales Count -->
-            <div class="flex items-center text-sm text-gray-500 mb-4">
-              <i class="fas fa-shopping-cart mr-2"></i>
-              ${i18n.t('sold')} ${product.purchase_count || 0} ${i18n.t('items')}
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex gap-2">
-              <button onclick="event.stopPropagation(); MarketplaceManager.addToCart('${product.id}')" 
-                      class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition">
-                <i class="fas fa-cart-plus mr-2"></i>${i18n.t('addToCart')}
-              </button>
-            </div>
+          `;
+        }
+      });
+      
+      container.innerHTML = html;
+    } else {
+      // Single category view - render as grid
+      container.innerHTML = `
+        <div class="col-span-full">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${products.map(product => this.renderProductCard(product)).join('')}
           </div>
         </div>
       `;
-    }).join('');
+    }
+  },
+
+  renderProductCard(product) {
+    const isLoggedIn = !!currentUser;
+    // 根据用户会员等级显示相应价格
+    let displayPrice = product.price_user || 0;
+    if (isLoggedIn && currentUser.subscription_tier) {
+      if (currentUser.subscription_tier === 'super') {
+        displayPrice = product.price_super || product.price_user || 0;
+      } else if (currentUser.subscription_tier === 'premium') {
+        displayPrice = product.price_premium || product.price_user || 0;
+      }
+    }
+    
+    return `
+      <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer"
+           onclick="MarketplaceManager.showProductDetails('${product.id}')">
+        <!-- Product Header with Icon -->
+        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 text-center">
+          <div class="w-20 h-20 mx-auto bg-white rounded-full flex items-center justify-center mb-4">
+            <i class="fas fa-${this.getCategoryIcon(product.category || product.product_type)} text-indigo-600 text-3xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">${product.name}</h3>
+          <span class="inline-block px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">
+            ${this.getCategoryName(product.category || product.product_type)}
+          </span>
+        </div>
+
+        <!-- Product Body -->
+        <div class="p-6">
+          <p class="text-gray-600 mb-4 line-clamp-3">${product.description || ''}</p>
+          
+          <!-- Price -->
+          <div class="mb-4">
+            <div class="flex items-end gap-2">
+              <span class="text-3xl font-bold text-indigo-600">$${displayPrice}</span>
+            </div>
+          </div>
+
+          <!-- Sales Count -->
+          <div class="flex items-center text-sm text-gray-500 mb-4">
+            <i class="fas fa-shopping-cart mr-2"></i>
+            ${i18n.t('sold')} ${product.purchase_count || 0} ${i18n.t('items')}
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-2">
+            <button onclick="event.stopPropagation(); MarketplaceManager.addToCart('${product.id}')" 
+                    class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition">
+              <i class="fas fa-cart-plus mr-2"></i>${i18n.t('addToCart')}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   },
 
   getCategoryIcon(category) {
     const icons = {
       'ai_service': 'robot',
       'review_template': 'file-alt',
+      'writing_template': 'pen',
       'template': 'file-alt',
       'book_template': 'book',
       'other': 'box'
