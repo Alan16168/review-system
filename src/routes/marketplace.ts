@@ -587,6 +587,9 @@ app.post('/cart', async (c) => {
       if (!product.is_active) {
         return c.json({ success: false, error: 'Product is not available' }, 400);
       }
+      
+      // Convert numeric product_id to string for consistent storage
+      actualProductId = String(product_id);
     }
     
     // Check if already purchased
@@ -705,6 +708,9 @@ app.post('/cart/add', async (c) => {
       if (!product.is_active) {
         return c.json({ success: false, error: 'Product is not available' }, 400);
       }
+      
+      // Convert numeric product_id to string for consistent storage
+      actualProductId = String(product_id);
     }
     
     // Check if already purchased

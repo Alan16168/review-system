@@ -11,7 +11,7 @@
 **🚀 最新部署**: https://d0c4568e.review-system.pages.dev (2025-11-21)  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V7.2.6 - 修复支付结账500错误 (2025-11-21)  
+**✅ 当前版本**: V7.2.7 - 修复购买记录显示 + 完整支付流程 (2025-11-21)  
 **🔥 最新功能**: ✅ 完整支付流程：添加购物车 → 查看购物车 → 结账成功  
 **💳 支付系统**: ✅ 支持写作模板/复盘模板/智能体等跨表产品购买 + 三级会员定价  
 **🛠️ 错误处理**: ✅ 统一错误响应格式 + 详细日志记录 + 用户友好提示  
@@ -21,6 +21,73 @@
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
+
+---
+
+## 🔧 V7.2.7 重大修复 - 购买记录显示 + 完整支付流程 (2025-11-21)
+
+**问题描述**:
+1. 用户购买"新智能文件处理助手"后，不显示在"我的智能体"页面
+2. 支付时出现 `D1_ERROR: FOREIGN KEY constraint failed: SQLITE_CONSTRAINT` 错误
+
+**根本原因分析**:
+1. **买家跟踪表外键约束错误**：
+   - `product_buyers` 表的 `product_id` 字段为 `INTEGER` 类型，有外键约束指向 `marketplace_products.id`
+   - 购物车中存储的 `product_id` 是字符串类型（如 `"1.0"`），导致类型不匹配
+   - 插入买家记录时触发外键约束错误
+
+**解决方案**:
+
+**1. 数据库迁移 0056 - 修复所有买家表**:
+```sql
+-- 修复 product_buyers 表
+CREATE TABLE product_buyers_new (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  product_id TEXT NOT NULL,  -- 从 INTEGER 改为 TEXT
+  user_email TEXT NOT NULL,
+  purchased_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  purchase_price REAL
+  -- 移除外键约束
+);
+
+-- 同时修复 template_buyers 和 writing_template_buyers
+-- 将所有 product_id/template_id 改为 TEXT 类型，无外键约束
+```
+
+**2. 代码修复 - 统一类型转换**:
+```typescript
+// 在 POST /cart 和 POST /cart/add 路由中
+else {
+  // Regular marketplace product
+  product = await c.env.DB.prepare(
+    'SELECT id, is_active FROM marketplace_products WHERE id = ?'
+  ).bind(product_id).first();
+  
+  // Convert numeric product_id to string for consistent storage
+  actualProductId = String(product_id);  // 添加此行
+}
+```
+
+**修复效果**:
+- ✅ **完整支付流程**：用户 → 登录 → 添加购物车 → 结账 → 购买成功
+- ✅ **购买记录创建**：`user_purchases` 和 `product_buyers` 表正确记录
+- ✅ **购买产品显示**：`/api/marketplace/my-agents` 正确返回购买的智能体
+- ✅ **类型一致性**：所有 product_id 统一为 TEXT 类型存储
+
+**完整测试结果**:
+```bash
+# 用户：buyer001@test.com
+# 购买产品：AI智能写作助手 (ID=1)
+
+✅ Step 1: Login successful
+✅ Step 2: Add to cart (product_id=1)
+✅ Step 3: View cart (1 item)
+✅ Step 4: Checkout successful (Purchase ID: 2)
+✅ Step 5: Database verification
+   - user_purchases: product_id="1" (TEXT)
+   - product_buyers: product_id="1" (TEXT)
+✅ Step 6: My agents API returns purchased agent
+```
 
 ---
 
