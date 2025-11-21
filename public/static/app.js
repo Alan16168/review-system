@@ -3827,8 +3827,9 @@ async function showReviewDetail(id, readOnly = false) {
             ${questions.length > 0 ? questions.map(q => {
               const allAnswers = answersByQuestion[q.question_number] || [];
               // V6.7.0: Filter answers based on privacy settings
-              const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.user_id);
-              const myAnswer = userAnswers.find(a => a.user_id === currentUser.id);
+              const currentUserId = currentUser ? currentUser.id : null;
+              const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUserId, review.user_id);
+              const myAnswer = currentUserId ? userAnswers.find(a => a.user_id === currentUserId) : null;
               const questionId = `question-${q.question_number}`;
               const hiddenCount = allAnswers.length - userAnswers.length;
               
@@ -4176,6 +4177,13 @@ async function handleDeleteMyAnswer(reviewId, questionNumber) {
 
 async function showEditReview(id) {
   try {
+    // Check if user is logged in
+    if (!currentUser) {
+      showNotification('请先登录', 'error');
+      showLogin();
+      return;
+    }
+    
     console.log('[showEditReview] 开始加载复盘 ID:', id);
     const response = await axios.get(`/api/reviews/${id}`);
     console.log('[showEditReview] 服务器响应:', response.data);
@@ -4520,8 +4528,9 @@ async function showEditReview(id) {
                   // Time with text type - with auto-save time input
                   const allAnswers = answersByQuestion[q.question_number] || [];
                   // V6.7.0: Filter answers based on privacy settings
-                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.user_id);
-                  const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
+                  const currentUserId = currentUser ? currentUser.id : null;
+                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUserId, review.user_id);
+                  const myAnswersList = currentUserId ? userAnswers.filter(a => a.user_id === currentUserId) : [];
                   
                   // Get datetime value from first answer if exists
                   const existingDatetime = myAnswersList.length > 0 && myAnswersList[0].datetime_value 
@@ -4575,8 +4584,9 @@ async function showEditReview(id) {
                   // Default text type - show only question (no question_text label)
                   const allAnswers = answersByQuestion[q.question_number] || [];
                   // V6.7.0: Filter answers based on privacy settings
-                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUser.id, review.user_id);
-                  const myAnswersList = userAnswers.filter(a => a.user_id === currentUser.id);
+                  const currentUserId = currentUser ? currentUser.id : null;
+                  const userAnswers = filterAnswersByPrivacy(q, allAnswers, currentUserId, review.user_id);
+                  const myAnswersList = currentUserId ? userAnswers.filter(a => a.user_id === currentUserId) : [];
                   
                   return `
                     <div class="mb-6">
@@ -6112,6 +6122,13 @@ async function handleCreateTeam(e) {
 
 async function showTeamDetail(teamId) {
   try {
+    // Check if user is logged in
+    if (!currentUser) {
+      showNotification('请先登录', 'error');
+      showLogin();
+      return;
+    }
+    
     const response = await axios.get(`/api/teams/${teamId}`);
     const team = response.data.team;
     const members = response.data.members || [];
@@ -12581,6 +12598,13 @@ let allKeywords = [];
 async function loadKeywords() {
   console.log('Loading keywords...');
   try {
+    // Check if user is logged in
+    if (!currentUser) {
+      showNotification('请先登录', 'error');
+      showLogin();
+      return;
+    }
+    
     const response = await axios.get('/api/keywords', {
       headers: {
         'X-User-ID': currentUser.id,
@@ -12776,6 +12800,13 @@ async function handleAddKeyword(event) {
   event.preventDefault();
   event.stopPropagation();
   
+  // Check if user is logged in
+  if (!currentUser) {
+    showNotification('请先登录', 'error');
+    showLogin();
+    return;
+  }
+  
   const keyword = document.getElementById('keyword-text').value;
   const language = document.getElementById('keyword-language').value;
   const type = document.getElementById('keyword-type').value;
@@ -12872,6 +12903,13 @@ async function handleEditKeyword(event, id) {
   event.preventDefault();
   event.stopPropagation();
   
+  // Check if user is logged in
+  if (!currentUser) {
+    showNotification('请先登录', 'error');
+    showLogin();
+    return;
+  }
+  
   const keyword = document.getElementById('edit-keyword-text').value;
   const language = document.getElementById('edit-keyword-language').value;
   const type = document.getElementById('edit-keyword-type').value;
@@ -12901,6 +12939,13 @@ async function handleEditKeyword(event, id) {
 }
 
 async function deleteKeyword(id) {
+  // Check if user is logged in
+  if (!currentUser) {
+    showNotification('请先登录', 'error');
+    showLogin();
+    return;
+  }
+  
   const confirmMessage = i18n.t('confirmDeleteKeyword') || '确定要删除此关键词吗？';
   if (!confirm(confirmMessage)) return;
 
@@ -12926,6 +12971,13 @@ async function deleteKeyword(id) {
 }
 
 async function toggleKeywordStatus(id) {
+  // Check if user is logged in
+  if (!currentUser) {
+    showNotification('请先登录', 'error');
+    showLogin();
+    return;
+  }
+  
   try {
     await axios.patch(`/api/keywords/${id}/toggle`, {}, {
       headers: {
@@ -14670,14 +14722,7 @@ function showCreateWritingTemplateModal() {
                       placeholder="描述此模板的用途和特点..."></textarea>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              英文说明
-            </label>
-            <textarea id="template-description-en" rows="2"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Template description in English..."></textarea>
-          </div>
+
 
           <!-- Category and Display -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -15391,58 +15436,35 @@ function showAddFieldForm() {
           </div>
           
           <form onsubmit="submitAddField(event)" class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  字段键 <span class="text-red-600">*</span>
-                </label>
-                <input type="text" id="field-key" required
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                       placeholder="target_audience">
-                <p class="text-xs text-gray-500 mt-1">英文标识符，用于API调用</p>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  字段类型 <span class="text-red-600">*</span>
-                </label>
-                <select id="field-type" required onchange="handleFieldTypeChange()"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                  <option value="text">文本</option>
-                  <option value="textarea">多行文本</option>
-                  <option value="number">数字</option>
-                  <option value="select">下拉选择</option>
-                  <option value="radio">单选</option>
-                  <option value="checkbox">多选</option>
-                  <option value="date">日期</option>
-                  <option value="markdown">Markdown</option>
-                </select>
-              </div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  标签 <span class="text-red-600">*</span>
-                </label>
-                <input type="text" id="field-label" required
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                       placeholder="目标受众">
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  英文标签
-                </label>
-                <input type="text" id="field-label-en"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                       placeholder="Target Audience">
-              </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                字段类型 <span class="text-red-600">*</span>
+              </label>
+              <select id="field-type" required onchange="handleFieldTypeChange()"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="text">文本</option>
+                <option value="textarea">多行文本</option>
+                <option value="number">数字</option>
+                <option value="select">下拉选择</option>
+                <option value="radio">单选</option>
+                <option value="checkbox">多选</option>
+                <option value="date">日期</option>
+                <option value="markdown">Markdown</option>
+              </select>
             </div>
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                占位符
+                标签 <span class="text-red-600">*</span>
+              </label>
+              <input type="text" id="field-label" required
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="目标受众">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                问题
               </label>
               <input type="text" id="field-placeholder"
                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
@@ -15451,11 +15473,20 @@ function showAddFieldForm() {
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                帮助文本
+                使用说明
               </label>
               <textarea id="field-help-text" rows="2"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                         placeholder="描述此字段的用途..."></textarea>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                答案长度
+              </label>
+              <input type="number" id="field-answer-length"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="例如：500">
             </div>
             
             <div id="options-container" style="display:none;">
@@ -15516,16 +15547,19 @@ async function submitAddField(event) {
       options = optionsText.split('\n').filter(o => o.trim());
     }
     
+    const answerLength = document.getElementById('field-answer-length').value;
+    
     const fieldData = {
-      field_key: document.getElementById('field-key').value,
+      field_key: document.getElementById('field-label').value.replace(/\s+/g, '_').toLowerCase(),
       field_type: fieldType,
       label: document.getElementById('field-label').value,
-      label_en: document.getElementById('field-label-en').value || null,
+      label_en: null,
       placeholder: document.getElementById('field-placeholder').value || null,
       help_text: document.getElementById('field-help-text').value || null,
       options_json: options,
       is_required: document.getElementById('field-required').checked,
-      sort_order: currentTemplateFields.length + 1
+      sort_order: currentTemplateFields.length + 1,
+      answer_length: answerLength ? parseInt(answerLength) : null
     };
     
     const response = await axios.post(`/api/writing-templates/${currentEditingTemplateId}/fields`, fieldData);
@@ -15563,58 +15597,35 @@ async function showEditFieldForm(fieldId) {
           </div>
           
           <form onsubmit="submitEditField(event, ${fieldId})" class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  字段键 <span class="text-red-600">*</span>
-                </label>
-                <input type="text" id="field-key" required value="${escapeHtml(field.field_key)}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                       placeholder="target_audience">
-                <p class="text-xs text-gray-500 mt-1">英文标识符，用于API调用</p>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  字段类型 <span class="text-red-600">*</span>
-                </label>
-                <select id="field-type" required onchange="handleFieldTypeChange()"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                  <option value="text" ${field.field_type === 'text' ? 'selected' : ''}>文本</option>
-                  <option value="textarea" ${field.field_type === 'textarea' ? 'selected' : ''}>多行文本</option>
-                  <option value="number" ${field.field_type === 'number' ? 'selected' : ''}>数字</option>
-                  <option value="select" ${field.field_type === 'select' ? 'selected' : ''}>下拉选择</option>
-                  <option value="radio" ${field.field_type === 'radio' ? 'selected' : ''}>单选</option>
-                  <option value="checkbox" ${field.field_type === 'checkbox' ? 'selected' : ''}>多选</option>
-                  <option value="date" ${field.field_type === 'date' ? 'selected' : ''}>日期</option>
-                  <option value="markdown" ${field.field_type === 'markdown' ? 'selected' : ''}>Markdown</option>
-                </select>
-              </div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  标签 <span class="text-red-600">*</span>
-                </label>
-                <input type="text" id="field-label" required value="${escapeHtml(field.label)}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                       placeholder="目标受众">
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  英文标签
-                </label>
-                <input type="text" id="field-label-en" value="${escapeHtml(field.label_en || '')}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                       placeholder="Target Audience">
-              </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                字段类型 <span class="text-red-600">*</span>
+              </label>
+              <select id="field-type" required onchange="handleFieldTypeChange()"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="text" ${field.field_type === 'text' ? 'selected' : ''}>文本</option>
+                <option value="textarea" ${field.field_type === 'textarea' ? 'selected' : ''}>多行文本</option>
+                <option value="number" ${field.field_type === 'number' ? 'selected' : ''}>数字</option>
+                <option value="select" ${field.field_type === 'select' ? 'selected' : ''}>下拉选择</option>
+                <option value="radio" ${field.field_type === 'radio' ? 'selected' : ''}>单选</option>
+                <option value="checkbox" ${field.field_type === 'checkbox' ? 'selected' : ''}>多选</option>
+                <option value="date" ${field.field_type === 'date' ? 'selected' : ''}>日期</option>
+                <option value="markdown" ${field.field_type === 'markdown' ? 'selected' : ''}>Markdown</option>
+              </select>
             </div>
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                占位符
+                标签 <span class="text-red-600">*</span>
+              </label>
+              <input type="text" id="field-label" required value="${escapeHtml(field.label)}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="目标受众">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                问题
               </label>
               <input type="text" id="field-placeholder" value="${escapeHtml(field.placeholder || '')}"
                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
@@ -15623,11 +15634,20 @@ async function showEditFieldForm(fieldId) {
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                帮助文本
+                使用说明
               </label>
               <textarea id="field-help-text" rows="2"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                         placeholder="描述此字段的用途...">${escapeHtml(field.help_text || '')}</textarea>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                答案长度
+              </label>
+              <input type="number" id="field-answer-length" value="${field.answer_length || ''}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="例如：500">
             </div>
             
             <div id="options-container" style="display:${field.field_type === 'select' || field.field_type === 'radio' || field.field_type === 'checkbox' ? 'block' : 'none'};">
@@ -15677,15 +15697,18 @@ async function submitEditField(event, fieldId) {
       options = optionsText.split('\n').filter(o => o.trim());
     }
     
+    const answerLength = document.getElementById('field-answer-length').value;
+    
     const fieldData = {
-      field_key: document.getElementById('field-key').value,
+      field_key: document.getElementById('field-label').value.replace(/\s+/g, '_').toLowerCase(),
       field_type: fieldType,
       label: document.getElementById('field-label').value,
-      label_en: document.getElementById('field-label-en').value || null,
+      label_en: null,
       placeholder: document.getElementById('field-placeholder').value || null,
       help_text: document.getElementById('field-help-text').value || null,
       options_json: options,
-      is_required: document.getElementById('field-required').checked
+      is_required: document.getElementById('field-required').checked,
+      answer_length: answerLength ? parseInt(answerLength) : null
     };
     
     const response = await axios.put(`/api/writing-templates/${currentEditingTemplateId}/fields/${fieldId}`, fieldData);
