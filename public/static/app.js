@@ -13679,7 +13679,7 @@ function getCategoryBadgeColor(category) {
 function showCreateProductModal() {
   const modal = document.createElement('div');
   modal.id = 'product-modal';
-  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]';
   modal.innerHTML = `
     <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
       <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
@@ -13798,7 +13798,7 @@ async function editMarketplaceProduct(productId) {
 
     const modal = document.createElement('div');
     modal.id = 'product-modal';
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]';
     modal.innerHTML = `
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
@@ -13825,11 +13825,11 @@ async function editMarketplaceProduct(productId) {
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
-            <select id="product-category" required
+            <select id="product-type" required
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="ai_agent" ${product.category === 'ai_agent' ? 'selected' : ''}>AI 智能体</option>
-              <option value="template" ${product.category === 'template' ? 'selected' : ''}>模板</option>
-              <option value="other" ${product.category === 'other' ? 'selected' : ''}>其他</option>
+              <option value="ai_service" ${product.product_type === 'ai_service' ? 'selected' : ''}>AI Service</option>
+              <option value="template" ${product.product_type === 'template' ? 'selected' : ''}>Template</option>
+              <option value="book_template" ${product.product_type === 'book_template' ? 'selected' : ''}>Book Template</option>
             </select>
           </div>
 
@@ -13890,7 +13890,7 @@ async function handleUpdateProduct(e, productId) {
   const data = {
     name: document.getElementById('product-name').value,
     description: document.getElementById('product-description').value,
-    category: document.getElementById('product-category').value,
+    product_type: document.getElementById('product-type').value,
     price_user: parseFloat(document.getElementById('product-price-user').value),
     price_premium: parseFloat(document.getElementById('product-price-premium').value),
     price_super: parseFloat(document.getElementById('product-price-super').value),
