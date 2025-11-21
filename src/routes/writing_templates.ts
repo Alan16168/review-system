@@ -3,6 +3,7 @@
 
 import { Hono } from 'hono';
 import type { Context } from 'hono';
+import { authMiddleware, adminOnly } from '../middleware/auth';
 
 type Bindings = {
   DB: D1Database;
@@ -10,16 +11,39 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// ============================================================================
-// Helper: Check if user is admin
-// ============================================================================
-function checkAdminRole(c: Context): boolean {
-  const user = c.get('user');
-  if (!user || user.role !== 'admin') {
-    return false;
+// Apply auth middleware only to mutation routes (POST, PUT, DELETE)
+// GET routes should work for both authenticated and non-authenticated users
+app.use('/', async (c, next) => {
+  const method = c.req.method;
+  if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+    return authMiddleware(c, next);
   }
-  return true;
-}
+  // For GET requests, try to get user but don't require it
+  const authHeader = c.req.header('Authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.substring(7);
+      const jwtSecret = c.env.JWT_SECRET;
+      const { verifyToken } = await import('../utils/auth');
+      const user = verifyToken(token, jwtSecret);
+      if (user) {
+        c.set('user', user);
+      }
+    } catch (error) {
+      // Ignore auth errors for GET requests
+    }
+  }
+  await next();
+});
+
+// Admin-only middleware for mutation routes
+app.use('/', async (c, next) => {
+  const method = c.req.method;
+  if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+    return adminOnly(c, next);
+  }
+  await next();
+});
 
 // ============================================================================
 // GET /api/writing-templates - Get all writing templates
@@ -117,10 +141,6 @@ app.get('/:id', async (c) => {
 // ============================================================================
 app.post('/', async (c) => {
   try {
-    if (!checkAdminRole(c)) {
-      return c.json({ error: 'Unauthorized - Admin access required' }, 403);
-    }
-
     const { DB } = c.env;
     const user = c.get('user');
     const body = await c.req.json();
@@ -242,10 +262,6 @@ app.post('/', async (c) => {
 // ============================================================================
 app.put('/:id', async (c) => {
   try {
-    if (!checkAdminRole(c)) {
-      return c.json({ error: 'Unauthorized - Admin access required' }, 403);
-    }
-
     const { DB } = c.env;
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -346,10 +362,6 @@ app.put('/:id', async (c) => {
 // ============================================================================
 app.delete('/:id', async (c) => {
   try {
-    if (!checkAdminRole(c)) {
-      return c.json({ error: 'Unauthorized - Admin access required' }, 403);
-    }
-
     const { DB } = c.env;
     const id = parseInt(c.req.param('id'));
 
@@ -384,10 +396,6 @@ app.delete('/:id', async (c) => {
 // ============================================================================
 app.post('/:id/fields', async (c) => {
   try {
-    if (!checkAdminRole(c)) {
-      return c.json({ error: 'Unauthorized - Admin access required' }, 403);
-    }
-
     const { DB } = c.env;
     const templateId = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -477,10 +485,6 @@ app.post('/:id/fields', async (c) => {
 // ============================================================================
 app.put('/:id/fields/:fieldId', async (c) => {
   try {
-    if (!checkAdminRole(c)) {
-      return c.json({ error: 'Unauthorized - Admin access required' }, 403);
-    }
-
     const { DB } = c.env;
     const templateId = parseInt(c.req.param('id'));
     const fieldId = parseInt(c.req.param('fieldId'));
@@ -577,10 +581,6 @@ app.put('/:id/fields/:fieldId', async (c) => {
 // ============================================================================
 app.delete('/:id/fields/:fieldId', async (c) => {
   try {
-    if (!checkAdminRole(c)) {
-      return c.json({ error: 'Unauthorized - Admin access required' }, 403);
-    }
-
     const { DB } = c.env;
     const templateId = parseInt(c.req.param('id'));
     const fieldId = parseInt(c.req.param('fieldId'));
