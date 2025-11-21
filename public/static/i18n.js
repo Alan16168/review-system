@@ -644,7 +644,7 @@ const translations = {
     
     // Template Management
     'templateManagement': '模板',
-    'templates': '模板',
+    'templates': '复盘模板',
     'templateName': '模板名称',
     'templateOwner': '模板可见性',
     'templateOwnerPrivate': '私人',
@@ -792,7 +792,7 @@ const translations = {
     'allProducts': '全部',
     'aiAgent': 'AI 智能体',
     'aiAgents': 'AI 智能体',
-    'templates': '模板',
+    'templates': '复盘模板',
     'other': '其他',
     'productName': '产品名称',
     'productDescription': '产品描述',
@@ -1542,7 +1542,7 @@ const translations = {
     
     // Template Management
     'templateManagement': 'Templates',
-    'templates': 'Templates',
+    'templates': 'Review Templates',
     'templateName': 'Template Name',
     'templateOwner': 'Template Visibility',
     'templateOwnerPrivate': 'Private',
@@ -1690,7 +1690,7 @@ const translations = {
     'allProducts': 'All',
     'aiAgent': 'AI Agent',
     'aiAgents': 'AI Agents',
-    'templates': 'Templates',
+    'templates': 'Review Templates',
     'other': 'Other',
     'productName': 'Product Name',
     'productDescription': 'Product Description',
@@ -2437,7 +2437,7 @@ const translations = {
     
     // Template Management
     'templateManagement': 'テンプレート',
-    'templates': 'Templates',
+    'templates': 'Review Templates',
     'templateName': 'テンプレート名',
     'templateOwner': 'テンプレートの可視性',
     'templateOwnerPrivate': 'プライベート',
@@ -2585,7 +2585,7 @@ const translations = {
     'allProducts': 'すべて',
     'aiAgent': 'AIエージェント',
     'aiAgents': 'AIエージェント',
-    'templates': 'テンプレート',
+    'templates': 'レビューテンプレート',
     'other': 'その他',
     'productName': '製品名',
     'productDescription': '製品説明',
@@ -3332,7 +3332,7 @@ const translations = {
     
     // Template Management
     'templateManagement': 'Plantillas',
-    'templates': 'Templates',
+    'templates': 'Review Templates',
     'templateName': 'Nombre de Plantilla',
     'templateOwner': 'Visibilidad de Plantilla',
     'templateOwnerPrivate': 'Privado',
@@ -3477,7 +3477,7 @@ const translations = {
     'allProducts': 'Todos',
     'aiAgent': 'Agente IA',
     'aiAgents': 'Agentes IA',
-    'templates': 'Plantillas',
+    'templates': 'Plantillas de Revisión',
     'other': 'Otros',
     'productName': 'Nombre del Producto',
     'productDescription': 'Descripción del Producto',
@@ -4234,7 +4234,7 @@ const translations = {
     
     // Template Management
     'templateManagement': '模板',
-    'templates': '模板',
+    'templates': '復盤模板',
     'templateName': '模板名称',
     'templateOwner': '模板可见性',
     'templateOwnerPrivate': '私人',
@@ -4381,7 +4381,7 @@ const translations = {
     'allProducts': '全部',
     'aiAgent': 'AI 智能體',
     'aiAgents': 'AI 智能體',
-    'templates': '模板',
+    'templates': '復盤模板',
     'other': '其他',
     'productName': '產品名稱',
     'productDescription': '產品描述',
@@ -5131,7 +5131,7 @@ const translations = {
     
     // Template Management
     'templateManagement': 'Templates',
-    'templates': 'Templates',
+    'templates': 'Review Templates',
     'templateName': 'Nom du modèle',
     'templateOwner': 'Template Visibility',
     'templateOwnerPrivate': 'Privé',
@@ -5278,7 +5278,7 @@ const translations = {
     'allProducts': 'Tous',
     'aiAgent': 'Agent IA',
     'aiAgents': 'Agents IA',
-    'templates': 'Modèles',
+    'templates': 'Modèles de Révision',
     'other': 'Autres',
     'productName': 'Nom du Produit',
     'productDescription': 'Description du Produit',
