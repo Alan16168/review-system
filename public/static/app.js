@@ -15165,24 +15165,13 @@ function showCreateWritingTemplateModal() {
         <!-- Modal Content -->
         <form onsubmit="submitWritingTemplate(event)" class="p-6 space-y-4">
           <!-- Basic Info -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                模板名称 <span class="text-red-600">*</span>
-              </label>
-              <input type="text" id="template-name" required
-                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                     placeholder="例如：商业书籍模板">
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                英文名称
-              </label>
-              <input type="text" id="template-name-en"
-                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                     placeholder="Business Book Template">
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              模板名称 <span class="text-red-600">*</span>
+            </label>
+            <input type="text" id="template-name" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                   placeholder="例如：商业书籍模板">
           </div>
 
           <!-- Description -->
@@ -15197,11 +15186,24 @@ function showCreateWritingTemplateModal() {
 
 
 
-          <!-- Category and Display -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Product Type and Category -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 分类 <span class="text-red-600">*</span>
+              </label>
+              <select id="template-product-type" required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="ai_agent">AIAgent</option>
+                <option value="review_template">Review Template</option>
+                <option value="writing_template" selected>Writing Template</option>
+                <option value="other">Others</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                写作分类 <span class="text-red-600">*</span>
               </label>
               <select id="template-category" required
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
@@ -15217,7 +15219,10 @@ function showCreateWritingTemplateModal() {
                 <option value="custom">自定义</option>
               </select>
             </div>
+          </div>
 
+          <!-- Icon and Color -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 图标
@@ -15340,9 +15345,8 @@ async function submitWritingTemplate(event) {
   try {
     const templateData = {
       name: document.getElementById('template-name').value,
-      name_en: document.getElementById('template-name-en').value || null,
       description: document.getElementById('template-description').value,
-      description_en: document.getElementById('template-description-en').value || null,
+      product_type: document.getElementById('template-product-type').value,
       category: document.getElementById('template-category').value,
       icon: document.getElementById('template-icon').value || 'book',
       color: document.getElementById('template-color').value || 'blue',
@@ -15504,24 +15508,13 @@ async function showEditWritingTemplateModal(templateId) {
           <!-- Modal Content -->
           <form onsubmit="submitEditWritingTemplate(event, ${templateId})" class="p-6 space-y-4">
             <!-- Basic Info -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  模板名称 <span class="text-red-600">*</span>
-                </label>
-                <input type="text" id="template-name" required value="${escapeHtml(template.name)}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                       placeholder="例如：商业书籍模板">
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  英文名称
-                </label>
-                <input type="text" id="template-name-en" value="${escapeHtml(template.name_en || '')}"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                       placeholder="Business Book Template">
-              </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                模板名称 <span class="text-red-600">*</span>
+              </label>
+              <input type="text" id="template-name" required value="${escapeHtml(template.name)}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="例如：商业书籍模板">
             </div>
 
             <!-- Description -->
@@ -15534,20 +15527,26 @@ async function showEditWritingTemplateModal(templateId) {
                         placeholder="描述此模板的用途和特点...">${escapeHtml(template.description || '')}</textarea>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                英文说明
-              </label>
-              <textarea id="template-description-en" rows="2"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                        placeholder="Template description in English...">${escapeHtml(template.description_en || '')}</textarea>
-            </div>
 
-            <!-- Category and Display -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <!-- Product Type and Category -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   分类 <span class="text-red-600">*</span>
+                </label>
+                <select id="template-product-type" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="ai_agent" ${template.product_type === 'ai_agent' ? 'selected' : ''}>AIAgent</option>
+                  <option value="review_template" ${template.product_type === 'review_template' ? 'selected' : ''}>Review Template</option>
+                  <option value="writing_template" ${template.product_type === 'writing_template' || !template.product_type ? 'selected' : ''}>Writing Template</option>
+                  <option value="other" ${template.product_type === 'other' ? 'selected' : ''}>Others</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  写作分类 <span class="text-red-600">*</span>
                 </label>
                 <select id="template-category" required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
@@ -15563,7 +15562,10 @@ async function showEditWritingTemplateModal(templateId) {
                   <option value="custom" ${template.category === 'custom' ? 'selected' : ''}>自定义</option>
                 </select>
               </div>
+            </div>
 
+            <!-- Icon and Color -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   图标
@@ -15738,9 +15740,8 @@ async function submitEditWritingTemplate(event, templateId) {
   try {
     const templateData = {
       name: document.getElementById('template-name').value,
-      name_en: document.getElementById('template-name-en').value || null,
       description: document.getElementById('template-description').value,
-      description_en: document.getElementById('template-description-en').value || null,
+      product_type: document.getElementById('template-product-type').value,
       category: document.getElementById('template-category').value,
       icon: document.getElementById('template-icon').value || 'book',
       color: document.getElementById('template-color').value || 'blue',

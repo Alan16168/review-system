@@ -150,6 +150,7 @@ app.post('/', async (c) => {
       name_en,
       description,
       description_en,
+      product_type,
       category,
       icon,
       color,
@@ -174,10 +175,10 @@ app.post('/', async (c) => {
     const result = await DB.prepare(`
       INSERT INTO ai_writing_templates (
         owner_id, owner_type, name, name_en, description, description_en,
-        category, icon, color, tags,
+        product_type, category, icon, color, tags,
         default_tone, default_audience, default_language, default_target_words,
         is_active, is_public, is_featured
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       user.id,
       'individual',
@@ -185,6 +186,7 @@ app.post('/', async (c) => {
       name_en || null,
       description || null,
       description_en || null,
+      product_type || 'writing_template',
       category,
       icon || 'book',
       color || 'blue',
@@ -280,6 +282,7 @@ app.put('/:id', async (c) => {
       name_en,
       description,
       description_en,
+      product_type,
       category,
       icon,
       color,
@@ -303,6 +306,7 @@ app.put('/:id', async (c) => {
         name_en = ?,
         description = ?,
         description_en = ?,
+        product_type = ?,
         category = ?,
         icon = ?,
         color = ?,
@@ -324,6 +328,7 @@ app.put('/:id', async (c) => {
       name_en || null,
       description || null,
       description_en || null,
+      product_type || 'writing_template',
       category,
       icon || 'book',
       color || 'blue',
