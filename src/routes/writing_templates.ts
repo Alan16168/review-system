@@ -290,7 +290,10 @@ app.put('/:id', async (c) => {
       default_target_words,
       is_public,
       is_featured,
-      is_active
+      is_active,
+      price_user,
+      price_premium,
+      price_super
     } = body;
 
     // Update template
@@ -311,6 +314,9 @@ app.put('/:id', async (c) => {
         is_public = ?,
         is_featured = ?,
         is_active = ?,
+        price_user = ?,
+        price_premium = ?,
+        price_super = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
@@ -329,6 +335,9 @@ app.put('/:id', async (c) => {
       is_public ? 1 : 0,
       is_featured ? 1 : 0,
       is_active !== undefined ? (is_active ? 1 : 0) : 1,
+      price_user !== undefined ? parseFloat(price_user) : 0,
+      price_premium !== undefined ? parseFloat(price_premium) : 0,
+      price_super !== undefined ? parseFloat(price_super) : 0,
       id
     ).run();
 

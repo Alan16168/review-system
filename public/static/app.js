@@ -6519,13 +6519,6 @@ function showAdminCategory(category) {
                       data-subtab="publicReviews">
                 <i class="fas fa-globe mr-2"></i>公开复盘
               </button>
-            ` : ''}
-            <button onclick="showAdminSubTab('templates')" 
-                    class="admin-subtab ${currentUser.role === 'premium' ? 'active' : ''} py-3 px-1 border-b-2 font-medium"
-                    data-subtab="templates">
-              <i class="fas fa-clipboard-list mr-2"></i>复盘模板
-            </button>
-            ${currentUser.role === 'admin' ? `
               <button onclick="showAdminSubTab('keywords')" 
                       class="admin-subtab py-3 px-1 border-b-2 font-medium"
                       data-subtab="keywords">
@@ -6567,10 +6560,15 @@ function showAdminCategory(category) {
                     data-subtab="marketplace-agents">
               <i class="fas fa-robot mr-2"></i>智能体
             </button>
-            <button onclick="showAdminSubTab('marketplace-templates')" 
+            <button onclick="showAdminSubTab('writing-templates')" 
                     class="admin-subtab py-3 px-1 border-b-2 font-medium"
-                    data-subtab="marketplace-templates">
+                    data-subtab="writing-templates">
               <i class="fas fa-file-alt mr-2"></i>写作模板
+            </button>
+            <button onclick="showAdminSubTab('templates')" 
+                    class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                    data-subtab="templates">
+              <i class="fas fa-clipboard-list mr-2"></i>复盘模板
             </button>
             <button onclick="showAdminSubTab('marketplace-other')" 
                     class="admin-subtab py-3 px-1 border-b-2 font-medium"
@@ -6635,8 +6633,8 @@ async function showAdminSubTab(subtab) {
     case 'marketplace-agents':
       await showMarketplaceAgentsManagement(content);
       break;
-    case 'marketplace-templates':
-      await showMarketplaceTemplatesManagement(content);
+    case 'writing-templates':
+      await loadWritingTemplates();
       break;
     case 'marketplace-other':
       await showMarketplaceOtherManagement(content);
@@ -6649,7 +6647,7 @@ async function showAdminTab(tab) {
   // Map old tab names to new structure
   const tabMapping = {
     'users': ['system', 'users'],
-    'templates': ['system', 'templates'],
+    'templates': ['marketplace', 'templates'],
     'notifications': ['system', 'notifications'],
     'stats': ['system', 'stats'],
     'testimonials': ['system', 'testimonials'],
@@ -8462,7 +8460,7 @@ function renderTemplatesTable(templates) {
               ${i18n.t('questionCount')}
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              ${i18n.t('templatePrice')}
+              ${i18n.t('templatePrice')} (普通/高级/超级)
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ${i18n.t('templateOwner')}
@@ -8504,10 +8502,15 @@ function renderTemplatesTable(templates) {
                 <span class="text-sm text-gray-900">${template.question_count}</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="text-sm font-medium text-gray-900">
-                  ${template.price > 0 ? `$${parseFloat(template.price).toFixed(2)}` : 
+                <div class="text-sm font-medium text-gray-900">
+                  ${(template.price_basic > 0 || template.price_premium > 0 || template.price_super > 0) ? 
+                    `<div class="flex flex-col space-y-1">
+                      <span class="text-xs text-gray-600">普通: $${parseFloat(template.price_basic || 0).toFixed(2)}</span>
+                      <span class="text-xs text-blue-600">高级: $${parseFloat(template.price_premium || 0).toFixed(2)}</span>
+                      <span class="text-xs text-purple-600">超级: $${parseFloat(template.price_super || 0).toFixed(2)}</span>
+                    </div>` : 
                     `<span class="text-green-600">${i18n.t('free')}</span>`}
-                </span>
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -8716,12 +8719,47 @@ async function showEditTemplateModal(templateId) {
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   ${i18n.t('templatePrice')}
                 </label>
-                <div class="flex items-center">
-                  <span class="text-gray-600 mr-2">$</span>
-                  <input type="number" id="template-price" min="0" step="0.01" value="${template.price || 0}"
-                         class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                         placeholder="0.00">
-                  <span class="text-gray-600 ml-2">USD</span>
+                
+                <!-- 普通会员价 -->
+                <div class="mb-3">
+                  <label class="block text-xs font-medium text-gray-600 mb-1">
+                    普通会员价
+                  </label>
+                  <div class="flex items-center">
+                    <span class="text-gray-600 mr-2">$</span>
+                    <input type="number" id="template-price-basic" min="0" step="0.01" value="${template.price_basic || 0}"
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           placeholder="0.00">
+                    <span class="text-gray-600 ml-2">USD</span>
+                  </div>
+                </div>
+                
+                <!-- 高级会员价 -->
+                <div class="mb-3">
+                  <label class="block text-xs font-medium text-gray-600 mb-1">
+                    高级会员价
+                  </label>
+                  <div class="flex items-center">
+                    <span class="text-gray-600 mr-2">$</span>
+                    <input type="number" id="template-price-premium" min="0" step="0.01" value="${template.price_premium || 0}"
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           placeholder="0.00">
+                    <span class="text-gray-600 ml-2">USD</span>
+                  </div>
+                </div>
+                
+                <!-- 超级会员价 -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">
+                    超级会员价
+                  </label>
+                  <div class="flex items-center">
+                    <span class="text-gray-600 mr-2">$</span>
+                    <input type="number" id="template-price-super" min="0" step="0.01" value="${template.price_super || 0}"
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           placeholder="0.00">
+                    <span class="text-gray-600 ml-2">USD</span>
+                  </div>
                 </div>
               </div>
               <div>
@@ -8783,11 +8821,16 @@ async function handleUpdateTemplate(e, templateId) {
   e.preventDefault();
   
   const isDefaultCheckbox = document.getElementById('template-is-default');
-  const priceValue = parseFloat(document.getElementById('template-price').value) || 0;
+  const priceBasic = parseFloat(document.getElementById('template-price-basic').value) || 0;
+  const pricePremium = parseFloat(document.getElementById('template-price-premium').value) || 0;
+  const priceSuper = parseFloat(document.getElementById('template-price-super').value) || 0;
+  
   const data = {
     name: document.getElementById('template-name').value,
     description: document.getElementById('template-description').value || null,
-    price: priceValue,
+    price_basic: priceBasic,
+    price_premium: pricePremium,
+    price_super: priceSuper,
     is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false,
     is_active: document.getElementById('template-is-active').checked,
     owner: document.getElementById('template-owner').value
@@ -13925,30 +13968,24 @@ async function loadMarketplaceProducts() {
 function getCategoryIcon(category) {
   const icons = {
     'ai_service': 'robot',
-    'template': 'file-alt',
-    'book_template': 'book',
+    'writing_template': 'file-alt',
+    'review_template': 'clipboard-list',
+    'template': 'file-alt',  // legacy
+    'book_template': 'book',  // legacy
     'other': 'box'
   };
   return icons[category] || 'box';
 }
 
 function getCategoryName(category) {
-  // Use i18n if available
-  if (typeof i18n !== 'undefined') {
-    const keys = {
-      'ai_service': 'aiAgent',
-      'template': 'templates',
-      'book_template': 'templates',
-      'other': 'other'
-    };
-    return i18n.t(keys[category] || 'other');
-  }
-  // Fallback
+  // Direct Chinese names
   const names = {
-    'ai_service': 'AI Agent',
-    'template': 'Template',
-    'book_template': 'Book Template',
-    'other': 'Other'
+    'ai_service': '智能体',
+    'writing_template': '写作模板',
+    'review_template': '复盘模板',
+    'template': '模板',  // legacy
+    'book_template': '书籍模板',  // legacy
+    'other': '其他'
   };
   return names[category] || category;
 }
@@ -13956,8 +13993,10 @@ function getCategoryName(category) {
 function getCategoryBadgeColor(category) {
   const colors = {
     'ai_service': 'bg-purple-100 text-purple-800',
-    'template': 'bg-blue-100 text-blue-800',
-    'book_template': 'bg-green-100 text-green-800',
+    'writing_template': 'bg-blue-100 text-blue-800',
+    'review_template': 'bg-green-100 text-green-800',
+    'template': 'bg-blue-100 text-blue-800',  // legacy
+    'book_template': 'bg-green-100 text-green-800',  // legacy
     'other': 'bg-gray-100 text-gray-800'
   };
   return colors[category] || 'bg-gray-100 text-gray-800';
@@ -14081,13 +14120,17 @@ async function reloadMarketplaceProducts() {
   // Check current admin sub-tab
   if (currentAdminSubTab === 'marketplace-agents') {
     await loadMarketplaceProductsByCategory('ai_service');
-  } else if (currentAdminSubTab === 'marketplace-templates') {
-    await loadMarketplaceProductsByCategory('template');
+  } else if (currentAdminSubTab === 'marketplace-writing-templates') {
+    await loadMarketplaceProductsByCategory('writing_template');
   } else if (currentAdminSubTab === 'marketplace-other') {
     await loadMarketplaceProductsByCategory('other');
   } else if (currentAdminSubTab === 'subscription') {
     // Subscription tab uses the old showSubscriptionManagement
     // No need to reload here as it manages differently
+  } else if (currentAdminSubTab === 'templates') {
+    // Templates tab - reload the templates management
+    const content = document.getElementById('admin-content');
+    await showTemplatesManagement(content);
   } else {
     // Fallback to load all products (for old marketplace management)
     await loadMarketplaceProducts();
@@ -14130,9 +14173,10 @@ async function editMarketplaceProduct(productId) {
             <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
             <select id="product-type" required
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="ai_service" ${product.product_type === 'ai_service' ? 'selected' : ''}>AI Service</option>
-              <option value="template" ${product.product_type === 'template' ? 'selected' : ''}>Template</option>
-              <option value="book_template" ${product.product_type === 'book_template' ? 'selected' : ''}>Book Template</option>
+              <option value="ai_service" ${product.product_type === 'ai_service' ? 'selected' : ''}>智能体 (AI Agent)</option>
+              <option value="writing_template" ${product.product_type === 'writing_template' ? 'selected' : ''}>写作模板 (Writing Template)</option>
+              <option value="review_template" ${product.product_type === 'review_template' ? 'selected' : ''}>复盘模板 (Review Template)</option>
+              <option value="other" ${product.product_type === 'other' ? 'selected' : ''}>其他产品 (Others)</option>
             </select>
           </div>
 
@@ -14247,14 +14291,14 @@ function closeProductModal() {
 // Marketplace Management - Split by Product Type
 // ============================================================
 
-// 订阅管理
+// 智能体产品管理
 async function showMarketplaceAgentsManagement(container) {
-  await showMarketplaceProductsByCategory(container, 'ai_service', '智能体管理', 'robot');
+  await showMarketplaceProductsByCategory(container, 'ai_service', '智能体产品管理', 'robot');
 }
 
-// 写作模板管理
-async function showMarketplaceTemplatesManagement(container) {
-  await showMarketplaceProductsByCategory(container, 'template', '写作模板管理', 'file-alt');
+// 写作模板产品管理
+async function showMarketplaceWritingTemplatesManagement(container) {
+  await showMarketplaceProductsByCategory(container, 'writing_template', '写作模板产品管理', 'file-alt');
 }
 
 // 其他产品管理
@@ -14421,9 +14465,10 @@ function showCreateProductModalWithCategory(preselectedCategory) {
           <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
           <select id="product-type" required
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="ai_service" ${preselectedCategory === 'ai_service' ? 'selected' : ''}>智能体</option>
-            <option value="template" ${preselectedCategory === 'template' ? 'selected' : ''}>写作模板</option>
-            <option value="other" ${preselectedCategory === 'other' ? 'selected' : ''}>其他产品</option>
+            <option value="ai_service" ${preselectedCategory === 'ai_service' ? 'selected' : ''}>智能体 (AI Agent)</option>
+            <option value="writing_template" ${preselectedCategory === 'writing_template' ? 'selected' : ''}>写作模板 (Writing Template)</option>
+            <option value="review_template" ${preselectedCategory === 'review_template' ? 'selected' : ''}>复盘模板 (Review Template)</option>
+            <option value="other" ${preselectedCategory === 'other' ? 'selected' : ''}>其他产品 (Others)</option>
           </select>
         </div>
 
@@ -14914,7 +14959,12 @@ const MarketplaceManager = {
 // ============================================================================
 
 async function loadWritingTemplates() {
-  const contentDiv = document.getElementById('ai-settings-content');
+  // Check if we're in ai-settings-content (from AI Settings page) or admin-content (from Marketplace)
+  let contentDiv = document.getElementById('ai-settings-content');
+  if (!contentDiv) {
+    contentDiv = document.getElementById('admin-content');
+  }
+  
   contentDiv.innerHTML = `
     <div class="bg-white rounded-lg shadow-md p-6">
       <div class="flex justify-between items-center mb-4">
@@ -14986,6 +15036,9 @@ function renderWritingTemplatesTable(templates) {
               分类
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              价格 (普通/高级/超级)
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               可见性
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -15029,6 +15082,17 @@ function renderWritingTemplatesTable(templates) {
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="text-sm text-gray-700">${template.category}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">
+                  ${(template.price_user > 0 || template.price_premium > 0 || template.price_super > 0) ? 
+                    `<div class="flex flex-col space-y-1">
+                      <span class="text-xs text-gray-600">普通: $${parseFloat(template.price_user || 0).toFixed(2)}</span>
+                      <span class="text-xs text-blue-600">高级: $${parseFloat(template.price_premium || 0).toFixed(2)}</span>
+                      <span class="text-xs text-purple-600">超级: $${parseFloat(template.price_super || 0).toFixed(2)}</span>
+                    </div>` : 
+                    `<span class="text-green-600">免费</span>`}
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -15582,6 +15646,54 @@ async function showEditWritingTemplateModal(templateId) {
               </div>
             </div>
 
+            <!-- Pricing Settings -->
+            <div class="border-t border-gray-200 pt-4 mt-4">
+              <h4 class="font-medium text-gray-800 mb-3">价格设置</h4>
+              <div class="space-y-3">
+                <!-- 普通会员价 -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">
+                    普通会员价
+                  </label>
+                  <div class="flex items-center">
+                    <span class="text-gray-600 mr-2">$</span>
+                    <input type="number" id="template-price-user" min="0" step="0.01" value="${template.price_user || 0}"
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           placeholder="0.00">
+                    <span class="text-gray-600 ml-2">USD</span>
+                  </div>
+                </div>
+                
+                <!-- 高级会员价 -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">
+                    高级会员价
+                  </label>
+                  <div class="flex items-center">
+                    <span class="text-gray-600 mr-2">$</span>
+                    <input type="number" id="template-price-premium" min="0" step="0.01" value="${template.price_premium || 0}"
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           placeholder="0.00">
+                    <span class="text-gray-600 ml-2">USD</span>
+                  </div>
+                </div>
+                
+                <!-- 超级会员价 -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 mb-1">
+                    超级会员价
+                  </label>
+                  <div class="flex items-center">
+                    <span class="text-gray-600 mr-2">$</span>
+                    <input type="number" id="template-price-super" min="0" step="0.01" value="${template.price_super || 0}"
+                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           placeholder="0.00">
+                    <span class="text-gray-600 ml-2">USD</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Visibility Settings -->
             <div class="border-t border-gray-200 pt-4 mt-4">
               <h4 class="font-medium text-gray-800 mb-3">可见性设置</h4>
@@ -15637,7 +15749,10 @@ async function submitEditWritingTemplate(event, templateId) {
       default_language: document.getElementById('template-language').value,
       default_target_words: parseInt(document.getElementById('template-target-words').value),
       is_public: document.getElementById('template-public').checked,
-      is_featured: document.getElementById('template-featured').checked
+      is_featured: document.getElementById('template-featured').checked,
+      price_user: parseFloat(document.getElementById('template-price-user').value) || 0,
+      price_premium: parseFloat(document.getElementById('template-price-premium').value) || 0,
+      price_super: parseFloat(document.getElementById('template-price-super').value) || 0
     };
 
     const response = await axios.put(`/api/writing-templates/${templateId}`, templateData);

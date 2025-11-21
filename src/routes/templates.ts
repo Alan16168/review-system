@@ -183,6 +183,9 @@ templates.get('/admin/all', premiumOrAdmin, async (c) => {
         t.updated_at,
         t.created_by,
         t.price,
+        t.price_basic,
+        t.price_premium,
+        t.price_super,
         u.username as creator_name,
         u.role as creator_role
       FROM templates t
@@ -243,7 +246,10 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
         owner,
         created_at,
         updated_at,
-        price
+        price,
+        price_basic,
+        price_premium,
+        price_super
       FROM templates
       WHERE id = ?
     `).bind(templateId).first();
@@ -352,19 +358,36 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
   try {
     const user = c.get('user') as any;
     const templateId = c.req.param('id');
-    const { name, description, is_default, is_active, owner, price } = await c.req.json();
+    const { name, description, is_default, is_active, owner, price_basic, price_premium, price_super } = await c.req.json();
 
     // Validate owner value
     if (owner && !['private', 'team', 'public'].includes(owner)) {
       return c.json({ error: 'Invalid owner value' }, 400);
     }
 
-    // Validate and parse price (keep existing value if not provided)
-    let templatePrice: number | undefined = undefined;
-    if (price !== undefined && price !== null) {
-      templatePrice = parseFloat(price);
-      if (isNaN(templatePrice) || templatePrice < 0) {
-        return c.json({ error: 'Price must be a non-negative number' }, 400);
+    // Validate and parse tiered prices
+    let priceBasicValue: number | undefined = undefined;
+    let pricePremiumValue: number | undefined = undefined;
+    let priceSuperValue: number | undefined = undefined;
+    
+    if (price_basic !== undefined && price_basic !== null) {
+      priceBasicValue = parseFloat(price_basic);
+      if (isNaN(priceBasicValue) || priceBasicValue < 0) {
+        return c.json({ error: 'Price (Basic) must be a non-negative number' }, 400);
+      }
+    }
+    
+    if (price_premium !== undefined && price_premium !== null) {
+      pricePremiumValue = parseFloat(price_premium);
+      if (isNaN(pricePremiumValue) || pricePremiumValue < 0) {
+        return c.json({ error: 'Price (Premium) must be a non-negative number' }, 400);
+      }
+    }
+    
+    if (price_super !== undefined && price_super !== null) {
+      priceSuperValue = parseFloat(price_super);
+      if (isNaN(priceSuperValue) || priceSuperValue < 0) {
+        return c.json({ error: 'Price (Super) must be a non-negative number' }, 400);
       }
     }
 
@@ -394,15 +417,19 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
       `).bind(templateId).run();
     }
 
-    // Update template with price
-    const updateQuery = templatePrice !== undefined
+    // Update template with tiered prices
+    const hasPriceUpdates = priceBasicValue !== undefined || pricePremiumValue !== undefined || priceSuperValue !== undefined;
+    
+    const updateQuery = hasPriceUpdates
       ? `UPDATE templates
          SET name = ?,
              description = ?,
              is_default = ?,
              is_active = ?,
              owner = ?,
-             price = ?,
+             price_basic = COALESCE(?, price_basic),
+             price_premium = COALESCE(?, price_premium),
+             price_super = COALESCE(?, price_super),
              updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`
       : `UPDATE templates
@@ -414,14 +441,16 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
              updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`;
     
-    const updateParams = templatePrice !== undefined
+    const updateParams = hasPriceUpdates
       ? [
           name,
           description || null,
           actualIsDefault ? 1 : 0,
           is_active ? 1 : 0,
           owner || 'public',
-          templatePrice,
+          priceBasicValue,
+          pricePremiumValue,
+          priceSuperValue,
           templateId
         ]
       : [
