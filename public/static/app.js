@@ -14616,7 +14616,8 @@ const MarketplaceManager = {
     // Filter products
     let products = this.allProducts.filter(p => p.is_active);
     if (this.currentCategory !== 'all') {
-      products = products.filter(p => p.category === this.currentCategory);
+      // Use product_type for filtering, not category
+      products = products.filter(p => p.product_type === this.currentCategory);
     }
 
     if (products.length === 0) {
