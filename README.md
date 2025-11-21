@@ -8,11 +8,11 @@
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
-**🚀 最新部署**: https://a70b3846.review-system.pages.dev (2025-11-21 23:04 UTC)  
-**🔧 修复版本**: V7.2.7 - 购买记录显示 + FK 约束错误修复  
+**🚀 最新部署**: https://1de2d477.review-system.pages.dev (2025-11-21 23:40 UTC)  
+**🔧 修复版本**: V7.2.8 - 我的智能体显示修复  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V7.2.7 - 修复购买记录显示 + 完整支付流程 (2025-11-21)  
+**✅ 当前版本**: V7.2.8 - 修复"我的智能体"显示问题 (2025-11-21)  
 **🔥 最新功能**: ✅ 完整支付流程：添加购物车 → 查看购物车 → 结账成功  
 **💳 支付系统**: ✅ 支持写作模板/复盘模板/智能体等跨表产品购买 + 三级会员定价  
 **🛠️ 错误处理**: ✅ 统一错误响应格式 + 详细日志记录 + 用户友好提示  
@@ -22,6 +22,42 @@
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
+
+---
+
+## 🔧 V7.2.8 紧急修复 - "我的智能体"显示问题 (2025-11-21)
+
+**问题描述**:
+- 用户购买智能体产品后，"我的智能体"页面仍然看不到购买的产品
+- 购买记录已正确保存在 `user_purchases` 表中
+- API 返回空数组，但应该显示购买的产品
+
+**根本原因分析**:
+- `user_purchases` 表中 `product_id` 是 TEXT 类型（如 "10", "12"）
+- `/api/marketplace/my-agents` 端点查询 `marketplace_products` 时直接使用字符串 productId
+- `marketplace_products.id` 是 INTEGER 类型
+- SQLite 类型不匹配导致查询不到产品详情
+
+**解决方案**:
+```typescript
+// 在 my-agents 端点中添加类型转换
+const numericProductId = parseInt(productId.toString());
+const product = await c.env.DB.prepare(`
+  SELECT description, image_url, features_json
+  FROM marketplace_products
+  WHERE id = ?
+`).bind(numericProductId).first();
+```
+
+**修复效果**:
+- ✅ "我的智能体"页面正确显示购买的产品
+- ✅ 产品描述、图片、功能等信息正确加载
+- ✅ 购买日期和价格正确显示
+
+**部署信息**:
+- 新部署 URL: https://1de2d477.review-system.pages.dev
+- 部署时间: 2025-11-21 23:40 UTC
+- Worker Bundle: 352.12 kB
 
 ---
 
