@@ -107,7 +107,7 @@ app.get('/products', async (c) => {
           created_at,
           updated_at
         FROM templates
-        WHERE visibility = 'public' AND is_active = 1
+        WHERE owner = 'public' AND is_active = 1
         ORDER BY created_at DESC
       `).all();
       
