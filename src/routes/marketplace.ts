@@ -514,6 +514,121 @@ app.get('/cart', async (c) => {
 // POST /api/marketplace/cart/add - Add product to cart
 // ============================================================================
 
+// POST /cart - Alias for /cart/add (for backward compatibility)
+app.post('/cart', async (c) => {
+  try {
+    const user = c.get('user');
+    const body = await c.req.json();
+    
+    let { product_id } = body;
+    
+    if (!product_id) {
+      return c.json({ success: false, error: 'Product ID is required' }, 400);
+    }
+    
+    // Check if this is a writing template (prefix 'wt_') or review template (prefix 't_')
+    const isWritingTemplate = typeof product_id === 'string' && product_id.startsWith('wt_');
+    const isReviewTemplate = typeof product_id === 'string' && product_id.startsWith('t_');
+    let actualProductId = product_id;
+    let product: any = null;
+    
+    if (isWritingTemplate) {
+      // Extract the real template ID (remove 'wt_' prefix)
+      const templateId = parseInt(product_id.substring(3));
+      
+      // Check if writing template exists and is active
+      product = await c.env.DB.prepare(
+        'SELECT id, is_active, is_public FROM ai_writing_templates WHERE id = ?'
+      ).bind(templateId).first();
+      
+      if (!product) {
+        return c.json({ success: false, error: 'Writing template not found' }, 404);
+      }
+      
+      if (!product.is_active || !product.is_public) {
+        return c.json({ success: false, error: 'Writing template is not available' }, 400);
+      }
+      
+      // Keep the original product_id with prefix for cart storage
+      actualProductId = product_id;
+    } else if (isReviewTemplate) {
+      // Extract the real template ID (remove 't_' prefix)
+      const templateId = parseInt(product_id.substring(2));
+      
+      // Check if review template exists and is active
+      product = await c.env.DB.prepare(
+        'SELECT id, is_active, price FROM templates WHERE id = ?'
+      ).bind(templateId).first();
+      
+      if (!product) {
+        return c.json({ success: false, error: 'Template not found' }, 404);
+      }
+      
+      if (!product.is_active) {
+        return c.json({ success: false, error: 'Template is not available' }, 400);
+      }
+      
+      if (product.price <= 0) {
+        return c.json({ success: false, error: 'This template is free' }, 400);
+      }
+      
+      // Keep the original product_id with prefix for cart storage
+      actualProductId = product_id;
+    } else {
+      // Regular marketplace product
+      product = await c.env.DB.prepare(
+        'SELECT id, is_active FROM marketplace_products WHERE id = ?'
+      ).bind(product_id).first();
+      
+      if (!product) {
+        return c.json({ success: false, error: 'Product not found' }, 404);
+      }
+      
+      if (!product.is_active) {
+        return c.json({ success: false, error: 'Product is not available' }, 400);
+      }
+    }
+    
+    // Check if already purchased
+    const existingPurchase = await c.env.DB.prepare(
+      'SELECT id FROM user_purchases WHERE user_id = ? AND product_id = ?'
+    ).bind(user.id, actualProductId).first();
+    
+    if (existingPurchase) {
+      return c.json({ 
+        success: false, 
+        error: 'You have already purchased this product' 
+      }, 400);
+    }
+    
+    // Check if already in cart
+    const existingCart = await c.env.DB.prepare(
+      'SELECT id FROM shopping_cart WHERE user_id = ? AND product_id = ?'
+    ).bind(user.id, actualProductId).first();
+    
+    if (existingCart) {
+      return c.json({ 
+        success: false, 
+        error: 'Product is already in your cart' 
+      }, 400);
+    }
+    
+    // Add to cart (store with prefix if template)
+    await c.env.DB.prepare(`
+      INSERT INTO shopping_cart (user_id, product_id, quantity)
+      VALUES (?, ?, 1)
+    `).bind(user.id, actualProductId).run();
+    
+    return c.json({
+      success: true,
+      message: 'Product added to cart'
+    });
+  } catch (error: any) {
+    console.error('Error adding to cart:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 app.post('/cart/add', async (c) => {
   try {
     const user = c.get('user');
@@ -663,6 +778,14 @@ app.post('/checkout', async (c) => {
   try {
     const user = c.get('user');
     
+    // Validate user is properly authenticated
+    if (!user || !user.id) {
+      console.error('Checkout error: User not authenticated', { user });
+      return c.json({ success: false, error: 'User not authenticated' }, 401);
+    }
+    
+    console.log('Checkout initiated by user:', user.id, user.email);
+    
     // Get user email for buyer tracking
     const userInfo: any = await c.env.DB.prepare(
       'SELECT email FROM users WHERE id = ?'
@@ -679,6 +802,8 @@ app.post('/checkout', async (c) => {
       WHERE user_id = ?
     `).bind(user.id).all();
     
+    console.log('Cart items found:', cartItemsRaw.results?.length || 0);
+    
     if (!cartItemsRaw.results || cartItemsRaw.results.length === 0) {
       return c.json({ success: false, error: 'Cart is empty' }, 400);
     }
@@ -687,6 +812,7 @@ app.post('/checkout', async (c) => {
     const cartItems = [];
     for (const cartItem of cartItemsRaw.results) {
       const productId = cartItem.product_id;
+      console.log('Processing cart item:', productId);
       let product: any = null;
       
       // Check if writing template (wt_)
@@ -747,13 +873,18 @@ app.post('/checkout', async (c) => {
       
       // Only add active products
       if (product && product.is_active) {
+        console.log('Added product to cart items:', productId, product.name);
         cartItems.push({
           cart_id: cartItem.cart_id,
           product_id: productId,
           ...product
         });
+      } else {
+        console.warn('Product not found or inactive:', productId);
       }
     }
+    
+    console.log('Final cart items count:', cartItems.length);
     
     if (cartItems.length === 0) {
       return c.json({ success: false, error: 'No active products in cart' }, 400);
@@ -763,6 +894,8 @@ app.post('/checkout', async (c) => {
     const purchaseIds = [];
     
     for (const item of cartItems) {
+      console.log('Creating purchase for item:', item.product_id, item.name);
+      
       // Determine price based on user's subscription tier
       let priceToPay = parseFloat(item.price_user) || 0;
       if (user.subscription_tier === 'super') {
@@ -771,19 +904,27 @@ app.post('/checkout', async (c) => {
         priceToPay = parseFloat(item.price_premium) || parseFloat(item.price_user) || 0;
       }
       
-      const result = await c.env.DB.prepare(`
-        INSERT INTO user_purchases (
-          user_id, product_id, product_type, product_name, price_paid, status
-        ) VALUES (?, ?, ?, ?, ?, 'completed')
-      `).bind(
-        user.id,
-        item.product_id,
-        item.product_type,
-        item.name,
-        priceToPay
-      ).run();
+      console.log('Price to pay:', priceToPay, 'for tier:', user.subscription_tier || 'user');
       
-      purchaseIds.push(result.meta.last_row_id);
+      try {
+        const result = await c.env.DB.prepare(`
+          INSERT INTO user_purchases (
+            user_id, product_id, product_type, product_name, price_paid, status
+          ) VALUES (?, ?, ?, ?, ?, 'completed')
+        `).bind(
+          user.id,
+          item.product_id,
+          item.product_type,
+          item.name,
+          priceToPay
+        ).run();
+        
+        console.log('Purchase created successfully, ID:', result.meta.last_row_id);
+        purchaseIds.push(result.meta.last_row_id);
+      } catch (dbError: any) {
+        console.error('Database error creating purchase:', dbError);
+        throw new Error(`Failed to create purchase for ${item.name}: ${dbError.message}`);
+      }
       
       // Update product purchase count (only for marketplace products)
       if (!item.product_id.toString().startsWith('wt_') && !item.product_id.toString().startsWith('t_')) {
@@ -834,7 +975,12 @@ app.post('/checkout', async (c) => {
     });
   } catch (error: any) {
     console.error('Error during checkout:', error);
-    return c.json({ success: false, error: error.message }, 500);
+    console.error('Error stack:', error.stack);
+    return c.json({ 
+      success: false, 
+      error: error.message || 'Checkout failed',
+      details: error.stack?.split('\n')[0] // First line of stack trace
+    }, 500);
   }
 });
 
