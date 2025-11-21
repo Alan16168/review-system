@@ -13706,18 +13706,14 @@ function showCreateProductModal() {
                     placeholder="详细描述产品功能和特点"></textarea>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
-            <select id="product-type" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="ai_service">AI Service</option>
-              <option value="template">Template</option>
-              <option value="book_template">Book Template</option>
-            </select>
-          </div>
-
-          </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
+          <select id="product-type" required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="ai_service">AI Service</option>
+            <option value="template">Template</option>
+            <option value="book_template">Book Template</option>
+          </select>
         </div>
 
         <div class="space-y-3">
