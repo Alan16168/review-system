@@ -376,21 +376,67 @@ app.get('/cart', async (c) => {
   try {
     const user = c.get('user');
     
-    const cartItems = await c.env.DB.prepare(`
+    // Get all cart items
+    const cartItemsRaw = await c.env.DB.prepare(`
       SELECT 
-        sc.id as cart_id,
-        sc.quantity,
-        sc.added_at,
-        p.*
-      FROM shopping_cart sc
-      JOIN marketplace_products p ON sc.product_id = p.id
-      WHERE sc.user_id = ?
-      ORDER BY sc.added_at DESC
+        id as cart_id,
+        product_id,
+        quantity,
+        added_at
+      FROM shopping_cart
+      WHERE user_id = ?
+      ORDER BY added_at DESC
     `).bind(user.id).all();
+    
+    const items = cartItemsRaw.results || [];
+    
+    // Fetch product details for each item
+    const cartItems = [];
+    for (const item of items) {
+      const productId = item.product_id as string;
+      let product: any = null;
+      
+      // Check if this is a writing template (prefix 'wt_')
+      if (typeof productId === 'string' && productId.startsWith('wt_')) {
+        const templateId = parseInt(productId.substring(3));
+        product = await c.env.DB.prepare(`
+          SELECT 
+            id,
+            name,
+            description,
+            price as price_user,
+            price as price_premium,
+            price as price_super,
+            'writing_template' as product_type,
+            'review_template' as category,
+            is_active
+          FROM templates
+          WHERE id = ?
+        `).bind(templateId).first();
+        
+        if (product) {
+          product.id = productId; // Keep the prefixed ID
+        }
+      } else {
+        // Regular marketplace product
+        product = await c.env.DB.prepare(`
+          SELECT * FROM marketplace_products WHERE id = ?
+        `).bind(productId).first();
+      }
+      
+      if (product) {
+        cartItems.push({
+          cart_id: item.cart_id,
+          quantity: item.quantity,
+          added_at: item.added_at,
+          ...product
+        });
+      }
+    }
     
     return c.json({
       success: true,
-      cart_items: cartItems.results || []
+      cart_items: cartItems
     });
   } catch (error: any) {
     console.error('Error fetching cart:', error);
@@ -634,20 +680,70 @@ app.get('/my-purchases', async (c) => {
   try {
     const user = c.get('user');
     
-    const purchases = await c.env.DB.prepare(`
+    // Get all purchases excluding ai_service (智能体)
+    const purchasesRaw = await c.env.DB.prepare(`
       SELECT 
-        up.*,
-        COALESCE(p.description, '') as description,
-        COALESCE(p.image_url, NULL) as image_url
-      FROM user_purchases up
-      LEFT JOIN marketplace_products p ON up.product_id = p.id
-      WHERE up.user_id = ?
-      ORDER BY up.purchase_date DESC
+        id,
+        user_id,
+        product_id,
+        product_type,
+        product_name,
+        price_paid,
+        status,
+        purchase_date
+      FROM user_purchases
+      WHERE user_id = ? AND (product_type IS NULL OR product_type != 'ai_service')
+      ORDER BY purchase_date DESC
     `).bind(user.id).all();
+    
+    const items = purchasesRaw.results || [];
+    
+    // Fetch additional details for each purchase
+    const purchases = [];
+    for (const item of items) {
+      const productId = item.product_id;
+      let description = '';
+      let image_url = null;
+      
+      // Check if this is a writing template (prefix 'wt_')
+      if (typeof productId === 'string' && productId.startsWith('wt_')) {
+        const templateId = parseInt(productId.substring(3));
+        const template: any = await c.env.DB.prepare(`
+          SELECT description, NULL as image_url
+          FROM templates
+          WHERE id = ?
+        `).bind(templateId).first();
+        
+        if (template) {
+          description = template.description || '';
+          image_url = template.image_url;
+        }
+      } else if (productId) {
+        // Regular marketplace product
+        const product: any = await c.env.DB.prepare(`
+          SELECT description, image_url
+          FROM marketplace_products
+          WHERE id = ?
+        `).bind(productId).first();
+        
+        if (product) {
+          description = product.description || '';
+          image_url = product.image_url;
+        }
+      }
+      
+      purchases.push({
+        ...item,
+        description,
+        image_url,
+        // Ensure product_type is set
+        product_type: item.product_type || 'other'
+      });
+    }
     
     return c.json({
       success: true,
-      purchases: purchases.results || []
+      purchases: purchases
     });
   } catch (error: any) {
     console.error('Error fetching purchases:', error);

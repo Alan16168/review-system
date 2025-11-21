@@ -14701,6 +14701,7 @@ const MarketplaceManager = {
     const names = {
       'ai_service': '智能体',
       'review_template': '复盘模板',
+      'writing_template': '写作模板',
       'template': '模板',
       'book_template': '书籍模板',
       'other': '其他'
@@ -14884,7 +14885,8 @@ const MarketplaceManager = {
         container.innerHTML = `
           <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
             <i class="fas fa-shopping-bag text-gray-400 text-5xl mb-4"></i>
-            <p class="text-gray-600 text-lg">${i18n.t('noPurchases')}</p>
+            <p class="text-gray-600 text-lg">${i18n.t('noPurchases') || '暂无购买记录'}</p>
+            <p class="text-gray-500 text-sm mt-2">您还没有购买除"智能体"外的其他产品</p>
           </div>
         `;
         return;
@@ -14895,27 +14897,27 @@ const MarketplaceManager = {
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('productName')}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('category')}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('price')}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('purchaseDate')}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('productName') || '产品名称'}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('category') || '类别'}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('price') || '价格'}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('purchaseDate') || '购买日期'}</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               ${purchases.map(purchase => `
                 <tr>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${purchase.product_name}</div>
+                    <div class="text-sm font-medium text-gray-900">${purchase.product_name || '未知产品'}</div>
                     <div class="text-sm text-gray-500">${purchase.description || ''}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${this.getCategoryName(purchase.product_type)}
+                    ${this.getCategoryName(purchase.product_type || 'other')}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    $${purchase.price_paid}
+                    $${purchase.price_paid || '0.00'}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${new Date(purchase.purchase_date).toLocaleDateString()}
+                    ${purchase.purchase_date ? new Date(purchase.purchase_date).toLocaleDateString() : '-'}
                   </td>
                 </tr>
               `).join('')}
