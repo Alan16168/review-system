@@ -1121,11 +1121,13 @@ app.get('/my-agents', async (c) => {
       let features_json = null;
       
       // Query marketplace_products for details
+      // Convert productId to integer for marketplace_products query
+      const numericProductId = parseInt(productId.toString());
       const product: any = await c.env.DB.prepare(`
         SELECT description, image_url, features_json
         FROM marketplace_products
         WHERE id = ?
-      `).bind(productId).first();
+      `).bind(numericProductId).first();
       
       if (product) {
         description = product.description || '';
