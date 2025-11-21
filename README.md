@@ -8,11 +8,11 @@
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
-**🚀 最新部署**: https://1d0ee485.review-system.pages.dev (2025-11-21)  
+**🚀 最新部署**: https://0c649313.review-system.pages.dev (2025-11-21)  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V7.0.7 - 三级价格系统 + 产品分类重组 (2025-11-21)  
-**🔥 最新功能**: ✅ 模板三级价格（普通/高级/超级会员）+ 产品分类重组（ai_service/writing_template/review_template/other）  
+**✅ 当前版本**: V7.0.8 - 写作模板表单优化 (2025-11-21)  
+**🔥 最新功能**: ✅ 删除英文名称字段 + 新增产品类型分类（AIAgent/Review Template/Writing Template/Others）  
 **🛠️ 错误处理**: ✅ 统一错误响应格式 + 详细日志记录 + 用户友好提示  
 **🔐 权限控制**: ✅ 标准化认证中间件 + 购物车需登录 + 未登录用户保护  
 **🛒 商城系统**: ✅ 智能体/复盘模板/其他 三大分类 + 自动合并付费模板  
@@ -20,6 +20,50 @@
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
+
+---
+
+## 🎨 V7.0.8 更新 - 写作模板表单优化 (2025-11-21)
+
+**用户需求**: 优化"创建写作模板"表单界面
+
+**修改内容**:
+- ✅ **删除"英文名称"字段**: 简化表单,只保留中文模板名称
+- ✅ **修改"分类"为"写作分类"**: 更明确的标签说明
+- ✅ **新增"分类"字段**: 产品类型分类
+  - AIAgent
+  - Review Template
+  - Writing Template (默认选中)
+  - Others
+- ✅ **调整表单布局**: 从3列改为2列网格布局,更清晰
+
+**技术实现**:
+- **前端更改**:
+  - 删除英文名称输入框 (create 和 edit 模态框)
+  - 删除英文说明输入框 (edit 模态框)
+  - 新增 product_type 下拉选择器
+  - "分类"改名为"写作分类"
+  - 调整布局为2列: 产品分类 | 写作分类
+  - 调整布局为2列: 图标 | 颜色
+- **后端更改**:
+  - POST /api/writing-templates: 支持 product_type 参数
+  - PUT /api/writing-templates/:id: 支持 product_type 参数
+  - 默认值: writing_template
+- **数据库更改**:
+  - Migration 0052: 添加 product_type 字段到 ai_writing_templates 表
+  - CHECK 约束: ('ai_agent', 'review_template', 'writing_template', 'other')
+  - 索引: idx_writing_templates_product_type
+
+**部署信息**:
+- **部署URL**: https://0c649313.review-system.pages.dev
+- **Git Commit**: 4fb090b
+- **迁移结果**: ✅ 3 queries executed, 11 rows written
+- **Build时间**: 2.15s
+
+**用户体验提升**:
+- 🎯 表单更简洁,减少不必要的字段
+- 📊 产品分类更清晰,便于管理
+- 💡 默认选择"Writing Template",减少操作步骤
 
 ---
 
