@@ -6363,12 +6363,25 @@ async function leaveTeam(teamId) {
 
 // ============ Admin Panel ============
 
+// Global state for admin panel navigation
+let currentAdminCategory = 'system';
+let currentAdminSubTab = 'users';
+
 async function showAdmin() {
   // Auto-save draft before leaving create review page
   await autoSaveDraftBeforeNavigation();
   
   currentView = 'admin';
   const app = document.getElementById('app');
+  
+  // Set default category and subtab based on user role
+  if (currentUser.role === 'admin') {
+    currentAdminCategory = 'system';
+    currentAdminSubTab = 'users';
+  } else {
+    currentAdminCategory = 'system';
+    currentAdminSubTab = 'templates';
+  }
   
   app.innerHTML = `
     <div class="min-h-screen bg-gray-50">
@@ -6379,66 +6392,40 @@ async function showAdmin() {
           <i class="fas fa-cog mr-2"></i>${i18n.t('adminPanel')}
         </h1>
 
-        <!-- Tabs -->
+        <!-- Category Tabs (Level 1) -->
         <div class="bg-white rounded-lg shadow-md mb-6">
           <div class="border-b border-gray-200">
-            <nav class="flex space-x-8 px-6" aria-label="Tabs">
+            <nav class="flex space-x-8 px-6" aria-label="Categories">
               ${currentUser.role === 'admin' ? `
-                <button onclick="showAdminTab('users')" 
-                        class="admin-tab active py-4 px-1 border-b-2 font-medium text-sm"
-                        data-tab="users">
-                  <i class="fas fa-users mr-2"></i>${i18n.t('userManagement')}
+                <button onclick="showAdminCategory('system')" 
+                        class="admin-category-tab active py-4 px-1 border-b-2 font-medium text-base"
+                        data-category="system">
+                  <i class="fas fa-cogs mr-2"></i>系统
                 </button>
-              ` : ''}
-              <button onclick="showAdminTab('templates')" 
-                      class="admin-tab ${currentUser.role === 'premium' ? 'active' : ''} py-4 px-1 border-b-2 font-medium text-sm"
-                      data-tab="templates">
-                <i class="fas fa-clipboard-list mr-2"></i>复盘模板
-              </button>
-              ${currentUser.role === 'admin' ? `
-                <button onclick="showAdminTab('notifications')" 
-                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                        data-tab="notifications">
-                  <i class="fas fa-bell mr-2"></i>${i18n.t('sendNotification')}
+                <button onclick="showAdminCategory('agents')" 
+                        class="admin-category-tab py-4 px-1 border-b-2 font-medium text-base"
+                        data-category="agents">
+                  <i class="fas fa-robot mr-2"></i>智能体
                 </button>
-                <button onclick="showAdminTab('stats')" 
-                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                        data-tab="stats">
-                  <i class="fas fa-chart-bar mr-2"></i>${i18n.t('systemStats')}
+                <button onclick="showAdminCategory('marketplace')" 
+                        class="admin-category-tab py-4 px-1 border-b-2 font-medium text-base"
+                        data-category="marketplace">
+                  <i class="fas fa-store mr-2"></i>商城管理
                 </button>
-                <button onclick="showAdminTab('testimonials')" 
-                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                        data-tab="testimonials">
-                  <i class="fas fa-comments mr-2"></i>${i18n.t('testimonialsManagement') || '留言管理'}
+              ` : `
+                <button onclick="showAdminCategory('system')" 
+                        class="admin-category-tab active py-4 px-1 border-b-2 font-medium text-base"
+                        data-category="system">
+                  <i class="fas fa-cogs mr-2"></i>系统
                 </button>
-                <button onclick="showAdminTab('publicReviews')" 
-                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                        data-tab="publicReviews">
-                  <i class="fas fa-globe mr-2"></i>${i18n.t('publicReviewsManagement') || '公开复盘管理'}
-                </button>
-                <button onclick="showAdminTab('subscription')" 
-                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                        data-tab="subscription">
-                  <i class="fas fa-credit-card mr-2"></i>${i18n.t('subscriptionManagement') || '订阅管理'}
-                </button>
-                <button onclick="showAdminTab('keywords')" 
-                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                        data-tab="keywords">
-                  <i class="fas fa-key mr-2"></i>${i18n.t('keywordsManagement')}
-                </button>
-                <button onclick="showAdminTab('aiSettings')" 
-                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                        data-tab="aiSettings">
-                  <i class="fas fa-robot mr-2"></i>AI 写作设置
-                </button>
-                <button onclick="showAdminTab('marketplace')" 
-                        class="admin-tab py-4 px-1 border-b-2 font-medium text-sm"
-                        data-tab="marketplace">
-                  <i class="fas fa-store mr-2"></i>MarketPlace 管理
-                </button>
-              ` : ''}
+              `}
             </nav>
           </div>
+        </div>
+
+        <!-- Sub-Tabs Container (Level 2) -->
+        <div id="admin-subtabs-container" class="bg-white rounded-lg shadow-md mb-6">
+          <!-- Sub-tabs will be dynamically rendered here -->
         </div>
 
         <!-- Tab Content -->
@@ -6450,39 +6437,174 @@ async function showAdmin() {
   // Add tab styles
   const style = document.createElement('style');
   style.textContent = `
-    .admin-tab {
+    .admin-category-tab {
       border-color: transparent;
       color: #6b7280;
     }
-    .admin-tab:hover {
+    .admin-category-tab:hover {
       border-color: #d1d5db;
       color: #111827;
     }
-    .admin-tab.active {
+    .admin-category-tab.active {
+      border-color: #4f46e5;
+      color: #4f46e5;
+    }
+    .admin-subtab {
+      border-color: transparent;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    .admin-subtab:hover {
+      border-color: #d1d5db;
+      color: #111827;
+    }
+    .admin-subtab.active {
       border-color: #4f46e5;
       color: #4f46e5;
     }
   `;
   document.head.appendChild(style);
 
-  // Show appropriate default tab based on user role
-  if (currentUser.role === 'admin') {
-    showAdminTab('users');
-  } else {
-    showAdminTab('templates');
-  }
+  // Show default category
+  showAdminCategory(currentAdminCategory);
 }
 
-async function showAdminTab(tab) {
-  // Update active tab
-  document.querySelectorAll('.admin-tab').forEach(btn => {
+// Show admin category and render its sub-tabs
+function showAdminCategory(category) {
+  currentAdminCategory = category;
+  
+  // Update active category tab
+  document.querySelectorAll('.admin-category-tab').forEach(btn => {
     btn.classList.remove('active');
   });
-  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  const categoryBtn = document.querySelector(`[data-category="${category}"]`);
+  if (categoryBtn) {
+    categoryBtn.classList.add('active');
+  }
+  
+  // Render sub-tabs based on category
+  const subtabsContainer = document.getElementById('admin-subtabs-container');
+  let subtabsHTML = '';
+  let defaultSubTab = '';
+  
+  switch(category) {
+    case 'system':
+      defaultSubTab = currentUser.role === 'admin' ? 'users' : 'templates';
+      subtabsHTML = `
+        <div class="border-b border-gray-200">
+          <nav class="flex space-x-6 px-6" aria-label="Sub-tabs">
+            ${currentUser.role === 'admin' ? `
+              <button onclick="showAdminSubTab('users')" 
+                      class="admin-subtab active py-3 px-1 border-b-2 font-medium"
+                      data-subtab="users">
+                <i class="fas fa-users mr-2"></i>${i18n.t('userManagement')}
+              </button>
+              <button onclick="showAdminSubTab('notifications')" 
+                      class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                      data-subtab="notifications">
+                <i class="fas fa-bell mr-2"></i>${i18n.t('sendNotification')}
+              </button>
+              <button onclick="showAdminSubTab('stats')" 
+                      class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                      data-subtab="stats">
+                <i class="fas fa-chart-bar mr-2"></i>${i18n.t('systemStats')}
+              </button>
+              <button onclick="showAdminSubTab('testimonials')" 
+                      class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                      data-subtab="testimonials">
+                <i class="fas fa-comments mr-2"></i>${i18n.t('testimonialsManagement') || '留言'}
+              </button>
+              <button onclick="showAdminSubTab('publicReviews')" 
+                      class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                      data-subtab="publicReviews">
+                <i class="fas fa-globe mr-2"></i>公开复盘
+              </button>
+            ` : ''}
+            <button onclick="showAdminSubTab('templates')" 
+                    class="admin-subtab ${currentUser.role === 'premium' ? 'active' : ''} py-3 px-1 border-b-2 font-medium"
+                    data-subtab="templates">
+              <i class="fas fa-clipboard-list mr-2"></i>复盘模板
+            </button>
+            ${currentUser.role === 'admin' ? `
+              <button onclick="showAdminSubTab('keywords')" 
+                      class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                      data-subtab="keywords">
+                <i class="fas fa-key mr-2"></i>${i18n.t('keywordsManagement')}
+              </button>
+            ` : ''}
+          </nav>
+        </div>
+      `;
+      break;
+      
+    case 'agents':
+      defaultSubTab = 'aiSettings';
+      subtabsHTML = `
+        <div class="border-b border-gray-200">
+          <nav class="flex space-x-6 px-6" aria-label="Sub-tabs">
+            <button onclick="showAdminSubTab('aiSettings')" 
+                    class="admin-subtab active py-3 px-1 border-b-2 font-medium"
+                    data-subtab="aiSettings">
+              <i class="fas fa-robot mr-2"></i>AI 写作设置
+            </button>
+          </nav>
+        </div>
+      `;
+      break;
+      
+    case 'marketplace':
+      defaultSubTab = 'subscription';
+      subtabsHTML = `
+        <div class="border-b border-gray-200">
+          <nav class="flex space-x-6 px-6" aria-label="Sub-tabs">
+            <button onclick="showAdminSubTab('subscription')" 
+                    class="admin-subtab active py-3 px-1 border-b-2 font-medium"
+                    data-subtab="subscription">
+              <i class="fas fa-credit-card mr-2"></i>订阅
+            </button>
+            <button onclick="showAdminSubTab('marketplace-agents')" 
+                    class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                    data-subtab="marketplace-agents">
+              <i class="fas fa-robot mr-2"></i>智能体
+            </button>
+            <button onclick="showAdminSubTab('marketplace-templates')" 
+                    class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                    data-subtab="marketplace-templates">
+              <i class="fas fa-file-alt mr-2"></i>写作模板
+            </button>
+            <button onclick="showAdminSubTab('marketplace-other')" 
+                    class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                    data-subtab="marketplace-other">
+              <i class="fas fa-box mr-2"></i>其他产品
+            </button>
+          </nav>
+        </div>
+      `;
+      break;
+  }
+  
+  subtabsContainer.innerHTML = subtabsHTML;
+  
+  // Show default sub-tab
+  showAdminSubTab(defaultSubTab);
+}
+
+// Show admin sub-tab content
+async function showAdminSubTab(subtab) {
+  currentAdminSubTab = subtab;
+  
+  // Update active sub-tab
+  document.querySelectorAll('.admin-subtab').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  const subtabBtn = document.querySelector(`[data-subtab="${subtab}"]`);
+  if (subtabBtn) {
+    subtabBtn.classList.add('active');
+  }
 
   const content = document.getElementById('admin-content');
   
-  switch(tab) {
+  switch(subtab) {
     case 'users':
       await showUsersManagement(content);
       break;
@@ -6510,9 +6632,38 @@ async function showAdminTab(tab) {
     case 'aiSettings':
       await showAISettingsManagement(content);
       break;
-    case 'marketplace':
-      await showMarketplaceManagement(content);
+    case 'marketplace-agents':
+      await showMarketplaceAgentsManagement(content);
       break;
+    case 'marketplace-templates':
+      await showMarketplaceTemplatesManagement(content);
+      break;
+    case 'marketplace-other':
+      await showMarketplaceOtherManagement(content);
+      break;
+  }
+}
+
+// Legacy function for backward compatibility
+async function showAdminTab(tab) {
+  // Map old tab names to new structure
+  const tabMapping = {
+    'users': ['system', 'users'],
+    'templates': ['system', 'templates'],
+    'notifications': ['system', 'notifications'],
+    'stats': ['system', 'stats'],
+    'testimonials': ['system', 'testimonials'],
+    'publicReviews': ['system', 'publicReviews'],
+    'keywords': ['system', 'keywords'],
+    'aiSettings': ['agents', 'aiSettings'],
+    'subscription': ['marketplace', 'subscription'],
+    'marketplace': ['marketplace', 'subscription']
+  };
+  
+  if (tabMapping[tab]) {
+    const [category, subtab] = tabMapping[tab];
+    showAdminCategory(category);
+    // showAdminSubTab will be called automatically by showAdminCategory
   }
 }
 
@@ -13916,10 +14067,30 @@ async function handleCreateProduct(e) {
     await axios.post('/api/marketplace/products', data);
     showNotification(i18n.t('productCreated') || '✅ 产品创建成功！', 'success');
     closeProductModal();
-    await loadMarketplaceProducts();
+    
+    // Reload the appropriate product list based on current sub-tab
+    await reloadMarketplaceProducts();
   } catch (error) {
     console.error('Error creating product:', error);
     showNotification((i18n.t('operationFailed') || '创建失败') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Helper function to reload the correct marketplace product list
+async function reloadMarketplaceProducts() {
+  // Check current admin sub-tab
+  if (currentAdminSubTab === 'marketplace-agents') {
+    await loadMarketplaceProductsByCategory('ai_service');
+  } else if (currentAdminSubTab === 'marketplace-templates') {
+    await loadMarketplaceProductsByCategory('template');
+  } else if (currentAdminSubTab === 'marketplace-other') {
+    await loadMarketplaceProductsByCategory('other');
+  } else if (currentAdminSubTab === 'subscription') {
+    // Subscription tab uses the old showSubscriptionManagement
+    // No need to reload here as it manages differently
+  } else {
+    // Fallback to load all products (for old marketplace management)
+    await loadMarketplaceProducts();
   }
 }
 
@@ -14033,7 +14204,7 @@ async function handleUpdateProduct(e, productId) {
     await axios.put(`/api/marketplace/products/${productId}`, data);
     showNotification('✅ 产品更新成功！', 'success');
     closeProductModal();
-    await loadMarketplaceProducts();
+    await reloadMarketplaceProducts();
   } catch (error) {
     console.error('Error updating product:', error);
     showNotification('更新失败: ' + (error.response?.data?.error || error.message), 'error');
@@ -14047,7 +14218,7 @@ async function toggleProductStatus(productId, currentStatus) {
   try {
     const response = await axios.post(`/api/marketplace/products/${productId}/toggle-status`);
     showNotification(response.data.message || `✅ 产品已${action}！`, 'success');
-    await loadMarketplaceProducts();
+    await reloadMarketplaceProducts();
   } catch (error) {
     console.error('Error toggling product status:', error);
     showNotification((i18n.t('operationFailed') || '操作失败') + ': ' + (error.response?.data?.error || error.message), 'error');
@@ -14060,7 +14231,7 @@ async function deleteMarketplaceProduct(productId) {
   try {
     await axios.delete(`/api/marketplace/products/${productId}`);
     showNotification('✅ 产品已删除！', 'success');
-    await loadMarketplaceProducts();
+    await reloadMarketplaceProducts();
   } catch (error) {
     console.error('Error deleting product:', error);
     showNotification('删除失败: ' + (error.response?.data?.error || error.message), 'error');
@@ -14070,6 +14241,236 @@ async function deleteMarketplaceProduct(productId) {
 function closeProductModal() {
   const modal = document.getElementById('product-modal');
   if (modal) modal.remove();
+}
+
+// ============================================================
+// Marketplace Management - Split by Product Type
+// ============================================================
+
+// 订阅管理
+async function showMarketplaceAgentsManagement(container) {
+  await showMarketplaceProductsByCategory(container, 'ai_service', '智能体管理', 'robot');
+}
+
+// 写作模板管理
+async function showMarketplaceTemplatesManagement(container) {
+  await showMarketplaceProductsByCategory(container, 'template', '写作模板管理', 'file-alt');
+}
+
+// 其他产品管理
+async function showMarketplaceOtherManagement(container) {
+  await showMarketplaceProductsByCategory(container, 'other', '其他产品管理', 'box');
+}
+
+// Generic function to show products by category
+async function showMarketplaceProductsByCategory(container, category, title, icon) {
+  container.innerHTML = `
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-${icon} mr-2"></i>${title}
+          </h2>
+          <p class="text-sm text-gray-600 mt-1">管理${title.replace('管理', '')}产品</p>
+        </div>
+        <button onclick="showCreateProductModalWithCategory('${category}')" 
+                class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+          <i class="fas fa-plus mr-2"></i>添加产品
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div id="marketplace-products-list">
+        <div class="text-center py-12">
+          <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+          <p class="text-gray-600">加载产品列表中...</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  await loadMarketplaceProductsByCategory(category);
+}
+
+// Load products filtered by category
+async function loadMarketplaceProductsByCategory(category) {
+  try {
+    const response = await axios.get('/api/marketplace/products/all');
+    const allProducts = response.data.products || [];
+    
+    // Filter products by category
+    const products = allProducts.filter(p => p.product_type === category);
+
+    const container = document.getElementById('marketplace-products-list');
+    
+    if (products.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <i class="fas fa-box-open text-gray-400 text-5xl mb-4"></i>
+          <p class="text-gray-600 text-lg mb-2">暂无产品</p>
+          <p class="text-gray-500 text-sm">点击上方"添加产品"按钮创建第一个产品</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">产品信息</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">价格</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">销量</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            ${products.map(product => `
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-${getCategoryIcon(product.product_type)} text-white text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">${product.name}</div>
+                      <div class="text-sm text-gray-500">${(product.description || '').substring(0, 50)}...</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-xs text-gray-900">
+                    <div>普通: <span class="font-semibold">$${product.price_user || 0}</span></div>
+                    <div>高级: <span class="font-semibold">$${product.price_premium || 0}</span></div>
+                    <div>超级: <span class="font-semibold">$${product.price_super || 0}</span></div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${product.is_active ? '上架中' : '已下架'}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  ${product.sales_count || 0} 笔
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                  <button onclick="editMarketplaceProduct(${product.id})" 
+                          class="text-indigo-600 hover:text-indigo-900">
+                    <i class="fas fa-edit"></i> 编辑
+                  </button>
+                  <button onclick="toggleProductStatus(${product.id}, ${product.is_active})" 
+                          class="text-${product.is_active ? 'yellow' : 'green'}-600 hover:text-${product.is_active ? 'yellow' : 'green'}-900">
+                    <i class="fas fa-${product.is_active ? 'pause' : 'play'}-circle"></i> ${product.is_active ? '下架' : '上架'}
+                  </button>
+                  <button onclick="deleteMarketplaceProduct(${product.id})" 
+                          class="text-red-600 hover:text-red-900">
+                    <i class="fas fa-trash"></i> 删除
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Error loading marketplace products:', error);
+    document.getElementById('marketplace-products-list').innerHTML = `
+      <div class="text-center py-12 text-red-600">
+        <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
+        <p>加载失败: ${error.response?.data?.error || error.message}</p>
+      </div>
+    `;
+  }
+}
+
+// Create product with pre-selected category
+function showCreateProductModalWithCategory(preselectedCategory) {
+  const modal = document.createElement('div');
+  modal.id = 'product-modal';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]';
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-plus-circle mr-2 text-indigo-600"></i>添加新产品
+        </h3>
+        <button onclick="closeProductModal()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleCreateProduct(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">产品名称 *</label>
+          <input type="text" id="product-name" required
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="例如：AI 智能写作助手">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">产品描述 *</label>
+          <textarea id="product-description" required rows="3"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    placeholder="详细描述产品功能和特点"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
+          <select id="product-type" required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="ai_service" ${preselectedCategory === 'ai_service' ? 'selected' : ''}>智能体</option>
+            <option value="template" ${preselectedCategory === 'template' ? 'selected' : ''}>写作模板</option>
+            <option value="other" ${preselectedCategory === 'other' ? 'selected' : ''}>其他产品</option>
+          </select>
+        </div>
+
+        <div class="space-y-3">
+          <label class="block text-sm font-medium text-gray-700">定价设置 *</label>
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">普通会员价 ($)</label>
+              <input type="number" id="product-price-user" required min="0" step="0.01"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="9.99">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">高级会员价 ($)</label>
+              <input type="number" id="product-price-premium" required min="0" step="0.01"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="7.99">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">超级会员价 ($)</label>
+              <input type="number" id="product-price-super" required min="0" step="0.01"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="5.99">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" id="product-is-active" checked
+                 class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+          <label for="product-is-active" class="text-sm text-gray-700">立即上架销售</label>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <button type="button" onclick="closeProductModal()"
+                  class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+            取消
+          </button>
+          <button type="submit"
+                  class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+            <i class="fas fa-save mr-2"></i>创建产品
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
 }
 
 // ============================================================
