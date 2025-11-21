@@ -527,6 +527,15 @@ app.post('/checkout', async (c) => {
   try {
     const user = c.get('user');
     
+    // Get user email for buyer tracking
+    const userInfo: any = await c.env.DB.prepare(
+      'SELECT email FROM users WHERE id = ?'
+    ).bind(user.id).first();
+    
+    if (!userInfo) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+    
     // Get all cart items with product details including tiered pricing
     const cartItems: any = await c.env.DB.prepare(`
       SELECT 
@@ -576,6 +585,29 @@ app.post('/checkout', async (c) => {
       await c.env.DB.prepare(
         'UPDATE marketplace_products SET purchase_count = purchase_count + 1 WHERE id = ?'
       ).bind(item.product_id).run();
+      
+      // Add buyer to appropriate buyers table based on product type
+      if (item.product_type === 'review_template') {
+        // Extract template ID from product_id (format: 't_123' or just '123')
+        const templateId = item.product_id.toString().replace(/^t_/, '');
+        await c.env.DB.prepare(`
+          INSERT OR IGNORE INTO template_buyers (template_id, user_email, purchase_price)
+          VALUES (?, ?, ?)
+        `).bind(parseInt(templateId), userInfo.email, priceToPay).run();
+      } else if (item.product_type === 'writing_template') {
+        // Extract writing template ID from product_id (format: 'wt_123' or just '123')
+        const templateId = item.product_id.toString().replace(/^wt_/, '');
+        await c.env.DB.prepare(`
+          INSERT OR IGNORE INTO writing_template_buyers (template_id, user_email, purchase_price)
+          VALUES (?, ?, ?)
+        `).bind(parseInt(templateId), userInfo.email, priceToPay).run();
+      } else {
+        // For ai_agent and other product types, use product_buyers table
+        await c.env.DB.prepare(`
+          INSERT OR IGNORE INTO product_buyers (product_id, user_email, purchase_price)
+          VALUES (?, ?, ?)
+        `).bind(item.product_id, userInfo.email, priceToPay).run();
+      }
     }
     
     // Clear cart
