@@ -2,40 +2,83 @@
 const AgentsPage = {
   myAgents: [],
 
-  // 初始化 - 直接显示我的智能体（AI写作）
+  // 初始化 - 从API加载我的智能体
   async init() {
-    // 设置已购买的智能体 - AI写作
-    this.myAgents = [
-      {
-        id: 1,
-        name: 'AI写作',
-        icon: '✍️',
-        description: '智能AI写作助手，支持多种文体创作，包括文章、博客、营销文案、社交媒体内容等。提供专业的写作建议和内容优化。',
-        category: '内容创作',
-        features: ['智能生成', '多种模板', '内容优化', '实时预览'],
-        status: 'owned', // 已拥有
-        purchaseDate: '2025-11-21',
-        usageCount: 1234,
-        rating: 4.8
+    try {
+      // 从API获取购买的智能体
+      const response = await fetch('/api/marketplace/my-agents', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch agents');
       }
-    ];
+
+      const data = await response.json();
+      
+      if (data.success && data.agents) {
+        // 转换API数据为前端格式
+        this.myAgents = data.agents.map(agent => ({
+          id: agent.product_id,
+          name: agent.product_name,
+          icon: '🤖', // 默认图标，可以根据产品类型设置
+          description: agent.description || '暂无描述',
+          category: 'AI工具',
+          features: this.parseFeatures(agent.features_json),
+          status: 'owned',
+          purchaseDate: agent.purchase_date ? agent.purchase_date.split(' ')[0] : '未知',
+          usageCount: 0, // 可以后续从统计API获取
+          rating: 4.8, // 可以后续从评分API获取
+          image_url: agent.image_url
+        }));
+      } else {
+        this.myAgents = [];
+      }
+    } catch (error) {
+      console.error('Error loading agents:', error);
+      showNotification('加载智能体失败', 'error');
+      this.myAgents = [];
+    }
+    
     this.render();
+  },
+
+  // 解析功能特性JSON
+  parseFeatures(featuresJson) {
+    if (!featuresJson) return ['智能AI', '高效便捷'];
+    
+    try {
+      const features = JSON.parse(featuresJson);
+      if (Array.isArray(features)) {
+        return features;
+      }
+      return ['智能AI', '高效便捷'];
+    } catch (e) {
+      return ['智能AI', '高效便捷'];
+    }
   },
 
   // 使用智能体
   useAgent(agentId) {
-    const agent = this.myAgents.find(a => a.id === agentId);
+    const agent = this.myAgents.find(a => a.id == agentId);
     if (!agent) {
       showNotification('智能体不存在', 'error');
       return;
     }
 
-    // 根据智能体类型跳转到相应页面
-    if (agent.name === 'AI写作') {
+    // 根据智能体名称跳转到相应页面
+    if (agent.name.includes('AI写作') || agent.name.includes('写作助手')) {
       // 跳转到AI写作页面
       AIBooksManager.renderBooksPage();
+    } else if (agent.name.includes('文件处理') || agent.name.includes('文件助手')) {
+      // 文件处理智能体
+      showNotification(`${agent.name} 功能开发中...`, 'info');
     } else {
+      // 其他智能体
       showNotification(`正在启动 ${agent.name}...`, 'info');
+      // TODO: 根据产品ID跳转到对应功能页面
     }
   },
 
@@ -45,12 +88,18 @@ const AgentsPage = {
       <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
         <!-- 产品头部 -->
         <div class="relative">
-          <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 text-center">
-            <div class="text-6xl mb-2">${agent.icon}</div>
-            <span class="inline-block px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
-              已购买
-            </span>
-          </div>
+          ${agent.image_url ? `
+            <div class="h-48 overflow-hidden">
+              <img src="${agent.image_url}" alt="${agent.name}" class="w-full h-full object-cover">
+            </div>
+          ` : `
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 text-center h-48 flex items-center justify-center">
+              <div class="text-6xl">${agent.icon}</div>
+            </div>
+          `}
+          <span class="absolute top-4 right-4 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full shadow-lg">
+            已购买
+          </span>
         </div>
 
         <!-- 产品信息 -->
