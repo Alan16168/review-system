@@ -278,6 +278,41 @@ WHERE id = 1;
 - **本地开发环境**: ✅ 代码已修复并测试
 - **生产环境**: ⏳ 待部署
 
+## 📌 V7.0.4.1 补充修复 (2025-11-21)
+
+**新问题**: 用户点击复盘模板的"加入购物车"仍然出现500错误
+
+**根本原因**: 
+- 复盘模板使用字符串ID (`wt_123`)
+- 购物车 `/cart/add` 只查询 `marketplace_products` 表
+- 查询失败导致500错误
+
+**修复**:
+```typescript
+// 智能检测产品类型
+const isTemplate = typeof product_id === 'string' && product_id.startsWith('wt_');
+
+if (isTemplate) {
+  // 从 templates 表查询
+  const templateId = parseInt(product_id.substring(3));
+  product = await c.env.DB.prepare(
+    'SELECT id, is_active, price FROM templates WHERE id = ?'
+  ).bind(templateId).first();
+  
+  // 验证价格 > 0
+  if (product.price <= 0) {
+    return c.json({ success: false, error: 'This template is free' }, 400);
+  }
+}
+```
+
+**结果**: 
+- ✅ 支持marketplace商品和复盘模板
+- ✅ 自动检测产品类型
+- ✅ 未登录返回401而非500
+
+**详细文档**: [FIX_CART_TEMPLATE_SUPPORT_2025-11-21.md](./FIX_CART_TEMPLATE_SUPPORT_2025-11-21.md)
+
 ## 📝 后续建议
 
 1. **统一分类命名**:

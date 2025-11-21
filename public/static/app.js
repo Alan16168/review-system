@@ -6393,7 +6393,7 @@ async function showAdmin() {
               <button onclick="showAdminTab('templates')" 
                       class="admin-tab ${currentUser.role === 'premium' ? 'active' : ''} py-4 px-1 border-b-2 font-medium text-sm"
                       data-tab="templates">
-                <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('templateManagement')}
+                <i class="fas fa-clipboard-list mr-2"></i>复盘模板
               </button>
               ${currentUser.role === 'admin' ? `
                 <button onclick="showAdminTab('notifications')" 
