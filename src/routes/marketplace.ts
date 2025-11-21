@@ -14,7 +14,8 @@ app.use('/products/all', authMiddleware, adminOnly);
 // Cart and purchase operations require authentication
 app.use('/cart/*', authMiddleware);
 app.use('/checkout', authMiddleware);
-app.use('/my-*', authMiddleware);
+app.use('/my-purchases', authMiddleware);
+app.use('/my-agents', authMiddleware);
 
 // Product mutations require admin role
 app.use('/products/*', async (c, next) => {
@@ -679,6 +680,10 @@ app.post('/checkout', async (c) => {
 app.get('/my-purchases', async (c) => {
   try {
     const user = c.get('user');
+    
+    if (!user || !user.id) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401);
+    }
     
     // Get all purchases excluding ai_service (智能体)
     const purchasesRaw = await c.env.DB.prepare(`
