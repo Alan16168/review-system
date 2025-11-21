@@ -21,6 +21,7 @@ import systemSettings from './routes/system_settings';
 import aiBooks from './routes/ai_books';
 import marketplace from './routes/marketplace';
 import writingTemplates from './routes/writing_templates';
+import agents from './routes/agents';
 
 type Bindings = {
   DB: D1Database;
@@ -67,6 +68,7 @@ app.route('/api/system-settings', systemSettings);
 app.route('/api/ai-books', aiBooks);
 app.route('/api/marketplace', marketplace);
 app.route('/api/writing-templates', writingTemplates);
+app.route('/api/agents', agents);
 
 // Diagnostic page - serve directly
 app.get('/diagnostic.html', (c) => {
@@ -416,6 +418,7 @@ app.get('/', (c) => {
         <script src="/static/i18n.js"></script>
         <!-- Manhattan Project - AI Writing System -->
         <script src="/static/ai_books.js"></script>
+        <script src="/static/agents.js"></script>
         <script src="/static/app.js"></script>
     </body>
     </html>

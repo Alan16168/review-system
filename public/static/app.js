@@ -5348,17 +5348,23 @@ function renderNavigation() {
               <button onclick="showTeams()" class="text-gray-700 hover:text-indigo-600 transition">
                 <i class="fas fa-users mr-1"></i>${i18n.t('teams')}
               </button>
+              <button onclick="AIBooksManager.renderBooksPage()" class="text-gray-700 hover:text-indigo-600 transition">
+                <i class="fas fa-book-open mr-1"></i>${i18n.t('aiWriting')}
+              </button>
               <div class="relative inline-block">
                 <button onclick="toggleDropdown('marketplace-dropdown')" class="text-gray-700 hover:text-indigo-600 transition flex items-center">
                   <i class="fas fa-store mr-1"></i>${i18n.t('marketplace')}
                   <i class="fas fa-chevron-down ml-1 text-xs"></i>
                 </button>
                 <div id="marketplace-dropdown" class="hidden absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
+                  <button onclick="AgentsPage.switchView('marketplace'); AgentsPage.init(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
+                    <i class="fas fa-robot mr-2"></i>智能体商城
+                  </button>
+                  <button onclick="AgentsPage.switchView('my-agents'); AgentsPage.init(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
+                    <i class="fas fa-robot mr-2"></i>${i18n.t('myAgents')}
+                  </button>
                   <button onclick="MarketplaceManager.renderMarketplacePage(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
                     <i class="fas fa-store mr-2"></i>${i18n.t('marketplaceStore')}
-                  </button>
-                  <button onclick="MarketplaceManager.renderMyAgentsPage(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
-                    <i class="fas fa-robot mr-2"></i>${i18n.t('myAgents')}
                   </button>
                   <button onclick="MarketplaceManager.renderMyPurchasesPage(); toggleDropdown('marketplace-dropdown');" class="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700">
                     <i class="fas fa-shopping-bag mr-2"></i>${i18n.t('myOtherPurchases')}
