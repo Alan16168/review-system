@@ -775,12 +775,16 @@ const AIBooksManager = {
     try {
       showNotification(`🤖 AI正在为第${chapter.chapter_number}章重新生成${numSections}个小节...`, 'info');
       
+      const token = localStorage.getItem('authToken');
       // Call API to regenerate sections
       const response = await axios.post(
         `/api/ai-books/${this.currentBook.id}/chapters/${chapterId}/regenerate-sections`,
         { 
           num_sections: numSections,
           prompt: finalPrompt 
+        },
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
         }
       );
       
@@ -1089,10 +1093,13 @@ const AIBooksManager = {
       const latestChapters = bookResponse.data.chapters || [];
       
       // Then delete existing chapters
+      const token = localStorage.getItem('authToken');
       if (latestChapters.length > 0) {
         // Backend should cascade delete sections
         for (const chapter of latestChapters) {
-          await axios.delete(`/api/ai-books/${this.currentBook.id}/chapters/${chapter.id}`);
+          await axios.delete(`/api/ai-books/${this.currentBook.id}/chapters/${chapter.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
         }
       }
       
@@ -1102,6 +1109,9 @@ const AIBooksManager = {
         { 
           num_chapters: numChapters,
           prompt: finalPrompt
+        },
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
         }
       );
       
@@ -1172,11 +1182,15 @@ const AIBooksManager = {
     try {
       showNotification(`🤖 AI正在生成${numChapters}个章节，预计需要10-30秒...`, 'info');
       
+      const token = localStorage.getItem('authToken');
       const response = await axios.post(
         `/api/ai-books/${this.currentBook.id}/generate-chapters`,
         { 
           num_chapters: numChapters,
           prompt: finalPrompt
+        },
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
         }
       );
       
@@ -1259,11 +1273,15 @@ const AIBooksManager = {
     try {
       showNotification(`🤖 AI正在生成${numSections}个小节，预计需要10-30秒...`, 'info');
       
+      const token = localStorage.getItem('authToken');
       const response = await axios.post(
         `/api/ai-books/${this.currentBook.id}/chapters/${chapterId}/generate-sections`,
         { 
           num_sections: numSections,
           prompt: finalPrompt
+        },
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
         }
       );
       
@@ -1379,6 +1397,7 @@ const AIBooksManager = {
     try {
       showNotification(`🤖 AI正在生成约${targetWords}字的内容，请耐心等待...`, 'info');
       
+      const token = localStorage.getItem('authToken');
       const apiUrl = `/api/ai-books/${this.currentBook.id}/sections/${sectionId}/generate-content`;
       console.log(`[generateSectionContent] Calling API: ${apiUrl}`);
       console.log(`[generateSectionContent] Request body:`, { 
@@ -1389,6 +1408,8 @@ const AIBooksManager = {
       const response = await axios.post(apiUrl, { 
         target_word_count: targetWordsInt,
         prompt: finalPrompt
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       console.log(`[generateSectionContent] Response status:`, response.status);
@@ -1517,6 +1538,7 @@ const AIBooksManager = {
     try {
       showNotification(`🤖 AI正在重新生成约${targetWords}字的内容，请耐心等待...`, 'info');
       
+      const token = localStorage.getItem('authToken');
       const apiUrl = `/api/ai-books/${this.currentBook.id}/sections/${sectionId}/generate-content`;
       console.log(`[regenerateSectionContent] Calling API: ${apiUrl}`);
       console.log(`[regenerateSectionContent] Request body:`, { 
@@ -1527,6 +1549,8 @@ const AIBooksManager = {
       const response = await axios.post(apiUrl, { 
         target_word_count: targetWordsInt,
         prompt: finalPrompt
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       console.log(`[regenerateSectionContent] Response status:`, response.status);
