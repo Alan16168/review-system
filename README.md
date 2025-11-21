@@ -8,11 +8,11 @@
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
-**🚀 最新部署**: https://8cefe59a.review-system.pages.dev (2025-11-21)  
+**🚀 最新部署**: https://1d0ee485.review-system.pages.dev (2025-11-21)  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V7.0.6 - 商城菜单顺序优化 (2025-11-21)  
-**🔥 最新功能**: ✅ 商城下拉菜单顺序调整（我的智能体→我的其他购买→商城）  
+**✅ 当前版本**: V7.0.7 - 三级价格系统 + 产品分类重组 (2025-11-21)  
+**🔥 最新功能**: ✅ 模板三级价格（普通/高级/超级会员）+ 产品分类重组（ai_service/writing_template/review_template/other）  
 **🛠️ 错误处理**: ✅ 统一错误响应格式 + 详细日志记录 + 用户友好提示  
 **🔐 权限控制**: ✅ 标准化认证中间件 + 购物车需登录 + 未登录用户保护  
 **🛒 商城系统**: ✅ 智能体/复盘模板/其他 三大分类 + 自动合并付费模板  
@@ -20,6 +20,89 @@
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
+
+---
+
+## 🎨 V7.0.7 更新 - 三级价格系统 + 产品分类重组 (2025-11-21)
+
+**用户需求**: 
+1. 为"复盘模板"和"写作模板"添加三级会员价格
+2. 重组产品分类系统（review_template、writing_template、ai_service、other）
+3. 移动菜单项位置（复盘模板从System移到Marketplace）
+
+**实现的功能**:
+
+**1. 复盘模板三级价格（templates表）**:
+- ✅ 数据库: 添加 price_basic, price_premium, price_super 字段
+- ✅ 后端API: templates CRUD接口全部支持三级价格
+- ✅ 前端UI: 
+  - 创建/编辑模板时输入三级价格（美元USD）
+  - 列表显示: 普通(灰色), 高级(蓝色), 超级(紫色)
+  - 价格格式化: $0.00 USD
+- ✅ 数据迁移: Migration 0049成功应用（5 queries, 14 rows）
+
+**2. 写作模板三级价格（ai_writing_templates表）**:
+- ✅ 数据库: 添加 price_user, price_premium, price_super 字段
+- ✅ 后端API: writing_templates CRUD接口全部支持三级价格
+- ✅ 前端UI:
+  - 创建/编辑模板时输入三级价格（美元USD）
+  - 列表显示三级价格（不同颜色区分）
+  - 价格格式化: $0.00 USD
+- ✅ 数据迁移: Migration 0050成功应用（4 queries, 13 rows）
+
+**3. 产品类型重组（marketplace_products表）**:
+- ✅ 数据库: CHECK约束更新为 ('ai_service', 'writing_template', 'review_template', 'other')
+- ✅ 数据迁移: 
+  - 'template' → 'review_template'
+  - 'book_template' → 'other'
+  - 其他类型保持不变
+- ✅ 迁移成功: Migration 0051成功应用（8 queries, 104 rows）
+
+**4. 管理面板重组**:
+- ✅ 商城管理（Marketplace）菜单:
+  - 订阅管理
+  - 智能体管理
+  - **写作模板** (新增，调用loadWritingTemplates)
+  - **复盘模板** (从System移动过来)
+  - 其他产品管理
+- ✅ AI设置（Agents）菜单:
+  - **AI 写作设置** (保留，管理写作模板)
+- ✅ 系统管理（System）菜单:
+  - **复盘模板** (移除)
+
+**5. 产品分类显示名称**:
+- ✅ 智能体: AI Service / 智能体服务
+- ✅ 写作模板: Writing Template / 写作模板
+- ✅ 复盘模板: Review Template / 复盘模板
+- ✅ 其他产品: Other / 其他
+
+**技术实现**:
+- **数据库迁移**:
+  - 0049_add_template_tiered_pricing.sql: 复盘模板三级价格
+  - 0050_add_writing_template_tiered_pricing.sql: 写作模板三级价格
+  - 0051_update_product_type_constraint.sql: 产品类型约束更新 + 数据迁移
+- **后端API**:
+  - src/routes/templates.ts: 支持三级价格CRUD
+  - src/routes/writing_templates.ts: 支持三级价格CRUD
+- **前端UI**:
+  - public/static/app.js: 
+    - 管理面板菜单结构更新（Lines ~6548-6580）
+    - 模板编辑表单更新（三级价格输入）
+    - 模板列表显示更新（三级价格展示）
+    - 写作模板集成（支持双上下文调用）
+
+**部署信息**:
+- **部署URL**: https://1d0ee485.review-system.pages.dev
+- **Git Commit**: d0bd5a1 (feat: Add three-tier pricing system and reorganize product categories)
+- **数据库迁移**: ✅ 所有3个迁移已应用到生产环境
+- **Build时间**: 8.86s
+- **状态**: ✅ 生产环境完全部署
+
+**用户体验提升**:
+- 💰 灵活的三级定价策略（普通/高级/超级会员）
+- 📊 清晰的产品分类体系
+- 🎯 直观的管理界面布局
+- 💵 统一的美元定价（USD）
 
 ---
 
