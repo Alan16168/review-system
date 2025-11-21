@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
-import { HTTPException } from 'hono/http-exception';
-import { verifyToken } from '../utils/auth';
+import { authMiddleware, adminOnly } from '../middleware/auth';
 
 type Bindings = {
   DB: D1Database;
@@ -9,33 +8,15 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// ============================================================================
-// Helper: Get user from token
-// ============================================================================
-
-async function getUserFromToken(c: any): Promise<any> {
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new HTTPException(401, { message: 'Unauthorized' });
+// Apply auth middleware: optional for GET, required with admin role for mutations
+app.use('/products/all', authMiddleware, adminOnly);
+app.use('/', async (c, next) => {
+  const method = c.req.method;
+  if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+    return authMiddleware(c, async () => adminOnly(c, next));
   }
-
-  const token = authHeader.substring(7);
-  
-  try {
-    const decoded = verifyToken(token, c.env.JWT_SECRET);
-    const user = await c.env.DB.prepare(
-      'SELECT id, email, username, subscription_tier, is_admin FROM users WHERE id = ?'
-    ).bind(decoded.id).first();
-    
-    if (!user) {
-      throw new HTTPException(401, { message: 'User not found' });
-    }
-    
-    return user;
-  } catch (error) {
-    throw new HTTPException(401, { message: 'Invalid token' });
-  }
-}
+  await next();
+});
 
 // ============================================================================
 // GET /api/marketplace/products - List all products (public)
@@ -93,13 +74,7 @@ app.get('/products', async (c) => {
 // ============================================================================
 
 app.get('/products/all', async (c) => {
-  try {
-    const user = await getUserFromToken(c);
-    
-    if (!user.is_admin) {
-      return c.json({ success: false, error: 'Admin access required' }, 403);
-    }
-    
+  try {    
     const products = await c.env.DB.prepare(`
       SELECT * FROM marketplace_products
       ORDER BY created_at DESC
@@ -147,11 +122,8 @@ app.get('/products/:id', async (c) => {
 
 app.post('/products', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     
-    if (!user.is_admin) {
-      return c.json({ success: false, error: 'Admin access required' }, 403);
-    }
     
     const body = await c.req.json();
     
@@ -210,11 +182,8 @@ app.post('/products', async (c) => {
 
 app.put('/products/:id', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     
-    if (!user.is_admin) {
-      return c.json({ success: false, error: 'Admin access required' }, 403);
-    }
     
     const productId = c.req.param('id');
     const body = await c.req.json();
@@ -280,11 +249,8 @@ app.put('/products/:id', async (c) => {
 
 app.post('/products/:id/toggle-status', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     
-    if (!user.is_admin) {
-      return c.json({ success: false, error: 'Admin access required' }, 403);
-    }
     
     const productId = c.req.param('id');
     
@@ -321,11 +287,8 @@ app.post('/products/:id/toggle-status', async (c) => {
 
 app.delete('/products/:id', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     
-    if (!user.is_admin) {
-      return c.json({ success: false, error: 'Admin access required' }, 403);
-    }
     
     const productId = c.req.param('id');
     
@@ -349,7 +312,7 @@ app.delete('/products/:id', async (c) => {
 
 app.get('/cart', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     
     const cartItems = await c.env.DB.prepare(`
       SELECT 
@@ -379,7 +342,7 @@ app.get('/cart', async (c) => {
 
 app.post('/cart/add', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     const body = await c.req.json();
     
     const { product_id } = body;
@@ -447,7 +410,7 @@ app.post('/cart/add', async (c) => {
 
 app.delete('/cart/:cartId', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     const cartId = c.req.param('cartId');
     
     await c.env.DB.prepare(
@@ -470,7 +433,7 @@ app.delete('/cart/:cartId', async (c) => {
 
 app.post('/checkout', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     
     // Get all cart items with product details including tiered pricing
     const cartItems: any = await c.env.DB.prepare(`
@@ -545,7 +508,7 @@ app.post('/checkout', async (c) => {
 
 app.get('/my-purchases', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     
     const purchases = await c.env.DB.prepare(`
       SELECT 
@@ -574,7 +537,7 @@ app.get('/my-purchases', async (c) => {
 
 app.get('/my-agents', async (c) => {
   try {
-    const user = await getUserFromToken(c);
+    const user = c.get('user');
     
     const agents = await c.env.DB.prepare(`
       SELECT 
