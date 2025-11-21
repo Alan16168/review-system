@@ -11,14 +11,78 @@
 **🚀 最新部署**: https://274bb984.review-system.pages.dev (2025-11-21)  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V7.0.3 - 修复未登录用户访问错误 (2025-11-21)  
-**🔥 最新功能**: ✅ 修复 "Cannot read properties of undefined (reading 'id')" 错误  
+**✅ 当前版本**: V7.0.4 - MarketPlace商城修复 (2025-11-21)  
+**🔥 最新功能**: ✅ 购物车认证修复 + 复盘模板整合 + 分类清晰化  
 **🛠️ 错误处理**: ✅ 统一错误响应格式 + 详细日志记录 + 用户友好提示  
-**🔐 权限控制**: ✅ 标准化认证中间件 + 未登录用户保护 (所有函数正确检查用户状态)  
+**🔐 权限控制**: ✅ 标准化认证中间件 + 购物车需登录 + 未登录用户保护  
+**🛒 商城系统**: ✅ 智能体/复盘模板/其他 三大分类 + 自动合并付费模板  
 **📝 模板系统**: ✅ 支持私人/团队/公开三种可见性级别 + 价格设置  
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
+
+---
+
+## 🛒 V7.0.4 更新 - MarketPlace商城修复 (2025-11-21)
+
+**用户报告的问题** (截图反馈):
+
+1. **点击"加入购物车"出错** - 500错误
+2. **价格显示错误** - 显示$0
+3. **分类不清晰** - 需要重新组织为：智能体、复盘模板、其他
+
+**根本原因分析**:
+- ❌ 购物车路由缺少认证中间件
+- ❌ 前端未检查登录状态就调用购物车API
+- ❌ 分类使用 `product_type` 和 `category` 字段不一致
+- ❌ 没有整合 `templates` 表的付费模板
+- ⚠️ 商品价格为0是数据问题（订阅制商品或未设置价格）
+
+**实施的修复**:
+
+**1. 购物车认证修复**:
+```typescript
+// 后端：添加认证中间件
+app.use('/cart/*', authMiddleware);
+app.use('/checkout', authMiddleware);
+
+// 前端：添加登录检查
+if (!currentUser) {
+  showNotification('请先登录', 'error');
+  showLogin();
+  return;
+}
+```
+
+**2. 复盘模板整合**:
+```typescript
+// 自动从 templates 表读取价格>0的模板
+SELECT * FROM templates WHERE price > 0 AND is_active = 1
+// 添加前缀 'wt_' 区分来源
+{ id: 'wt_123', category: 'review_template', ... }
+```
+
+**3. 分类清晰化**:
+- **智能体** (`ai_service`) - AI助手类产品 <i class="fas fa-robot"></i>
+- **复盘模板** (`review_template`) - 价格>0的模板 <i class="fas fa-file-alt"></i>
+- **其他** (`other`) - 其他商品 <i class="fas fa-box"></i>
+
+**改进文件**:
+- 更新: `src/routes/marketplace.ts` - 认证中间件 + 模板整合 (62行修改)
+- 更新: `public/static/app.js` - 登录检查 + 分类更新 + ID类型修复 (6处修改)
+
+**用户体验提升**:
+- ✅ 未登录用户点击"加入购物车"显示友好提示
+- ✅ 商城自动显示所有付费复盘模板
+- ✅ 分类清晰：智能体、复盘模板、其他
+
+**待处理事项**:
+- ⚠️ **价格显示$0**: 数据库中商品价格为0（订阅制商品或未设置）
+- ⚠️ **分类不匹配**: 数据库category字段需更新为 ai_service/review_template/other
+- ⚠️ **复盘模板数据**: 当前所有templates价格都是0，更新价格后才会显示
+
+**文档**:
+- 📋 [完整修复报告](./FIX_MARKETPLACE_ISSUES_2025-11-21.md)
 
 ---
 

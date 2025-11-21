@@ -14101,22 +14101,22 @@ const MarketplaceManager = {
             <button onclick="MarketplaceManager.filterByCategory('all')" 
                     class="category-filter-btn active px-4 py-2 rounded-lg font-medium transition"
                     data-category="all">
-              <i class="fas fa-th mr-2"></i>${i18n.t('allProducts')}
+              <i class="fas fa-th mr-2"></i>全部商品
             </button>
             <button onclick="MarketplaceManager.filterByCategory('ai_service')" 
                     class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
                     data-category="ai_service">
-              <i class="fas fa-robot mr-2"></i>${i18n.t('aiAgent')}
+              <i class="fas fa-robot mr-2"></i>智能体
             </button>
-            <button onclick="MarketplaceManager.filterByCategory('template')" 
+            <button onclick="MarketplaceManager.filterByCategory('review_template')" 
                     class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
-                    data-category="template">
-              <i class="fas fa-file-alt mr-2"></i>${i18n.t('templates')}
+                    data-category="review_template">
+              <i class="fas fa-file-alt mr-2"></i>复盘模板
             </button>
             <button onclick="MarketplaceManager.filterByCategory('other')" 
                     class="category-filter-btn px-4 py-2 rounded-lg font-medium transition"
                     data-category="other">
-              <i class="fas fa-box mr-2"></i>${i18n.t('other')}
+              <i class="fas fa-box mr-2"></i>其他
             </button>
           </div>
 
@@ -14218,15 +14218,15 @@ const MarketplaceManager = {
       
       return `
         <div class="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer"
-             onclick="MarketplaceManager.showProductDetails(${product.id})">
+             onclick="MarketplaceManager.showProductDetails('${product.id}')">
           <!-- Product Header with Icon -->
           <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 text-center">
             <div class="w-20 h-20 mx-auto bg-white rounded-full flex items-center justify-center mb-4">
-              <i class="fas fa-${this.getCategoryIcon(product.product_type)} text-indigo-600 text-3xl"></i>
+              <i class="fas fa-${this.getCategoryIcon(product.category || product.product_type)} text-indigo-600 text-3xl"></i>
             </div>
             <h3 class="text-xl font-bold text-white mb-2">${product.name}</h3>
             <span class="inline-block px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">
-              ${this.getCategoryName(product.product_type)}
+              ${this.getCategoryName(product.category || product.product_type)}
             </span>
           </div>
 
@@ -14249,7 +14249,7 @@ const MarketplaceManager = {
 
             <!-- Action Buttons -->
             <div class="flex gap-2">
-              <button onclick="event.stopPropagation(); MarketplaceManager.addToCart(${product.id})" 
+              <button onclick="event.stopPropagation(); MarketplaceManager.addToCart('${product.id}')" 
                       class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition">
                 <i class="fas fa-cart-plus mr-2"></i>${i18n.t('addToCart')}
               </button>
@@ -14263,6 +14263,7 @@ const MarketplaceManager = {
   getCategoryIcon(category) {
     const icons = {
       'ai_service': 'robot',
+      'review_template': 'file-alt',
       'template': 'file-alt',
       'book_template': 'book',
       'other': 'box'
@@ -14271,17 +14272,24 @@ const MarketplaceManager = {
   },
 
   getCategoryName(category) {
-    // Use i18n for category names
-    const keys = {
-      'ai_service': 'aiAgent',
-      'template': 'templates',
-      'book_template': 'templates',
-      'other': 'other'
+    const names = {
+      'ai_service': '智能体',
+      'review_template': '复盘模板',
+      'template': '模板',
+      'book_template': '书籍模板',
+      'other': '其他'
     };
-    return i18n.t(keys[category] || 'other');
+    return names[category] || '其他';
   },
 
   async addToCart(productId) {
+    // Check if user is logged in
+    if (!currentUser) {
+      showNotification('请先登录', 'error');
+      showLogin();
+      return;
+    }
+    
     try {
       await axios.post('/api/marketplace/cart/add', { product_id: productId });
       showNotification(i18n.t('productAddedToCart') || '已加入购物车', 'success');

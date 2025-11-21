@@ -8,9 +8,16 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Apply auth middleware: optional for GET, required with admin role for mutations
+// Apply auth middleware: optional for GET products, required for admin operations and cart
 app.use('/products/all', authMiddleware, adminOnly);
-app.use('/', async (c, next) => {
+
+// Cart and purchase operations require authentication
+app.use('/cart/*', authMiddleware);
+app.use('/checkout', authMiddleware);
+app.use('/my-*', authMiddleware);
+
+// Product mutations require admin role
+app.use('/products/*', async (c, next) => {
   const method = c.req.method;
   if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
     return authMiddleware(c, async () => adminOnly(c, next));
@@ -18,8 +25,17 @@ app.use('/', async (c, next) => {
   await next();
 });
 
+app.use('/products', async (c, next) => {
+  const method = c.req.method;
+  if (method === 'POST') {
+    return authMiddleware(c, async () => adminOnly(c, next));
+  }
+  await next();
+});
+
 // ============================================================================
 // GET /api/marketplace/products - List all products (public)
+// Includes marketplace products + paid writing templates
 // ============================================================================
 
 app.get('/products', async (c) => {
@@ -28,10 +44,11 @@ app.get('/products', async (c) => {
     const productType = c.req.query('type');
     const featured = c.req.query('featured');
     
+    // Get marketplace products
     let query = `
       SELECT 
         id, product_type, name, name_en, description, description_en,
-        price_usd, is_free, is_subscription, subscription_tier,
+        price_user, price_premium, price_super, is_free, is_subscription, subscription_tier,
         credits_cost, features_json, category, tags, image_url,
         is_active, is_featured, sort_order, purchase_count,
         rating_avg, rating_count, created_at, updated_at
@@ -57,11 +74,56 @@ app.get('/products', async (c) => {
     
     query += ' ORDER BY is_featured DESC, sort_order ASC, created_at DESC';
     
-    const products = await c.env.DB.prepare(query).bind(...params).all();
+    const marketplaceProducts = await c.env.DB.prepare(query).bind(...params).all();
+    let products: any[] = marketplaceProducts.results || [];
+    
+    // Get paid review templates (price > 0) and add them as products
+    if (!category || category === 'review_template') {
+      const templates = await c.env.DB.prepare(`
+        SELECT 
+          id,
+          name,
+          NULL as name_en,
+          description,
+          NULL as description_en,
+          price as price_user,
+          price as price_premium,
+          price as price_super,
+          0 as is_free,
+          0 as is_subscription,
+          NULL as subscription_tier,
+          0 as credits_cost,
+          NULL as features_json,
+          'review_template' as category,
+          'review_template' as product_type,
+          NULL as tags,
+          NULL as image_url,
+          is_active,
+          0 as is_featured,
+          0 as sort_order,
+          0 as purchase_count,
+          0 as rating_avg,
+          0 as rating_count,
+          created_at,
+          updated_at
+        FROM templates
+        WHERE price > 0 AND is_active = 1
+        ORDER BY created_at DESC
+      `).all();
+      
+      // Prefix template IDs with 'wt_' to distinguish from marketplace products
+      const transformedTemplates = (templates.results || []).map((t: any) => ({
+        ...t,
+        id: `wt_${t.id}`, // Prefix to distinguish from marketplace products
+        source: 'writing_template' // Mark the source
+      }));
+      
+      products = [...products, ...transformedTemplates];
+    }
     
     return c.json({
       success: true,
-      products: products.results || []
+      products: products
     });
   } catch (error: any) {
     console.error('Error fetching products:', error);
