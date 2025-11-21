@@ -8,11 +8,11 @@
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
-**🚀 最新部署**: https://d4f36f6b.review-system.pages.dev (2025-11-21)  
+**🚀 最新部署**: https://be08f9ff.review-system.pages.dev (2025-11-21)  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V7.0.9 - 菜单优化和界面清理 (2025-11-21)  
-**🔥 最新功能**: ✅ "智能体"改为"智能体设置" + 删除AI写作助手推广区域  
+**✅ 当前版本**: V7.1.0 - 智能体分类下拉选项英文化 (2025-11-21)  
+**🔥 最新功能**: ✅ 智能体编辑分类下拉选项改为英文 (AI Agent, Writing Template, Review Template, Others)  
 **🛠️ 错误处理**: ✅ 统一错误响应格式 + 详细日志记录 + 用户友好提示  
 **🔐 权限控制**: ✅ 标准化认证中间件 + 购物车需登录 + 未登录用户保护  
 **🛒 商城系统**: ✅ 智能体/复盘模板/其他 三大分类 + 自动合并付费模板  
@@ -20,6 +20,39 @@
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
+
+---
+
+## 🎨 V7.1.0 更新 - 智能体分类下拉选项英文化 (2025-11-21)
+
+**用户需求**: 修改智能体编辑界面的分类下拉选项为英文
+
+**修改内容**:
+- ✅ **分类下拉选项英文化**: 
+  - "智能体 (AI Agent)" → "AI Agent"
+  - "写作模板 (Writing Template)" → "Writing Template"
+  - "复盘模板 (Review Template)" → "Review Template"
+  - "其他产品 (Others)" → "Others"
+- ✅ **默认值**: AI Agent (ai_service)
+- ✅ **影响范围**:
+  - 编辑产品模态框 (第14149-14152行)
+  - 创建产品模态框 (第14441-14444行)
+
+**技术实现**:
+- **前端更改**:
+  - 修改 editMarketplaceProduct 函数中的分类选项
+  - 修改 showCreateProductModalWithCategory 函数中的分类选项
+  - 保持原有value值不变，仅更改显示文本
+
+**部署信息**:
+- **部署URL**: https://be08f9ff.review-system.pages.dev
+- **Git Commit**: e9c3c09
+- **Build时间**: 2.25s
+
+**用户体验提升**:
+- 🎯 界面语言统一，更专业
+- 🌍 英文选项更国际化
+- 💡 简洁清晰的选项名称
 
 ---
 
