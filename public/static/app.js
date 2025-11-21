@@ -4,6 +4,26 @@ let authToken = null;
 let currentView = 'home';
 let currentDraftId = null; // Track the draft ID to avoid creating duplicates
 
+// ============================================================================
+// Global Modal Utilities
+// ============================================================================
+
+// Close modal by removing it from DOM
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Close modal when clicking on backdrop (not on modal content)
+function closeModalOnBackdrop(event, modalId) {
+  if (event.target.id === modalId) {
+    closeModal(modalId);
+  }
+}
+
+// ============================================================================
 // Helper function to auto-save draft before navigation
 async function autoSaveDraftBeforeNavigation() {
   if (currentView === 'create-review-step1' || currentView === 'create-review-step2') {
