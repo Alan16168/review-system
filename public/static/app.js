@@ -10652,9 +10652,29 @@ async function removeFromCart(cartId) {
   }
 }
 
-// Clear entire cart - Not implemented for marketplace
+// Clear entire cart
 async function clearCart() {
-  showNotification('Clear cart feature coming soon', 'info');
+  try {
+    if (!confirm(i18n.t('confirmClearCart') || '确定要清空购物车吗？')) {
+      return;
+    }
+    
+    // Get all cart items
+    const cartResponse = await axios.get('/api/marketplace/cart');
+    const items = cartResponse.data.cart_items || [];
+    
+    // Delete each item
+    for (const item of items) {
+      await axios.delete(`/api/marketplace/cart/${item.cart_id}`);
+    }
+    
+    showNotification(i18n.t('cartCleared') || '购物车已清空', 'success');
+    closeCart();
+    await MarketplaceManager.updateCartCount();
+  } catch (error) {
+    console.error('Clear cart error:', error);
+    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+  }
 }
 
 // Proceed to checkout with marketplace API
@@ -10859,8 +10879,8 @@ async function confirmCheckout() {
       return;
     }
     
-    // Show confirmation dialog
-    const total = items.reduce((sum, item) => sum + parseFloat(item.price_usd || 0), 0).toFixed(2);
+    // Show confirmation dialog - use user_price (tiered pricing)
+    const total = items.reduce((sum, item) => sum + parseFloat(item.user_price || 0), 0).toFixed(2);
     if (!confirm(i18n.t('confirmPayment') + '?\n\n' + (i18n.t('total') || '总计') + ': $' + total)) {
       return;
     }

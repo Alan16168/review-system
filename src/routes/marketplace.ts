@@ -850,7 +850,7 @@ app.get('/my-purchases', async (c) => {
       return c.json({ success: false, error: 'Unauthorized' }, 401);
     }
     
-    // Get all purchases (including all product types)
+    // Get all purchases excluding ai_service (智能体显示在单独页面)
     const purchasesRaw = await c.env.DB.prepare(`
       SELECT 
         id,
@@ -862,7 +862,7 @@ app.get('/my-purchases', async (c) => {
         status,
         purchase_date
       FROM user_purchases
-      WHERE user_id = ?
+      WHERE user_id = ? AND (product_type IS NULL OR product_type != 'ai_service')
       ORDER BY purchase_date DESC
     `).bind(user.id).all();
     
@@ -942,21 +942,56 @@ app.get('/my-agents', async (c) => {
   try {
     const user = c.get('user');
     
-    const agents = await c.env.DB.prepare(`
+    // Get all AI service purchases
+    const purchasesRaw = await c.env.DB.prepare(`
       SELECT 
-        up.*,
-        p.description,
-        p.image_url,
-        p.features_json
-      FROM user_purchases up
-      JOIN marketplace_products p ON up.product_id = p.id
-      WHERE up.user_id = ? AND up.product_type = 'ai_service'
-      ORDER BY up.purchase_date DESC
+        id,
+        user_id,
+        product_id,
+        product_type,
+        product_name,
+        price_paid,
+        status,
+        purchase_date
+      FROM user_purchases
+      WHERE user_id = ? AND product_type = 'ai_service'
+      ORDER BY purchase_date DESC
     `).bind(user.id).all();
+    
+    const items = purchasesRaw.results || [];
+    
+    // Fetch additional details for each purchase
+    const agents = [];
+    for (const item of items) {
+      const productId = item.product_id;
+      let description = '';
+      let image_url = null;
+      let features_json = null;
+      
+      // Query marketplace_products for details
+      const product: any = await c.env.DB.prepare(`
+        SELECT description, image_url, features_json
+        FROM marketplace_products
+        WHERE id = ?
+      `).bind(productId).first();
+      
+      if (product) {
+        description = product.description || '';
+        image_url = product.image_url;
+        features_json = product.features_json;
+      }
+      
+      agents.push({
+        ...item,
+        description,
+        image_url,
+        features_json
+      });
+    }
     
     return c.json({
       success: true,
-      agents: agents.results || []
+      agents: agents
     });
   } catch (error: any) {
     console.error('Error fetching agents:', error);
