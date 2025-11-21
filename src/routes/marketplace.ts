@@ -112,14 +112,58 @@ app.get('/products', async (c) => {
         ORDER BY created_at DESC
       `).all();
       
-      // Prefix template IDs with 'wt_' to distinguish from marketplace products
+      // Prefix template IDs with 't_' to distinguish from marketplace products
       const transformedTemplates = (templates.results || []).map((t: any) => ({
+        ...t,
+        id: `t_${t.id}`, // Prefix to distinguish from marketplace products
+        source: 'review_template' // Mark the source
+      }));
+      
+      products = [...products, ...transformedTemplates];
+    }
+    
+    // Get public AI writing templates and add them as products
+    if (!category || category === 'writing_template') {
+      const writingTemplates = await c.env.DB.prepare(`
+        SELECT 
+          id,
+          name,
+          name_en,
+          description,
+          description_en,
+          price_user,
+          price_premium,
+          price_super,
+          0 as is_free,
+          0 as is_subscription,
+          NULL as subscription_tier,
+          0 as credits_cost,
+          NULL as features_json,
+          'writing_template' as category,
+          'writing_template' as product_type,
+          tags,
+          NULL as image_url,
+          is_active,
+          is_featured,
+          sort_order,
+          0 as purchase_count,
+          0 as rating_avg,
+          0 as rating_count,
+          created_at,
+          updated_at
+        FROM ai_writing_templates
+        WHERE is_public = 1 AND is_active = 1
+        ORDER BY is_featured DESC, sort_order ASC, created_at DESC
+      `).all();
+      
+      // Prefix template IDs with 'wt_' to distinguish from marketplace products
+      const transformedWritingTemplates = (writingTemplates.results || []).map((t: any) => ({
         ...t,
         id: `wt_${t.id}`, // Prefix to distinguish from marketplace products
         source: 'writing_template' // Mark the source
       }));
       
-      products = [...products, ...transformedTemplates];
+      products = [...products, ...transformedWritingTemplates];
     }
     
     return c.json({
@@ -405,10 +449,31 @@ app.get('/cart', async (c) => {
             id,
             name,
             description,
+            price_user,
+            price_premium,
+            price_super,
+            'writing_template' as product_type,
+            'writing_template' as category,
+            is_active
+          FROM ai_writing_templates
+          WHERE id = ?
+        `).bind(templateId).first();
+        
+        if (product) {
+          product.id = productId; // Keep the prefixed ID
+        }
+      } else if (typeof productId === 'string' && productId.startsWith('t_')) {
+        // Check if this is a review template (prefix 't_')
+        const templateId = parseInt(productId.substring(2));
+        product = await c.env.DB.prepare(`
+          SELECT 
+            id,
+            name,
+            description,
             price as price_user,
             price as price_premium,
             price as price_super,
-            'writing_template' as product_type,
+            'review_template' as product_type,
             'review_template' as category,
             is_active
           FROM templates
@@ -460,16 +525,40 @@ app.post('/cart/add', async (c) => {
       return c.json({ success: false, error: 'Product ID is required' }, 400);
     }
     
-    // Check if this is a writing template (prefix 'wt_')
-    const isTemplate = typeof product_id === 'string' && product_id.startsWith('wt_');
+    // Check if this is a writing template (prefix 'wt_') or review template (prefix 't_')
+    const isWritingTemplate = typeof product_id === 'string' && product_id.startsWith('wt_');
+    const isReviewTemplate = typeof product_id === 'string' && product_id.startsWith('t_');
     let actualProductId = product_id;
     let product: any = null;
     
-    if (isTemplate) {
+    if (isWritingTemplate) {
       // Extract the real template ID (remove 'wt_' prefix)
       const templateId = parseInt(product_id.substring(3));
       
-      // Check if template exists and is active
+      // Check if writing template exists and is active
+      product = await c.env.DB.prepare(
+        'SELECT id, is_active, price_user FROM ai_writing_templates WHERE id = ?'
+      ).bind(templateId).first();
+      
+      if (!product) {
+        return c.json({ success: false, error: 'Template not found' }, 404);
+      }
+      
+      if (!product.is_active) {
+        return c.json({ success: false, error: 'Template is not available' }, 400);
+      }
+      
+      if (product.price_user <= 0) {
+        return c.json({ success: false, error: 'This template is free' }, 400);
+      }
+      
+      // Keep the original product_id with prefix for cart storage
+      actualProductId = product_id;
+    } else if (isReviewTemplate) {
+      // Extract the real template ID (remove 't_' prefix)
+      const templateId = parseInt(product_id.substring(2));
+      
+      // Check if review template exists and is active
       product = await c.env.DB.prepare(
         'SELECT id, is_active, price FROM templates WHERE id = ?'
       ).bind(templateId).first();
@@ -713,6 +802,19 @@ app.get('/my-purchases', async (c) => {
       // Check if this is a writing template (prefix 'wt_')
       if (typeof productId === 'string' && productId.startsWith('wt_')) {
         const templateId = parseInt(productId.substring(3));
+        const template: any = await c.env.DB.prepare(`
+          SELECT description, NULL as image_url
+          FROM ai_writing_templates
+          WHERE id = ?
+        `).bind(templateId).first();
+        
+        if (template) {
+          description = template.description || '';
+          image_url = template.image_url;
+        }
+      } else if (typeof productId === 'string' && productId.startsWith('t_')) {
+        // Check if this is a review template (prefix 't_')
+        const templateId = parseInt(productId.substring(2));
         const template: any = await c.env.DB.prepare(`
           SELECT description, NULL as image_url
           FROM templates
