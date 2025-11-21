@@ -151,7 +151,7 @@ app.post('/', async (c) => {
         category, icon, color, tags,
         default_tone, default_audience, default_language, default_target_words,
         is_active, is_public, is_featured
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       user.id,
       'individual',
@@ -167,6 +167,7 @@ app.post('/', async (c) => {
       default_audience || 'general',
       default_language || 'zh',
       default_target_words || 50000,
+      1, // is_active
       is_public ? 1 : 0,
       is_featured ? 1 : 0
     ).run();
@@ -182,7 +183,7 @@ app.post('/', async (c) => {
             placeholder, default_value, options_json,
             is_required, min_length, max_length, validation_regex,
             help_text, help_text_en, sort_order, group_name, is_active
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           templateId,
           field.field_key,
@@ -199,7 +200,8 @@ app.post('/', async (c) => {
           field.help_text || null,
           field.help_text_en || null,
           field.sort_order || 0,
-          field.group_name || null
+          field.group_name || null,
+          1 // is_active
         ).run();
       }
     }
@@ -425,7 +427,7 @@ app.post('/:id/fields', async (c) => {
         placeholder, default_value, options_json,
         is_required, min_length, max_length, validation_regex,
         help_text, help_text_en, sort_order, group_name, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       templateId,
       field_key,
@@ -442,7 +444,8 @@ app.post('/:id/fields', async (c) => {
       help_text || null,
       help_text_en || null,
       sort_order || 0,
-      group_name || null
+      group_name || null,
+      1 // is_active
     ).run();
 
     const fieldId = result.meta.last_row_id;
