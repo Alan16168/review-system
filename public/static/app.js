@@ -6378,7 +6378,7 @@ async function showAdmin() {
                 <button onclick="showAdminCategory('agents')" 
                         class="admin-category-tab py-4 px-1 border-b-2 font-medium text-base"
                         data-category="agents">
-                  <i class="fas fa-robot mr-2"></i>智能体
+                  <i class="fas fa-robot mr-2"></i>智能体配置
                 </button>
                 <button onclick="showAdminCategory('marketplace')" 
                         class="admin-category-tab py-4 px-1 border-b-2 font-medium text-base"
@@ -6511,7 +6511,7 @@ function showAdminCategory(category) {
             <button onclick="showAdminSubTab('aiSettings')" 
                     class="admin-subtab active py-3 px-1 border-b-2 font-medium"
                     data-subtab="aiSettings">
-              <i class="fas fa-robot mr-2"></i>AI 写作设置
+              <i class="fas fa-robot mr-2"></i>智能写作助手
             </button>
           </nav>
         </div>
@@ -13430,7 +13430,7 @@ async function showAISettingsManagement(container) {
       <div class="flex justify-between items-center mb-6">
         <div>
           <h2 class="text-2xl font-bold text-gray-800">
-            <i class="fas fa-robot mr-2"></i>AI 智能写作助手设置
+            <i class="fas fa-robot mr-2"></i>智能写作助手
           </h2>
         </div>
         <button id="save-settings-btn" onclick="saveCurrentTabSettings(event)" 
@@ -15173,7 +15173,7 @@ function showCreateWritingTemplateModal() {
               </label>
               <select id="template-product-type" required
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                <option value="ai_agent">AIAgent</option>
+                <option value="ai_agent">AI Agent</option>
                 <option value="review_template">Review Template</option>
                 <option value="writing_template" selected>Writing Template</option>
                 <option value="other">Others</option>
@@ -15516,7 +15516,7 @@ async function showEditWritingTemplateModal(templateId) {
                 </label>
                 <select id="template-product-type" required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                  <option value="ai_agent" ${template.product_type === 'ai_agent' ? 'selected' : ''}>AIAgent</option>
+                  <option value="ai_agent" ${template.product_type === 'ai_agent' ? 'selected' : ''}>AI Agent</option>
                   <option value="review_template" ${template.product_type === 'review_template' ? 'selected' : ''}>Review Template</option>
                   <option value="writing_template" ${template.product_type === 'writing_template' || !template.product_type ? 'selected' : ''}>Writing Template</option>
                   <option value="other" ${template.product_type === 'other' ? 'selected' : ''}>Others</option>
