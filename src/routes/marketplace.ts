@@ -407,29 +407,59 @@ app.post('/cart/add', async (c) => {
     const user = c.get('user');
     const body = await c.req.json();
     
-    const { product_id } = body;
+    let { product_id } = body;
     
     if (!product_id) {
       return c.json({ success: false, error: 'Product ID is required' }, 400);
     }
     
-    // Check if product exists and is active
-    const product = await c.env.DB.prepare(
-      'SELECT id, is_active FROM marketplace_products WHERE id = ?'
-    ).bind(product_id).first();
+    // Check if this is a writing template (prefix 'wt_')
+    const isTemplate = typeof product_id === 'string' && product_id.startsWith('wt_');
+    let actualProductId = product_id;
+    let product: any = null;
     
-    if (!product) {
-      return c.json({ success: false, error: 'Product not found' }, 404);
-    }
-    
-    if (!(product as any).is_active) {
-      return c.json({ success: false, error: 'Product is not available' }, 400);
+    if (isTemplate) {
+      // Extract the real template ID (remove 'wt_' prefix)
+      const templateId = parseInt(product_id.substring(3));
+      
+      // Check if template exists and is active
+      product = await c.env.DB.prepare(
+        'SELECT id, is_active, price FROM templates WHERE id = ?'
+      ).bind(templateId).first();
+      
+      if (!product) {
+        return c.json({ success: false, error: 'Template not found' }, 404);
+      }
+      
+      if (!product.is_active) {
+        return c.json({ success: false, error: 'Template is not available' }, 400);
+      }
+      
+      if (product.price <= 0) {
+        return c.json({ success: false, error: 'This template is free' }, 400);
+      }
+      
+      // Keep the original product_id with prefix for cart storage
+      actualProductId = product_id;
+    } else {
+      // Regular marketplace product
+      product = await c.env.DB.prepare(
+        'SELECT id, is_active FROM marketplace_products WHERE id = ?'
+      ).bind(product_id).first();
+      
+      if (!product) {
+        return c.json({ success: false, error: 'Product not found' }, 404);
+      }
+      
+      if (!product.is_active) {
+        return c.json({ success: false, error: 'Product is not available' }, 400);
+      }
     }
     
     // Check if already purchased
     const existingPurchase = await c.env.DB.prepare(
       'SELECT id FROM user_purchases WHERE user_id = ? AND product_id = ?'
-    ).bind(user.id, product_id).first();
+    ).bind(user.id, actualProductId).first();
     
     if (existingPurchase) {
       return c.json({ 
@@ -441,7 +471,7 @@ app.post('/cart/add', async (c) => {
     // Check if already in cart
     const existingCart = await c.env.DB.prepare(
       'SELECT id FROM shopping_cart WHERE user_id = ? AND product_id = ?'
-    ).bind(user.id, product_id).first();
+    ).bind(user.id, actualProductId).first();
     
     if (existingCart) {
       return c.json({ 
@@ -450,11 +480,11 @@ app.post('/cart/add', async (c) => {
       }, 400);
     }
     
-    // Add to cart
+    // Add to cart (store with prefix if template)
     await c.env.DB.prepare(`
       INSERT INTO shopping_cart (user_id, product_id, quantity)
       VALUES (?, ?, 1)
-    `).bind(user.id, product_id).run();
+    `).bind(user.id, actualProductId).run();
     
     return c.json({
       success: true,
