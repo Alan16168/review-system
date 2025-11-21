@@ -10,15 +10,44 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V7.0.1 - 修复 403 权限错误 (2025-11-21)  
-**🔥 最新功能**: ✅ 修复 writing-templates 认证问题 + 简化权限控制  
+**✅ 当前版本**: V7.0.2 - 统一权限控制修复 (2025-11-21)  
+**🔥 最新功能**: ✅ 统一 marketplace + writing-templates 认证机制  
 **🛠️ 错误处理**: ✅ 统一错误响应格式 + 详细日志记录 + 用户友好提示  
-**🔐 权限控制**: ✅ 智能认证中间件 (GET 可选 + 变更操作需管理员权限)  
+**🔐 权限控制**: ✅ 标准化认证中间件 (所有路由使用一致的权限模式)  
 **📝 模板系统**: ✅ 支持私人/团队/公开三种可见性级别 + 价格设置  
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）  
 **🧪 开发服务器**: https://3000-i1l7k2pbfdion8sxilbu1-6532622b.e2b.dev
+
+---
+
+## 🔐 V7.0.2 更新 - 统一权限控制修复 (2025-11-21)
+
+**问题**: marketplace 路由也出现 403 权限错误
+
+**根本原因**:
+- ❌ marketplace 使用自定义 `getUserFromToken` 函数
+- ❌ 与 writing-templates 的认证机制不一致
+- ❌ 导致未登录用户无法访问公开内容
+
+**解决方案**:
+- ✅ 移除自定义 `getUserFromToken` 函数
+- ✅ 统一使用 authMiddleware 和 adminOnly 中间件
+- ✅ 标准化所有路由的权限控制模式
+- ✅ 确保公开 API 不需要认证
+
+**改进文件**:
+- 更新: `src/routes/marketplace.ts` - 移除 57 行，添加 20 行
+
+**统一权限模式**:
+| 路由 | GET (公开) | GET (管理员) | POST/PUT/DELETE |
+|------|-----------|--------------|-----------------|
+| `/api/marketplace/products` | ✅ 无需认证 | - | ❌ 需管理员 |
+| `/api/marketplace/products/all` | - | ✅ 需管理员 | - |
+| `/api/writing-templates` | ✅ 无需认证 | - | ❌ 需管理员 |
+
+**Git Commit**: `6d86fa2` - fix: 修复 marketplace 403 权限错误
 
 ---
 
