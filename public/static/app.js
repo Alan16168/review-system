@@ -14146,10 +14146,10 @@ async function editMarketplaceProduct(productId) {
             <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
             <select id="product-type" required
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-              <option value="ai_service" ${product.product_type === 'ai_service' ? 'selected' : ''}>智能体 (AI Agent)</option>
-              <option value="writing_template" ${product.product_type === 'writing_template' ? 'selected' : ''}>写作模板 (Writing Template)</option>
-              <option value="review_template" ${product.product_type === 'review_template' ? 'selected' : ''}>复盘模板 (Review Template)</option>
-              <option value="other" ${product.product_type === 'other' ? 'selected' : ''}>其他产品 (Others)</option>
+              <option value="ai_service" ${product.product_type === 'ai_service' ? 'selected' : ''}>AI Agent</option>
+              <option value="writing_template" ${product.product_type === 'writing_template' ? 'selected' : ''}>Writing Template</option>
+              <option value="review_template" ${product.product_type === 'review_template' ? 'selected' : ''}>Review Template</option>
+              <option value="other" ${product.product_type === 'other' ? 'selected' : ''}>Others</option>
             </select>
           </div>
 
@@ -14438,10 +14438,10 @@ function showCreateProductModalWithCategory(preselectedCategory) {
           <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
           <select id="product-type" required
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-            <option value="ai_service" ${preselectedCategory === 'ai_service' ? 'selected' : ''}>智能体 (AI Agent)</option>
-            <option value="writing_template" ${preselectedCategory === 'writing_template' ? 'selected' : ''}>写作模板 (Writing Template)</option>
-            <option value="review_template" ${preselectedCategory === 'review_template' ? 'selected' : ''}>复盘模板 (Review Template)</option>
-            <option value="other" ${preselectedCategory === 'other' ? 'selected' : ''}>其他产品 (Others)</option>
+            <option value="ai_service" ${preselectedCategory === 'ai_service' ? 'selected' : ''}>AI Agent</option>
+            <option value="writing_template" ${preselectedCategory === 'writing_template' ? 'selected' : ''}>Writing Template</option>
+            <option value="review_template" ${preselectedCategory === 'review_template' ? 'selected' : ''}>Review Template</option>
+            <option value="other" ${preselectedCategory === 'other' ? 'selected' : ''}>Others</option>
           </select>
         </div>
 
