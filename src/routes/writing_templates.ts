@@ -34,7 +34,8 @@ app.get('/', async (c) => {
       SELECT 
         t.*,
         u.username as creator_name,
-        tm.name as team_name
+        tm.name as team_name,
+        (SELECT COUNT(*) FROM ai_writing_template_fields WHERE template_id = t.id AND is_active = 1) as field_count
       FROM ai_writing_templates t
       LEFT JOIN users u ON t.owner_id = u.id
       LEFT JOIN teams tm ON t.team_id = tm.id

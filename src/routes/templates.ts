@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { authMiddleware, UserPayload, adminOnly, premiumOrAdmin } from '../middleware/auth';
+import { createError } from '../middleware/errorHandler';
 
 const templates = new Hono();
 
@@ -88,9 +89,10 @@ templates.get('/', async (c) => {
     );
 
     return c.json({ templates: templatesWithQuestions });
-  } catch (error) {
-    console.error('Get templates error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[GET /api/templates] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('获取模板列表失败: ' + (error.message || 'Unknown error'), 500, { originalError: error.message });
   }
 });
 
@@ -154,9 +156,10 @@ templates.get('/:id', async (c) => {
         questions: questionsResult.results || []
       }
     });
-  } catch (error) {
-    console.error('Get template error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[GET /api/templates/:id] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('获取模板详情失败: ' + (error.message || 'Unknown error'), 500, { templateId: c.req.param('id'), originalError: error.message });
   }
 });
 
@@ -217,9 +220,10 @@ templates.get('/admin/all', premiumOrAdmin, async (c) => {
     );
 
     return c.json({ templates: templatesWithCounts });
-  } catch (error) {
-    console.error('Get all templates error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[GET /api/templates/admin/all] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('获取所有模板失败: ' + (error.message || 'Unknown error'), 500, { originalError: error.message });
   }
 });
 
@@ -271,9 +275,10 @@ templates.get('/admin/:id', premiumOrAdmin, async (c) => {
         questions: questionsResult.results || []
       }
     });
-  } catch (error) {
-    console.error('Get template for admin error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[GET /api/templates/admin/:id] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('获取模板（管理员）失败: ' + (error.message || 'Unknown error'), 500, { templateId: c.req.param('id'), originalError: error.message });
   }
 });
 
@@ -335,9 +340,10 @@ templates.post('/', premiumOrAdmin, async (c) => {
       message: 'Template created successfully',
       id: result.meta.last_row_id 
     });
-  } catch (error) {
-    console.error('Create template error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[POST /api/templates] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('创建模板失败: ' + (error.message || 'Unknown error'), 500, { originalError: error.message });
   }
 });
 
@@ -430,9 +436,10 @@ templates.put('/:id', premiumOrAdmin, async (c) => {
     await c.env.DB.prepare(updateQuery).bind(...updateParams).run();
 
     return c.json({ message: 'Template updated successfully' });
-  } catch (error) {
-    console.error('Update template error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[PUT /api/templates/:id] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('更新模板失败: ' + (error.message || 'Unknown error'), 500, { templateId: c.req.param('id'), originalError: error.message });
   }
 });
 
@@ -493,9 +500,10 @@ templates.delete('/:id', premiumOrAdmin, async (c) => {
       disabled: false,
       affected_reviews: 0
     });
-  } catch (error) {
-    console.error('Delete template error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[DELETE /api/templates/:id] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('删除模板失败: ' + (error.message || 'Unknown error'), 500, { templateId: c.req.param('id'), originalError: error.message });
   }
 });
 
@@ -602,9 +610,10 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
       message: 'Question added successfully',
       id: result.meta.last_row_id
     });
-  } catch (error) {
-    console.error('Add question error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[POST /api/templates/:id/questions] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('添加问题失败: ' + (error.message || 'Unknown error'), 500, { templateId: c.req.param('id'), originalError: error.message });
   }
 });
 
@@ -706,9 +715,10 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
     ).run();
 
     return c.json({ message: 'Question updated successfully' });
-  } catch (error) {
-    console.error('Update question error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[PUT /api/templates/:templateId/questions/:questionId] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('更新问题失败: ' + (error.message || 'Unknown error'), 500, { templateId: c.req.param('templateId'), questionId: c.req.param('questionId'), originalError: error.message });
   }
 });
 
@@ -740,9 +750,10 @@ templates.delete('/:templateId/questions/:questionId', premiumOrAdmin, async (c)
     `).bind(questionId, templateId).run();
 
     return c.json({ message: 'Question deleted successfully' });
-  } catch (error) {
-    console.error('Delete question error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[DELETE /api/templates/:templateId/questions/:questionId] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('删除问题失败: ' + (error.message || 'Unknown error'), 500, { templateId: c.req.param('templateId'), questionId: c.req.param('questionId'), originalError: error.message });
   }
 });
 
@@ -766,9 +777,10 @@ templates.put('/:id/questions/reorder', premiumOrAdmin, async (c) => {
     }
 
     return c.json({ message: 'Questions reordered successfully' });
-  } catch (error) {
-    console.error('Reorder questions error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+  } catch (error: any) {
+    console.error('[POST /api/templates/:id/questions/reorder] Error:', error);
+    console.error('Stack:', error.stack);
+    throw createError('重新排序问题失败: ' + (error.message || 'Unknown error'), 500, { templateId: c.req.param('id'), originalError: error.message });
   }
 });
 

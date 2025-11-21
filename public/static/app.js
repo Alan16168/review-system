@@ -13214,7 +13214,7 @@ async function showAISettingsManagement(container) {
             <i class="fas fa-robot mr-2"></i>AI 智能写作助手设置
           </h2>
         </div>
-        <button id="save-settings-btn" onclick="saveCurrentTabSettings()" 
+        <button id="save-settings-btn" onclick="saveCurrentTabSettings(event)" 
                 class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
           <i class="fas fa-save mr-2"></i>保存设置
         </button>
@@ -13281,9 +13281,9 @@ async function switchAISettingsTab(tab) {
   }
 }
 
-async function saveCurrentTabSettings() {
+async function saveCurrentTabSettings(event) {
   if (currentAISettingsTab === 'parameters') {
-    await saveAISettings();
+    await saveAISettings(event);
   }
 }
 
@@ -13527,7 +13527,7 @@ function updateTemperatureDisplay(value) {
   document.getElementById('temperature-value').textContent = parseFloat(value).toFixed(1);
 }
 
-async function saveAISettings() {
+async function saveAISettings(event) {
   try {
     const maxTokens = document.getElementById('ai_max_output_tokens').value;
     const temperature = document.getElementById('ai_temperature').value;
@@ -13554,32 +13554,39 @@ async function saveAISettings() {
     }
 
     // Show loading
-    const saveBtn = event.target;
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>保存中...';
+    const saveBtn = event ? event.target : document.querySelector('.save-ai-settings-btn');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>保存中...';
+    }
 
-    // Batch update
+    // Batch update - use correct endpoint
     const response = await axios.put('/api/system-settings/batch/update', {
       settings: [
         { key: 'ai_max_output_tokens', value: maxTokens },
         { key: 'ai_temperature', value: temperature },
         { key: 'ai_default_word_count', value: defaultWordCount },
-        { key: 'ai_enabled', value: enabled }
+        { key: 'ai_enabled', value: enabled ? '1' : '0' }
       ]
     });
 
     if (response.data.success) {
       showNotification('✅ AI 设置已保存！', 'success');
-      setTimeout(() => {
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存设置';
-      }, 1000);
+      if (saveBtn) {
+        setTimeout(() => {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存设置';
+        }, 1000);
+      }
     }
   } catch (error) {
     console.error('Error saving AI settings:', error);
     showNotification('保存失败: ' + (error.response?.data?.error || error.message), 'error');
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存设置';
+    const saveBtn = event ? event.target : document.querySelector('.save-ai-settings-btn');
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存设置';
+    }
   }
 }
 
@@ -14446,145 +14453,173 @@ const MarketplaceManager = {
 // ============================================================================
 
 async function loadWritingTemplates() {
+  const contentDiv = document.getElementById('ai-settings-content');
+  contentDiv.innerHTML = `
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-file-alt mr-2"></i>写作模板管理
+        </h2>
+        <button onclick="showCreateWritingTemplateModal()" 
+                class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+          <i class="fas fa-plus mr-2"></i>创建模板
+        </button>
+      </div>
+      <div id="writing-templates-table">
+        <div class="text-center py-8">
+          <i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  await loadWritingTemplatesTable();
+}
+
+async function loadWritingTemplatesTable() {
   try {
     const response = await axios.get('/api/writing-templates');
     const templates = response.data.templates || [];
-
-    const contentDiv = document.getElementById('ai-settings-content');
-    contentDiv.innerHTML = `
-      <div class="space-y-6">
-        <!-- Header with Create Button -->
-        <div class="flex justify-between items-center">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-800">
-              <i class="fas fa-file-alt mr-2 text-indigo-600"></i>
-              写作模板管理
-            </h3>
-            <p class="text-sm text-gray-600 mt-1">
-              管理AI写作助手使用的模板，设置默认参数和自定义字段
-            </p>
-          </div>
-          ${window.currentUser && window.currentUser.role === 'admin' ? `
-            <button onclick="showCreateWritingTemplateModal()" 
-                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-              <i class="fas fa-plus mr-2"></i>创建模板
-            </button>
-          ` : ''}
-        </div>
-
-        <!-- Templates Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          ${templates.length === 0 ? `
-            <div class="col-span-full text-center py-12 bg-gray-50 rounded-lg">
-              <i class="fas fa-file-alt text-4xl text-gray-400 mb-4"></i>
-              <p class="text-gray-600">暂无写作模板</p>
-              ${window.currentUser && window.currentUser.role === 'admin' ? `
-                <button onclick="showCreateWritingTemplateModal()" 
-                        class="mt-4 text-indigo-600 hover:text-indigo-700">
-                  <i class="fas fa-plus mr-2"></i>创建第一个模板
-                </button>
-              ` : `
-                <p class="text-sm text-gray-500 mt-2">请联系管理员添加模板</p>
-              `}
-            </div>
-          ` : templates.map(template => `
-            <div class="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow">
-              <!-- Template Header -->
-              <div class="flex items-start justify-between mb-3">
-                <div class="flex-1">
-                  <div class="flex items-center mb-2">
-                    <i class="fas fa-${template.icon || 'book'} text-${template.color || 'blue'}-600 mr-2"></i>
-                    <h4 class="font-semibold text-gray-800">${template.name}</h4>
-                  </div>
-                  ${template.is_featured ? `
-                    <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                      <i class="fas fa-star mr-1"></i>推荐
-                    </span>
-                  ` : ''}
-                  ${template.is_public ? `
-                    <span class="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full ml-1">
-                      <i class="fas fa-globe mr-1"></i>公开
-                    </span>
-                  ` : `
-                    <span class="inline-block px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full ml-1">
-                      <i class="fas fa-lock mr-1"></i>私有
-                    </span>
-                  `}
-                </div>
-                <div class="flex space-x-2">
-                  <button onclick="viewWritingTemplate(${template.id})" 
-                          class="text-gray-600 hover:text-indigo-600" 
-                          title="查看详情">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  ${window.currentUser && window.currentUser.role === 'admin' ? `
-                    <button onclick="editWritingTemplate(${template.id})" 
-                            class="text-gray-600 hover:text-blue-600" 
-                            title="编辑">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <button onclick="deleteWritingTemplate(${template.id}, '${template.name}')" 
-                            class="text-gray-600 hover:text-red-600" 
-                            title="删除">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  ` : ''}
-                </div>
-              </div>
-
-              <!-- Template Description -->
-              <p class="text-sm text-gray-600 mb-3 line-clamp-2">
-                ${template.description || '暂无描述'}
-              </p>
-
-              <!-- Template Info -->
-              <div class="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
-                <span>
-                  <i class="fas fa-tag mr-1"></i>
-                  ${template.category}
-                </span>
-                <span>
-                  <i class="fas fa-user mr-1"></i>
-                  ${template.creator_name || '系统'}
-                </span>
-              </div>
-              
-              <!-- Usage Count -->
-              <div class="mt-2 text-xs text-gray-500">
-                <i class="fas fa-chart-line mr-1"></i>
-                使用次数: ${template.usage_count || 0}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-
-        <!-- Help Text -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-          <div class="flex items-start">
-            <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
-            <div class="flex-1 text-sm text-blue-800">
-              <p class="font-medium mb-2">关于写作模板</p>
-              <ul class="list-disc list-inside space-y-1 text-blue-700">
-                <li>写作模板定义了AI生成内容时的默认参数和结构</li>
-                <li>每个模板可以包含自定义字段，用于收集特定信息</li>
-                <li>用户在创建书籍时可以选择模板，模板字段值将用于指导AI生成</li>
-                <li>系统模板对所有用户可见，团队模板仅团队成员可见</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+    renderWritingTemplatesTable(templates);
   } catch (error) {
-    console.error('Error loading writing templates:', error);
-    document.getElementById('ai-settings-content').innerHTML = `
-      <div class="text-center py-12 text-red-600">
+    document.getElementById('writing-templates-table').innerHTML = `
+      <div class="text-center py-8 text-red-600">
         <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
-        <p class="text-lg font-medium">加载模板失败</p>
-        <p class="text-sm mt-2">${error.response?.data?.error || error.message}</p>
+        <p>加载模板失败</p>
       </div>
     `;
   }
+}
+
+function renderWritingTemplatesTable(templates) {
+  const container = document.getElementById('writing-templates-table');
+  
+  if (!templates || templates.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-8 text-gray-500">
+        <i class="fas fa-file-alt text-4xl mb-4"></i>
+        <p>暂无写作模板</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              模板名称
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              类型
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              创建者
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              字段数量
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              分类
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              可见性
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              推荐模板
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              状态
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              操作
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${templates.map(template => `
+            <tr class="${!template.is_active ? 'bg-gray-100' : ''}">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <i class="fas fa-${template.icon || 'book'} text-${template.color || 'blue'}-600 mr-2"></i>
+                  <div class="text-sm font-medium text-gray-900">${escapeHtml(template.name)}</div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${template.owner_type === 'system' || !template.creator_name ? 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                    <i class="fas fa-crown mr-1"></i>系统模板
+                  </span>` : 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    <i class="fas fa-user mr-1"></i>用户模板
+                  </span>`
+                }
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <i class="fas fa-user-circle text-gray-400 mr-2"></i>
+                  <span class="text-sm text-gray-700">${escapeHtml(template.creator_name || '系统')}</span>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm text-gray-900">${template.field_count || 0}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm text-gray-700">${template.category}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  template.is_public ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                }">
+                  <i class="fas fa-${template.is_public ? 'globe' : 'lock'} mr-1"></i>
+                  ${template.is_public ? '公开' : '私有'}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${template.is_featured ? 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    <i class="fas fa-star mr-1"></i>是
+                  </span>` : 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                    否
+                  </span>`
+                }
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                ${template.is_active ? 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    启用
+                  </span>` : 
+                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                    禁用
+                  </span>`
+                }
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button onclick="showManageWritingTemplateFields(${template.id})" 
+                        class="text-indigo-600 hover:text-indigo-900 mr-3"
+                        title="管理字段">
+                  <i class="fas fa-tasks"></i>
+                </button>
+                <button onclick="showEditWritingTemplateModal(${template.id})" 
+                        class="text-blue-600 hover:text-blue-900 mr-3"
+                        title="编辑">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteWritingTemplate(${template.id}, '${escapeHtml(template.name)}')" 
+                        class="text-red-600 hover:text-red-900"
+                        title="删除">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function showCreateWritingTemplateModal() {
@@ -14806,7 +14841,7 @@ async function submitWritingTemplate(event) {
     if (response.data.success) {
       showNotification('✅ 写作模板创建成功！', 'success');
       closeModal('writing-template-modal');
-      await loadWritingTemplates(); // Reload templates list
+      await loadWritingTemplatesTable(); // Reload templates list
     }
   } catch (error) {
     console.error('Error creating template:', error);
@@ -14929,9 +14964,245 @@ async function viewWritingTemplate(templateId) {
   }
 }
 
-async function editWritingTemplate(templateId) {
-  // TODO: Implement edit functionality similar to create
-  showNotification('编辑功能开发中...', 'info');
+async function showEditWritingTemplateModal(templateId) {
+  try {
+    const response = await axios.get(`/api/writing-templates/${templateId}`);
+    const template = response.data.template;
+    
+    const modalHtml = `
+      <div id="writing-template-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onclick="closeModalOnBackdrop(event, 'writing-template-modal')">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+          <!-- Modal Header -->
+          <div class="flex justify-between items-center p-6 border-b border-gray-200">
+            <h3 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-edit mr-2 text-indigo-600"></i>
+              编辑写作模板
+            </h3>
+            <button onclick="closeModal('writing-template-modal')" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+
+          <!-- Modal Content -->
+          <form onsubmit="submitEditWritingTemplate(event, ${templateId})" class="p-6 space-y-4">
+            <!-- Basic Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  模板名称 <span class="text-red-600">*</span>
+                </label>
+                <input type="text" id="template-name" required value="${escapeHtml(template.name)}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="例如：商业书籍模板">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  英文名称
+                </label>
+                <input type="text" id="template-name-en" value="${escapeHtml(template.name_en || '')}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="Business Book Template">
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                模板说明 <span class="text-red-600">*</span>
+              </label>
+              <textarea id="template-description" required rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        placeholder="描述此模板的用途和特点...">${escapeHtml(template.description || '')}</textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                英文说明
+              </label>
+              <textarea id="template-description-en" rows="2"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Template description in English...">${escapeHtml(template.description_en || '')}</textarea>
+            </div>
+
+            <!-- Category and Display -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  分类 <span class="text-red-600">*</span>
+                </label>
+                <select id="template-category" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="general" ${template.category === 'general' ? 'selected' : ''}>通用</option>
+                  <option value="business" ${template.category === 'business' ? 'selected' : ''}>商业</option>
+                  <option value="technical" ${template.category === 'technical' ? 'selected' : ''}>技术</option>
+                  <option value="academic" ${template.category === 'academic' ? 'selected' : ''}>学术</option>
+                  <option value="fiction" ${template.category === 'fiction' ? 'selected' : ''}>小说</option>
+                  <option value="biography" ${template.category === 'biography' ? 'selected' : ''}>传记</option>
+                  <option value="education" ${template.category === 'education' ? 'selected' : ''}>教育</option>
+                  <option value="marketing" ${template.category === 'marketing' ? 'selected' : ''}>营销</option>
+                  <option value="self_help" ${template.category === 'self_help' ? 'selected' : ''}>自我提升</option>
+                  <option value="custom" ${template.category === 'custom' ? 'selected' : ''}>自定义</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  图标
+                </label>
+                <input type="text" id="template-icon" value="${template.icon || 'book'}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="book">
+                <p class="text-xs text-gray-500 mt-1">FontAwesome图标名</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  颜色
+                </label>
+                <select id="template-color"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="blue" ${template.color === 'blue' ? 'selected' : ''}>蓝色</option>
+                  <option value="green" ${template.color === 'green' ? 'selected' : ''}>绿色</option>
+                  <option value="red" ${template.color === 'red' ? 'selected' : ''}>红色</option>
+                  <option value="yellow" ${template.color === 'yellow' ? 'selected' : ''}>黄色</option>
+                  <option value="purple" ${template.color === 'purple' ? 'selected' : ''}>紫色</option>
+                  <option value="pink" ${template.color === 'pink' ? 'selected' : ''}>粉色</option>
+                  <option value="gray" ${template.color === 'gray' ? 'selected' : ''}>灰色</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Default Settings -->
+            <div class="border-t border-gray-200 pt-4 mt-4">
+              <h4 class="font-medium text-gray-800 mb-3">默认设置</h4>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    语气
+                  </label>
+                  <select id="template-tone"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <option value="professional" ${template.default_tone === 'professional' ? 'selected' : ''}>专业</option>
+                    <option value="casual" ${template.default_tone === 'casual' ? 'selected' : ''}>轻松</option>
+                    <option value="academic" ${template.default_tone === 'academic' ? 'selected' : ''}>学术</option>
+                    <option value="creative" ${template.default_tone === 'creative' ? 'selected' : ''}>创意</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    受众
+                  </label>
+                  <select id="template-audience"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <option value="general" ${template.default_audience === 'general' ? 'selected' : ''}>一般读者</option>
+                    <option value="expert" ${template.default_audience === 'expert' ? 'selected' : ''}>专业人士</option>
+                    <option value="beginner" ${template.default_audience === 'beginner' ? 'selected' : ''}>初学者</option>
+                    <option value="children" ${template.default_audience === 'children' ? 'selected' : ''}>儿童</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    语言
+                  </label>
+                  <select id="template-language"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <option value="zh" ${template.default_language === 'zh' ? 'selected' : ''}>简体中文</option>
+                    <option value="zh-TW" ${template.default_language === 'zh-TW' ? 'selected' : ''}>繁體中文</option>
+                    <option value="en" ${template.default_language === 'en' ? 'selected' : ''}>English</option>
+                    <option value="ja" ${template.default_language === 'ja' ? 'selected' : ''}>日本語</option>
+                    <option value="es" ${template.default_language === 'es' ? 'selected' : ''}>Español</option>
+                    <option value="fr" ${template.default_language === 'fr' ? 'selected' : ''}>Français</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    目标字数
+                  </label>
+                  <input type="number" id="template-target-words" value="${template.default_target_words || 50000}" min="1000" step="1000"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                </div>
+              </div>
+            </div>
+
+            <!-- Visibility Settings -->
+            <div class="border-t border-gray-200 pt-4 mt-4">
+              <h4 class="font-medium text-gray-800 mb-3">可见性设置</h4>
+              <div class="space-y-2">
+                <label class="flex items-center">
+                  <input type="checkbox" id="template-public" ${template.is_public ? 'checked' : ''} class="mr-2">
+                  <span class="text-sm text-gray-700">公开模板（所有用户可见）</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" id="template-featured" ${template.is_featured ? 'checked' : ''} class="mr-2">
+                  <span class="text-sm text-gray-700">推荐模板（在模板列表中优先显示）</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <button type="button" onclick="closeModal('writing-template-modal')"
+                      class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                <i class="fas fa-times mr-2"></i>取消
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                <i class="fas fa-check mr-2"></i>保存更改
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  } catch (error) {
+    console.error('Error loading template for edit:', error);
+    showNotification('加载模板失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function submitEditWritingTemplate(event, templateId) {
+  event.preventDefault();
+
+  try {
+    const templateData = {
+      name: document.getElementById('template-name').value,
+      name_en: document.getElementById('template-name-en').value || null,
+      description: document.getElementById('template-description').value,
+      description_en: document.getElementById('template-description-en').value || null,
+      category: document.getElementById('template-category').value,
+      icon: document.getElementById('template-icon').value || 'book',
+      color: document.getElementById('template-color').value || 'blue',
+      default_tone: document.getElementById('template-tone').value,
+      default_audience: document.getElementById('template-audience').value,
+      default_language: document.getElementById('template-language').value,
+      default_target_words: parseInt(document.getElementById('template-target-words').value),
+      is_public: document.getElementById('template-public').checked,
+      is_featured: document.getElementById('template-featured').checked
+    };
+
+    const response = await axios.put(`/api/writing-templates/${templateId}`, templateData);
+
+    if (response.data.success) {
+      showNotification('✅ 写作模板更新成功！', 'success');
+      closeModal('writing-template-modal');
+      await loadWritingTemplatesTable();
+    }
+  } catch (error) {
+    console.error('Error updating template:', error);
+    let errorMsg = error.response?.data?.error || error.message;
+    
+    if (error.response?.status === 403) {
+      errorMsg = '更新模板需要管理员权限。请联系系统管理员。';
+    }
+    
+    showNotification('更新失败: ' + errorMsg, 'error');
+  }
 }
 
 async function deleteWritingTemplate(templateId, templateName) {
@@ -14944,10 +15215,555 @@ async function deleteWritingTemplate(templateId, templateName) {
 
     if (response.data.success) {
       showNotification('✅ 模板删除成功！', 'success');
-      await loadWritingTemplates(); // Reload templates list
+      await loadWritingTemplatesTable(); // Reload templates list
     }
   } catch (error) {
     console.error('Error deleting template:', error);
     showNotification('删除失败: ' + (error.response?.data?.error || error.message), 'error');
   }
+}
+
+// ============================================================================
+// Field Management Functions
+// ============================================================================
+
+let currentTemplateFields = [];
+let currentEditingTemplateId = null;
+
+async function showManageWritingTemplateFields(templateId) {
+  try {
+    const response = await axios.get(`/api/writing-templates/${templateId}`);
+    const template = response.data.template;
+    currentEditingTemplateId = templateId;
+    currentTemplateFields = template.fields || [];
+    
+    const modalHtml = `
+      <div id="fields-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-xl font-bold text-gray-800">
+                <i class="fas fa-tasks mr-2"></i>管理字段: ${escapeHtml(template.name)}
+              </h3>
+              <button onclick="closeFieldsModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            
+            <div class="mb-4">
+              <button onclick="showAddFieldForm()" 
+                      class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                <i class="fas fa-plus mr-2"></i>添加字段
+              </button>
+            </div>
+            
+            <div id="fields-list">
+              ${renderFieldsList()}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  } catch (error) {
+    console.error('Error loading fields:', error);
+    showNotification('加载字段失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+function renderFieldsList() {
+  if (!currentTemplateFields || currentTemplateFields.length === 0) {
+    return `
+      <div class="text-center py-8 text-gray-500">
+        <i class="fas fa-tasks text-4xl mb-4"></i>
+        <p>暂无字段</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="space-y-3">
+      ${currentTemplateFields.map((field, index) => {
+        const typeLabel = {
+          'text': '文本',
+          'textarea': '多行文本',
+          'number': '数字',
+          'select': '下拉选择',
+          'radio': '单选',
+          'checkbox': '多选',
+          'date': '日期',
+          'markdown': 'Markdown'
+        }[field.field_type] || field.field_type;
+        
+        const typeIcon = {
+          'text': 'fa-font',
+          'textarea': 'fa-align-left',
+          'number': 'fa-hashtag',
+          'select': 'fa-list',
+          'radio': 'fa-dot-circle',
+          'checkbox': 'fa-check-square',
+          'date': 'fa-calendar',
+          'markdown': 'fa-file-code'
+        }[field.field_type] || 'fa-font';
+        
+        return `
+        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center mb-2">
+                <span class="text-sm font-semibold text-indigo-600 mr-2">
+                  F${field.sort_order || index + 1}
+                </span>
+                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 mr-2">
+                  <i class="fas ${typeIcon} mr-1"></i>${typeLabel}
+                </span>
+                ${field.is_required ? `
+                  <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 mr-2">
+                    <i class="fas fa-asterisk mr-1"></i>必填
+                  </span>
+                ` : ''}
+                <div class="flex space-x-2">
+                  ${index > 0 ? `
+                    <button onclick="moveField(${field.id}, 'up')" 
+                            class="text-gray-500 hover:text-gray-700" title="上移">
+                      <i class="fas fa-arrow-up"></i>
+                    </button>
+                  ` : ''}
+                  ${index < currentTemplateFields.length - 1 ? `
+                    <button onclick="moveField(${field.id}, 'down')" 
+                            class="text-gray-500 hover:text-gray-700" title="下移">
+                      <i class="fas fa-arrow-down"></i>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+              <div class="text-sm text-gray-900 mb-1">
+                <strong>${escapeHtml(field.label)}</strong>
+                ${field.label_en ? `<span class="text-gray-500 ml-2">(${escapeHtml(field.label_en)})</span>` : ''}
+              </div>
+              <div class="text-xs text-gray-600">
+                字段键: <code class="bg-gray-100 px-1 py-0.5 rounded">${field.field_key}</code>
+              </div>
+              ${field.help_text ? `
+                <div class="text-xs text-gray-500 mt-1">${escapeHtml(field.help_text)}</div>
+              ` : ''}
+              ${(field.field_type === 'select' || field.field_type === 'radio' || field.field_type === 'checkbox') && field.options_json ? `
+                <div class="mt-2 text-xs">
+                  <span class="text-gray-600">选项:</span>
+                  <div class="mt-1 space-y-1">
+                    ${JSON.parse(field.options_json).map(opt => `
+                      <div class="text-gray-700">• ${escapeHtml(opt)}</div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+            <div class="flex space-x-2 ml-4">
+              <button onclick="showEditFieldForm(${field.id})" 
+                      class="text-blue-600 hover:text-blue-800" title="编辑">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button onclick="deleteField(${field.id})" 
+                      class="text-red-600 hover:text-red-800" title="删除">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function showAddFieldForm() {
+  const formHtml = `
+    <div id="field-form-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4" onclick="closeModalOnBackdrop(event, 'field-form-modal')">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="text-lg font-bold text-gray-800">
+              <i class="fas fa-plus mr-2"></i>添加字段
+            </h4>
+            <button onclick="closeModal('field-form-modal')" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <form onsubmit="submitAddField(event)" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  字段键 <span class="text-red-600">*</span>
+                </label>
+                <input type="text" id="field-key" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="target_audience">
+                <p class="text-xs text-gray-500 mt-1">英文标识符，用于API调用</p>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  字段类型 <span class="text-red-600">*</span>
+                </label>
+                <select id="field-type" required onchange="handleFieldTypeChange()"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="text">文本</option>
+                  <option value="textarea">多行文本</option>
+                  <option value="number">数字</option>
+                  <option value="select">下拉选择</option>
+                  <option value="radio">单选</option>
+                  <option value="checkbox">多选</option>
+                  <option value="date">日期</option>
+                  <option value="markdown">Markdown</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  标签 <span class="text-red-600">*</span>
+                </label>
+                <input type="text" id="field-label" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="目标受众">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  英文标签
+                </label>
+                <input type="text" id="field-label-en"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="Target Audience">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                占位符
+              </label>
+              <input type="text" id="field-placeholder"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="请输入目标受众...">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                帮助文本
+              </label>
+              <textarea id="field-help-text" rows="2"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        placeholder="描述此字段的用途..."></textarea>
+            </div>
+            
+            <div id="options-container" style="display:none;">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                选项（每行一个）
+              </label>
+              <textarea id="field-options" rows="4"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        placeholder="选项1\n选项2\n选项3"></textarea>
+            </div>
+            
+            <div class="flex items-center">
+              <input type="checkbox" id="field-required" class="mr-2">
+              <label for="field-required" class="text-sm text-gray-700">
+                必填字段
+              </label>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <button type="button" onclick="closeModal('field-form-modal')"
+                      class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                取消
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                添加
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', formHtml);
+}
+
+function handleFieldTypeChange() {
+  const fieldType = document.getElementById('field-type').value;
+  const optionsContainer = document.getElementById('options-container');
+  
+  if (fieldType === 'select' || fieldType === 'radio' || fieldType === 'checkbox') {
+    optionsContainer.style.display = 'block';
+  } else {
+    optionsContainer.style.display = 'none';
+  }
+}
+
+async function submitAddField(event) {
+  event.preventDefault();
+  
+  try {
+    const fieldType = document.getElementById('field-type').value;
+    const optionsText = document.getElementById('field-options').value;
+    let options = null;
+    
+    if (fieldType === 'select' || fieldType === 'radio' || fieldType === 'checkbox') {
+      options = optionsText.split('\n').filter(o => o.trim());
+    }
+    
+    const fieldData = {
+      field_key: document.getElementById('field-key').value,
+      field_type: fieldType,
+      label: document.getElementById('field-label').value,
+      label_en: document.getElementById('field-label-en').value || null,
+      placeholder: document.getElementById('field-placeholder').value || null,
+      help_text: document.getElementById('field-help-text').value || null,
+      options_json: options,
+      is_required: document.getElementById('field-required').checked,
+      sort_order: currentTemplateFields.length + 1
+    };
+    
+    const response = await axios.post(`/api/writing-templates/${currentEditingTemplateId}/fields`, fieldData);
+    
+    if (response.data.success) {
+      showNotification('✅ 字段添加成功！', 'success');
+      closeModal('field-form-modal');
+      
+      // Reload fields
+      const templateResponse = await axios.get(`/api/writing-templates/${currentEditingTemplateId}`);
+      currentTemplateFields = templateResponse.data.template.fields || [];
+      document.getElementById('fields-list').innerHTML = renderFieldsList();
+    }
+  } catch (error) {
+    console.error('Error adding field:', error);
+    showNotification('添加失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function showEditFieldForm(fieldId) {
+  const field = currentTemplateFields.find(f => f.id === fieldId);
+  if (!field) return;
+  
+  const formHtml = `
+    <div id="field-form-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4" onclick="closeModalOnBackdrop(event, 'field-form-modal')">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="text-lg font-bold text-gray-800">
+              <i class="fas fa-edit mr-2"></i>编辑字段
+            </h4>
+            <button onclick="closeModal('field-form-modal')" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <form onsubmit="submitEditField(event, ${fieldId})" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  字段键 <span class="text-red-600">*</span>
+                </label>
+                <input type="text" id="field-key" required value="${escapeHtml(field.field_key)}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="target_audience">
+                <p class="text-xs text-gray-500 mt-1">英文标识符，用于API调用</p>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  字段类型 <span class="text-red-600">*</span>
+                </label>
+                <select id="field-type" required onchange="handleFieldTypeChange()"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="text" ${field.field_type === 'text' ? 'selected' : ''}>文本</option>
+                  <option value="textarea" ${field.field_type === 'textarea' ? 'selected' : ''}>多行文本</option>
+                  <option value="number" ${field.field_type === 'number' ? 'selected' : ''}>数字</option>
+                  <option value="select" ${field.field_type === 'select' ? 'selected' : ''}>下拉选择</option>
+                  <option value="radio" ${field.field_type === 'radio' ? 'selected' : ''}>单选</option>
+                  <option value="checkbox" ${field.field_type === 'checkbox' ? 'selected' : ''}>多选</option>
+                  <option value="date" ${field.field_type === 'date' ? 'selected' : ''}>日期</option>
+                  <option value="markdown" ${field.field_type === 'markdown' ? 'selected' : ''}>Markdown</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  标签 <span class="text-red-600">*</span>
+                </label>
+                <input type="text" id="field-label" required value="${escapeHtml(field.label)}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="目标受众">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  英文标签
+                </label>
+                <input type="text" id="field-label-en" value="${escapeHtml(field.label_en || '')}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="Target Audience">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                占位符
+              </label>
+              <input type="text" id="field-placeholder" value="${escapeHtml(field.placeholder || '')}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                     placeholder="请输入目标受众...">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                帮助文本
+              </label>
+              <textarea id="field-help-text" rows="2"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        placeholder="描述此字段的用途...">${escapeHtml(field.help_text || '')}</textarea>
+            </div>
+            
+            <div id="options-container" style="display:${field.field_type === 'select' || field.field_type === 'radio' || field.field_type === 'checkbox' ? 'block' : 'none'};">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                选项（每行一个）
+              </label>
+              <textarea id="field-options" rows="4"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        placeholder="选项1\n选项2\n选项3">${field.options_json ? JSON.parse(field.options_json).join('\n') : ''}</textarea>
+            </div>
+            
+            <div class="flex items-center">
+              <input type="checkbox" id="field-required" ${field.is_required ? 'checked' : ''} class="mr-2">
+              <label for="field-required" class="text-sm text-gray-700">
+                必填字段
+              </label>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <button type="button" onclick="closeModal('field-form-modal')"
+                      class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                取消
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                保存
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', formHtml);
+}
+
+async function submitEditField(event, fieldId) {
+  event.preventDefault();
+  
+  try {
+    const fieldType = document.getElementById('field-type').value;
+    const optionsText = document.getElementById('field-options').value;
+    let options = null;
+    
+    if (fieldType === 'select' || fieldType === 'radio' || fieldType === 'checkbox') {
+      options = optionsText.split('\n').filter(o => o.trim());
+    }
+    
+    const fieldData = {
+      field_key: document.getElementById('field-key').value,
+      field_type: fieldType,
+      label: document.getElementById('field-label').value,
+      label_en: document.getElementById('field-label-en').value || null,
+      placeholder: document.getElementById('field-placeholder').value || null,
+      help_text: document.getElementById('field-help-text').value || null,
+      options_json: options,
+      is_required: document.getElementById('field-required').checked
+    };
+    
+    const response = await axios.put(`/api/writing-templates/${currentEditingTemplateId}/fields/${fieldId}`, fieldData);
+    
+    if (response.data.success) {
+      showNotification('✅ 字段更新成功！', 'success');
+      closeModal('field-form-modal');
+      
+      // Reload fields
+      const templateResponse = await axios.get(`/api/writing-templates/${currentEditingTemplateId}`);
+      currentTemplateFields = templateResponse.data.template.fields || [];
+      document.getElementById('fields-list').innerHTML = renderFieldsList();
+    }
+  } catch (error) {
+    console.error('Error updating field:', error);
+    showNotification('更新失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function deleteField(fieldId) {
+  if (!confirm('确定要删除此字段吗？')) {
+    return;
+  }
+  
+  try {
+    const response = await axios.delete(`/api/writing-templates/${currentEditingTemplateId}/fields/${fieldId}`);
+    
+    if (response.data.success) {
+      showNotification('✅ 字段删除成功！', 'success');
+      
+      // Reload fields
+      const templateResponse = await axios.get(`/api/writing-templates/${currentEditingTemplateId}`);
+      currentTemplateFields = templateResponse.data.template.fields || [];
+      document.getElementById('fields-list').innerHTML = renderFieldsList();
+    }
+  } catch (error) {
+    console.error('Error deleting field:', error);
+    showNotification('删除失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+async function moveField(fieldId, direction) {
+  const currentIndex = currentTemplateFields.findIndex(f => f.id === fieldId);
+  if (currentIndex === -1) return;
+  
+  const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= currentTemplateFields.length) return;
+  
+  try {
+    // Update sort orders
+    const updates = [
+      { id: currentTemplateFields[currentIndex].id, sort_order: targetIndex + 1 },
+      { id: currentTemplateFields[targetIndex].id, sort_order: currentIndex + 1 }
+    ];
+    
+    for (const update of updates) {
+      await axios.put(`/api/writing-templates/${currentEditingTemplateId}/fields/${update.id}`, {
+        sort_order: update.sort_order
+      });
+    }
+    
+    showNotification('✅ 字段顺序已更新！', 'success');
+    
+    // Reload fields
+    const templateResponse = await axios.get(`/api/writing-templates/${currentEditingTemplateId}`);
+    currentTemplateFields = templateResponse.data.template.fields || [];
+    document.getElementById('fields-list').innerHTML = renderFieldsList();
+  } catch (error) {
+    console.error('Error moving field:', error);
+    showNotification('移动失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+function closeFieldsModal() {
+  const modal = document.getElementById('fields-modal');
+  if (modal) {
+    modal.remove();
+  }
+  currentEditingTemplateId = null;
+  currentTemplateFields = [];
 }

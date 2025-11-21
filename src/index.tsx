@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/cloudflare-workers';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import auth from './routes/auth';
 import reviews from './routes/reviews';
 import teams from './routes/teams';
@@ -39,6 +40,9 @@ type Bindings = {
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// Global error handler - must be first
+app.use('*', errorHandler);
 
 // Enable CORS for API routes
 app.use('/api/*', cors());
@@ -424,5 +428,8 @@ app.get('/', (c) => {
     </html>
   `);
 });
+
+// 404 Handler - must be last
+app.notFound(notFoundHandler);
 
 export default app;
