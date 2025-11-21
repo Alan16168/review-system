@@ -10,8 +10,8 @@
 **🌐 在线演示**: https://review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V7.0.0-dev - AI Writing System Backend (Manhattan Phase 1) (2025-11-19)  
-**🔥 最新功能**: ✅ AI写作系统后端完成 (3层级: 书籍→章节→小节→内容)  
+**✅ 当前版本**: V7.0.3 - MarketPlace Modal Fix + AI Books Auth (2025-11-21)  
+**🔥 最新功能**: ✅ MarketPlace产品管理界面修复 + AI写作授权完整修复  
 **📝 模板系统**: ✅ 支持私人/团队/公开三种可见性级别 + 价格设置  
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
@@ -175,19 +175,37 @@
 
 ### 生产环境 ✅
 - **应用 URL**: https://review-system.pages.dev
-- **最新部署 ID**: https://44c78fda.review-system.pages.dev
+- **最新部署 ID**: https://f1b38de7.review-system.pages.dev
 - **诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 - **GitHub 仓库**: https://github.com/Alan16168/review-system
-- **版本**: ✅ **V7.0.2 - MarketPlace 用户前端页面（2025-11-20）**
-- **Git Commit**: 330fe0a (Add MarketPlace user frontend page)
+- **版本**: ✅ **V7.0.3 - MarketPlace Modal Fix + AI Books Auth (2025-11-21)**
+- **Git Commit**: bba5267 (docs: Add MarketPlace modal fix documentation)
 - **Cloudflare Dashboard**: https://dash.cloudflare.com/pages/view/review-system
 - **状态**: ✅ 已成功部署到生产环境（Published）
-- **部署日期**: 2025-11-20
-- **部署 URL**: https://44c78fda.review-system.pages.dev
+- **部署日期**: 2025-11-21
+- **部署 URL**: https://f1b38de7.review-system.pages.dev
 - **主站 URL**: https://review-system.pages.dev (将自动更新)
 - **数据库迁移**: ✅ Migration 0047 已应用（添加 is_admin 字段到 users 表）
-- **功能状态**: ✅ MarketPlace 完整管理界面 + 用户前端商城页面
-- **最新更新**: ✅ **V7.0.2 - MarketPlace 用户前端页面**（2025-11-20）
+- **功能状态**: ✅ MarketPlace 完整功能 + AI写作系统完全可用
+- **最新更新**: ✅ **V7.0.3 - MarketPlace Modal Fix + AI Books Auth**（2025-11-21）
+  - ✅ **MarketPlace产品模态框修复**:
+    - 提升模态框z-index到9999，解决被遮挡问题
+    - 统一字段名称为product-type，修复创建和编辑不一致
+    - 修正产品类型选项与数据库定义一致
+    - 修复handleUpdateProduct函数读取正确字段
+  - ✅ **AI写作授权完整修复**:
+    - 为7个API调用添加Authorization headers
+    - 统一token存储键名为authToken
+    - 解决500/401授权错误
+    - AI生成章节、小节、内容功能完全可用
+  - ✅ **完整文档**:
+    - MARKETPLACE_MODAL_FIX.md - 模态框修复详细说明
+    - AI_BOOKS_AUTH_FIX.md - 授权修复完整文档
+    - TOKEN_FIX.md - Token一致性修复
+  - **部署 URL**: https://f1b38de7.review-system.pages.dev
+  - **Git commits**: da1f903 (modal fix), 22dc5a7 (auth fix), 1fb068e (token fix)
+
+- **上一版本**: ✅ **V7.0.2 - MarketPlace 用户前端页面**（2025-11-20）
   - ✅ **用户前端 MarketPlace 商城页面**:
     - 完整的商品展示网格（卡片式布局）
     - 分类筛选器（全部/AI 智能体/模板/其他）
