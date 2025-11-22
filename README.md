@@ -8,12 +8,12 @@
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
-**🚀 最新部署**: https://review-system.pages.dev (2025-11-22 00:07 UTC)  
-**🚀 部署 ID**: https://4a804912.review-system.pages.dev  
-**🔧 修复版本**: V7.2.9 - 前端加载真实购买数据  
+**🚀 最新部署**: https://review-system.pages.dev (2025-11-22 00:30 UTC)  
+**🚀 部署 ID**: https://cab65917.review-system.pages.dev  
+**🔧 修复版本**: V7.3.0 - 添加智能体链接字段 + 修复认证  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
-**✅ 当前版本**: V7.2.9 - 前端加载真实购买数据 (2025-11-22)  
+**✅ 当前版本**: V7.3.0 - 添加智能体链接字段 + 修复认证 (2025-11-22)  
 **🔥 最新功能**: ✅ 完整支付流程：添加购物车 → 查看购物车 → 结账成功  
 **💳 支付系统**: ✅ 支持写作模板/复盘模板/智能体等跨表产品购买 + 三级会员定价  
 **🛠️ 错误处理**: ✅ 统一错误响应格式 + 详细日志记录 + 用户友好提示  
@@ -23,6 +23,104 @@
 **📱 移动端**: ✅ 完整的汉堡菜单 + 手机优化布局  
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
+
+---
+
+## 🔧 V7.3.0 重大更新 - 智能体链接系统 + 认证修复 (2025-11-22)
+
+**问题描述**:
+1. 前端调用 `/api/marketplace/my-agents` 返回 401 Unauthorized
+2. 数据库缺少智能体链接字段，无法存储激活链接
+3. 前端没有验证 token 是否存在就发起 API 请求
+
+**解决方案**:
+
+**1. 数据库迁移 (0057) - 添加 agent_link 字段**:
+```sql
+-- 添加智能体链接字段
+ALTER TABLE marketplace_products ADD COLUMN agent_link TEXT;
+
+-- 更新现有产品的链接
+UPDATE marketplace_products SET agent_link = '/ai-writing' WHERE id = 1;
+UPDATE marketplace_products SET agent_link = '/file-processor' WHERE id = 10;
+UPDATE marketplace_products SET agent_link = '/new-agent' WHERE id = 12;
+
+-- 创建索引
+CREATE INDEX idx_marketplace_products_agent_link ON marketplace_products(agent_link);
+```
+
+**2. API 更新 - 返回 agent_link**:
+```typescript
+// src/routes/marketplace.ts
+const product = await c.env.DB.prepare(`
+  SELECT description, image_url, features_json, agent_link
+  FROM marketplace_products
+  WHERE id = ?
+`).bind(numericProductId).first();
+
+agents.push({
+  ...item,
+  agent_link: product?.agent_link || null
+});
+```
+
+**3. 前端修复 - 验证 token + 使用 agent_link**:
+```javascript
+// public/static/agents.js
+async init() {
+  // 验证 token 是否存在
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.error('No token found, user not logged in');
+    this.myAgents = [];
+    this.render();
+    return;
+  }
+
+  // 调用 API
+  const response = await fetch('/api/marketplace/my-agents', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  // 转换数据，包含 agent_link
+  this.myAgents = data.agents.map(agent => ({
+    ...agent,
+    agent_link: agent.agent_link || null
+  }));
+}
+
+// 使用智能体
+useAgent(agentId) {
+  const agent = this.myAgents.find(a => a.id == agentId);
+  
+  if (agent.agent_link) {
+    if (agent.agent_link.startsWith('/')) {
+      // 内部路径
+      if (agent.agent_link === '/ai-writing') {
+        AIBooksManager.renderBooksPage();
+      } else {
+        showNotification(`${agent.name} 功能开发中...`, 'info');
+      }
+    } else {
+      // 外部链接
+      window.open(agent.agent_link, '_blank');
+    }
+  }
+}
+```
+
+**修复效果**:
+- ✅ 修复 401 认证错误
+- ✅ 数据库支持智能体链接存储
+- ✅ 前端正确验证登录状态
+- ✅ 智能体可通过 agent_link 激活
+- ✅ 支持内部路径和外部 URL
+- ✅ 根据产品名称显示合适图标
+
+**部署信息**:
+- 新部署 URL: https://cab65917.review-system.pages.dev
+- 部署时间: 2025-11-22 00:30 UTC
+- Worker Bundle: 352.18 kB
 
 ---
 
