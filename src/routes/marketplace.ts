@@ -204,10 +204,92 @@ app.get('/products/all', async (c) => {
 app.get('/products/:id', async (c) => {
   try {
     const productId = c.req.param('id');
+    let product: any = null;
     
-    const product = await c.env.DB.prepare(`
-      SELECT * FROM marketplace_products WHERE id = ?
-    `).bind(productId).first();
+    // Check if it's a review template (t_XX)
+    if (productId.startsWith('t_')) {
+      const templateId = productId.substring(2); // Remove 't_' prefix
+      product = await c.env.DB.prepare(`
+        SELECT 
+          id,
+          name,
+          NULL as name_en,
+          description,
+          NULL as description_en,
+          COALESCE(price_basic, price, 0) as price_user,
+          COALESCE(price_premium, price, 0) as price_premium,
+          COALESCE(price_super, price, 0) as price_super,
+          CASE WHEN COALESCE(price_basic, price, 0) = 0 THEN 1 ELSE 0 END as is_free,
+          0 as is_subscription,
+          NULL as subscription_tier,
+          0 as credits_cost,
+          NULL as features_json,
+          'review_template' as category,
+          'review_template' as product_type,
+          NULL as tags,
+          NULL as image_url,
+          is_active,
+          0 as is_featured,
+          0 as sort_order,
+          0 as purchase_count,
+          0.0 as rating_avg,
+          0 as rating_count,
+          created_at,
+          updated_at
+        FROM templates
+        WHERE id = ? AND owner = 'public' AND is_active = 1
+      `).bind(templateId).first();
+      
+      // If found, prepend 't_' to the id
+      if (product) {
+        product.id = `t_${product.id}`;
+      }
+    }
+    // Check if it's a writing template (wt_XX)
+    else if (productId.startsWith('wt_')) {
+      const templateId = productId.substring(3); // Remove 'wt_' prefix
+      product = await c.env.DB.prepare(`
+        SELECT 
+          id,
+          name,
+          name_en,
+          description,
+          description_en,
+          COALESCE(price_user, 0) as price_user,
+          COALESCE(price_premium, 0) as price_premium,
+          COALESCE(price_super, 0) as price_super,
+          CASE WHEN COALESCE(price_user, 0) = 0 THEN 1 ELSE 0 END as is_free,
+          0 as is_subscription,
+          NULL as subscription_tier,
+          0 as credits_cost,
+          NULL as features_json,
+          'writing_template' as category,
+          'writing_template' as product_type,
+          tags,
+          NULL as image_url,
+          is_active,
+          is_featured,
+          sort_order,
+          usage_count as purchase_count,
+          0.0 as rating_avg,
+          0 as rating_count,
+          created_at,
+          updated_at
+        FROM ai_writing_templates
+        WHERE id = ? AND is_public = 1 AND is_active = 1
+      `).bind(templateId).first();
+      
+      // If found, prepend 'wt_' to the id
+      if (product) {
+        product.id = `wt_${product.id}`;
+      }
+    }
+    // Otherwise check marketplace_products table
+    else {
+      product = await c.env.DB.prepare(`
+        SELECT * FROM marketplace_products WHERE id = ?
+      `).bind(productId).first();
+    }
     
     if (!product) {
       return c.json({ success: false, error: 'Product not found' }, 404);

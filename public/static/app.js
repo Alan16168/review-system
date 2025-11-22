@@ -14908,7 +14908,7 @@ const MarketplaceManager = {
               <span class="text-3xl font-bold text-indigo-600">$${displayPrice}</span>
             </div>
             <div class="flex gap-3">
-              <button onclick="MarketplaceManager.addToCart(${product.id}); this.closest('.fixed').remove();" 
+              <button onclick="MarketplaceManager.addToCart('${product.id}'); this.closest('.fixed').remove();" 
                       class="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700">
                 ${i18n.t('addToCart')}
               </button>
