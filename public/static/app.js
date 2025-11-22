@@ -8544,13 +8544,12 @@ function renderTemplatesTable(templates) {
                         title="${i18n.t('edit')}">
                   <i class="fas fa-edit"></i>
                 </button>
-                ${!template.is_default ? `
-                  <button onclick="deleteTemplate(${template.id})" 
-                          class="text-red-600 hover:text-red-900"
-                          title="${i18n.t('delete')}">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                ` : ''}
+                <button onclick="toggleTemplateStatus(${template.id}, ${template.is_active})" 
+                        class="text-${template.is_active ? 'yellow' : 'green'}-600 hover:text-${template.is_active ? 'yellow' : 'green'}-900"
+                        title="${template.is_active ? '下架' : '上架'}">
+                  <i class="fas fa-${template.is_active ? 'toggle-on' : 'toggle-off'}"></i>
+                  ${template.is_active ? '下架' : '上架'}
+                </button>
               </td>
             </tr>
           `).join('')}
@@ -8874,6 +8873,21 @@ async function handleUpdateTemplate(e, templateId) {
     await loadTemplatesTable();
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Toggle template status (is_active)
+async function toggleTemplateStatus(templateId, currentStatus) {
+  const action = currentStatus ? '下架' : '上架';
+  if (!confirm(`确定要${action}这个复盘模板吗？`)) return;
+
+  try {
+    const response = await axios.post(`/api/templates/${templateId}/toggle-status`);
+    showNotification(response.data.message || `✅ 模板已${action}！`, 'success');
+    await loadTemplatesTable();
+  } catch (error) {
+    console.error('Error toggling template status:', error);
+    showNotification('操作失败: ' + (error.response?.data?.error || error.message), 'error');
   }
 }
 
@@ -13995,10 +14009,6 @@ async function loadMarketplaceProducts() {
                           class="text-${product.is_active ? 'yellow' : 'green'}-600 hover:text-${product.is_active ? 'yellow' : 'green'}-900">
                     <i class="fas fa-${product.is_active ? 'pause' : 'play'}-circle"></i> ${product.is_active ? '下架' : '上架'}
                   </button>
-                  <button onclick="deleteMarketplaceProduct(${product.id})" 
-                          class="text-red-600 hover:text-red-900">
-                    <i class="fas fa-trash"></i> 删除
-                  </button>
                 </td>
               </tr>
             `).join('')}
@@ -14478,10 +14488,6 @@ async function loadMarketplaceProductsByCategory(category) {
                   <button onclick="toggleProductStatus(${product.id}, ${product.is_active})" 
                           class="text-${product.is_active ? 'yellow' : 'green'}-600 hover:text-${product.is_active ? 'yellow' : 'green'}-900">
                     <i class="fas fa-${product.is_active ? 'pause' : 'play'}-circle"></i> ${product.is_active ? '下架' : '上架'}
-                  </button>
-                  <button onclick="deleteMarketplaceProduct(${product.id})" 
-                          class="text-red-600 hover:text-red-900">
-                    <i class="fas fa-trash"></i> 删除
                   </button>
                 </td>
               </tr>
@@ -15275,10 +15281,11 @@ function renderWritingTemplatesTable(templates) {
                         title="编辑">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteWritingTemplate(${template.id}, '${escapeHtml(template.name)}')" 
-                        class="text-red-600 hover:text-red-900"
-                        title="删除">
-                  <i class="fas fa-trash"></i>
+                <button onclick="toggleWritingTemplateStatus(${template.id}, ${template.is_active})" 
+                        class="text-${template.is_active ? 'yellow' : 'green'}-600 hover:text-${template.is_active ? 'yellow' : 'green'}-900"
+                        title="${template.is_active ? '下架' : '上架'}">
+                  <i class="fas fa-${template.is_active ? 'toggle-on' : 'toggle-off'}"></i>
+                  ${template.is_active ? '下架' : '上架'}
                 </button>
               </td>
             </tr>
@@ -15953,6 +15960,21 @@ async function submitEditWritingTemplate(event, templateId) {
     }
     
     showNotification('更新失败: ' + errorMsg, 'error');
+  }
+}
+
+// Toggle writing template status (is_active)
+async function toggleWritingTemplateStatus(templateId, currentStatus) {
+  const action = currentStatus ? '下架' : '上架';
+  if (!confirm(`确定要${action}这个写作模板吗？`)) return;
+
+  try {
+    const response = await axios.post(`/api/writing-templates/${templateId}/toggle-status`);
+    showNotification(response.data.message || `✅ 模板已${action}！`, 'success');
+    await loadWritingTemplatesTable();
+  } catch (error) {
+    console.error('Error toggling writing template status:', error);
+    showNotification('操作失败: ' + (error.response?.data?.error || error.message), 'error');
   }
 }
 

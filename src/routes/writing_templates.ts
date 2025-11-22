@@ -406,6 +406,42 @@ app.delete('/:id', async (c) => {
 });
 
 // ============================================================================
+// POST /api/writing-templates/:id/toggle-status - Toggle template status (Admin only)
+// ============================================================================
+app.post('/:id/toggle-status', async (c) => {
+  try {
+    const { DB } = c.env;
+    const id = parseInt(c.req.param('id'));
+
+    // Verify template exists
+    const existing: any = await DB.prepare(`
+      SELECT * FROM ai_writing_templates WHERE id = ?
+    `).bind(id).first();
+
+    if (!existing) {
+      return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Toggle is_active status
+    const newStatus = existing.is_active === 1 ? 0 : 1;
+    await DB.prepare(`
+      UPDATE ai_writing_templates 
+      SET is_active = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(newStatus, id).run();
+
+    return c.json({
+      success: true,
+      message: `模板已${newStatus === 1 ? '上架' : '下架'}`,
+      is_active: newStatus
+    });
+  } catch (error: any) {
+    console.error('Error toggling template status:', error);
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// ============================================================================
 // POST /api/writing-templates/:id/fields - Add field to template (Admin only)
 // ============================================================================
 app.post('/:id/fields', async (c) => {

@@ -536,6 +536,45 @@ templates.delete('/:id', premiumOrAdmin, async (c) => {
   }
 });
 
+// Toggle template status (Admin only)
+templates.post('/:id/toggle-status', premiumOrAdmin, async (c) => {
+  try {
+    const user = c.get('user') as any;
+    const templateId = c.req.param('id');
+
+    // Check if template exists
+    const template = await c.env.DB.prepare(`
+      SELECT id, is_active, created_by FROM templates WHERE id = ?
+    `).bind(templateId).first<any>();
+
+    if (!template) {
+      return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Permission check: Premium users can only toggle their own templates
+    if (user.role === 'premium' && template.created_by !== user.id) {
+      return c.json({ error: 'You can only modify your own templates' }, 403);
+    }
+
+    // Toggle is_active status
+    const newStatus = template.is_active === 1 ? 0 : 1;
+    await c.env.DB.prepare(`
+      UPDATE templates 
+      SET is_active = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(newStatus, templateId).run();
+
+    return c.json({
+      success: true,
+      message: `模板已${newStatus === 1 ? '上架' : '下架'}`,
+      is_active: newStatus
+    });
+  } catch (error: any) {
+    console.error('[POST /api/templates/:id/toggle-status] Error:', error);
+    throw createError('切换模板状态失败: ' + (error.message || 'Unknown error'), 500, { templateId: c.req.param('id'), originalError: error.message });
+  }
+});
+
 // Admin: Add a question to a template
 templates.post('/:id/questions', premiumOrAdmin, async (c) => {
   try {
