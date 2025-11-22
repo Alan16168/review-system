@@ -6567,6 +6567,11 @@ function showAdminCategory(category) {
                     data-subtab="marketplace-other">
               <i class="fas fa-box mr-2"></i>其他产品
             </button>
+            <button onclick="showAdminSubTab('payment-history')" 
+                    class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                    data-subtab="payment-history">
+              <i class="fas fa-receipt mr-2"></i>支付历史
+            </button>
           </nav>
         </div>
       `;
@@ -6630,6 +6635,9 @@ async function showAdminSubTab(subtab) {
       break;
     case 'marketplace-other':
       await showMarketplaceOtherManagement(content);
+      break;
+    case 'payment-history':
+      await showPaymentHistoryManagement(content);
       break;
   }
 }
@@ -10459,83 +10467,59 @@ async function showSubscriptionManagement(container) {
     const configs = configResponse.data.configs || [];
     const premiumConfig = configs.find(c => c.tier === 'premium');
     
-    // Get payments
-    const paymentsResponse = await axios.get('/api/admin/payments');
-    const payments = paymentsResponse.data.payments || [];
-    
     container.innerHTML = `
-      <div class="mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-cog mr-2"></i>${i18n.t('pricingSettings') || '价格设置'}
+          <i class="fas fa-cog mr-2"></i>${i18n.t('pricingSettings') || '订阅价格设置'}
         </h3>
-        <div class="bg-white rounded-lg shadow p-6">
-          <form onsubmit="handleUpdateSubscriptionConfig(event)" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('annualPrice') || '高级用户年费（美元）'}
-                </label>
-                <input type="number" step="0.01" id="premium-price" value="${premiumConfig?.price_usd || 20}" 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <p class="text-xs text-gray-500 mt-1">${i18n.t('newUserUpgradePrice') || '新用户升级价格'}</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  ${i18n.t('renewalPrice') || '高级用户续费费用（美元）'}
-                </label>
-                <input type="number" step="0.01" id="renewal-price" value="${premiumConfig?.renewal_price_usd || 20}" 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                <p class="text-xs text-gray-500 mt-1">${i18n.t('existingUserRenewalPrice') || '现有用户续费价格'}</p>
-              </div>
+        <form onsubmit="handleUpdateSubscriptionConfig(event)" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                ${i18n.t('annualPrice') || '高级会员年费（美元）'}
+              </label>
+              <input type="number" step="0.01" id="premium-price" value="${premiumConfig?.price_usd || 20}" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('newUserUpgradePrice') || '新用户升级价格'}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                ${i18n.t('duration') || '时长（天）'}
+                ${i18n.t('renewalPrice') || '高级会员续费费用（美元）'}
               </label>
-              <input type="number" id="premium-duration" value="${premiumConfig?.duration_days || 365}" 
+              <input type="number" step="0.01" id="renewal-price" value="${premiumConfig?.renewal_price_usd || 20}" 
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('existingUserRenewalPrice') || '现有用户续费价格'}</p>
             </div>
-            <button type="submit" class="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
-              <i class="fas fa-save mr-2"></i>${i18n.t('updatePricing') || '更新价格'}
-            </button>
-          </form>
-        </div>
-      </div>
-      
-      <div>
-        <h3 class="text-xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-receipt mr-2"></i>${i18n.t('paymentHistory') || '支付历史'}
-        </h3>
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('user') || '用户'}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('amount') || '金额'}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('status') || '状态'}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">${i18n.t('paymentDate') || '支付日期'}</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              ${payments.map(p => `
-                <tr>
-                  <td class="px-6 py-4 text-sm text-gray-900">${p.username || p.email}</td>
-                  <td class="px-6 py-4 text-sm text-gray-900">$${p.amount_usd}</td>
-                  <td class="px-6 py-4 text-sm">
-                    <span class="px-2 py-1 text-xs rounded-full ${
-                      p.payment_status === 'completed' ? 'bg-green-100 text-green-800' : 
-                      p.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                      'bg-red-100 text-red-800'
-                    }">
-                      ${p.payment_status}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-500">${new Date(p.created_at).toLocaleDateString()}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                超级会员年费（美元）
+              </label>
+              <input type="number" step="0.01" id="super-price" value="${premiumConfig?.super_price_usd || 120}" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <p class="text-xs text-gray-500 mt-1">新用户升级至超级会员价格</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                超级会员续费费用（美元）
+              </label>
+              <input type="number" step="0.01" id="super-renewal-price" value="${premiumConfig?.super_renewal_price_usd || 120}" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <p class="text-xs text-gray-500 mt-1">现有超级会员续费价格</p>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('duration') || '时长（天）'}
+            </label>
+            <input type="number" id="premium-duration" value="${premiumConfig?.duration_days || 365}" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <button type="submit" class="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+            <i class="fas fa-save mr-2"></i>${i18n.t('updatePricing') || '更新价格'}
+          </button>
+        </form>
       </div>
     `;
   } catch (error) {
@@ -10550,13 +10534,17 @@ async function handleUpdateSubscriptionConfig(e) {
   try {
     const price = document.getElementById('premium-price').value;
     const renewalPrice = document.getElementById('renewal-price').value;
+    const superPrice = document.getElementById('super-price').value;
+    const superRenewalPrice = document.getElementById('super-renewal-price').value;
     const duration = document.getElementById('premium-duration').value;
     
     await axios.put('/api/admin/subscription/config/premium', {
       price_usd: parseFloat(price),
       renewal_price_usd: parseFloat(renewalPrice),
+      super_price_usd: parseFloat(superPrice),
+      super_renewal_price_usd: parseFloat(superRenewalPrice),
       duration_days: parseInt(duration),
-      description: '高级用户年费',
+      description: '高级会员年费',
       description_en: 'Premium Annual Subscription',
       is_active: 1
     });
@@ -14385,6 +14373,99 @@ async function showMarketplaceWritingTemplatesManagement(container) {
 // 其他产品管理
 async function showMarketplaceOtherManagement(container) {
   await showMarketplaceProductsByCategory(container, 'other', '其他产品管理', 'box');
+}
+
+// 支付历史管理
+async function showPaymentHistoryManagement(container) {
+  try {
+    // Get all successful payment records (subscriptions + product purchases)
+    const response = await axios.get('/api/admin/all-payments');
+    const payments = response.data.payments || [];
+    
+    container.innerHTML = `
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-receipt mr-2"></i>支付历史
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">查看所有成功的支付记录</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-gray-600">总支付记录数</p>
+            <p class="text-2xl font-bold text-indigo-600">${payments.length}</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">产品名称</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">用户账号</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">金额</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">支付时间</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${payments.length === 0 ? `
+                <tr>
+                  <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-2"></i>
+                    <p>暂无支付记录</p>
+                  </td>
+                </tr>
+              ` : payments.map(payment => `
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full ${
+                      payment.type === 'subscription' 
+                        ? 'bg-purple-100 text-purple-800' 
+                        : 'bg-blue-100 text-blue-800'
+                    }">
+                      ${payment.type === 'subscription' ? '订阅' : '产品'}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">${payment.product_name || '未知产品'}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${payment.username || payment.email || '未知用户'}</div>
+                    ${payment.email && payment.username ? `<div class="text-xs text-gray-500">${payment.email}</div>` : ''}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900">$${payment.amount_usd.toFixed(2)}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${new Date(payment.payment_date).toLocaleString('zh-CN', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false
+                    })}</div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Show payment history error:', error);
+    container.innerHTML = `
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <p class="text-red-500">
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          加载支付历史失败: ${error.response?.data?.error || error.message}
+        </p>
+      </div>
+    `;
+  }
 }
 
 // Generic function to show products by category

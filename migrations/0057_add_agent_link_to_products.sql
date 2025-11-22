@@ -1,8 +1,16 @@
 -- Migration: Add agent_link field to marketplace_products table
 -- This field stores the URL/link to activate the agent
 
--- Add agent_link column to marketplace_products
-ALTER TABLE marketplace_products ADD COLUMN agent_link TEXT;
+-- Add agent_link column to marketplace_products (only if it doesn't exist)
+-- Check if column exists first
+SELECT CASE 
+  WHEN COUNT(*) = 0 THEN 
+    'ALTER TABLE marketplace_products ADD COLUMN agent_link TEXT'
+  ELSE 
+    'SELECT 1' -- No-op if column exists
+  END as sql
+FROM pragma_table_info('marketplace_products') 
+WHERE name = 'agent_link';
 
 -- Add comment for documentation
 -- agent_link: URL or path to activate/use the agent product

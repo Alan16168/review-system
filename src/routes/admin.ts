@@ -524,7 +524,16 @@ admin.get('/subscription/config', async (c) => {
 admin.put('/subscription/config/:tier', async (c) => {
   try {
     const tier = c.req.param('tier');
-    const { price_usd, renewal_price_usd, duration_days, description, description_en, is_active } = await c.req.json();
+    const { 
+      price_usd, 
+      renewal_price_usd, 
+      super_price_usd, 
+      super_renewal_price_usd, 
+      duration_days, 
+      description, 
+      description_en, 
+      is_active 
+    } = await c.req.json();
     
     if (!price_usd || !duration_days) {
       return c.json({ error: 'Price and duration are required' }, 400);
@@ -534,6 +543,8 @@ admin.put('/subscription/config/:tier', async (c) => {
       UPDATE subscription_config 
       SET price_usd = ?,
           renewal_price_usd = ?,
+          super_price_usd = ?,
+          super_renewal_price_usd = ?,
           duration_days = ?,
           description = ?,
           description_en = ?,
@@ -543,6 +554,8 @@ admin.put('/subscription/config/:tier', async (c) => {
     `).bind(
       price_usd,
       renewal_price_usd || price_usd,
+      super_price_usd || 120.0,
+      super_renewal_price_usd || 120.0,
       duration_days,
       description || null,
       description_en || null,
@@ -574,6 +587,54 @@ admin.get('/payments', async (c) => {
     return c.json({ payments: payments.results || [] });
   } catch (error) {
     console.error('Get payments error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Get all successful payment records (subscriptions + product purchases)
+admin.get('/all-payments', async (c) => {
+  try {
+    // Get all completed subscription payments
+    const subscriptionPayments = await c.env.DB.prepare(`
+      SELECT 
+        'subscription' as type,
+        p.id,
+        p.user_id,
+        p.amount_usd,
+        p.subscription_tier as product_name,
+        p.completed_at as payment_date,
+        u.email,
+        u.username
+      FROM payments p
+      LEFT JOIN users u ON p.user_id = u.id
+      WHERE p.payment_status = 'completed'
+    `).all();
+
+    // Get all completed product purchases
+    const productPurchases = await c.env.DB.prepare(`
+      SELECT 
+        'product' as type,
+        up.id,
+        up.user_id,
+        up.price_paid as amount_usd,
+        up.product_name,
+        up.purchase_date as payment_date,
+        u.email,
+        u.username
+      FROM user_purchases up
+      LEFT JOIN users u ON up.user_id = u.id
+      WHERE up.status = 'completed'
+    `).all();
+
+    // Combine and sort by payment date
+    const allPayments = [
+      ...(subscriptionPayments.results || []),
+      ...(productPurchases.results || [])
+    ].sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime());
+
+    return c.json({ payments: allPayments });
+  } catch (error) {
+    console.error('Get all payments error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
