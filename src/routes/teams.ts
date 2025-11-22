@@ -72,6 +72,7 @@ teams.get('/', async (c) => {
     const myTeamsResult = await c.env.DB.prepare(myTeamsQuery).bind(user.id).all();
 
     // Get all public teams (including teams user is already in)
+    // Note: All teams are public by default (no is_public column in database)
     const publicTeamsQuery = `
       SELECT t.*, u.username as owner_name,
         (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count,
@@ -79,7 +80,6 @@ teams.get('/', async (c) => {
         (SELECT 1 FROM team_members WHERE team_id = t.id AND user_id = ?) as is_member
       FROM teams t
       JOIN users u ON t.owner_id = u.id
-      WHERE t.is_public = 1 
       ORDER BY t.created_at DESC
     `;
     const publicTeamsResult = await c.env.DB.prepare(publicTeamsQuery).bind(user.id, user.id).all();
