@@ -5,14 +5,24 @@ const AgentsPage = {
   // 初始化 - 从API加载我的智能体
   async init() {
     try {
+      // 检查登录状态
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found, user not logged in');
+        this.myAgents = [];
+        this.render();
+        return;
+      }
+
       // 从API获取购买的智能体
       const response = await fetch('/api/marketplace/my-agents', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
       if (!response.ok) {
+        console.error('API response not OK:', response.status, response.statusText);
         throw new Error('Failed to fetch agents');
       }
 
@@ -23,7 +33,7 @@ const AgentsPage = {
         this.myAgents = data.agents.map(agent => ({
           id: agent.product_id,
           name: agent.product_name,
-          icon: '🤖', // 默认图标，可以根据产品类型设置
+          icon: this.getAgentIcon(agent.product_name), // 根据名称设置图标
           description: agent.description || '暂无描述',
           category: 'AI工具',
           features: this.parseFeatures(agent.features_json),
@@ -31,14 +41,15 @@ const AgentsPage = {
           purchaseDate: agent.purchase_date ? agent.purchase_date.split(' ')[0] : '未知',
           usageCount: 0, // 可以后续从统计API获取
           rating: 4.8, // 可以后续从评分API获取
-          image_url: agent.image_url
+          image_url: agent.image_url,
+          agent_link: agent.agent_link || null // 智能体激活链接
         }));
       } else {
         this.myAgents = [];
       }
     } catch (error) {
       console.error('Error loading agents:', error);
-      showNotification('加载智能体失败', 'error');
+      showNotification('加载智能体失败，请刷新重试', 'error');
       this.myAgents = [];
     }
     
@@ -60,6 +71,23 @@ const AgentsPage = {
     }
   },
 
+  // 根据产品名称获取图标
+  getAgentIcon(productName) {
+    if (productName.includes('写作') || productName.includes('文章')) {
+      return '✍️';
+    } else if (productName.includes('文件') || productName.includes('处理')) {
+      return '📁';
+    } else if (productName.includes('分析') || productName.includes('数据')) {
+      return '📊';
+    } else if (productName.includes('翻译')) {
+      return '🌐';
+    } else if (productName.includes('设计') || productName.includes('图片')) {
+      return '🎨';
+    } else {
+      return '🤖';
+    }
+  },
+
   // 使用智能体
   useAgent(agentId) {
     const agent = this.myAgents.find(a => a.id == agentId);
@@ -68,17 +96,32 @@ const AgentsPage = {
       return;
     }
 
-    // 根据智能体名称跳转到相应页面
-    if (agent.name.includes('AI写作') || agent.name.includes('写作助手')) {
-      // 跳转到AI写作页面
-      AIBooksManager.renderBooksPage();
-    } else if (agent.name.includes('文件处理') || agent.name.includes('文件助手')) {
-      // 文件处理智能体
-      showNotification(`${agent.name} 功能开发中...`, 'info');
+    // 优先使用 agent_link 字段
+    if (agent.agent_link) {
+      // 如果是内部路径
+      if (agent.agent_link.startsWith('/')) {
+        if (agent.agent_link === '/ai-writing') {
+          AIBooksManager.renderBooksPage();
+        } else if (agent.agent_link === '/file-processor') {
+          showNotification(`${agent.name} 功能开发中...`, 'info');
+        } else if (agent.agent_link === '/new-agent') {
+          showNotification(`${agent.name} 功能开发中...`, 'info');
+        } else {
+          showNotification(`正在启动 ${agent.name}...`, 'info');
+        }
+      } else {
+        // 外部链接，新窗口打开
+        window.open(agent.agent_link, '_blank');
+      }
     } else {
-      // 其他智能体
-      showNotification(`正在启动 ${agent.name}...`, 'info');
-      // TODO: 根据产品ID跳转到对应功能页面
+      // 没有 agent_link，根据名称判断
+      if (agent.name.includes('AI写作') || agent.name.includes('写作助手')) {
+        AIBooksManager.renderBooksPage();
+      } else if (agent.name.includes('文件处理') || agent.name.includes('文件助手')) {
+        showNotification(`${agent.name} 功能开发中...`, 'info');
+      } else {
+        showNotification(`正在启动 ${agent.name}...`, 'info');
+      }
     }
   },
 

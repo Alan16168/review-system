@@ -1124,7 +1124,7 @@ app.get('/my-agents', async (c) => {
       // Convert productId to integer for marketplace_products query
       const numericProductId = parseInt(productId.toString());
       const product: any = await c.env.DB.prepare(`
-        SELECT description, image_url, features_json
+        SELECT description, image_url, features_json, agent_link
         FROM marketplace_products
         WHERE id = ?
       `).bind(numericProductId).first();
@@ -1139,7 +1139,8 @@ app.get('/my-agents', async (c) => {
         ...item,
         description,
         image_url,
-        features_json
+        features_json,
+        agent_link: product?.agent_link || null
       });
     }
     
