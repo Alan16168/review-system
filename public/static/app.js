@@ -14026,6 +14026,14 @@ function showCreateProductModal() {
         </div>
 
         <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">智能体链接</label>
+          <input type="text" id="product-agent-link"
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="例如：/ai-writing 或 https://example.com">
+          <p class="text-xs text-gray-500 mt-1">用户点击"使用"按钮后跳转的链接（内部路径或外部URL）</p>
+        </div>
+
+        <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
           <select id="product-type" required
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
@@ -14090,6 +14098,7 @@ async function handleCreateProduct(e) {
     product_type: document.getElementById('product-type').value,
     name: document.getElementById('product-name').value,
     description: document.getElementById('product-description').value,
+    agent_link: document.getElementById('product-agent-link').value || null,
     price_user: parseFloat(document.getElementById('product-price-user').value),
     price_premium: parseFloat(document.getElementById('product-price-premium').value),
     price_super: parseFloat(document.getElementById('product-price-super').value),
@@ -14164,6 +14173,14 @@ async function editMarketplaceProduct(productId) {
           </div>
 
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">智能体链接</label>
+            <input type="text" id="product-agent-link" value="${product.agent_link || ''}"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                   placeholder="例如：/ai-writing 或 https://example.com">
+            <p class="text-xs text-gray-500 mt-1">用户点击"使用"按钮后跳转的链接（内部路径或外部URL）</p>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">分类 *</label>
             <select id="product-type" required
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
@@ -14232,6 +14249,7 @@ async function handleUpdateProduct(e, productId) {
     name: document.getElementById('product-name').value,
     description: document.getElementById('product-description').value,
     product_type: document.getElementById('product-type').value,
+    agent_link: document.getElementById('product-agent-link').value || null,
     price_user: parseFloat(document.getElementById('product-price-user').value),
     price_premium: parseFloat(document.getElementById('product-price-premium').value),
     price_super: parseFloat(document.getElementById('product-price-super').value),

@@ -247,8 +247,8 @@ app.post('/products', async (c) => {
         product_type, name, name_en, description, description_en,
         price_user, price_premium, price_super, is_free, is_subscription, subscription_tier,
         credits_cost, features_json, category, tags, image_url,
-        demo_url, is_active, is_featured, sort_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        demo_url, agent_link, is_active, is_featured, sort_order
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       body.product_type,
       body.name,
@@ -267,6 +267,7 @@ app.post('/products', async (c) => {
       body.tags || null,
       body.image_url || null,
       body.demo_url || null,
+      body.agent_link || null,
       body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1,
       body.is_featured ? 1 : 0,
       body.sort_order || 0
@@ -312,7 +313,7 @@ app.put('/products/:id', async (c) => {
       'product_type', 'name', 'name_en', 'description', 'description_en',
       'price_user', 'price_premium', 'price_super', 'is_free', 'is_subscription', 'subscription_tier',
       'credits_cost', 'features_json', 'category', 'tags', 'image_url',
-      'demo_url', 'is_active', 'is_featured', 'sort_order'
+      'demo_url', 'agent_link', 'is_active', 'is_featured', 'sort_order'
     ];
     
     fields.forEach(field => {
