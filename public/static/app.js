@@ -8373,7 +8373,7 @@ async function showTemplatesManagement(container) {
         </h2>
         <button onclick="showCreateTemplateModal()" 
                 class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-          <i class="fas fa-plus mr-2"></i>${i18n.t('createTemplate')}
+          <i class="fas fa-plus mr-2"></i>创建复盘模板
         </button>
       </div>
       <div id="templates-table">
@@ -8550,7 +8550,7 @@ function showCreateTemplateModal() {
       <div class="p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-bold text-gray-800">
-            <i class="fas fa-plus mr-2"></i>${i18n.t('createTemplate')}
+            <i class="fas fa-plus mr-2"></i>创建复盘模板
           </h3>
           <button onclick="closeTemplateModal()" class="text-gray-500 hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
@@ -8576,12 +8576,47 @@ function showCreateTemplateModal() {
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('templatePrice')}
               </label>
-              <div class="flex items-center">
-                <span class="text-gray-600 mr-2">$</span>
-                <input type="number" id="template-price" min="0" step="0.01" value="0"
-                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                       placeholder="0.00">
-                <span class="text-gray-600 ml-2">USD</span>
+              
+              <!-- 普通会员价 -->
+              <div class="mb-3">
+                <label class="block text-xs font-medium text-gray-600 mb-1">
+                  普通会员价
+                </label>
+                <div class="flex items-center">
+                  <span class="text-gray-600 mr-2">$</span>
+                  <input type="number" id="template-price-basic" min="0" step="0.01" value="0"
+                         class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                         placeholder="0.00">
+                  <span class="text-gray-600 ml-2">USD</span>
+                </div>
+              </div>
+              
+              <!-- 高级会员价 -->
+              <div class="mb-3">
+                <label class="block text-xs font-medium text-gray-600 mb-1">
+                  高级会员价
+                </label>
+                <div class="flex items-center">
+                  <span class="text-gray-600 mr-2">$</span>
+                  <input type="number" id="template-price-premium" min="0" step="0.01" value="0"
+                         class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                         placeholder="0.00">
+                  <span class="text-gray-600 ml-2">USD</span>
+                </div>
+              </div>
+              
+              <!-- 超级会员价 -->
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">
+                  超级会员价
+                </label>
+                <div class="flex items-center">
+                  <span class="text-gray-600 mr-2">$</span>
+                  <input type="number" id="template-price-super" min="0" step="0.01" value="0"
+                         class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                         placeholder="0.00">
+                  <span class="text-gray-600 ml-2">USD</span>
+                </div>
               </div>
             </div>
             <div>
@@ -8633,11 +8668,15 @@ async function handleCreateTemplate(e) {
   e.preventDefault();
   
   const isDefaultCheckbox = document.getElementById('template-is-default');
-  const priceValue = parseFloat(document.getElementById('template-price').value) || 0;
+  const priceBasic = parseFloat(document.getElementById('template-price-basic').value) || 0;
+  const pricePremium = parseFloat(document.getElementById('template-price-premium').value) || 0;
+  const priceSuper = parseFloat(document.getElementById('template-price-super').value) || 0;
   const data = {
     name: document.getElementById('template-name').value,
     description: document.getElementById('template-description').value || null,
-    price: priceValue,
+    price_basic: priceBasic,
+    price_premium: pricePremium,
+    price_super: priceSuper,
     is_default: isDefaultCheckbox ? isDefaultCheckbox.checked : false,
     owner: document.getElementById('template-owner').value
   };
