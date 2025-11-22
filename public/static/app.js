@@ -15328,6 +15328,42 @@ function showCreateWritingTemplateModal() {
             </div>
           </div>
 
+          <!-- Pricing Settings -->
+          <div class="border-t border-gray-200 pt-4 mt-4">
+            <h4 class="font-medium text-gray-800 mb-3">价格设置</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- 普通会员价 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  普通会员价 ($)
+                </label>
+                <input type="number" id="template-price-user" min="0" step="0.01" value="0"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="0.00">
+              </div>
+              
+              <!-- 高级会员价 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  高级会员价 ($)
+                </label>
+                <input type="number" id="template-price-premium" min="0" step="0.01" value="0"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="0.00">
+              </div>
+              
+              <!-- 超级会员价 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  超级会员价 ($)
+                </label>
+                <input type="number" id="template-price-super" min="0" step="0.01" value="0"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                       placeholder="0.00">
+              </div>
+            </div>
+          </div>
+
           <!-- Default Settings -->
           <div class="border-t border-gray-200 pt-4 mt-4">
             <h4 class="font-medium text-gray-800 mb-3">默认设置</h4>
@@ -15428,6 +15464,9 @@ async function submitWritingTemplate(event) {
       category: document.getElementById('template-category').value,
       icon: document.getElementById('template-icon').value || 'book',
       color: document.getElementById('template-color').value || 'blue',
+      price_user: parseFloat(document.getElementById('template-price-user').value) || 0,
+      price_premium: parseFloat(document.getElementById('template-price-premium').value) || 0,
+      price_super: parseFloat(document.getElementById('template-price-super').value) || 0,
       default_tone: document.getElementById('template-tone').value,
       default_audience: document.getElementById('template-audience').value,
       default_language: document.getElementById('template-language').value,
