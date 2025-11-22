@@ -87,9 +87,9 @@ app.get('/products', async (c) => {
           NULL as name_en,
           description,
           NULL as description_en,
-          price as price_user,
-          price as price_premium,
-          price as price_super,
+          COALESCE(price_basic, price, 0) as price_user,
+          COALESCE(price_premium, price, 0) as price_premium,
+          COALESCE(price_super, price, 0) as price_super,
           0 as is_free,
           0 as is_subscription,
           NULL as subscription_tier,
@@ -471,9 +471,9 @@ app.get('/cart', async (c) => {
             id,
             name,
             description,
-            price as price_user,
-            price as price_premium,
-            price as price_super,
+            COALESCE(price_basic, price, 0) as price_user,
+            COALESCE(price_premium, price, 0) as price_premium,
+            COALESCE(price_super, price, 0) as price_super,
             'review_template' as product_type,
             'review_template' as category,
             is_active
@@ -849,9 +849,9 @@ app.post('/checkout', async (c) => {
           SELECT 
             id,
             name,
-            price as price_user,
-            price as price_premium,
-            price as price_super,
+            COALESCE(price_basic, price, 0) as price_user,
+            COALESCE(price_premium, price, 0) as price_premium,
+            COALESCE(price_super, price, 0) as price_super,
             'review_template' as product_type,
             is_active
           FROM templates
