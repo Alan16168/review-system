@@ -161,6 +161,9 @@ app.post('/', async (c) => {
       default_target_words,
       is_public,
       is_featured,
+      price_user,
+      price_premium,
+      price_super,
       fields
     } = body;
 
@@ -171,14 +174,15 @@ app.post('/', async (c) => {
       }, 400);
     }
 
-    // Insert template
+    // Insert template with pricing fields
     const result = await DB.prepare(`
       INSERT INTO ai_writing_templates (
         owner_id, owner_type, name, name_en, description, description_en,
         product_type, category, icon, color, tags,
         default_tone, default_audience, default_language, default_target_words,
-        is_active, is_public, is_featured
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        is_active, is_public, is_featured,
+        price_user, price_premium, price_super
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       user.id,
       'individual',
@@ -195,9 +199,12 @@ app.post('/', async (c) => {
       default_audience || 'general',
       default_language || 'zh',
       default_target_words || 50000,
-      1, // is_active
+      1, // is_active - always set to 1 (enabled) when creating
       is_public ? 1 : 0,
-      is_featured ? 1 : 0
+      is_featured ? 1 : 0,
+      price_user !== undefined ? parseFloat(price_user) : 0,
+      price_premium !== undefined ? parseFloat(price_premium) : 0,
+      price_super !== undefined ? parseFloat(price_super) : 0
     ).run();
 
     const templateId = result.meta.last_row_id;

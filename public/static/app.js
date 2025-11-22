@@ -15258,128 +15258,109 @@ function renderWritingTemplatesTable(templates) {
   
   container.innerHTML = `
     <div class="overflow-x-auto">
-      <table class="min-w-full">
+      <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              模板名称
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              类型
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              创建者
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              字段数量
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              分类
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              价格 (普通/高级/超级)
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              可见性
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              推荐模板
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              状态
-            </th>
-            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              操作
-            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">模板名称</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">创建者</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">问题数量</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">价格 (普通/高级/超)</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">模板可见性</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">默认模板</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           ${templates.map(template => `
             <tr class="${!template.is_active ? 'bg-gray-100 opacity-60' : ''}">
+              <!-- 模板名称 -->
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <i class="fas fa-${template.icon || 'book'} text-${template.is_active ? (template.color || 'blue') : 'gray'}-${template.is_active ? '600' : '400'} mr-2"></i>
-                  <div class="text-sm font-medium ${template.is_active ? 'text-gray-900' : 'text-gray-500'}">${escapeHtml(template.name)}</div>
-                </div>
+                <div class="text-sm font-medium text-gray-900">${escapeHtml(template.name)}</div>
               </td>
+              
+              <!-- 类型 -->
               <td class="px-6 py-4 whitespace-nowrap">
                 ${template.owner_type === 'system' || !template.creator_name ? 
-                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                    <i class="fas fa-crown mr-1"></i>系统模板
-                  </span>` : 
-                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    <i class="fas fa-user mr-1"></i>用户模板
-                  </span>`
+                  `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded bg-purple-100 text-purple-800">系统模板</span>` : 
+                  `<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded bg-blue-100 text-blue-800">用户模板</span>`
                 }
               </td>
+              
+              <!-- 创建者 -->
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <i class="fas fa-user-circle text-gray-400 mr-2"></i>
                   <span class="text-sm text-gray-700">${escapeHtml(template.creator_name || '系统')}</span>
                 </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
+              
+              <!-- 问题数量 -->
+              <td class="px-6 py-4 whitespace-nowrap text-center">
                 <span class="text-sm text-gray-900">${template.field_count || 0}</span>
               </td>
+              
+              <!-- 价格 -->
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="text-sm text-gray-700">${template.category}</span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">
+                <div class="text-sm">
                   ${(template.price_user > 0 || template.price_premium > 0 || template.price_super > 0) ? 
-                    `<div class="flex flex-col space-y-1">
-                      <span class="text-xs text-gray-600">普通: $${parseFloat(template.price_user || 0).toFixed(2)}</span>
-                      <span class="text-xs text-blue-600">高级: $${parseFloat(template.price_premium || 0).toFixed(2)}</span>
-                      <span class="text-xs text-purple-600">超级: $${parseFloat(template.price_super || 0).toFixed(2)}</span>
+                    `<div>
+                      <span class="text-gray-700">普通: $${parseFloat(template.price_user || 0).toFixed(2)}</span><br>
+                      <span class="text-blue-600">高级: $${parseFloat(template.price_premium || 0).toFixed(2)}</span><br>
+                      <span class="text-purple-600">超: $${parseFloat(template.price_super || 0).toFixed(2)}</span>
                     </div>` : 
-                    `<span class="text-green-600">免费</span>`}
+                    `<span class="text-gray-500">-</span>`}
                 </div>
               </td>
+              
+              <!-- 模板可见性 -->
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  template.is_public ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                }">
-                  <i class="fas fa-${template.is_public ? 'globe' : 'lock'} mr-1"></i>
+                <span class="text-sm ${template.is_public ? 'text-green-600' : 'text-gray-600'}">
                   ${template.is_public ? '公开' : '私有'}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
+              
+              <!-- 默认模板 -->
+              <td class="px-6 py-4 whitespace-nowrap text-center">
                 ${template.is_featured ? 
-                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                    <i class="fas fa-star mr-1"></i>是
-                  </span>` : 
-                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                    否
-                  </span>`
+                  `<i class="fas fa-check text-green-600"></i>` : 
+                  `<i class="fas fa-times text-gray-400"></i>`
                 }
               </td>
+              
+              <!-- 状态 -->
               <td class="px-6 py-4 whitespace-nowrap">
-                ${template.is_active ? 
-                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    启用
-                  </span>` : 
-                  `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                    禁用
-                  </span>`
-                }
+                <span class="text-sm ${template.is_active ? 'text-green-600' : 'text-gray-500'}">
+                  ${template.is_active ? '启用' : '禁用'}
+                </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button onclick="showManageWritingTemplateFields(${template.id})" 
-                        class="text-indigo-600 hover:text-indigo-900 mr-3"
-                        title="管理字段">
-                  <i class="fas fa-tasks"></i>
-                </button>
-                <button onclick="showEditWritingTemplateModal(${template.id})" 
-                        class="text-blue-600 hover:text-blue-900 mr-3"
-                        title="编辑">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="toggleWritingTemplateStatus(${template.id}, ${template.is_active})" 
-                        class="text-${template.is_active ? 'yellow' : 'green'}-600 hover:text-${template.is_active ? 'yellow' : 'green'}-900"
-                        title="${template.is_active ? '下架' : '上架'}">
-                  <i class="fas fa-${template.is_active ? 'toggle-on' : 'toggle-off'}"></i>
-                  ${template.is_active ? '下架' : '上架'}
-                </button>
+              
+              <!-- 操作 -->
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <div class="flex items-center space-x-3">
+                  <button onclick="showManageWritingTemplateFields(${template.id})" 
+                          class="text-gray-600 hover:text-gray-900" title="管理字段">
+                    <i class="fas fa-list"></i>
+                  </button>
+                  <button onclick="showEditWritingTemplateModal(${template.id})" 
+                          class="text-blue-600 hover:text-blue-900" title="编辑">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button onclick="toggleWritingTemplateStatus(${template.id}, ${template.is_active})" 
+                          class="${template.is_active ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'}" 
+                          title="${template.is_active ? '下架' : '上架'}">
+                    <i class="fas fa-power-off"></i>
+                  </button>
+                  <button onclick="copyWritingTemplate(${template.id})" 
+                          class="text-purple-600 hover:text-purple-900" title="复制">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                  <button onclick="downloadWritingTemplate(${template.id})" 
+                          class="text-indigo-600 hover:text-indigo-900" title="下载">
+                    <i class="fas fa-download"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           `).join('')}
@@ -15387,6 +15368,57 @@ function renderWritingTemplatesTable(templates) {
       </table>
     </div>
   `;
+}
+
+// Helper function: Copy writing template
+async function copyWritingTemplate(templateId) {
+  if (!confirm('确定要复制这个模板吗？')) return;
+  
+  try {
+    showNotification('正在复制模板...', 'info');
+    const response = await axios.get(`/api/writing-templates/${templateId}`);
+    const template = response.data.template;
+    
+    // Create a copy with modified name
+    const copyData = {
+      ...template,
+      name: `${template.name} (副本)`,
+      is_featured: 0,
+      is_active: 1
+    };
+    delete copyData.id;
+    delete copyData.created_at;
+    delete copyData.updated_at;
+    
+    await axios.post('/api/writing-templates', copyData);
+    showNotification('✅ 模板复制成功！', 'success');
+    await loadWritingTemplatesTable();
+  } catch (error) {
+    console.error('Copy template error:', error);
+    showNotification('复制失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Helper function: Download writing template
+async function downloadWritingTemplate(templateId) {
+  try {
+    const response = await axios.get(`/api/writing-templates/${templateId}`);
+    const template = response.data.template;
+    
+    const dataStr = JSON.stringify(template, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${template.name}-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification('✅ 模板已下载！', 'success');
+  } catch (error) {
+    console.error('Download template error:', error);
+    showNotification('下载失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
 }
 
 function showCreateWritingTemplateModal() {
