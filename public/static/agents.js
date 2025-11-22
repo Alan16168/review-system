@@ -9,8 +9,9 @@ const AgentsPage = {
       const token = localStorage.getItem('token');
       if (!token) {
         console.error('No token found, user not logged in');
+        // 显示未登录提示
         this.myAgents = [];
-        this.render();
+        this.renderNotLoggedIn();
         return;
       }
 
@@ -190,6 +191,30 @@ const AgentsPage = {
             class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium shadow-md hover:shadow-lg">
             <i class="fas fa-play mr-2"></i>使用
           </button>
+        </div>
+      </div>
+    `;
+  },
+
+  // 渲染未登录状态
+  renderNotLoggedIn() {
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+      <div class="min-h-screen bg-gray-50">
+        ${renderNavigation()}
+
+        <!-- 未登录提示 -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <div class="text-6xl mb-4">🔐</div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">请先登录</h2>
+            <p class="text-gray-600 mb-6">您需要登录后才能查看已购买的智能体</p>
+            <button onclick="showLoginModal()" 
+              class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition font-medium">
+              <i class="fas fa-sign-in-alt mr-2"></i>立即登录
+            </button>
+          </div>
         </div>
       </div>
     `;
