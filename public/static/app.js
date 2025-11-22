@@ -16094,11 +16094,17 @@ async function toggleWritingTemplateStatus(templateId, currentStatus) {
   if (!confirm(`确定要${action}这个写作模板吗？`)) return;
 
   try {
+    console.log(`[DEBUG] Toggling template ${templateId} status. Current: ${currentStatus}, Action: ${action}`);
+    console.log(`[DEBUG] Sending POST request to: /api/writing-templates/${templateId}/toggle-status`);
+    
     const response = await axios.post(`/api/writing-templates/${templateId}/toggle-status`);
+    
+    console.log('[DEBUG] Response:', response.data);
     showNotification(response.data.message || `✅ 模板已${action}！`, 'success');
     await loadWritingTemplatesTable();
   } catch (error) {
-    console.error('Error toggling writing template status:', error);
+    console.error('[ERROR] Toggle template status failed:', error);
+    console.error('[ERROR] Error response:', error.response);
     showNotification('操作失败: ' + (error.response?.data?.error || error.message), 'error');
   }
 }

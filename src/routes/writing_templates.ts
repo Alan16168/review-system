@@ -384,8 +384,10 @@ app.put('/:id', async (c) => {
 // ============================================================================
 app.post('/:id/toggle-status', async (c) => {
   try {
+    console.log('[BACKEND] POST /:id/toggle-status route called');
     const { DB } = c.env;
     const id = parseInt(c.req.param('id'));
+    console.log(`[BACKEND] Template ID: ${id}`);
 
     // Verify template exists
     const existing: any = await DB.prepare(`
@@ -393,24 +395,31 @@ app.post('/:id/toggle-status', async (c) => {
     `).bind(id).first();
 
     if (!existing) {
+      console.log(`[BACKEND] Template ${id} not found`);
       return c.json({ error: 'Template not found' }, 404);
     }
 
+    console.log(`[BACKEND] Current status: ${existing.is_active}`);
+    
     // Toggle is_active status
     const newStatus = existing.is_active === 1 ? 0 : 1;
+    console.log(`[BACKEND] New status: ${newStatus}`);
+    
     await DB.prepare(`
       UPDATE ai_writing_templates 
       SET is_active = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(newStatus, id).run();
 
+    console.log(`[BACKEND] Template ${id} status toggled successfully`);
+    
     return c.json({
       success: true,
       message: `模板已${newStatus === 1 ? '上架' : '下架'}`,
       is_active: newStatus
     });
   } catch (error: any) {
-    console.error('Error toggling template status:', error);
+    console.error('[BACKEND ERROR] Error toggling template status:', error);
     return c.json({ error: error.message }, 500);
   }
 });
@@ -420,8 +429,10 @@ app.post('/:id/toggle-status', async (c) => {
 // ============================================================================
 app.delete('/:id', async (c) => {
   try {
+    console.log('[BACKEND] DELETE /:id route called - THIS SHOULD NOT BE CALLED FOR TOGGLE!');
     const { DB } = c.env;
     const id = parseInt(c.req.param('id'));
+    console.log(`[BACKEND DELETE] Template ID: ${id}`);
 
     // Verify template exists
     const existing = await DB.prepare(`
@@ -439,12 +450,14 @@ app.delete('/:id', async (c) => {
       WHERE id = ?
     `).bind(id).run();
 
+    console.log(`[BACKEND DELETE] Template ${id} soft deleted (set is_active = 0)`);
+
     return c.json({
       success: true,
       message: 'Template deleted successfully'
     });
   } catch (error: any) {
-    console.error('Error deleting template:', error);
+    console.error('[BACKEND DELETE ERROR] Error deleting template:', error);
     return c.json({ error: error.message }, 500);
   }
 });
