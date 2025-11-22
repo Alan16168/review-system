@@ -5,8 +5,8 @@ const AgentsPage = {
   // 初始化 - 从API加载我的智能体
   async init() {
     try {
-      // 检查登录状态
-      const token = localStorage.getItem('token');
+      // 检查登录状态 - 使用正确的 authToken 键名
+      const token = localStorage.getItem('authToken');
       if (!token) {
         console.error('No token found, user not logged in');
         // 显示未登录提示
