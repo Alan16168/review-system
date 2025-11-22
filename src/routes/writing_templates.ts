@@ -52,8 +52,9 @@ app.get('/', async (c) => {
   try {
     const { DB } = c.env;
     const user = c.get('user');
+    const showAll = c.req.query('show_all'); // Admin can request all templates
     
-    // Get all active templates (public ones + user's own templates)
+    // Build base query
     let query = `
       SELECT 
         t.*,
@@ -63,17 +64,24 @@ app.get('/', async (c) => {
       FROM ai_writing_templates t
       LEFT JOIN users u ON t.owner_id = u.id
       LEFT JOIN teams tm ON t.team_id = tm.id
-      WHERE t.is_active = 1
     `;
     
-    // Only add owner filter if user exists and is not admin
-    if (user && user.role !== 'admin') {
-      query += ` AND (t.is_public = 1 OR t.owner_id = ?)`;
-    } else if (!user) {
-      // If no user, only show public templates
-      query += ` AND t.is_public = 1`;
+    // Admin with show_all parameter can see all templates (active and inactive)
+    if (user && user.role === 'admin' && showAll === 'true') {
+      // Admin sees ALL templates (no is_active filter)
+      query += ` WHERE 1=1`;
+    } else {
+      // Non-admins and regular users only see active templates
+      query += ` WHERE t.is_active = 1`;
+      
+      // Only add owner filter if user exists and is not admin
+      if (user && user.role !== 'admin') {
+        query += ` AND (t.is_public = 1 OR t.owner_id = ?)`;
+      } else if (!user) {
+        // If no user, only show public templates
+        query += ` AND t.is_public = 1`;
+      }
     }
-    // If user is admin, show all active templates (no additional filter)
     
     query += ` ORDER BY t.is_featured DESC, t.sort_order ASC, t.created_at DESC`;
     

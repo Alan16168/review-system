@@ -15224,7 +15224,8 @@ async function loadWritingTemplates() {
 
 async function loadWritingTemplatesTable() {
   try {
-    const response = await axios.get('/api/writing-templates');
+    // Admin mode: show all templates including inactive ones
+    const response = await axios.get('/api/writing-templates?show_all=true');
     const templates = response.data.templates || [];
     renderWritingTemplatesTable(templates);
   } catch (error) {
