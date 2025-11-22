@@ -16378,20 +16378,11 @@ function showAddFieldForm() {
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                标签 <span class="text-red-600">*</span>
+                问题 <span class="text-red-600">*</span>
               </label>
-              <input type="text" id="field-label" required
+              <input type="text" id="field-placeholder" required
                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                     placeholder="目标受众">
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                问题
-              </label>
-              <input type="text" id="field-placeholder"
-                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                     placeholder="请输入目标受众...">
+                     placeholder="请输入问题...">
             </div>
             
             <div>
@@ -16473,11 +16464,11 @@ async function submitAddField(event) {
     const answerLength = document.getElementById('field-answer-length').value;
     
     const fieldData = {
-      field_key: document.getElementById('field-label').value.replace(/\s+/g, '_').toLowerCase(),
+      field_key: document.getElementById('field-placeholder').value.replace(/\s+/g, '_').toLowerCase(),
       field_type: fieldType,
-      label: document.getElementById('field-label').value,
+      label: document.getElementById('field-placeholder').value,
       label_en: null,
-      placeholder: document.getElementById('field-placeholder').value || null,
+      placeholder: null,
       help_text: document.getElementById('field-help-text').value || null,
       options_json: options,
       is_required: document.getElementById('field-required').checked,
@@ -16539,20 +16530,11 @@ async function showEditFieldForm(fieldId) {
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                标签 <span class="text-red-600">*</span>
+                问题 <span class="text-red-600">*</span>
               </label>
-              <input type="text" id="field-label" required value="${escapeHtml(field.label)}"
+              <input type="text" id="field-placeholder" required value="${escapeHtml(field.label)}"
                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                     placeholder="目标受众">
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                问题
-              </label>
-              <input type="text" id="field-placeholder" value="${escapeHtml(field.placeholder || '')}"
-                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                     placeholder="请输入目标受众...">
+                     placeholder="请输入问题...">
             </div>
             
             <div>
@@ -16623,11 +16605,11 @@ async function submitEditField(event, fieldId) {
     const answerLength = document.getElementById('field-answer-length').value;
     
     const fieldData = {
-      field_key: document.getElementById('field-label').value.replace(/\s+/g, '_').toLowerCase(),
+      field_key: document.getElementById('field-placeholder').value.replace(/\s+/g, '_').toLowerCase(),
       field_type: fieldType,
-      label: document.getElementById('field-label').value,
+      label: document.getElementById('field-placeholder').value,
       label_en: null,
-      placeholder: document.getElementById('field-placeholder').value || null,
+      placeholder: null,
       help_text: document.getElementById('field-help-text').value || null,
       options_json: options,
       is_required: document.getElementById('field-required').checked,
