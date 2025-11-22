@@ -8541,23 +8541,30 @@ function renderTemplatesTable(templates) {
                   </span>`
                 }
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button onclick="showManageQuestionsModal(${template.id})" 
-                        class="text-indigo-600 hover:text-indigo-900 mr-3"
-                        title="${i18n.t('manageQuestions')}">
-                  <i class="fas fa-tasks"></i>
-                </button>
-                <button onclick="showEditTemplateModal(${template.id})" 
-                        class="text-blue-600 hover:text-blue-900 mr-3"
-                        title="${i18n.t('edit')}">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button onclick="toggleTemplateStatus(${template.id}, ${template.is_active})" 
-                        class="text-${template.is_active ? 'yellow' : 'green'}-600 hover:text-${template.is_active ? 'yellow' : 'green'}-900"
-                        title="${template.is_active ? '下架' : '上架'}">
-                  <i class="fas fa-${template.is_active ? 'toggle-on' : 'toggle-off'}"></i>
-                  ${template.is_active ? '下架' : '上架'}
-                </button>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <div class="flex items-center space-x-3">
+                  <button onclick="showManageQuestionsModal(${template.id})" 
+                          class="text-gray-600 hover:text-gray-900" title="${i18n.t('manageQuestions')}">
+                    <i class="fas fa-list"></i>
+                  </button>
+                  <button onclick="showEditTemplateModal(${template.id})" 
+                          class="text-blue-600 hover:text-blue-900" title="${i18n.t('edit')}">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button onclick="toggleTemplateStatus(${template.id}, ${template.is_active})" 
+                          class="${template.is_active ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'}" 
+                          title="${template.is_active ? '下架' : '上架'}">
+                    <i class="fas fa-power-off"></i>
+                  </button>
+                  <button onclick="copyReviewTemplate(${template.id})" 
+                          class="text-purple-600 hover:text-purple-900" title="复制">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                  <button onclick="downloadReviewTemplate(${template.id})" 
+                          class="text-indigo-600 hover:text-indigo-900" title="下载">
+                    <i class="fas fa-download"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           `).join('')}
@@ -8896,6 +8903,62 @@ async function toggleTemplateStatus(templateId, currentStatus) {
   } catch (error) {
     console.error('Error toggling template status:', error);
     showNotification('操作失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Helper function: Copy review template
+async function copyReviewTemplate(templateId) {
+  if (!confirm('确定要复制这个模板吗？')) return;
+  
+  try {
+    showNotification('正在复制模板...', 'info');
+    
+    // Get template details including questions
+    const response = await axios.get(`/api/templates/${templateId}`);
+    const template = response.data.template;
+    
+    // Create a copy with modified name
+    const copyData = {
+      name: `${template.name} (副本)`,
+      description: template.description,
+      owner: template.owner,
+      is_default: 0,
+      is_public: template.is_public,
+      is_active: 1,
+      price_basic: template.price_basic,
+      price_premium: template.price_premium,
+      price_super: template.price_super,
+      questions: template.questions || []
+    };
+    
+    await axios.post('/api/templates', copyData);
+    showNotification('✅ 模板复制成功！', 'success');
+    await loadTemplatesTable();
+  } catch (error) {
+    console.error('Copy template error:', error);
+    showNotification('复制失败: ' + (error.response?.data?.error || error.message), 'error');
+  }
+}
+
+// Helper function: Download review template
+async function downloadReviewTemplate(templateId) {
+  try {
+    const response = await axios.get(`/api/templates/${templateId}`);
+    const template = response.data.template;
+    
+    const dataStr = JSON.stringify(template, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${template.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification('✅ 模板已下载！', 'success');
+  } catch (error) {
+    console.error('Download template error:', error);
+    showNotification('下载失败: ' + (error.response?.data?.error || error.message), 'error');
   }
 }
 
