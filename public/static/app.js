@@ -13971,12 +13971,12 @@ async function loadMarketplaceProducts() {
               <tr class="hover:bg-gray-50">
                 <td class="px-6 py-4">
                   <div class="flex items-center">
-                    <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br ${product.is_active ? 'from-indigo-500 to-purple-600' : 'from-gray-400 to-gray-500'} rounded-lg flex items-center justify-center">
                       <i class="fas fa-${getCategoryIcon(product.product_type)} text-white text-xl"></i>
                     </div>
                     <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">${product.name}</div>
-                      <div class="text-sm text-gray-500">${(product.description || '').substring(0, 50)}...</div>
+                      <div class="text-sm font-medium ${product.is_active ? 'text-gray-900' : 'text-gray-500'}">${product.name}</div>
+                      <div class="text-sm ${product.is_active ? 'text-gray-500' : 'text-gray-400'}">${(product.description || '').substring(0, 50)}...</div>
                     </div>
                   </div>
                 </td>
@@ -14424,7 +14424,13 @@ async function loadMarketplaceProductsByCategory(category) {
     const allProducts = response.data.products || [];
     
     // Filter products by category
-    const products = allProducts.filter(p => p.product_type === category);
+    let products = allProducts.filter(p => p.product_type === category);
+    
+    // Sort products: active products first, then inactive products
+    products.sort((a, b) => {
+      if (a.is_active === b.is_active) return 0;
+      return a.is_active ? -1 : 1;
+    });
 
     const container = document.getElementById('marketplace-products-list');
     
@@ -14453,15 +14459,15 @@ async function loadMarketplaceProductsByCategory(category) {
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             ${products.map(product => `
-              <tr class="hover:bg-gray-50">
+              <tr class="${!product.is_active ? 'bg-gray-100 opacity-60' : ''} hover:bg-gray-50">
                 <td class="px-6 py-4">
                   <div class="flex items-center">
-                    <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br ${product.is_active ? 'from-indigo-500 to-purple-600' : 'from-gray-400 to-gray-500'} rounded-lg flex items-center justify-center">
                       <i class="fas fa-${getCategoryIcon(product.product_type)} text-white text-xl"></i>
                     </div>
                     <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">${product.name}</div>
-                      <div class="text-sm text-gray-500">${(product.description || '').substring(0, 50)}...</div>
+                      <div class="text-sm font-medium ${product.is_active ? 'text-gray-900' : 'text-gray-500'}">${product.name}</div>
+                      <div class="text-sm ${product.is_active ? 'text-gray-500' : 'text-gray-400'}">${(product.description || '').substring(0, 50)}...</div>
                     </div>
                   </div>
                 </td>
@@ -15163,6 +15169,12 @@ function renderWritingTemplatesTable(templates) {
     return;
   }
   
+  // Sort templates: active templates first, then inactive templates
+  templates.sort((a, b) => {
+    if (a.is_active === b.is_active) return 0;
+    return a.is_active ? -1 : 1;
+  });
+  
   container.innerHTML = `
     <div class="overflow-x-auto">
       <table class="min-w-full">
@@ -15202,11 +15214,11 @@ function renderWritingTemplatesTable(templates) {
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           ${templates.map(template => `
-            <tr class="${!template.is_active ? 'bg-gray-100' : ''}">
+            <tr class="${!template.is_active ? 'bg-gray-100 opacity-60' : ''}">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
-                  <i class="fas fa-${template.icon || 'book'} text-${template.color || 'blue'}-600 mr-2"></i>
-                  <div class="text-sm font-medium text-gray-900">${escapeHtml(template.name)}</div>
+                  <i class="fas fa-${template.icon || 'book'} text-${template.is_active ? (template.color || 'blue') : 'gray'}-${template.is_active ? '600' : '400'} mr-2"></i>
+                  <div class="text-sm font-medium ${template.is_active ? 'text-gray-900' : 'text-gray-500'}">${escapeHtml(template.name)}</div>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
