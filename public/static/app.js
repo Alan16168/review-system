@@ -237,6 +237,25 @@ function logout() {
   showHomePage();
 }
 
+// Refresh current user info from server
+async function refreshCurrentUser() {
+  if (!authToken) return;
+  
+  try {
+    const response = await axios.get('/api/auth/me');
+    if (response.data.user) {
+      currentUser = response.data.user;
+      localStorage.setItem('user', JSON.stringify(currentUser));
+    }
+  } catch (error) {
+    console.error('Failed to refresh user info:', error);
+    // If token is invalid, logout
+    if (error.response && error.response.status === 401) {
+      logout();
+    }
+  }
+}
+
 // ============ View Rendering ============
 
 // Home Page (Landing Page)
@@ -14578,6 +14597,11 @@ const MarketplaceManager = {
   async renderMarketplacePage() {
     // Auto-save draft before leaving create review page
     await autoSaveDraftBeforeNavigation();
+    
+    // Refresh current user info to get latest subscription_tier
+    if (currentUser && authToken) {
+      await refreshCurrentUser();
+    }
     
     currentView = 'marketplace';
     const app = document.getElementById('app');

@@ -524,4 +524,32 @@ auth.put('/settings', authMiddleware, async (c) => {
   }
 });
 
+// Get current user info
+auth.get('/me', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const fullUser = await getUserById(c.env.DB, user.id);
+    
+    if (!fullUser) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+    
+    return c.json({
+      user: {
+        id: fullUser.id,
+        username: fullUser.username,
+        email: fullUser.email,
+        role: fullUser.role,
+        subscription_tier: fullUser.subscription_tier,
+        language: fullUser.language,
+        credits: fullUser.credits,
+        created_at: fullUser.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Get current user error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 export default auth;
