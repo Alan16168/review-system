@@ -9817,6 +9817,7 @@ async function showEditUserModal(userId) {
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                   <option value="free" ${(user.subscription_tier || 'free') === 'free' ? 'selected' : ''}>${i18n.t('freePlan')}</option>
                   <option value="premium" ${user.subscription_tier === 'premium' ? 'selected' : ''}>${i18n.t('premiumPlan')}</option>
+                  <option value="super" ${user.subscription_tier === 'super' ? 'selected' : ''}>${i18n.t('superPlan')}</option>
                 </select>
               </div>
               

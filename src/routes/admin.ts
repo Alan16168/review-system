@@ -162,7 +162,7 @@ admin.put('/users/:id', async (c) => {
     }
 
     // Validate subscription_tier if provided
-    if (subscription_tier && !['free', 'premium'].includes(subscription_tier)) {
+    if (subscription_tier && !['free', 'premium', 'super'].includes(subscription_tier)) {
       return c.json({ error: 'Invalid subscription tier' }, 400);
     }
 
