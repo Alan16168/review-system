@@ -77,8 +77,8 @@ reviews.get('/famous-books', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     
-    // Check if user has premium subscription (not free)
-    if (!user.subscription_tier || user.subscription_tier === 'free') {
+    // Check if user has premium subscription (not free) or is admin
+    if (user.role !== 'admin' && (!user.subscription_tier || user.subscription_tier === 'free')) {
       return c.json({ error: 'Premium subscription required' }, 403);
     }
     
@@ -105,8 +105,8 @@ reviews.get('/documents', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     
-    // Check if user has premium subscription (not free)
-    if (!user.subscription_tier || user.subscription_tier === 'free') {
+    // Check if user has premium subscription (not free) or is admin
+    if (user.role !== 'admin' && (!user.subscription_tier || user.subscription_tier === 'free')) {
       return c.json({ error: 'Premium subscription required' }, 403);
     }
     

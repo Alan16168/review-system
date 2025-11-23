@@ -1226,7 +1226,7 @@ async function showDashboard(tab = 'my-reviews') {
                              whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
                 <i class="fas fa-globe mr-2"></i>${i18n.t('publicReviews')}
               </button>
-              ${currentUser && currentUser.subscription_tier && currentUser.subscription_tier !== 'free' ? `
+              ${currentUser && (currentUser.role === 'admin' || (currentUser.subscription_tier && currentUser.subscription_tier !== 'free')) ? `
               <button onclick="showDashboard('famous-books')" 
                       id="tab-famous-books"
                       class="tab-button ${tab === 'famous-books' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} 
