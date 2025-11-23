@@ -2457,6 +2457,9 @@ function renderDocumentsReviewsList(reviews) {
     
     // Attach form submit handler
     document.getElementById('document-form').addEventListener('submit', handleDocumentFormSubmit);
+    
+    // Setup drag and drop functionality for file upload
+    setupDocumentFileDragDrop();
     return;
   }
 
@@ -2806,6 +2809,65 @@ function updateFileName() {
   } else {
     fileNameDisplay.textContent = i18n.t('selectFile');
     fileNameDisplay.classList.remove('text-indigo-600', 'font-medium');
+  }
+}
+
+// Setup drag and drop functionality for document file upload
+function setupDocumentFileDragDrop() {
+  const fileInput = document.getElementById('document-file');
+  const dropZone = fileInput?.parentElement;
+  
+  if (!dropZone || !fileInput) {
+    console.error('File input or drop zone not found');
+    return;
+  }
+  
+  // Prevent default drag behaviors
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+  });
+  
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  
+  // Highlight drop zone when file is dragged over
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+  });
+  
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+  });
+  
+  function highlight(e) {
+    dropZone.classList.add('border-indigo-500', 'bg-indigo-50');
+  }
+  
+  function unhighlight(e) {
+    dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+  }
+  
+  // Handle dropped files
+  dropZone.addEventListener('drop', handleDrop, false);
+  
+  function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+      // Update the file input with the dropped file
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(files[0]);
+      fileInput.files = dataTransfer.files;
+      
+      // Update the file name display
+      updateFileName();
+      
+      console.log('File dropped:', files[0].name);
+    }
   }
 }
 
