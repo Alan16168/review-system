@@ -1,0 +1,42 @@
+# Google OAuth 配置
+# 已配置完成 ✅
+
+# Google Client ID
+GOOGLE_CLIENT_ID=78785931273-pse627aasv4h50mcc1cschj5cvtqr88f.apps.googleusercontent.com
+
+# Google Client Secret
+GOOGLE_CLIENT_SECRET=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
+
+# 以下是可选配置（用于资源库功能）
+# 已配置 Google API Key ✅
+GOOGLE_API_KEY=AIzaSyAsXAObY7qWBlnO0aXZYXbInYXfUnbiHKs
+
+# 如需启用文章搜索，请配置搜索引擎 ID
+# GOOGLE_SEARCH_ENGINE_ID=your-search-engine-id
+
+# YouTube Data API（使用相同的 API Key）
+YOUTUBE_API_KEY=AIzaSyAsXAObY7qWBlnO0aXZYXbInYXfUnbiHKs
+
+# Gemini API Key（用于AI对话功能）
+# 获取方式：https://makersuite.google.com/app/apikey 或 https://aistudio.google.com/app/apikey
+# ⚠️ 请将下方的 your-gemini-api-key 替换为你的实际API Key
+GEMINI_API_KEY=AIzaSyA30dOCYMAHbhvDLNRX16PqAyTA_uIqHKk
+
+# Resend Email API Key（用于发送邮件通知）
+# 请访问 https://resend.com/api-keys 获取 API Key
+RESEND_API_KEY=re_123456789_placeholder
+
+# PayPal 配置（用于订阅支付）
+# ⚠️ 已切换到生产环境 - 真实支付 ⚠️
+# 使用 LIVE 模式，所有支付都是真实交易
+PAYPAL_MODE=live
+PAYPAL_CLIENT_ID=AV4i_SNiqZQKsUh0-UVPFBvL0dKC6wwc5CE5oMNzJ9q42RqOa12c5GK1_V8F_wYBW2zBz21uwfcQaMeY
+PAYPAL_CLIENT_SECRET=EHuw5IqcNvfb0AN-xO4h6IUIW7uRHIq4mpw0bb9DjHsX42dUlsLtpriwJLVm4aBSo173HFw8hmZ30-8H
+
+# JWT Secret（用于JWT令牌签名和验证）
+JWT_SECRET=your-secret-jwt-key-change-this-in-production-2024
+
+# Genspark API Key（用于视频分析功能）
+# 获取方式：联系 Genspark 团队或查看 Genspark 控制台
+# ⚠️ 请将下方的占位符替换为实际的 API Key
+GENSPARK_API_KEY=your-genspark-api-key-here
