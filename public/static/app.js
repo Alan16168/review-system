@@ -2886,11 +2886,32 @@ async function handleDocumentFormSubmit(e) {
   }
   
   const file = fileInput.files[0];
+  const fileExtension = file.name.split('.').pop().toLowerCase();
   
-  // Read file content
-  const reader = new FileReader();
-  reader.onload = async function(event) {
-    const fileContent = event.target.result;
+  // Show loading state
+  showNotification(i18n.t('readingFile') || '正在读取文件...', 'info');
+  
+  try {
+    let fileContent = '';
+    
+    if (fileExtension === 'txt') {
+      // Plain text file
+      fileContent = await readTextFile(file);
+    } else if (fileExtension === 'pdf') {
+      // PDF file
+      fileContent = await readPDFFile(file);
+    } else if (fileExtension === 'doc' || fileExtension === 'docx') {
+      // Word document
+      fileContent = await readWordFile(file);
+    } else {
+      showNotification(i18n.t('unsupportedFileType') || '不支持的文件类型', 'error');
+      return;
+    }
+    
+    if (!fileContent || fileContent.trim().length === 0) {
+      showNotification(i18n.t('emptyFileContent') || '文件内容为空', 'error');
+      return;
+    }
     
     const formData = {
       fileName: file.name,
@@ -2902,9 +2923,105 @@ async function handleDocumentFormSubmit(e) {
     
     // Generate and show prompt editor
     showDocumentPromptEditor(formData);
-  };
-  
-  reader.readAsText(file);
+  } catch (error) {
+    console.error('File reading error:', error);
+    showNotification(error.message || (i18n.t('fileReadError') || '文件读取失败'), 'error');
+  }
+}
+
+// Read plain text file
+function readTextFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(new Error('Failed to read text file'));
+    reader.readAsText(file);
+  });
+}
+
+// Read PDF file using PDF.js
+async function readPDFFile(file) {
+  try {
+    // Check if PDF.js is loaded
+    if (typeof pdfjsLib === 'undefined') {
+      // Load PDF.js dynamically
+      await loadPDFJS();
+    }
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n\n';
+    }
+    
+    return fullText.trim();
+  } catch (error) {
+    console.error('PDF reading error:', error);
+    throw new Error((i18n.t('pdfReadError') || 'PDF文件读取失败') + ': ' + error.message);
+  }
+}
+
+// Read Word document using Mammoth.js
+async function readWordFile(file) {
+  try {
+    // Check if Mammoth.js is loaded
+    if (typeof mammoth === 'undefined') {
+      // Load Mammoth.js dynamically
+      await loadMammothJS();
+    }
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    
+    if (result.messages && result.messages.length > 0) {
+      console.warn('Word document conversion warnings:', result.messages);
+    }
+    
+    return result.value.trim();
+  } catch (error) {
+    console.error('Word reading error:', error);
+    throw new Error((i18n.t('wordReadError') || 'Word文件读取失败') + ': ' + error.message);
+  }
+}
+
+// Load PDF.js library dynamically
+function loadPDFJS() {
+  return new Promise((resolve, reject) => {
+    if (typeof pdfjsLib !== 'undefined') {
+      resolve();
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    script.onload = () => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve();
+    };
+    script.onerror = () => reject(new Error('Failed to load PDF.js'));
+    document.head.appendChild(script);
+  });
+}
+
+// Load Mammoth.js library dynamically
+function loadMammothJS() {
+  return new Promise((resolve, reject) => {
+    if (typeof mammoth !== 'undefined') {
+      resolve();
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Mammoth.js'));
+    document.head.appendChild(script);
+  });
 }
 
 // Generate Prompt template for Document
@@ -5006,7 +5123,7 @@ async function showReviewDetail(id, readOnly = false) {
         
         <div class="max-w-4xl mx-auto px-4 py-8">
           <div class="mb-6">
-            <button onclick="showReviews()" class="text-indigo-600 hover:text-indigo-800 mb-4">
+            <button onclick="${review.review_type === 'document' ? 'loadDocumentsReviews()' : review.review_type === 'famous-book' ? 'loadFamousBooksReviews()' : 'showReviews()'}" class="text-indigo-600 hover:text-indigo-800 mb-4">
               <i class="fas fa-arrow-left mr-2"></i>${i18n.t('back') || '返回'}
             </button>
             <div class="flex justify-between items-start">
