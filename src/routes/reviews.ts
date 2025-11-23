@@ -82,15 +82,16 @@ reviews.get('/famous-books', async (c) => {
       return c.json({ error: 'Premium subscription required' }, 403);
     }
     
+    // Only return reviews created by current user (user isolation)
     const query = `
       SELECT DISTINCT r.*, u.username as creator_name
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
-      WHERE r.review_type = 'famous-book'
+      WHERE r.review_type = 'famous-book' AND r.user_id = ?
       ORDER BY r.updated_at DESC
     `;
 
-    const result = await c.env.DB.prepare(query).all();
+    const result = await c.env.DB.prepare(query).bind(user.id).all();
     const reviews = result.results || [];
 
     return c.json({ reviews });
@@ -110,15 +111,16 @@ reviews.get('/documents', async (c) => {
       return c.json({ error: 'Premium subscription required' }, 403);
     }
     
+    // Only return reviews created by current user (user isolation)
     const query = `
       SELECT DISTINCT r.*, u.username as creator_name
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
-      WHERE r.review_type = 'document'
+      WHERE r.review_type = 'document' AND r.user_id = ?
       ORDER BY r.updated_at DESC
     `;
 
-    const result = await c.env.DB.prepare(query).all();
+    const result = await c.env.DB.prepare(query).bind(user.id).all();
     const reviews = result.results || [];
 
     return c.json({ reviews });
