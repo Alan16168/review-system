@@ -3297,9 +3297,10 @@ async function updateFamousBookReview(id) {
       return;
     }
     
-    await axios.put(`/api/reviews/${id}`, {
+    // Use dedicated famous-books endpoint for better permission control
+    await axios.put(`/api/reviews/famous-books/${id}`, {
       title: title,
-      description: content
+      content: content
     });
     
     showNotification(i18n.t('operationSuccess'), 'success');

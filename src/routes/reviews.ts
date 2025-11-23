@@ -146,6 +146,44 @@ reviews.post('/famous-books/analyze', async (c) => {
       return c.json({ error: 'Content and prompt are required' }, 400);
     }
     
+    // Try Genspark first for video analysis (more detailed)
+    if (inputType === 'video' && useGenspark) {
+      try {
+        const GENSPARK_API_KEY = c.env.GENSPARK_API_KEY;
+        if (!GENSPARK_API_KEY) {
+          console.log('Genspark API key not configured, falling back to Gemini');
+        } else {
+          // Call Genspark API for detailed video analysis
+          const gensparkResponse = await fetch(
+            'https://www.genspark.ai/api/copilot/query',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GENSPARK_API_KEY}`
+              },
+              body: JSON.stringify({
+                query: prompt,
+                context: content,
+                mode: 'detailed' // Request detailed analysis
+              })
+            }
+          );
+          
+          if (gensparkResponse.ok) {
+            const gensparkData = await gensparkResponse.json();
+            const result = gensparkData.answer || gensparkData.result || 'No response from Genspark';
+            return c.json({ result, source: 'genspark' });
+          } else {
+            console.log('Genspark API failed, falling back to Gemini:', gensparkResponse.statusText);
+          }
+        }
+      } catch (gensparkError) {
+        console.log('Genspark error, falling back to Gemini:', gensparkError);
+      }
+    }
+    
+    // Fallback to Gemini API
     const GEMINI_API_KEY = c.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY) {
       return c.json({ error: 'Gemini API key not configured' }, 500);
@@ -198,25 +236,7 @@ reviews.post('/famous-books/analyze', async (c) => {
     const geminiData = await geminiResponse.json();
     const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
     
-    // Helper function to extract YouTube video ID
-    function extractYouTubeVideoId(url: string): string | null {
-      const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/,
-        /youtube\.com\/embed\/([^&\s]+)/,
-        /youtube\.com\/v\/([^&\s]+)/
-      ];
-      
-      for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match && match[1]) {
-          return match[1];
-        }
-      }
-      
-      return null;
-    }
-    
-    return c.json({ result });
+    return c.json({ result, source: 'gemini' });
   } catch (error) {
     console.error('Analyze famous book error:', error);
     return c.json({ error: error.message || 'Internal server error' }, 500);
@@ -251,6 +271,53 @@ reviews.post('/famous-books/save', async (c) => {
     });
   } catch (error) {
     console.error('Save famous book review error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Update Famous Book Review
+reviews.put('/famous-books/:id', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const reviewId = c.req.param('id');
+    
+    // Check premium subscription
+    if (user.role !== 'admin' && (!user.subscription_tier || user.subscription_tier === 'free')) {
+      return c.json({ error: 'Premium subscription required' }, 403);
+    }
+    
+    // Check if user owns this review
+    const existingReview: any = await c.env.DB.prepare(`
+      SELECT user_id FROM reviews WHERE id = ? AND review_type = 'famous-book'
+    `).bind(reviewId).first();
+    
+    if (!existingReview) {
+      return c.json({ error: 'Review not found' }, 404);
+    }
+    
+    if (existingReview.user_id !== user.id && user.role !== 'admin') {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+    
+    const { title, content } = await c.req.json();
+    
+    if (!title || !content) {
+      return c.json({ error: 'Title and content are required' }, 400);
+    }
+    
+    // Update review in database
+    await c.env.DB.prepare(`
+      UPDATE reviews 
+      SET title = ?, description = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(title, content, reviewId).run();
+    
+    return c.json({ 
+      success: true,
+      message: 'Review updated successfully'
+    });
+  } catch (error) {
+    console.error('Update famous book review error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
