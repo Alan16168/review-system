@@ -2129,13 +2129,116 @@ function renderFamousBooksReviewsList(reviews) {
   const container = document.getElementById('famous-books-container');
   
   if (!reviews || reviews.length === 0) {
+    // Show create form instead of empty state
     container.innerHTML = `
-      <div class="p-8 text-center">
-        <i class="fas fa-book text-4xl text-gray-400 mb-4"></i>
-        <p class="text-gray-600">${i18n.t('noFamousBookReviews') || '暂无名著复盘'}</p>
-        <p class="text-sm text-gray-500 mt-2">${i18n.t('famousBookReviewHint') || '名著复盘是付费会员专享功能'}</p>
+      <div class="p-6">
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            <i class="fas fa-book mr-2"></i>${i18n.t('createFamousBookReview')}
+          </h3>
+        </div>
+        
+        <form id="famous-book-form" class="space-y-6">
+          <!-- Type Selection: Video or Book -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-3">
+              ${i18n.t('videoOrBook')} <span class="text-red-600">*</span>
+            </label>
+            <div class="flex space-x-6">
+              <label class="flex items-center cursor-pointer">
+                <input type="radio" name="input-type" value="video" checked
+                       class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                       onchange="toggleFamousBookInputType()">
+                <span class="ml-2 text-sm text-gray-700">${i18n.t('videoLink')}</span>
+              </label>
+              <label class="flex items-center cursor-pointer">
+                <input type="radio" name="input-type" value="book"
+                       class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                       onchange="toggleFamousBookInputType()">
+                <span class="ml-2 text-sm text-gray-700">${i18n.t('bookName')}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Video Link Input (shown by default) -->
+          <div id="video-link-input">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('videoLink')} <span class="text-red-600">*</span>
+            </label>
+            <input type="url" id="video-link"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('videoLinkPlaceholder')}"
+                   required>
+          </div>
+
+          <!-- Book Name Input (hidden by default) -->
+          <div id="book-name-input" style="display: none;">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('bookName')} <span class="text-red-600">*</span>
+            </label>
+            <input type="text" id="book-name"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('bookNamePlaceholder')}">
+          </div>
+
+          <!-- Word Count Requirement -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('wordCountRequirement')} <span class="text-red-600">*</span>
+            </label>
+            <input type="number" id="word-count" min="500" max="10000" step="100"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('wordCountPlaceholder')}"
+                   required>
+          </div>
+
+          <!-- Application Scenario -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('applicationScenario')} <span class="text-red-600">*</span>
+            </label>
+            <select id="application-scenario"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    required>
+              <option value="">${i18n.t('selectScenario')}</option>
+              <option value="workplace">${i18n.t('scenarioWorkplace')}</option>
+              <option value="entrepreneurship">${i18n.t('scenarioEntrepreneurship')}</option>
+              <option value="personal-growth">${i18n.t('scenarioPersonalGrowth')}</option>
+              <option value="financial-planning">${i18n.t('scenarioFinancialPlanning')}</option>
+            </select>
+          </div>
+
+          <!-- Output Language -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('outputLanguage')} <span class="text-red-600">*</span>
+            </label>
+            <select id="output-language"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    required>
+              <option value="">${i18n.t('selectLanguage')}</option>
+              <option value="en">${i18n.t('langEnglish')}</option>
+              <option value="fr">${i18n.t('langFrench')}</option>
+              <option value="es">${i18n.t('langSpanish')}</option>
+              <option value="zh-CN">${i18n.t('langChineseSimplified')}</option>
+              <option value="zh-TW">${i18n.t('langChineseTraditional')}</option>
+              <option value="ja">${i18n.t('langJapanese')}</option>
+            </select>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="flex justify-end space-x-3">
+            <button type="submit"
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+              <i class="fas fa-magic mr-2"></i>${i18n.t('generatePrompt')}
+            </button>
+          </div>
+        </form>
       </div>
     `;
+    
+    // Attach form submit handler
+    document.getElementById('famous-book-form').addEventListener('submit', handleFamousBookFormSubmit);
     return;
   }
 
@@ -2316,6 +2419,54 @@ function renderDocumentsReviewsList(reviews) {
       </table>
     </div>
   `;
+}
+
+// Toggle Famous Book input type (video or book)
+function toggleFamousBookInputType() {
+  const inputType = document.querySelector('input[name="input-type"]:checked').value;
+  const videoLinkInput = document.getElementById('video-link-input');
+  const bookNameInput = document.getElementById('book-name-input');
+  const videoLink = document.getElementById('video-link');
+  const bookName = document.getElementById('book-name');
+  
+  if (inputType === 'video') {
+    videoLinkInput.style.display = 'block';
+    bookNameInput.style.display = 'none';
+    videoLink.required = true;
+    bookName.required = false;
+    bookName.value = '';
+  } else {
+    videoLinkInput.style.display = 'none';
+    bookNameInput.style.display = 'block';
+    videoLink.required = false;
+    bookName.required = true;
+    videoLink.value = '';
+  }
+}
+
+// Handle Famous Book form submission
+async function handleFamousBookFormSubmit(e) {
+  e.preventDefault();
+  
+  const inputType = document.querySelector('input[name="input-type"]:checked').value;
+  const videoLink = document.getElementById('video-link').value;
+  const bookName = document.getElementById('book-name').value;
+  const wordCount = document.getElementById('word-count').value;
+  const scenario = document.getElementById('application-scenario').value;
+  const language = document.getElementById('output-language').value;
+  
+  const formData = {
+    inputType,
+    content: inputType === 'video' ? videoLink : bookName,
+    wordCount: parseInt(wordCount),
+    scenario,
+    language
+  };
+  
+  console.log('Famous Book Form Data:', formData);
+  
+  // TODO: Show prompt generation interface
+  alert('Prompt 生成功能即将实现...\n\n表单数据：\n' + JSON.stringify(formData, null, 2));
 }
 
 let allReviews = [];
