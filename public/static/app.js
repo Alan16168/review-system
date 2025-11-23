@@ -3212,8 +3212,102 @@ async function viewFamousBookReview(id) {
 }
 
 async function editFamousBookReview(id) {
-  // TODO: Implement edit functionality
-  showNotification('Edit functionality coming soon...', 'info');
+  try {
+    const response = await axios.get(`/api/reviews/${id}`);
+    const review = response.data.review;
+    
+    const container = document.getElementById('famous-books-container');
+    container.innerHTML = `
+      <div class="p-6">
+        <div class="mb-6 flex justify-between items-center">
+          <h3 class="text-lg font-semibold text-gray-900">
+            <i class="fas fa-edit mr-2"></i>${i18n.t('edit')} - ${escapeHtml(review.title)}
+          </h3>
+          <button onclick="loadFamousBooksReviews()"
+                  class="text-sm text-gray-600 hover:text-gray-900">
+            <i class="fas fa-arrow-left mr-1"></i>${i18n.t('backToList')}
+          </button>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- Title Input -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('reviewTitle')} <span class="text-red-600">*</span>
+            </label>
+            <input type="text" id="edit-title" value="${escapeHtml(review.title)}"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   required>
+          </div>
+          
+          <!-- Content Editor -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('content')}
+            </label>
+            <div id="edit-content-editor"></div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="flex justify-end space-x-3">
+            <button onclick="loadFamousBooksReviews()"
+                    class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+              <i class="fas fa-times mr-2"></i>${i18n.t('cancel')}
+            </button>
+            <button onclick="updateFamousBookReview(${id})"
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+              <i class="fas fa-save mr-2"></i>${i18n.t('saveChanges')}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Initialize TinyMCE editor with existing content
+    tinymce.init({
+      selector: '#edit-content-editor',
+      height: 500,
+      menubar: false,
+      plugins: [
+        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+      ],
+      toolbar: 'undo redo | formatselect | bold italic backcolor | \
+                alignleft aligncenter alignright alignjustify | \
+                bullist numlist outdent indent | removeformat | help',
+      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; font-size: 14px; }',
+      init_instance_callback: function(editor) {
+        editor.setContent(review.description || '');
+      }
+    });
+  } catch (error) {
+    console.error('Edit error:', error);
+    showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
+  }
+}
+
+async function updateFamousBookReview(id) {
+  try {
+    const title = document.getElementById('edit-title').value;
+    const content = tinymce.get('edit-content-editor').getContent();
+    
+    if (!title.trim()) {
+      showNotification(i18n.t('titleRequired') || 'Title is required', 'error');
+      return;
+    }
+    
+    await axios.put(`/api/reviews/${id}`, {
+      title: title,
+      description: content
+    });
+    
+    showNotification(i18n.t('operationSuccess'), 'success');
+    loadFamousBooksReviews();
+  } catch (error) {
+    console.error('Update error:', error);
+    showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
+  }
 }
 
 async function downloadFamousBookReview(id) {

@@ -151,57 +151,41 @@ reviews.post('/famous-books/analyze', async (c) => {
       return c.json({ error: 'Gemini API key not configured' }, 500);
     }
     
-    let finalPrompt = prompt;
+    // Prepare content parts for Gemini API
+    let contentParts: any[] = [];
     
-    // If it's a video URL, try to extract video info (YouTube)
-    if (inputType === 'video' && content.includes('youtube.com')) {
-      try {
-        // Extract YouTube video ID
-        const videoId = extractYouTubeVideoId(content);
-        
-        if (videoId) {
-          // Get YouTube video info
-          const YOUTUBE_API_KEY = c.env.YOUTUBE_API_KEY || c.env.GOOGLE_API_KEY;
-          
-          if (YOUTUBE_API_KEY) {
-            const youtubeResponse = await fetch(
-              `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${YOUTUBE_API_KEY}`
-            );
-            
-            if (youtubeResponse.ok) {
-              const youtubeData = await youtubeResponse.json();
-              const video = youtubeData.items?.[0];
-              
-              if (video) {
-                const videoInfo = `
-视频标题：${video.snippet.title}
-频道：${video.snippet.channelTitle}
-发布日期：${video.snippet.publishedAt}
-视频描述：
-${video.snippet.description}
-
-标签：${video.snippet.tags?.join(', ') || '无'}
-`;
-                
-                finalPrompt = `${videoInfo}\n\n---\n\n${prompt}`;
-              }
-            }
-          }
+    // If it's a video URL, use Gemini's native video analysis capability
+    if (inputType === 'video' && (content.includes('youtube.com') || content.includes('youtu.be'))) {
+      // Gemini 2.0 Flash Exp supports direct YouTube video analysis
+      // Format: Add video URL as fileData with mimeType "video/*"
+      contentParts.push({
+        fileData: {
+          mimeType: "video/*",
+          fileUri: content
         }
-      } catch (error) {
-        console.log('YouTube API fetch failed, using original prompt:', error);
-        // Continue with original prompt if YouTube fetch fails
-      }
+      });
+      contentParts.push({
+        text: prompt
+      });
+    } else {
+      // For books or other text content
+      contentParts.push({
+        text: prompt
+      });
     }
     
-    // Call Gemini API (using gemini-2.0-flash - faster and more cost-effective)
+    // Call Gemini API with video support (using gemini-2.0-flash-exp for better video analysis)
+    const model = inputType === 'video' ? 'gemini-2.0-flash-exp' : 'gemini-2.0-flash-exp';
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: finalPrompt }] }]
+          contents: [{ 
+            role: 'user',
+            parts: contentParts 
+          }]
         })
       }
     );
