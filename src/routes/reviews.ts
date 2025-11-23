@@ -138,80 +138,37 @@ reviews.post('/famous-books/analyze', async (c) => {
       return c.json({ error: 'Premium subscription required' }, 403);
     }
     
-    const { inputType, content, prompt, language } = await c.req.json();
+    const { inputType, content, prompt, language, useGenspark } = await c.req.json();
     
     if (!content || !prompt) {
       return c.json({ error: 'Content and prompt are required' }, 400);
     }
     
-    let result: string;
-    
-    // If inputType is video, use Genspark API to analyze video
-    if (inputType === 'video') {
-      // Use Genspark API for video analysis
-      const GENSPARK_API_KEY = c.env.GENSPARK_API_KEY || 'your-genspark-api-key';
-      
-      // Construct full prompt with video URL
-      const fullPrompt = `请分析这个视频：${content}\n\n${prompt}`;
-      
-      const gensparkResponse = await fetch(
-        'https://api.genspark.ai/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GENSPARK_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'genspark-1.5',
-            messages: [
-              {
-                role: 'user',
-                content: fullPrompt
-              }
-            ],
-            stream: false
-          })
-        }
-      );
-      
-      if (!gensparkResponse.ok) {
-        const errorData = await gensparkResponse.text();
-        throw new Error(`Genspark API error: ${gensparkResponse.statusText} - ${errorData}`);
-      }
-      
-      const gensparkData = await gensparkResponse.json();
-      result = gensparkData.choices?.[0]?.message?.content || 'No response from Genspark';
-      
-    } else {
-      // For book names, use Gemini API
-      const GEMINI_API_KEY = c.env.GEMINI_API_KEY;
-      if (!GEMINI_API_KEY) {
-        return c.json({ error: 'Gemini API key not configured' }, 500);
-      }
-      
-      // Construct full prompt with book name
-      const fullPrompt = `请分析这本书：${content}\n\n${prompt}`;
-      
-      // Call Gemini API (using gemini-2.0-flash)
-      const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: fullPrompt }] }]
-          })
-        }
-      );
-      
-      if (!geminiResponse.ok) {
-        throw new Error(`Gemini API error: ${geminiResponse.statusText}`);
-      }
-      
-      const geminiData = await geminiResponse.json();
-      result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+    const GEMINI_API_KEY = c.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY) {
+      return c.json({ error: 'Gemini API key not configured' }, 500);
     }
+    
+    // Call Gemini API (using gemini-2.0-flash - faster and more cost-effective)
+    // Note: Gemini cannot directly access video content, but can analyze based on context
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      }
+    );
+    
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      throw new Error(`Gemini API error: ${geminiResponse.statusText} - ${errorText}`);
+    }
+    
+    const geminiData = await geminiResponse.json();
+    const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
     
     return c.json({ result });
   } catch (error) {

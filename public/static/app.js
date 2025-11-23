@@ -2128,9 +2128,21 @@ async function loadFamousBooksReviews() {
 function renderFamousBooksReviewsList(reviews) {
   const container = document.getElementById('famous-books-container');
   
-  if (!reviews || reviews.length === 0) {
-    // Show create form instead of empty state
+  // Always show "New Review" button at the top
+  const hasReviews = reviews && reviews.length > 0;
+  
+  if (!hasReviews) {
+    // Show create form with "New Review" button
     container.innerHTML = `
+      <div class="mb-4 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-book mr-2"></i>${i18n.t('famousBookReview')}
+        </h3>
+        <button onclick="showFamousBookForm()" 
+                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <i class="fas fa-plus mr-2"></i>${i18n.t('createNew')}
+        </button>
+      </div>
       <div class="p-6">
         <div class="mb-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-2">
@@ -2243,6 +2255,15 @@ function renderFamousBooksReviewsList(reviews) {
   }
 
   container.innerHTML = `
+    <div class="mb-4 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-900">
+        <i class="fas fa-book mr-2"></i>${i18n.t('famousBookReview')}
+      </h3>
+      <button onclick="showFamousBookForm()" 
+              class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+        <i class="fas fa-plus mr-2"></i>${i18n.t('createNew')}
+      </button>
+    </div>
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -2267,7 +2288,7 @@ function renderFamousBooksReviewsList(reviews) {
         <tbody class="bg-white divide-y divide-gray-200">
           ${reviews.map(review => `
             <tr class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap">
+              <td class="px-6 py-4">
                 <div class="flex items-center">
                   <i class="fas fa-book text-amber-600 mr-2"></i>
                   <div>
@@ -2282,11 +2303,11 @@ function renderFamousBooksReviewsList(reviews) {
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  review.status === 'completed' 
+                  review.status === 'published' 
                     ? 'bg-green-100 text-green-800'
                     : 'bg-yellow-100 text-yellow-800'
                 }">
-                  ${i18n.t(review.status)}
+                  ${review.status === 'published' ? i18n.t('published') : i18n.t('draft')}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -2298,15 +2319,29 @@ function renderFamousBooksReviewsList(reviews) {
                   minute: '2-digit'
                 })}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <button onclick="showReviewDetail(${review.id}, true)" 
-                        class="text-indigo-600 hover:text-indigo-900">
-                  <i class="fas fa-eye"></i> ${i18n.t('view')}
-                </button>
-                <button onclick="printReview(${review.id})" 
-                        class="text-blue-600 hover:text-blue-900">
-                  <i class="fas fa-print"></i> ${i18n.t('print')}
-                </button>
+              <td class="px-6 py-4 text-sm font-medium">
+                <div class="flex space-x-2">
+                  <button onclick="viewFamousBookReview(${review.id})" 
+                          class="text-indigo-600 hover:text-indigo-900"
+                          title="${i18n.t('view')}">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button onclick="editFamousBookReview(${review.id})" 
+                          class="text-blue-600 hover:text-blue-900"
+                          title="${i18n.t('edit')}">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button onclick="downloadFamousBookReview(${review.id})" 
+                          class="text-green-600 hover:text-green-900"
+                          title="${i18n.t('download')}">
+                    <i class="fas fa-download"></i>
+                  </button>
+                  <button onclick="deleteFamousBookReview(${review.id})" 
+                          class="text-red-600 hover:text-red-900"
+                          title="${i18n.t('delete')}">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           `).join('')}
@@ -2567,7 +2602,11 @@ function generateFamousBookPrompt(formData) {
   const scenarioText = scenarioMap[formData.scenario] || formData.scenario;
   const languageText = languageMap[formData.language] || formData.language;
   
-  return `你是一名知识架构师，请帮我结构化榨干一本${contentType}的核心内容，输出一份 ${formData.wordCount} 字的复盘文档，覆盖以下结构：
+  const videoNote = formData.inputType === 'video' ? 
+    `\n\n注意：由于AI无法直接观看视频，请在分析时基于视频标题、描述和你对该视频内容的了解进行分析。如果你了解这个视频，请提供深入分析；如果不了解，请基于标题和链接推测可能的主题和内容。\n\n视频链接：${formData.content}\n` : 
+    `\n\n书名：${formData.content}\n`;
+  
+  return `你是一名知识架构师，请帮我结构化榨干一本${contentType}的核心内容，输出一份 ${formData.wordCount} 字的复盘文档，覆盖以下结构：${videoNote}
 
 【核心主题与核心观点】
 - 这本${contentType}在解决什么问题？
@@ -2637,7 +2676,7 @@ function showFamousBookPromptEditor(formData) {
   `;
 }
 
-// Analyze Famous Book with Gemini API
+// Analyze Famous Book with Genspark/Gemini API
 async function analyzeFamousBook(inputType, content, language) {
   const prompt = document.getElementById('prompt-editor').value;
   const container = document.getElementById('famous-books-container');
@@ -2647,6 +2686,7 @@ async function analyzeFamousBook(inputType, content, language) {
     <div class="p-8 text-center">
       <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
       <p class="text-gray-600">${i18n.t('analyzing')}</p>
+      <p class="text-sm text-gray-500 mt-2">${inputType === 'video' ? 'Using Genspark API for video analysis...' : 'Using Gemini AI for book analysis...'}</p>
     </div>
   `;
   
@@ -2655,7 +2695,8 @@ async function analyzeFamousBook(inputType, content, language) {
       inputType,
       content,
       prompt,
-      language
+      language,
+      useGenspark: inputType === 'video' // Use Genspark for videos
     });
     
     const result = response.data.result;
@@ -2666,6 +2707,7 @@ async function analyzeFamousBook(inputType, content, language) {
       <div class="p-8 text-center">
         <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
         <p class="text-red-600">${error.response?.data?.error || i18n.t('operationFailed')}</p>
+        <p class="text-sm text-gray-500 mt-2">${error.response?.data?.details || ''}</p>
         <button onclick="loadFamousBooksReviews()"
                 class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
           ${i18n.t('backToForm')}
@@ -3008,6 +3050,85 @@ async function saveDocumentReview(fileName) {
     loadDocumentsReviews();
   } catch (error) {
     console.error('Save error:', error);
+    showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
+  }
+}
+
+// Famous Book Review Actions
+function showFamousBookForm() {
+  loadFamousBooksReviews(); // This will show the form when no reviews
+}
+
+async function viewFamousBookReview(id) {
+  try {
+    const response = await axios.get(`/api/reviews/${id}`);
+    const review = response.data;
+    
+    const container = document.getElementById('famous-books-container');
+    container.innerHTML = `
+      <div class="p-6">
+        <div class="mb-6 flex justify-between items-center">
+          <h3 class="text-lg font-semibold text-gray-900">
+            <i class="fas fa-book mr-2"></i>${escapeHtml(review.title)}
+          </h3>
+          <button onclick="loadFamousBooksReviews()"
+                  class="text-sm text-gray-600 hover:text-gray-900">
+            <i class="fas fa-arrow-left mr-1"></i>${i18n.t('backToList') || 'Back to List'}
+          </button>
+        </div>
+        <div class="prose max-w-none">
+          ${review.description || ''}
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    console.error('View error:', error);
+    showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
+  }
+}
+
+async function editFamousBookReview(id) {
+  // TODO: Implement edit functionality
+  showNotification('Edit functionality coming soon...', 'info');
+}
+
+async function downloadFamousBookReview(id) {
+  try {
+    const response = await axios.get(`/api/reviews/${id}`);
+    const review = response.data;
+    
+    // Create a Blob with the content
+    const content = `${review.title}\n\n${review.description || ''}`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    // Create download link
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${review.title}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification(i18n.t('operationSuccess'), 'success');
+  } catch (error) {
+    console.error('Download error:', error);
+    showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
+  }
+}
+
+async function deleteFamousBookReview(id) {
+  if (!confirm(i18n.t('confirmDelete') || 'Are you sure you want to delete this review?')) {
+    return;
+  }
+  
+  try {
+    await axios.delete(`/api/reviews/${id}`);
+    showNotification(i18n.t('operationSuccess'), 'success');
+    loadFamousBooksReviews();
+  } catch (error) {
+    console.error('Delete error:', error);
     showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
   }
 }
