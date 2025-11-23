@@ -212,8 +212,8 @@ reviews.post('/famous-books/analyze', async (c) => {
       });
     }
     
-    // Call Gemini API with video support (using gemini-2.0-flash-exp for better video analysis)
-    const model = inputType === 'video' ? 'gemini-2.0-flash-exp' : 'gemini-2.0-flash-exp';
+    // Call Gemini API with video support (using gemini-2.0-flash)
+    const model = 'gemini-2.0-flash';
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
       {
