@@ -128,6 +128,167 @@ reviews.get('/documents', async (c) => {
   }
 });
 
+// Analyze Famous Book with Gemini API
+reviews.post('/famous-books/analyze', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    
+    // Check premium subscription
+    if (user.role !== 'admin' && (!user.subscription_tier || user.subscription_tier === 'free')) {
+      return c.json({ error: 'Premium subscription required' }, 403);
+    }
+    
+    const { inputType, content, prompt, language } = await c.req.json();
+    
+    if (!content || !prompt) {
+      return c.json({ error: 'Content and prompt are required' }, 400);
+    }
+    
+    const GEMINI_API_KEY = c.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY) {
+      return c.json({ error: 'Gemini API key not configured' }, 500);
+    }
+    
+    // Call Gemini API
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      }
+    );
+    
+    if (!geminiResponse.ok) {
+      throw new Error(`Gemini API error: ${geminiResponse.statusText}`);
+    }
+    
+    const geminiData = await geminiResponse.json();
+    const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+    
+    return c.json({ result });
+  } catch (error) {
+    console.error('Analyze famous book error:', error);
+    return c.json({ error: error.message || 'Internal server error' }, 500);
+  }
+});
+
+// Save Famous Book Review
+reviews.post('/famous-books/save', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    
+    // Check premium subscription
+    if (user.role !== 'admin' && (!user.subscription_tier || user.subscription_tier === 'free')) {
+      return c.json({ error: 'Premium subscription required' }, 403);
+    }
+    
+    const { title, content, inputType, source } = await c.req.json();
+    
+    if (!title || !content) {
+      return c.json({ error: 'Title and content are required' }, 400);
+    }
+    
+    // Create review in database
+    const result = await c.env.DB.prepare(`
+      INSERT INTO reviews (title, description, user_id, review_type, status, created_at, updated_at)
+      VALUES (?, ?, ?, 'famous-book', 'published', datetime('now'), datetime('now'))
+    `).bind(title, content, user.id).run();
+    
+    return c.json({ 
+      success: true,
+      reviewId: result.meta.last_row_id 
+    });
+  } catch (error) {
+    console.error('Save famous book review error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Analyze Document with Gemini API
+reviews.post('/documents/analyze', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    
+    // Check premium subscription
+    if (user.role !== 'admin' && (!user.subscription_tier || user.subscription_tier === 'free')) {
+      return c.json({ error: 'Premium subscription required' }, 403);
+    }
+    
+    const { fileName, fileContent, prompt, language } = await c.req.json();
+    
+    if (!fileContent || !prompt) {
+      return c.json({ error: 'File content and prompt are required' }, 400);
+    }
+    
+    const GEMINI_API_KEY = c.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY) {
+      return c.json({ error: 'Gemini API key not configured' }, 500);
+    }
+    
+    // Combine file content with prompt
+    const fullPrompt = `文档内容：\n\n${fileContent}\n\n---\n\n${prompt}`;
+    
+    // Call Gemini API
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: fullPrompt }] }]
+        })
+      }
+    );
+    
+    if (!geminiResponse.ok) {
+      throw new Error(`Gemini API error: ${geminiResponse.statusText}`);
+    }
+    
+    const geminiData = await geminiResponse.json();
+    const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+    
+    return c.json({ result });
+  } catch (error) {
+    console.error('Analyze document error:', error);
+    return c.json({ error: error.message || 'Internal server error' }, 500);
+  }
+});
+
+// Save Document Review
+reviews.post('/documents/save', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    
+    // Check premium subscription
+    if (user.role !== 'admin' && (!user.subscription_tier || user.subscription_tier === 'free')) {
+      return c.json({ error: 'Premium subscription required' }, 403);
+    }
+    
+    const { title, content, fileName } = await c.req.json();
+    
+    if (!title || !content) {
+      return c.json({ error: 'Title and content are required' }, 400);
+    }
+    
+    // Create review in database
+    const result = await c.env.DB.prepare(`
+      INSERT INTO reviews (title, description, user_id, review_type, status, created_at, updated_at)
+      VALUES (?, ?, ?, 'document', 'published', datetime('now'), datetime('now'))
+    `).bind(title, content, user.id).run();
+    
+    return c.json({ 
+      success: true,
+      reviewId: result.meta.last_row_id 
+    });
+  } catch (error) {
+    console.error('Save document review error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 // Helper function to get language from request
 function getLanguage(c: any): string {
   // Try X-Language header first

@@ -2337,13 +2337,91 @@ function renderDocumentsReviewsList(reviews) {
   const container = document.getElementById('documents-container');
   
   if (!reviews || reviews.length === 0) {
+    // Show create form instead of empty state
     container.innerHTML = `
-      <div class="p-8 text-center">
-        <i class="fas fa-file-alt text-4xl text-gray-400 mb-4"></i>
-        <p class="text-gray-600">${i18n.t('noDocumentsReviews') || '暂无文档复盘'}</p>
-        <p class="text-sm text-gray-500 mt-2">${i18n.t('documentsReviewHint') || '文档复盘是付费会员专享功能'}</p>
+      <div class="p-6">
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            <i class="fas fa-file-alt mr-2"></i>${i18n.t('createDocumentReview')}
+          </h3>
+        </div>
+        
+        <form id="document-form" class="space-y-6">
+          <!-- File Upload -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('uploadDocument')} <span class="text-red-600">*</span>
+            </label>
+            <div class="flex items-center space-x-4">
+              <label class="flex-1 flex items-center justify-center px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 transition-colors">
+                <div class="text-center">
+                  <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                  <p class="text-sm text-gray-600">${i18n.t('uploadDocumentHint')}</p>
+                  <p class="text-xs text-gray-500 mt-1" id="file-name">${i18n.t('selectFile')}</p>
+                </div>
+                <input type="file" id="document-file" accept=".pdf,.doc,.docx,.txt" class="hidden" required onchange="updateFileName()">
+              </label>
+            </div>
+          </div>
+
+          <!-- Word Count Requirement -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('wordCountRequirement')} <span class="text-red-600">*</span>
+            </label>
+            <input type="number" id="doc-word-count" min="500" max="10000" step="100"
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   placeholder="${i18n.t('wordCountPlaceholder')}"
+                   required>
+          </div>
+
+          <!-- Application Scenario -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('applicationScenario')} <span class="text-red-600">*</span>
+            </label>
+            <select id="doc-application-scenario"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    required>
+              <option value="">${i18n.t('selectScenario')}</option>
+              <option value="workplace">${i18n.t('scenarioWorkplace')}</option>
+              <option value="entrepreneurship">${i18n.t('scenarioEntrepreneurship')}</option>
+              <option value="personal-growth">${i18n.t('scenarioPersonalGrowth')}</option>
+              <option value="financial-planning">${i18n.t('scenarioFinancialPlanning')}</option>
+            </select>
+          </div>
+
+          <!-- Output Language -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              ${i18n.t('outputLanguage')} <span class="text-red-600">*</span>
+            </label>
+            <select id="doc-output-language"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    required>
+              <option value="">${i18n.t('selectLanguage')}</option>
+              <option value="en">${i18n.t('langEnglish')}</option>
+              <option value="fr">${i18n.t('langFrench')}</option>
+              <option value="es">${i18n.t('langSpanish')}</option>
+              <option value="zh-CN">${i18n.t('langChineseSimplified')}</option>
+              <option value="zh-TW">${i18n.t('langChineseTraditional')}</option>
+              <option value="ja">${i18n.t('langJapanese')}</option>
+            </select>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="flex justify-end space-x-3">
+            <button type="submit"
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+              <i class="fas fa-magic mr-2"></i>${i18n.t('generatePrompt')}
+            </button>
+          </div>
+        </form>
       </div>
     `;
+    
+    // Attach form submit handler
+    document.getElementById('document-form').addEventListener('submit', handleDocumentFormSubmit);
     return;
   }
 
@@ -2463,10 +2541,475 @@ async function handleFamousBookFormSubmit(e) {
     language
   };
   
-  console.log('Famous Book Form Data:', formData);
+  // Generate and show prompt editor
+  showFamousBookPromptEditor(formData);
+}
+
+// Generate Prompt template for Famous Book
+function generateFamousBookPrompt(formData) {
+  const scenarioMap = {
+    'workplace': i18n.t('scenarioWorkplace'),
+    'entrepreneurship': i18n.t('scenarioEntrepreneurship'),
+    'personal-growth': i18n.t('scenarioPersonalGrowth'),
+    'financial-planning': i18n.t('scenarioFinancialPlanning')
+  };
   
-  // TODO: Show prompt generation interface
-  alert('Prompt 生成功能即将实现...\n\n表单数据：\n' + JSON.stringify(formData, null, 2));
+  const languageMap = {
+    'en': i18n.t('langEnglish'),
+    'fr': i18n.t('langFrench'),
+    'es': i18n.t('langSpanish'),
+    'zh-CN': i18n.t('langChineseSimplified'),
+    'zh-TW': i18n.t('langChineseTraditional'),
+    'ja': i18n.t('langJapanese')
+  };
+  
+  const contentType = formData.inputType === 'video' ? '视频' : '书';
+  const scenarioText = scenarioMap[formData.scenario] || formData.scenario;
+  const languageText = languageMap[formData.language] || formData.language;
+  
+  return `你是一名知识架构师，请帮我结构化榨干一本${contentType}的核心内容，输出一份 ${formData.wordCount} 字的复盘文档，覆盖以下结构：
+
+【核心主题与核心观点】
+- 这本${contentType}在解决什么问题？
+- 作者的核心论点是什么？
+- 有哪些支撑观点的关键证据或案例？
+
+【关键概念与框架】
+- ${contentType}中提出了哪些重要概念？
+- 是否有可复用的思维框架或方法论？
+- 这些概念之间的逻辑关系是什么？
+
+【应用场景与实践建议】
+针对${scenarioText}场景：
+- 可以从中提炼出哪些可落地的行动建议？
+- 有哪些需要避免的误区或陷阱？
+- 如何将这些知识应用到实际工作/生活中？
+
+【启发与思考】
+- 这本${contentType}改变了你对哪些问题的看法？
+- 还有哪些延伸阅读或相关资源？
+
+${formData.inputType === 'video' ? `视频链接：${formData.content}` : `书名：${formData.content}`}
+
+请用${languageText}输出。`;
+}
+
+// Show Famous Book Prompt Editor
+function showFamousBookPromptEditor(formData) {
+  const container = document.getElementById('famous-books-container');
+  const prompt = generateFamousBookPrompt(formData);
+  
+  container.innerHTML = `
+    <div class="p-6">
+      <div class="mb-6 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-edit mr-2"></i>${i18n.t('editPrompt')}
+        </h3>
+        <button onclick="loadFamousBooksReviews()"
+                class="text-sm text-gray-600 hover:text-gray-900">
+          <i class="fas fa-arrow-left mr-1"></i>${i18n.t('backToForm')}
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            ${i18n.t('promptTemplate')}
+          </label>
+          <textarea id="prompt-editor"
+                    rows="20"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                    >${prompt}</textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+          <button onclick="loadFamousBooksReviews()"
+                  class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+            <i class="fas fa-times mr-2"></i>${i18n.t('cancel')}
+          </button>
+          <button onclick="analyzeFamousBook('${formData.inputType}', '${formData.content.replace(/'/g, "\\'")}', '${formData.language}')"
+                  class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+            <i class="fas fa-magic mr-2"></i>${i18n.t('generateAnalysis')}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Analyze Famous Book with Gemini API
+async function analyzeFamousBook(inputType, content, language) {
+  const prompt = document.getElementById('prompt-editor').value;
+  const container = document.getElementById('famous-books-container');
+  
+  // Show loading state
+  container.innerHTML = `
+    <div class="p-8 text-center">
+      <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+      <p class="text-gray-600">${i18n.t('analyzing')}</p>
+    </div>
+  `;
+  
+  try {
+    const response = await axios.post('/api/reviews/famous-books/analyze', {
+      inputType,
+      content,
+      prompt,
+      language
+    });
+    
+    const result = response.data.result;
+    showFamousBookResult(result, inputType, content);
+  } catch (error) {
+    console.error('Analyze error:', error);
+    container.innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+        <p class="text-red-600">${error.response?.data?.error || i18n.t('operationFailed')}</p>
+        <button onclick="loadFamousBooksReviews()"
+                class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+          ${i18n.t('backToForm')}
+        </button>
+      </div>
+    `;
+  }
+}
+
+// Show Famous Book Analysis Result
+function showFamousBookResult(result, inputType, content) {
+  const container = document.getElementById('famous-books-container');
+  
+  container.innerHTML = `
+    <div class="p-6">
+      <div class="mb-6 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-file-alt mr-2"></i>${i18n.t('analysisResult')}
+        </h3>
+        <button onclick="loadFamousBooksReviews()"
+                class="text-sm text-gray-600 hover:text-gray-900">
+          <i class="fas fa-arrow-left mr-1"></i>${i18n.t('backToForm')}
+        </button>
+      </div>
+      
+      <div class="mb-6">
+        <div id="result-editor"></div>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button onclick="exportDocument('word')"
+                class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <i class="fas fa-file-word mr-2"></i>${i18n.t('exportWord')}
+        </button>
+        <button onclick="exportDocument('pdf')"
+                class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <i class="fas fa-file-pdf mr-2"></i>${i18n.t('exportPDF')}
+        </button>
+        <button onclick="saveFamousBookReview('${inputType}', '${content.replace(/'/g, "\\'")}')"
+                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <i class="fas fa-save mr-2"></i>${i18n.t('saveReview')}
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // Initialize TinyMCE editor with result
+  tinymce.init({
+    selector: '#result-editor',
+    height: 600,
+    menubar: false,
+    plugins: 'lists link image table code',
+    toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
+    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
+    setup: function(editor) {
+      editor.on('init', function() {
+        editor.setContent(result.replace(/\n/g, '<br>'));
+      });
+    }
+  });
+}
+
+// Export document (placeholder)
+function exportDocument(format) {
+  alert(`${format.toUpperCase()} 导出功能开发中...`);
+}
+
+// Save Famous Book Review
+async function saveFamousBookReview(inputType, content) {
+  try {
+    const editorContent = tinymce.get('result-editor').getContent();
+    
+    const response = await axios.post('/api/reviews/famous-books/save', {
+      title: inputType === 'video' ? `视频分析：${content.substring(0, 50)}...` : `书籍分析：${content}`,
+      content: editorContent,
+      inputType,
+      source: content
+    });
+    
+    showNotification(i18n.t('operationSuccess'), 'success');
+    loadFamousBooksReviews();
+  } catch (error) {
+    console.error('Save error:', error);
+    showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
+  }
+}
+
+// Update file name display
+function updateFileName() {
+  const fileInput = document.getElementById('document-file');
+  const fileNameDisplay = document.getElementById('file-name');
+  
+  if (fileInput.files.length > 0) {
+    fileNameDisplay.textContent = `${i18n.t('fileSelected')}: ${fileInput.files[0].name}`;
+    fileNameDisplay.classList.add('text-indigo-600', 'font-medium');
+  } else {
+    fileNameDisplay.textContent = i18n.t('selectFile');
+    fileNameDisplay.classList.remove('text-indigo-600', 'font-medium');
+  }
+}
+
+// Handle Document form submission
+async function handleDocumentFormSubmit(e) {
+  e.preventDefault();
+  
+  const fileInput = document.getElementById('document-file');
+  const wordCount = document.getElementById('doc-word-count').value;
+  const scenario = document.getElementById('doc-application-scenario').value;
+  const language = document.getElementById('doc-output-language').value;
+  
+  if (!fileInput.files.length) {
+    showNotification(i18n.t('selectFile'), 'error');
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  
+  // Read file content
+  const reader = new FileReader();
+  reader.onload = async function(event) {
+    const fileContent = event.target.result;
+    
+    const formData = {
+      fileName: file.name,
+      fileContent,
+      wordCount: parseInt(wordCount),
+      scenario,
+      language
+    };
+    
+    // Generate and show prompt editor
+    showDocumentPromptEditor(formData);
+  };
+  
+  reader.readAsText(file);
+}
+
+// Generate Prompt template for Document
+function generateDocumentPrompt(formData) {
+  const scenarioMap = {
+    'workplace': i18n.t('scenarioWorkplace'),
+    'entrepreneurship': i18n.t('scenarioEntrepreneurship'),
+    'personal-growth': i18n.t('scenarioPersonalGrowth'),
+    'financial-planning': i18n.t('scenarioFinancialPlanning')
+  };
+  
+  const languageMap = {
+    'en': i18n.t('langEnglish'),
+    'fr': i18n.t('langFrench'),
+    'es': i18n.t('langSpanish'),
+    'zh-CN': i18n.t('langChineseSimplified'),
+    'zh-TW': i18n.t('langChineseTraditional'),
+    'ja': i18n.t('langJapanese')
+  };
+  
+  const scenarioText = scenarioMap[formData.scenario] || formData.scenario;
+  const languageText = languageMap[formData.language] || formData.language;
+  
+  return `你是一名文档分析专家，请帮我深度分析这份文档，输出一份 ${formData.wordCount} 字的复盘文档，覆盖以下结构：
+
+【文档概要】
+- 文档的主题和目的是什么？
+- 核心内容和关键信息是什么？
+- 文档的结构和逻辑是怎样的？
+
+【关键要点提取】
+- 最重要的结论和发现是什么？
+- 有哪些关键数据、证据或案例？
+- 哪些观点需要特别关注？
+
+【应用场景与实践建议】
+针对${scenarioText}场景：
+- 如何将文档中的知识应用到实际中？
+- 有哪些可落地的行动建议？
+- 需要避免哪些误区或风险？
+
+【总结与启发】
+- 这份文档最大的价值是什么？
+- 对当前工作/学习有什么启发？
+- 还需要补充哪些相关信息？
+
+请用${languageText}输出。`;
+}
+
+// Show Document Prompt Editor
+function showDocumentPromptEditor(formData) {
+  const container = document.getElementById('documents-container');
+  const prompt = generateDocumentPrompt(formData);
+  
+  // Store file content for later use
+  window.currentDocumentData = formData;
+  
+  container.innerHTML = `
+    <div class="p-6">
+      <div class="mb-6 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-edit mr-2"></i>${i18n.t('editPrompt')}
+        </h3>
+        <button onclick="loadDocumentsReviews()"
+                class="text-sm text-gray-600 hover:text-gray-900">
+          <i class="fas fa-arrow-left mr-1"></i>${i18n.t('backToForm')}
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            ${i18n.t('promptTemplate')}
+          </label>
+          <textarea id="doc-prompt-editor"
+                    rows="18"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                    >${prompt}</textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+          <button onclick="loadDocumentsReviews()"
+                  class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+            <i class="fas fa-times mr-2"></i>${i18n.t('cancel')}
+          </button>
+          <button onclick="analyzeDocument()"
+                  class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+            <i class="fas fa-magic mr-2"></i>${i18n.t('generateAnalysis')}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Analyze Document with Gemini API
+async function analyzeDocument() {
+  const prompt = document.getElementById('doc-prompt-editor').value;
+  const container = document.getElementById('documents-container');
+  const formData = window.currentDocumentData;
+  
+  if (!formData) {
+    showNotification('Document data not found', 'error');
+    return;
+  }
+  
+  // Show loading state
+  container.innerHTML = `
+    <div class="p-8 text-center">
+      <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+      <p class="text-gray-600">${i18n.t('analyzing')}</p>
+    </div>
+  `;
+  
+  try {
+    const response = await axios.post('/api/reviews/documents/analyze', {
+      fileName: formData.fileName,
+      fileContent: formData.fileContent,
+      prompt,
+      language: formData.language
+    });
+    
+    const result = response.data.result;
+    showDocumentResult(result, formData.fileName);
+  } catch (error) {
+    console.error('Analyze error:', error);
+    container.innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+        <p class="text-red-600">${error.response?.data?.error || i18n.t('operationFailed')}</p>
+        <button onclick="loadDocumentsReviews()"
+                class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+          ${i18n.t('backToForm')}
+        </button>
+      </div>
+    `;
+  }
+}
+
+// Show Document Analysis Result
+function showDocumentResult(result, fileName) {
+  const container = document.getElementById('documents-container');
+  
+  container.innerHTML = `
+    <div class="p-6">
+      <div class="mb-6 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-900">
+          <i class="fas fa-file-alt mr-2"></i>${i18n.t('analysisResult')}
+        </h3>
+        <button onclick="loadDocumentsReviews()"
+                class="text-sm text-gray-600 hover:text-gray-900">
+          <i class="fas fa-arrow-left mr-1"></i>${i18n.t('backToForm')}
+        </button>
+      </div>
+      
+      <div class="mb-6">
+        <div id="doc-result-editor"></div>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button onclick="exportDocument('word')"
+                class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <i class="fas fa-file-word mr-2"></i>${i18n.t('exportWord')}
+        </button>
+        <button onclick="exportDocument('pdf')"
+                class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <i class="fas fa-file-pdf mr-2"></i>${i18n.t('exportPDF')}
+        </button>
+        <button onclick="saveDocumentReview('${fileName.replace(/'/g, "\\'")}')"
+                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <i class="fas fa-save mr-2"></i>${i18n.t('saveReview')}
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // Initialize TinyMCE editor with result
+  tinymce.init({
+    selector: '#doc-result-editor',
+    height: 600,
+    menubar: false,
+    plugins: 'lists link image table code',
+    toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
+    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
+    setup: function(editor) {
+      editor.on('init', function() {
+        editor.setContent(result.replace(/\n/g, '<br>'));
+      });
+    }
+  });
+}
+
+// Save Document Review
+async function saveDocumentReview(fileName) {
+  try {
+    const editorContent = tinymce.get('doc-result-editor').getContent();
+    
+    const response = await axios.post('/api/reviews/documents/save', {
+      title: `文档分析：${fileName}`,
+      content: editorContent,
+      fileName
+    });
+    
+    showNotification(i18n.t('operationSuccess'), 'success');
+    loadDocumentsReviews();
+  } catch (error) {
+    console.error('Save error:', error);
+    showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
+  }
 }
 
 let allReviews = [];

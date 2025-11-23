@@ -11,6 +11,7 @@ type Bindings = {
   RESEND_API_KEY?: string;
   APP_URL?: string;
   JWT_SECRET?: string;
+  GEMINI_API_KEY?: string;
 };
 
 const auth = new Hono<{ Bindings: Bindings }>();
