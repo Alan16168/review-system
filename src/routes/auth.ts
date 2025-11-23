@@ -12,6 +12,7 @@ type Bindings = {
   APP_URL?: string;
   JWT_SECRET?: string;
   GEMINI_API_KEY?: string;
+  GENSPARK_API_KEY?: string;
 };
 
 const auth = new Hono<{ Bindings: Bindings }>();
