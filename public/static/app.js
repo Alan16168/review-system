@@ -3270,9 +3270,105 @@ async function saveDocumentReview(fileName) {
 
 // Show Document Form (for creating new document review)
 function showDocumentForm() {
-  // Reload the documents reviews page, which will show the form if no reviews exist
-  // Or we can call the form directly
-  loadDocumentsReviews();
+  // Show the creation form directly
+  const container = document.getElementById('documents-container');
+  
+  container.innerHTML = `
+    <div class="mb-4 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-900">
+        <i class="fas fa-file-alt mr-2"></i>${i18n.t('documentReview')}
+      </h3>
+      <button onclick="loadDocumentsReviews()" 
+              class="text-sm text-gray-600 hover:text-gray-900">
+        <i class="fas fa-arrow-left mr-1"></i>${i18n.t('backToList') || 'Back to List'}
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+          <i class="fas fa-file-alt mr-2"></i>${i18n.t('createDocumentReview')}
+        </h3>
+      </div>
+      
+      <form id="document-form" class="space-y-6">
+        <!-- File Upload -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            ${i18n.t('uploadDocument')} <span class="text-red-600">*</span>
+          </label>
+          <div class="flex items-center space-x-4">
+            <label class="flex-1 flex items-center justify-center px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 transition-colors">
+              <div class="text-center">
+                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                <p class="text-sm text-gray-600">${i18n.t('uploadDocumentHint')}</p>
+                <p class="text-xs text-gray-500 mt-1" id="file-name">${i18n.t('selectFile')}</p>
+              </div>
+              <input type="file" id="document-file" accept=".pdf,.doc,.docx,.txt" class="hidden" required onchange="updateFileName()">
+            </label>
+          </div>
+        </div>
+
+        <!-- Word Count Requirement -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            ${i18n.t('wordCountRequirement')} <span class="text-red-600">*</span>
+          </label>
+          <input type="number" id="doc-word-count" min="500" max="10000" step="100"
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                 placeholder="${i18n.t('wordCountPlaceholder')}"
+                 required>
+        </div>
+
+        <!-- Application Scenario -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            ${i18n.t('applicationScenario')} <span class="text-red-600">*</span>
+          </label>
+          <select id="doc-application-scenario"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  required>
+            <option value="">${i18n.t('selectScenario')}</option>
+            <option value="workplace">${i18n.t('scenarioWorkplace')}</option>
+            <option value="entrepreneurship">${i18n.t('scenarioEntrepreneurship')}</option>
+            <option value="personal-growth">${i18n.t('scenarioPersonalGrowth')}</option>
+            <option value="financial-planning">${i18n.t('scenarioFinancialPlanning')}</option>
+          </select>
+        </div>
+
+        <!-- Output Language -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            ${i18n.t('outputLanguage')} <span class="text-red-600">*</span>
+          </label>
+          <select id="doc-output-language"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  required>
+            <option value="">${i18n.t('selectLanguage')}</option>
+            <option value="en">${i18n.t('langEnglish')}</option>
+            <option value="fr">${i18n.t('langFrench')}</option>
+            <option value="es">${i18n.t('langSpanish')}</option>
+            <option value="zh-CN">${i18n.t('langChineseSimplified')}</option>
+            <option value="zh-TW">${i18n.t('langChineseTraditional')}</option>
+            <option value="ja">${i18n.t('langJapanese')}</option>
+          </select>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end space-x-3">
+          <button type="submit"
+                  class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+            <i class="fas fa-magic mr-2"></i>${i18n.t('generatePrompt')}
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  // Attach form submit handler
+  document.getElementById('document-form').addEventListener('submit', handleDocumentFormSubmit);
+  
+  // Setup drag and drop functionality for file upload
+  setupDocumentFileDragDrop();
 }
 
 // Edit Document Review
@@ -3308,7 +3404,11 @@ async function editDocumentReview(id) {
             <label class="block text-sm font-medium text-gray-700 mb-2">
               ${i18n.t('content')}
             </label>
-            <div id="edit-doc-editor"></div>
+            <div id="edit-doc-editor-loading" class="flex items-center justify-center py-12 border border-gray-300 rounded-lg bg-gray-50">
+              <i class="fas fa-spinner fa-spin text-2xl text-indigo-600 mr-3"></i>
+              <span class="text-gray-600">Loading editor...</span>
+            </div>
+            <textarea id="edit-doc-editor" style="display:none;">${escapeHtml(review.description || '')}</textarea>
           </div>
           
           <div class="flex justify-end space-x-3">
@@ -3335,7 +3435,13 @@ async function editDocumentReview(id) {
       content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
       setup: function(editor) {
         editor.on('init', function() {
-          editor.setContent(review.description || '');
+          // Hide loading indicator
+          const loadingDiv = document.getElementById('edit-doc-editor-loading');
+          if (loadingDiv) {
+            loadingDiv.style.display = 'none';
+          }
+          // Show editor
+          document.getElementById('edit-doc-editor').style.display = 'block';
         });
       }
     });
