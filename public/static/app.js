@@ -3186,7 +3186,8 @@ function showFamousBookForm() {
 async function viewFamousBookReview(id) {
   try {
     const response = await axios.get(`/api/reviews/${id}`);
-    const review = response.data;
+    // API returns { review: {...}, questions: [...], ... }
+    const review = response.data.review || response.data;
     
     const container = document.getElementById('famous-books-container');
     container.innerHTML = `
@@ -3201,7 +3202,7 @@ async function viewFamousBookReview(id) {
           </button>
         </div>
         <div class="prose max-w-none">
-          ${review.description || ''}
+          ${review.description || '<p>暂无内容</p>'}
         </div>
       </div>
     `;
@@ -3214,7 +3215,11 @@ async function viewFamousBookReview(id) {
 async function editFamousBookReview(id) {
   try {
     const response = await axios.get(`/api/reviews/${id}`);
-    const review = response.data.review;
+    const review = response.data.review || response.data;
+    
+    console.log('Edit review - Response:', response.data);
+    console.log('Edit review - Review object:', review);
+    console.log('Edit review - Description:', review.description);
     
     const container = document.getElementById('famous-books-container');
     container.innerHTML = `
@@ -3263,6 +3268,14 @@ async function editFamousBookReview(id) {
       </div>
     `;
     
+    // Remove any existing TinyMCE instance first
+    if (tinymce.get('edit-content-editor')) {
+      tinymce.get('edit-content-editor').remove();
+    }
+    
+    // Store content for initialization
+    const contentToLoad = review.description || '';
+    
     // Initialize TinyMCE editor with existing content
     tinymce.init({
       selector: '#edit-content-editor',
@@ -3277,8 +3290,11 @@ async function editFamousBookReview(id) {
                 alignleft aligncenter alignright alignjustify | \
                 bullist numlist outdent indent | removeformat | help',
       content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; font-size: 14px; }',
-      init_instance_callback: function(editor) {
-        editor.setContent(review.description || '');
+      setup: function(editor) {
+        // Set content before editor is fully initialized
+        editor.on('init', function() {
+          editor.setContent(contentToLoad);
+        });
       }
     });
   } catch (error) {
