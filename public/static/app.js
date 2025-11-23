@@ -2943,8 +2943,16 @@ async function handleDocumentFormSubmit(e) {
       return;
     }
     
+    console.log('File parsed successfully:', {
+      fileName: file.name,
+      fileType: fileExtension,
+      contentLength: fileContent?.length || 0,
+      contentPreview: fileContent?.substring(0, 200) + '...'
+    });
+    
     if (!fileContent || fileContent.trim().length === 0) {
-      showNotification(i18n.t('emptyFileContent') || '文件内容为空', 'error');
+      console.error('Empty file content detected');
+      showNotification(i18n.t('emptyFileContent') || '文件内容为空，请检查文件是否损坏或为空白文档', 'error');
       return;
     }
     
@@ -2997,6 +3005,12 @@ async function readPDFFile(file) {
     return fullText.trim();
   } catch (error) {
     console.error('PDF reading error:', error);
+    console.error('PDF error details:', {
+      message: error.message,
+      stack: error.stack,
+      fileName: file?.name,
+      fileSize: file?.size
+    });
     throw new Error((i18n.t('pdfReadError') || 'PDF文件读取失败') + ': ' + error.message);
   }
 }
@@ -3425,16 +3439,38 @@ async function editDocumentReview(id) {
       </div>
     `;
     
-    // Initialize TinyMCE editor
-    tinymce.init({
-      selector: '#edit-doc-editor',
-      height: 600,
-      menubar: false,
-      plugins: 'lists link image table code',
-      toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
-      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
-      setup: function(editor) {
-        editor.on('init', function() {
+    // Initialize TinyMCE editor with error handling and timeout
+    const editorTimeout = setTimeout(() => {
+      console.error('TinyMCE initialization timeout');
+      const loadingDiv = document.getElementById('edit-doc-editor-loading');
+      if (loadingDiv) {
+        loadingDiv.innerHTML = `
+          <div class="text-center">
+            <i class="fas fa-exclamation-triangle text-2xl text-yellow-600 mb-3"></i>
+            <p class="text-gray-700 mb-3">编辑器加载失败，使用简化模式</p>
+            <button onclick="showSimpleEditor()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              使用文本编辑器
+            </button>
+          </div>
+        `;
+      }
+    }, 10000); // 10 second timeout
+    
+    try {
+      if (typeof tinymce === 'undefined') {
+        throw new Error('TinyMCE library not loaded');
+      }
+      
+      tinymce.init({
+        selector: '#edit-doc-editor',
+        height: 600,
+        menubar: false,
+        plugins: 'lists link image table code',
+        toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
+        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
+        init_instance_callback: function(editor) {
+          console.log('TinyMCE editor initialized successfully');
+          clearTimeout(editorTimeout);
           // Hide loading indicator
           const loadingDiv = document.getElementById('edit-doc-editor-loading');
           if (loadingDiv) {
@@ -3442,9 +3478,29 @@ async function editDocumentReview(id) {
           }
           // Show editor
           document.getElementById('edit-doc-editor').style.display = 'block';
-        });
+        },
+        setup: function(editor) {
+          editor.on('init', function() {
+            console.log('TinyMCE init event fired');
+          });
+        }
+      });
+    } catch (error) {
+      console.error('TinyMCE initialization error:', error);
+      clearTimeout(editorTimeout);
+      showSimpleEditor();
+    }
+    
+    // Fallback to simple textarea editor
+    window.showSimpleEditor = function() {
+      const loadingDiv = document.getElementById('edit-doc-editor-loading');
+      if (loadingDiv) {
+        loadingDiv.style.display = 'none';
       }
-    });
+      const textarea = document.getElementById('edit-doc-editor');
+      textarea.style.display = 'block';
+      textarea.className = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 min-h-[600px] font-mono text-sm';
+    };
     
     // Attach form submit handler
     document.getElementById('edit-document-form').addEventListener('submit', async (e) => {
@@ -3452,7 +3508,16 @@ async function editDocumentReview(id) {
       
       try {
         const title = document.getElementById('edit-title').value;
-        const content = tinymce.get('edit-doc-editor').getContent();
+        let content;
+        
+        // Try to get content from TinyMCE, fallback to textarea
+        const editor = tinymce.get('edit-doc-editor');
+        if (editor) {
+          content = editor.getContent();
+        } else {
+          // Fallback to textarea value
+          content = document.getElementById('edit-doc-editor').value;
+        }
         
         await axios.put(`/api/reviews/${id}`, {
           title,

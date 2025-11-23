@@ -334,17 +334,36 @@ reviews.post('/documents/analyze', async (c) => {
     
     const { fileName, fileContent, prompt, language } = await c.req.json();
     
+    // Debug logging
+    console.log('Document analyze request:', {
+      fileName,
+      fileContentLength: fileContent?.length || 0,
+      fileContentPreview: fileContent?.substring(0, 200) || '[empty]',
+      promptLength: prompt?.length || 0,
+      language
+    });
+    
     if (!fileContent || !prompt) {
+      console.error('Missing required fields:', { hasContent: !!fileContent, hasPrompt: !!prompt });
       return c.json({ error: 'File content and prompt are required' }, 400);
+    }
+    
+    // Additional check for empty content
+    if (fileContent.trim().length === 0) {
+      console.error('File content is empty (whitespace only)');
+      return c.json({ error: 'File content is empty. Please check if the file is corrupted or blank.' }, 400);
     }
     
     const GEMINI_API_KEY = c.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY) {
+      console.error('Gemini API key not configured');
       return c.json({ error: 'Gemini API key not configured' }, 500);
     }
     
     // Combine file content with prompt
     const fullPrompt = `文档内容：\n\n${fileContent}\n\n---\n\n${prompt}`;
+    
+    console.log('Calling Gemini API with fullPrompt length:', fullPrompt.length);
     
     // Call Gemini API (using gemini-2.0-flash - faster and more cost-effective)
     const geminiResponse = await fetch(
@@ -358,12 +377,24 @@ reviews.post('/documents/analyze', async (c) => {
       }
     );
     
+    console.log('Gemini API response status:', geminiResponse.status);
+    
     if (!geminiResponse.ok) {
-      throw new Error(`Gemini API error: ${geminiResponse.statusText}`);
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error:', { status: geminiResponse.status, error: errorText });
+      throw new Error(`Gemini API error: ${geminiResponse.statusText} - ${errorText}`);
     }
     
     const geminiData = await geminiResponse.json();
+    console.log('Gemini API response structure:', {
+      hasCandidates: !!geminiData.candidates,
+      candidatesLength: geminiData.candidates?.length || 0,
+      firstCandidate: geminiData.candidates?.[0] ? 'exists' : 'missing'
+    });
+    
     const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+    
+    console.log('Analysis result length:', result.length);
     
     return c.json({ result });
   } catch (error) {
