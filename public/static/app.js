@@ -1226,6 +1226,20 @@ async function showDashboard(tab = 'my-reviews') {
                              whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
                 <i class="fas fa-globe mr-2"></i>${i18n.t('publicReviews')}
               </button>
+              ${currentUser && currentUser.subscription_level !== 'free' ? `
+              <button onclick="showDashboard('famous-books')" 
+                      id="tab-famous-books"
+                      class="tab-button ${tab === 'famous-books' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} 
+                             whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                <i class="fas fa-book mr-2"></i>${i18n.t('famousBookReview') || 'Famous Book Review'}
+              </button>
+              <button onclick="showDashboard('documents')" 
+                      id="tab-documents"
+                      class="tab-button ${tab === 'documents' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} 
+                             whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                <i class="fas fa-file-alt mr-2"></i>${i18n.t('documentsReview') || 'Documents Review'}
+              </button>
+              ` : ''}
             </nav>
           </div>
         </div>
@@ -1347,7 +1361,7 @@ async function showDashboard(tab = 'my-reviews') {
               </div>
             </div>
           </div>
-          ` : `
+          ` : tab === 'public-reviews' ? `
           <!-- Public Reviews Tab Content -->
           <div class="mb-6">
             <div class="mb-4">
@@ -1364,7 +1378,41 @@ async function showDashboard(tab = 'my-reviews') {
               </div>
             </div>
           </div>
-          `}
+          ` : tab === 'famous-books' ? `
+          <!-- Famous Book Review Tab Content -->
+          <div class="mb-6">
+            <div class="mb-4">
+              <p class="text-gray-600">
+                ${i18n.t('famousBookReviewDesc') || '名著复盘 - 经典著作的深度分析和思考'}
+              </p>
+            </div>
+
+            <!-- Famous Book Reviews List -->
+            <div id="famous-books-container" class="bg-white rounded-lg shadow-md">
+              <div class="p-8 text-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+                <p class="text-gray-600">${i18n.t('loading')}</p>
+              </div>
+            </div>
+          </div>
+          ` : tab === 'documents' ? `
+          <!-- Documents Review Tab Content -->
+          <div class="mb-6">
+            <div class="mb-4">
+              <p class="text-gray-600">
+                ${i18n.t('documentsReviewDesc') || '文档复盘 - 重要文档和资料的整理归纳'}
+              </p>
+            </div>
+
+            <!-- Documents Reviews List -->
+            <div id="documents-container" class="bg-white rounded-lg shadow-md">
+              <div class="p-8 text-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+                <p class="text-gray-600">${i18n.t('loading')}</p>
+              </div>
+            </div>
+          </div>
+          ` : ''}
         </div>
       </div>
     </div>
@@ -1374,6 +1422,10 @@ async function showDashboard(tab = 'my-reviews') {
     await loadDashboardData();
   } else if (tab === 'public-reviews') {
     await loadPublicReviews();
+  } else if (tab === 'famous-books') {
+    await loadFamousBooksReviews();
+  } else if (tab === 'documents') {
+    await loadDocumentsReviews();
   }
   window.scrollTo(0, 0); // Scroll to top of page
 }
@@ -2054,6 +2106,216 @@ async function deletePublicReview(reviewId) {
     console.error('Failed to delete review:', error);
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
+}
+
+// Load Famous Books Reviews (Premium feature)
+async function loadFamousBooksReviews() {
+  try {
+    const response = await axios.get('/api/reviews/famous-books');
+    const reviews = response.data.reviews;
+    renderFamousBooksReviewsList(reviews);
+  } catch (error) {
+    console.error('Load famous books reviews error:', error);
+    document.getElementById('famous-books-container').innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+        <p class="text-red-600">${error.response?.data?.error || i18n.t('operationFailed')}</p>
+      </div>
+    `;
+  }
+}
+
+function renderFamousBooksReviewsList(reviews) {
+  const container = document.getElementById('famous-books-container');
+  
+  if (!reviews || reviews.length === 0) {
+    container.innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-book text-4xl text-gray-400 mb-4"></i>
+        <p class="text-gray-600">${i18n.t('noFamousBookReviews') || '暂无名著复盘'}</p>
+        <p class="text-sm text-gray-500 mt-2">${i18n.t('famousBookReviewHint') || '名著复盘是付费会员专享功能'}</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('reviewTitle')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('creator')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('status')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('updatedAt')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('actions')}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${reviews.map(review => `
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <i class="fas fa-book text-amber-600 mr-2"></i>
+                  <div>
+                    <div class="text-sm font-medium text-gray-900">
+                      ${escapeHtml(review.title)}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${escapeHtml(review.creator_name)}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  review.status === 'completed' 
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }">
+                  ${i18n.t(review.status)}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${new Date(review.updated_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                <button onclick="showReviewDetail(${review.id}, true)" 
+                        class="text-indigo-600 hover:text-indigo-900">
+                  <i class="fas fa-eye"></i> ${i18n.t('view')}
+                </button>
+                <button onclick="printReview(${review.id})" 
+                        class="text-blue-600 hover:text-blue-900">
+                  <i class="fas fa-print"></i> ${i18n.t('print')}
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Load Documents Reviews (Premium feature)
+async function loadDocumentsReviews() {
+  try {
+    const response = await axios.get('/api/reviews/documents');
+    const reviews = response.data.reviews;
+    renderDocumentsReviewsList(reviews);
+  } catch (error) {
+    console.error('Load documents reviews error:', error);
+    document.getElementById('documents-container').innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+        <p class="text-red-600">${error.response?.data?.error || i18n.t('operationFailed')}</p>
+      </div>
+    `;
+  }
+}
+
+function renderDocumentsReviewsList(reviews) {
+  const container = document.getElementById('documents-container');
+  
+  if (!reviews || reviews.length === 0) {
+    container.innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-file-alt text-4xl text-gray-400 mb-4"></i>
+        <p class="text-gray-600">${i18n.t('noDocumentsReviews') || '暂无文档复盘'}</p>
+        <p class="text-sm text-gray-500 mt-2">${i18n.t('documentsReviewHint') || '文档复盘是付费会员专享功能'}</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('reviewTitle')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('creator')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('status')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('updatedAt')}
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              ${i18n.t('actions')}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${reviews.map(review => `
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <i class="fas fa-file-alt text-blue-600 mr-2"></i>
+                  <div>
+                    <div class="text-sm font-medium text-gray-900">
+                      ${escapeHtml(review.title)}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">${escapeHtml(review.creator_name)}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  review.status === 'completed' 
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                }">
+                  ${i18n.t(review.status)}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${new Date(review.updated_at).toLocaleString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                <button onclick="showReviewDetail(${review.id}, true)" 
+                        class="text-indigo-600 hover:text-indigo-900">
+                  <i class="fas fa-eye"></i> ${i18n.t('view')}
+                </button>
+                <button onclick="printReview(${review.id})" 
+                        class="text-blue-600 hover:text-blue-900">
+                  <i class="fas fa-print"></i> ${i18n.t('print')}
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 let allReviews = [];

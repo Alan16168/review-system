@@ -72,6 +72,62 @@ reviews.get('/public', async (c) => {
   }
 });
 
+// Famous Books Reviews (Premium feature)
+reviews.get('/famous-books', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    
+    // Check if user has premium subscription (not free)
+    if (user.subscription_level === 'free') {
+      return c.json({ error: 'Premium subscription required' }, 403);
+    }
+    
+    const query = `
+      SELECT DISTINCT r.*, u.username as creator_name
+      FROM reviews r
+      LEFT JOIN users u ON r.user_id = u.id
+      WHERE r.review_type = 'famous-book'
+      ORDER BY r.updated_at DESC
+    `;
+
+    const result = await c.env.DB.prepare(query).all();
+    const reviews = result.results || [];
+
+    return c.json({ reviews });
+  } catch (error) {
+    console.error('Get famous books reviews error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Documents Reviews (Premium feature)
+reviews.get('/documents', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    
+    // Check if user has premium subscription (not free)
+    if (user.subscription_level === 'free') {
+      return c.json({ error: 'Premium subscription required' }, 403);
+    }
+    
+    const query = `
+      SELECT DISTINCT r.*, u.username as creator_name
+      FROM reviews r
+      LEFT JOIN users u ON r.user_id = u.id
+      WHERE r.review_type = 'document'
+      ORDER BY r.updated_at DESC
+    `;
+
+    const result = await c.env.DB.prepare(query).all();
+    const reviews = result.results || [];
+
+    return c.json({ reviews });
+  } catch (error) {
+    console.error('Get documents reviews error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 // Helper function to get language from request
 function getLanguage(c: any): string {
   // Try X-Language header first
