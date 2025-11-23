@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的文档复盘 - Review System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center">
+                        <i class="fas fa-book-open text-blue-600 text-2xl"></i>
+                        <span class="ml-2 text-xl font-bold text-gray-900">Review System</span>
+                    </a>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="/famous-books-documents" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-file-alt mr-2"></i>
+                            创建文档复盘
+                        </a>
+                        <a href="/my-documents" class="border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-list mr-2"></i>
+                            我的文档复盘
+                        </a>
+                        <a href="/my-reviews" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-history mr-2"></i>
+                            我的复盘
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <span id="userName" class="text-gray-700 mr-4"></span>
+                    <button onclick="logout()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        退出登录
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-file-alt text-blue-600 mr-3"></i>
+                        我的文档复盘
+                    </h1>
+                    <p class="mt-2 text-gray-600">查看和管理您的所有文档复盘记录</p>
+                </div>
+                <a href="/famous-books-documents" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                    <i class="fas fa-plus mr-2"></i>
+                    创建新文档复盘
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
+                            <i class="fas fa-file-alt text-white text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">总文档数</dt>
+                                <dd class="text-3xl font-semibold text-gray-900" id="totalDocuments">0</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+                            <i class="fas fa-check-circle text-white text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">已完成</dt>
+                                <dd class="text-3xl font-semibold text-gray-900" id="completedDocuments">0</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
+                            <i class="fas fa-clock text-white text-2xl"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">草稿</dt>
+                                <dd class="text-3xl font-semibold text-gray-900" id="draftDocuments">0</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="flex justify-center items-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <span class="ml-3 text-gray-600">加载中...</span>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden bg-white rounded-lg shadow-sm p-12 text-center">
+            <i class="fas fa-file-alt text-gray-400 text-6xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">还没有文档复盘</h3>
+            <p class="text-gray-500 mb-6">开始创建您的第一个文档复盘吧！</p>
+            <a href="/famous-books-documents" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                <i class="fas fa-plus mr-2"></i>
+                创建文档复盘
+            </a>
+        </div>
+
+        <!-- Documents List -->
+        <div id="documentsList" class="hidden bg-white shadow-sm rounded-lg overflow-hidden">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="space-y-4" id="documentsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Document Modal -->
+    <div id="viewModal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-semibold text-gray-900" id="modalTitle"></h3>
+                    <button onclick="closeViewModal()" class="text-gray-400 hover:text-gray-500">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="px-6 py-4">
+                <div id="modalContent" class="prose max-w-none"></div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeViewModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    关闭
+                </button>
+                <button onclick="editDocument()" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                    编辑
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let documents = [];
+        let currentDocumentId = null;
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const response = await axios.get('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                currentUser = response.data.user;
+                document.getElementById('userName').textContent = currentUser.username;
+
+                // Check subscription
+                if (currentUser.role !== 'admin' && (!currentUser.subscription_tier || currentUser.subscription_tier === 'free')) {
+                    alert('需要高级订阅才能访问文档复盘功能');
+                    window.location.href = '/';
+                    return;
+                }
+
+                loadDocuments();
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Load documents
+        async function loadDocuments() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.get('/api/reviews/documents', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                documents = response.data.reviews || [];
+                
+                // Hide loading
+                document.getElementById('loadingState').classList.add('hidden');
+
+                if (documents.length === 0) {
+                    document.getElementById('emptyState').classList.remove('hidden');
+                    updateStatistics(0, 0, 0);
+                } else {
+                    document.getElementById('documentsList').classList.remove('hidden');
+                    displayDocuments();
+                    updateStatistics();
+                }
+            } catch (error) {
+                console.error('Load documents failed:', error);
+                document.getElementById('loadingState').classList.add('hidden');
+                alert('加载文档失败');
+            }
+        }
+
+        // Update statistics
+        function updateStatistics(total, completed, draft) {
+            if (arguments.length === 0) {
+                total = documents.length;
+                completed = documents.filter(d => d.status === 'completed').length;
+                draft = documents.filter(d => d.status === 'draft').length;
+            }
+            
+            document.getElementById('totalDocuments').textContent = total;
+            document.getElementById('completedDocuments').textContent = completed;
+            document.getElementById('draftDocuments').textContent = draft;
+        }
+
+        // Display documents
+        function displayDocuments() {
+            const container = document.getElementById('documentsContainer');
+            container.innerHTML = documents.map(doc => {
+                const createdDate = new Date(doc.created_at).toLocaleDateString('zh-CN');
+                const updatedDate = new Date(doc.updated_at).toLocaleDateString('zh-CN');
+                const statusBadge = doc.status === 'completed' 
+                    ? '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">已完成</span>'
+                    : '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">草稿</span>';
+
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-1">${escapeHtml(doc.title || '未命名文档')}</h3>
+                                <p class="text-sm text-gray-600">${escapeHtml(doc.description || '暂无描述')}</p>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
+                            <div class="flex items-center space-x-4">
+                                <span><i class="fas fa-calendar-plus mr-1"></i>创建: ${createdDate}</span>
+                                <span><i class="fas fa-calendar-alt mr-1"></i>更新: ${updatedDate}</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="viewDocument(${doc.id})" class="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-100">
+                                <i class="fas fa-eye mr-2"></i>查看
+                            </button>
+                            <button onclick="editDocument(${doc.id})" class="flex-1 px-3 py-2 bg-gray-50 text-gray-600 rounded-md text-sm font-medium hover:bg-gray-100">
+                                <i class="fas fa-edit mr-2"></i>编辑
+                            </button>
+                            <button onclick="deleteDocument(${doc.id})" class="px-3 py-2 bg-red-50 text-red-600 rounded-md text-sm font-medium hover:bg-red-100">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // View document
+        function viewDocument(id) {
+            const doc = documents.find(d => d.id === id);
+            if (!doc) return;
+
+            currentDocumentId = id;
+            document.getElementById('modalTitle').textContent = doc.title || '未命名文档';
+            
+            // Format content
+            let content = '<div class="space-y-4">';
+            
+            if (doc.description) {
+                content += `<div><p class="text-gray-700">${escapeHtml(doc.description)}</p></div>`;
+            }
+            
+            // Try to parse answers
+            try {
+                const answers = JSON.parse(doc.answers || '{}');
+                if (Object.keys(answers).length > 0) {
+                    content += '<div class="border-t border-gray-200 pt-4 mt-4">';
+                    content += '<h4 class="font-semibold text-gray-900 mb-3">分析内容</h4>';
+                    for (const [key, value] of Object.entries(answers)) {
+                        content += `
+                            <div class="mb-4">
+                                <h5 class="font-medium text-gray-700 mb-2">${escapeHtml(key)}</h5>
+                                <p class="text-gray-600 whitespace-pre-wrap">${escapeHtml(value)}</p>
+                            </div>
+                        `;
+                    }
+                    content += '</div>';
+                }
+            } catch (e) {
+                // If not JSON, display as plain text
+                if (doc.answers) {
+                    content += `<div class="mt-4"><p class="text-gray-700 whitespace-pre-wrap">${escapeHtml(doc.answers)}</p></div>`;
+                }
+            }
+            
+            content += '</div>';
+            
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('viewModal').classList.remove('hidden');
+        }
+
+        // Close view modal
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.add('hidden');
+            currentDocumentId = null;
+        }
+
+        // Edit document
+        function editDocument(id = currentDocumentId) {
+            if (!id && currentDocumentId) {
+                id = currentDocumentId;
+            }
+            // Redirect to edit page (you can implement this)
+            window.location.href = `/famous-books-documents?edit=${id}`;
+        }
+
+        // Delete document
+        async function deleteDocument(id) {
+            if (!confirm('确定要删除这个文档复盘吗？此操作不可撤销。')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                await axios.delete(`/api/reviews/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                alert('删除成功');
+                documents = documents.filter(d => d.id !== id);
+                
+                if (documents.length === 0) {
+                    document.getElementById('documentsList').classList.add('hidden');
+                    document.getElementById('emptyState').classList.remove('hidden');
+                } else {
+                    displayDocuments();
+                }
+                updateStatistics();
+            } catch (error) {
+                console.error('Delete failed:', error);
+                alert('删除失败');
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>
