@@ -149,9 +149,9 @@ reviews.post('/famous-books/analyze', async (c) => {
       return c.json({ error: 'Gemini API key not configured' }, 500);
     }
     
-    // Call Gemini API
+    // Call Gemini API (using gemini-2.0-flash - faster and more cost-effective)
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -231,9 +231,9 @@ reviews.post('/documents/analyze', async (c) => {
     // Combine file content with prompt
     const fullPrompt = `文档内容：\n\n${fileContent}\n\n---\n\n${prompt}`;
     
-    // Call Gemini API
+    // Call Gemini API (using gemini-2.0-flash - faster and more cost-effective)
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
