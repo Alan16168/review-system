@@ -149,15 +149,57 @@ reviews.post('/famous-books/analyze', async (c) => {
       return c.json({ error: 'Gemini API key not configured' }, 500);
     }
     
+    let finalPrompt = prompt;
+    
+    // If it's a video URL, try to extract video info (YouTube)
+    if (inputType === 'video' && content.includes('youtube.com')) {
+      try {
+        // Extract YouTube video ID
+        const videoId = extractYouTubeVideoId(content);
+        
+        if (videoId) {
+          // Get YouTube video info
+          const YOUTUBE_API_KEY = c.env.YOUTUBE_API_KEY || c.env.GOOGLE_API_KEY;
+          
+          if (YOUTUBE_API_KEY) {
+            const youtubeResponse = await fetch(
+              `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${YOUTUBE_API_KEY}`
+            );
+            
+            if (youtubeResponse.ok) {
+              const youtubeData = await youtubeResponse.json();
+              const video = youtubeData.items?.[0];
+              
+              if (video) {
+                const videoInfo = `
+视频标题：${video.snippet.title}
+频道：${video.snippet.channelTitle}
+发布日期：${video.snippet.publishedAt}
+视频描述：
+${video.snippet.description}
+
+标签：${video.snippet.tags?.join(', ') || '无'}
+`;
+                
+                finalPrompt = `${videoInfo}\n\n---\n\n${prompt}`;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.log('YouTube API fetch failed, using original prompt:', error);
+        // Continue with original prompt if YouTube fetch fails
+      }
+    }
+    
     // Call Gemini API (using gemini-2.0-flash - faster and more cost-effective)
-    // Note: Gemini cannot directly access video content, but can analyze based on context
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
+          contents: [{ parts: [{ text: finalPrompt }] }]
         })
       }
     );
@@ -169,6 +211,24 @@ reviews.post('/famous-books/analyze', async (c) => {
     
     const geminiData = await geminiResponse.json();
     const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+    
+    // Helper function to extract YouTube video ID
+    function extractYouTubeVideoId(url: string): string | null {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/,
+        /youtube\.com\/embed\/([^&\s]+)/,
+        /youtube\.com\/v\/([^&\s]+)/
+      ];
+      
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match && match[1]) {
+          return match[1];
+        }
+      }
+      
+      return null;
+    }
     
     return c.json({ result });
   } catch (error) {

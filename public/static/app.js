@@ -2603,7 +2603,7 @@ function generateFamousBookPrompt(formData) {
   const languageText = languageMap[formData.language] || formData.language;
   
   const videoNote = formData.inputType === 'video' ? 
-    `\n\n注意：由于AI无法直接观看视频，请在分析时基于视频标题、描述和你对该视频内容的了解进行分析。如果你了解这个视频，请提供深入分析；如果不了解，请基于标题和链接推测可能的主题和内容。\n\n视频链接：${formData.content}\n` : 
+    `\n\n视频链接：${formData.content}\n\n【系统提示】如果这是 YouTube 视频，系统会自动获取视频标题、描述和其他元数据来辅助分析。请基于这些信息进行深入分析。\n` : 
     `\n\n书名：${formData.content}\n`;
   
   return `你是一名知识架构师，请帮我结构化榨干一本${contentType}的核心内容，输出一份 ${formData.wordCount} 字的复盘文档，覆盖以下结构：${videoNote}
