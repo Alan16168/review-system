@@ -93,7 +93,8 @@ auth.post('/register', async (c) => {
       id: user.id,
       email: user.email,
       username: user.username,
-      role: user.role
+      role: user.role,
+      subscription_tier: user.subscription_tier || 'free'
     }, c.env.JWT_SECRET);
 
     return c.json({
@@ -144,7 +145,8 @@ auth.post('/login', async (c) => {
       id: user.id,
       email: user.email,
       username: user.username,
-      role: user.role
+      role: user.role,
+      subscription_tier: user.subscription_tier || 'free'
     }, c.env.JWT_SECRET);
 
     return c.json({
@@ -221,7 +223,8 @@ auth.post('/google', async (c) => {
       id: user.id,
       email: user.email,
       username: user.username,
-      role: user.role
+      role: user.role,
+      subscription_tier: user.subscription_tier || 'free'
     }, c.env.JWT_SECRET);
 
     return c.json({

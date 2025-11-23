@@ -13,6 +13,7 @@ export interface UserPayload {
   email: string;
   username: string;
   role: string;
+  subscription_tier?: string;
 }
 
 export async function hashPassword(password: string): Promise<string> {
