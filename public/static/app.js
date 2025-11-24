@@ -2800,6 +2800,10 @@ function showFamousBookResult(result, inputType, content) {
     plugins: 'lists link image table code',
     toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
     content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
+    promotion: false,
+    branding: false,
+    base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',
+    suffix: '.min',
     setup: function(editor) {
       editor.on('init', function() {
         editor.setContent(result.replace(/\n/g, '<br>'));
@@ -3255,6 +3259,10 @@ function showDocumentResult(result, fileName) {
     plugins: 'lists link image table code',
     toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
     content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
+    promotion: false,
+    branding: false,
+    base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',
+    suffix: '.min',
     setup: function(editor) {
       editor.on('init', function() {
         editor.setContent(result.replace(/\n/g, '<br>'));
@@ -3468,6 +3476,10 @@ async function editDocumentReview(id) {
         plugins: 'lists link image table code',
         toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
         content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
+        promotion: false,  // 禁用 TinyMCE 推广信息
+        branding: false,   // 禁用品牌信息
+        base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',  // 设置正确的基础 URL
+        suffix: '.min',    // 使用压缩版本
         init_instance_callback: function(editor) {
           console.log('TinyMCE editor initialized successfully');
           clearTimeout(editorTimeout);
@@ -3816,6 +3828,10 @@ async function editFamousBookReview(id) {
                 alignleft aligncenter alignright alignjustify | \
                 bullist numlist outdent indent | removeformat | help',
       content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; font-size: 14px; }',
+      promotion: false,
+      branding: false,
+      base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',
+      suffix: '.min',
       setup: function(editor) {
         // Set content before editor is fully initialized
         editor.on('init', function() {

@@ -804,8 +804,8 @@ app.get('/', (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
-        <!-- TinyMCE Editor - 支持表格和图片 -->
-        <script src="https://cdn.tiny.cloud/1/1x8go7tqnj1rao7q5l4fwv1dkz2pg1z83edw2a4k5ffs004h/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+        <!-- TinyMCE Editor - 使用 jsDelivr CDN 的免费版本 -->
+        <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
         <!-- Marked.js - Markdown to HTML converter -->
         <script src="https://cdn.jsdelivr.net/npm/marked@11.0.0/marked.min.js"></script>
         <!-- Google Sign-In -->
