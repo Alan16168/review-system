@@ -14,11 +14,8 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Helper: Check if user is admin
 // ============================================================================
 function checkAdminRole(c: Context): boolean {
-  const user = c.get('user');
-  if (!user || user.role !== 'admin') {
-    return false;
-  }
-  return true;
+  const userRole = c.req.header('X-User-Role');
+  return userRole === 'admin';
 }
 
 // ============================================================================

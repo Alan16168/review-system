@@ -15618,8 +15618,8 @@ async function saveUISettings(event) {
       }
       
       updates.push({
-        setting_key: key,
-        setting_value: newValue
+        key: key,
+        value: newValue
       });
     }
 
