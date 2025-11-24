@@ -3457,7 +3457,11 @@ async function editDocumentReview(id) {
             <textarea id="edit-doc-editor" 
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
                       rows="20"
-                      required>${escapeHtml(review.description || '')}</textarea>
+                      required></textarea>
+            <p class="mt-2 text-sm text-gray-500">
+              <i class="fas fa-info-circle mr-1"></i>
+              支持纯文本编辑，保存后将自动格式化为段落
+            </p>
           </div>
           
           <div class="flex justify-end space-x-3">
@@ -3474,13 +3478,35 @@ async function editDocumentReview(id) {
       </div>
     `;
     
+    // Convert HTML to plain text AFTER rendering the textarea
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = review.description || '';
+    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Set the textarea value
+    const textarea = document.getElementById('edit-doc-editor');
+    if (textarea) {
+      textarea.value = plainText;
+    }
+    
     // Attach form submit handler (simple textarea only, no TinyMCE)
     document.getElementById('edit-document-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       
       try {
         const title = document.getElementById('edit-title').value;
-        const content = document.getElementById('edit-doc-editor').value;
+        const plainText = document.getElementById('edit-doc-editor').value;
+        
+        // Convert plain text to HTML with proper formatting
+        const content = plainText
+          .split('\n\n')
+          .map(para => {
+            const lines = para.trim().split('\n').filter(line => line.trim());
+            if (lines.length === 0) return '';
+            return '<p>' + lines.map(line => escapeHtml(line)).join('<br>') + '</p>';
+          })
+          .filter(p => p)
+          .join('\n');
         
         await axios.put(`/api/reviews/${id}`, {
           title,
@@ -3710,11 +3736,6 @@ async function editFamousBookReview(id) {
     console.log('Edit review - Review object:', review);
     console.log('Edit review - Description:', review.description);
     
-    // Convert HTML to plain text for editing
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = review.description || '';
-    const plainText = tempDiv.textContent || tempDiv.innerText || '';
-    
     const container = document.getElementById('famous-books-container');
     container.innerHTML = `
       <div class="p-6">
@@ -3746,7 +3767,7 @@ async function editFamousBookReview(id) {
             </label>
             <textarea id="edit-content-textarea" rows="20"
                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
-                      placeholder="${i18n.t('enterContent') || '请输入内容...'}">${escapeHtml(plainText)}</textarea>
+                      placeholder="${i18n.t('enterContent') || '请输入内容...'}"></textarea>
             <p class="mt-2 text-sm text-gray-500">
               <i class="fas fa-info-circle mr-1"></i>
               支持纯文本编辑，保存后将自动格式化为段落
@@ -3767,6 +3788,17 @@ async function editFamousBookReview(id) {
         </div>
       </div>
     `;
+    
+    // Convert HTML to plain text AFTER rendering the textarea
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = review.description || '';
+    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Set the textarea value
+    const textarea = document.getElementById('edit-content-textarea');
+    if (textarea) {
+      textarea.value = plainText;
+    }
   } catch (error) {
     console.error('Edit error:', error);
     showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
