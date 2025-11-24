@@ -15680,6 +15680,14 @@ async function saveUISettings(event) {
     
     // Reload settings
     await loadUISettings();
+    
+    // Reload dynamic UI settings to update i18n translations
+    await loadDynamicUISettings();
+    
+    // If currently on home page, re-render to show updated content
+    if (currentView === 'home') {
+      await showHomePage();
+    }
   } catch (error) {
     console.error('Failed to save UI settings:', error);
     const errorMsg = error.response?.data?.error || (typeof i18n !== 'undefined' && i18n.t ? i18n.t('saveFailed') : '保存失败');
