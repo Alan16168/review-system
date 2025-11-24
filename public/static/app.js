@@ -502,7 +502,7 @@ async function showHomePage() {
               <h3 class="font-bold text-lg mb-4">${i18n.t('product')}</h3>
               <ul class="space-y-2 text-gray-400 text-sm">
                 <li><a href="#" class="hover:text-white transition">${i18n.t('features')}</a></li>
-                <li><a href="#" class="hover:text-white transition">${i18n.t('pricing')}</a></li>
+                <li><a href="#" onclick="showPricingPlans(); return false;" class="hover:text-white transition">${i18n.t('pricingPlans')}</a></li>
                 <li><a href="#resources" class="hover:text-white transition">${i18n.t('resources')}</a></li>
               </ul>
             </div>
@@ -15446,6 +15446,32 @@ async function showUISettingsManagement(container) {
           <p class="mt-1 text-sm text-gray-500">${i18n.t('contactEmailDesc') || '联系邮箱地址'}</p>
         </div>
 
+        <!-- Terms of Service -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-file-contract mr-2"></i>${i18n.t('uiTermsOfService')}
+          </label>
+          <textarea id="ui-terms-of-service" required rows="6" maxlength="500"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    placeholder="${i18n.t('uiTermsOfService')}"></textarea>
+          <p class="mt-1 text-sm text-gray-500">
+            <span id="terms-char-count">0</span>/500 ${i18n.t('maxCharacters') || '字符'}
+          </p>
+        </div>
+
+        <!-- Privacy Policy -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-shield-alt mr-2"></i>${i18n.t('uiPrivacyPolicy')}
+          </label>
+          <textarea id="ui-privacy-policy" required rows="10" maxlength="800"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    placeholder="${i18n.t('uiPrivacyPolicy')}"></textarea>
+          <p class="mt-1 text-sm text-gray-500">
+            <span id="privacy-char-count">0</span>/800 ${i18n.t('maxCharacters') || '字符'}
+          </p>
+        </div>
+
         <!-- Save Button -->
         <div class="flex justify-end">
           <button type="submit" 
@@ -15547,6 +15573,39 @@ function populateUISettingsForm(language) {
   document.getElementById('ui-footer-info').value = getValue('ui_footer_company_info');
   document.getElementById('ui-team-description').value = getValue('ui_team_description');
   document.getElementById('ui-contact-email').value = getValue('ui_contact_email');
+  
+  // Terms and privacy with character count
+  const termsValue = getValue('ui_terms_of_service');
+  const privacyValue = getValue('ui_privacy_policy');
+  
+  const termsEl = document.getElementById('ui-terms-of-service');
+  const privacyEl = document.getElementById('ui-privacy-policy');
+  
+  if (termsEl) {
+    termsEl.value = termsValue;
+    updateCharCount('terms');
+    // Add input event listener for character count
+    termsEl.addEventListener('input', () => updateCharCount('terms'));
+  }
+  
+  if (privacyEl) {
+    privacyEl.value = privacyValue;
+    updateCharCount('privacy');
+    // Add input event listener for character count
+    privacyEl.addEventListener('input', () => updateCharCount('privacy'));
+  }
+}
+
+/**
+ * Update character count for terms/privacy fields
+ */
+function updateCharCount(fieldType) {
+  const field = document.getElementById(`ui-${fieldType === 'terms' ? 'terms-of-service' : 'privacy-policy'}`);
+  const counter = document.getElementById(`${fieldType}-char-count`);
+  
+  if (field && counter) {
+    counter.textContent = field.value.length;
+  }
 }
 
 async function saveUISettings(event) {
@@ -15570,7 +15629,9 @@ async function saveUISettings(event) {
     'ui_about_us_content': document.getElementById('ui-about-us').value,
     'ui_footer_company_info': document.getElementById('ui-footer-info').value,
     'ui_team_description': document.getElementById('ui-team-description').value,
-    'ui_contact_email': document.getElementById('ui-contact-email').value
+    'ui_contact_email': document.getElementById('ui-contact-email').value,
+    'ui_terms_of_service': document.getElementById('ui-terms-of-service').value,
+    'ui_privacy_policy': document.getElementById('ui-privacy-policy').value
   };
 
   // Show loading
@@ -19172,4 +19233,189 @@ if (document.readyState === 'loading') {
 } else {
   // DOM already loaded
   loadDynamicUISettings();
+}
+
+// ==================== Legal Documents & Pricing ====================
+
+/**
+ * Show Terms of Service modal
+ */
+async function showTerms() {
+  try {
+    const response = await axios.get('/api/system-settings/category/ui');
+    const settings = response.data.settings || [];
+    const termsSetting = settings.find(s => s.setting_key === 'ui_terms_of_service');
+    
+    const currentLang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) 
+      ? i18n.getCurrentLanguage() 
+      : 'zh';
+    
+    let termsText = '加载中...';
+    if (termsSetting) {
+      try {
+        const parsed = JSON.parse(termsSetting.setting_value);
+        termsText = parsed[currentLang] || parsed['zh'] || termsSetting.setting_value;
+      } catch {
+        termsText = termsSetting.setting_value;
+      }
+    }
+    
+    const modalHtml = `
+      <div id="terms-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+           onclick="if(event.target === this) closeModal('terms-modal')">
+        <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden">
+          <div class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6 flex justify-between items-center">
+            <h2 class="text-2xl font-bold">
+              <i class="fas fa-file-contract mr-2"></i>${i18n.t('termsOfService')}
+            </h2>
+            <button onclick="closeModal('terms-modal')" class="text-white hover:text-gray-200 transition">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          <div class="p-8 overflow-y-auto max-h-[calc(80vh-120px)]">
+            <div class="prose prose-sm max-w-none">
+              <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${termsText}</p>
+            </div>
+          </div>
+          <div class="bg-gray-50 p-4 text-center text-sm text-gray-600">
+            <p>${i18n.t('lastUpdated') || '最后更新'}: ${new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  } catch (error) {
+    console.error('Failed to load terms:', error);
+    showNotification('加载失败', 'error');
+  }
+}
+
+/**
+ * Show Privacy Policy modal
+ */
+async function showPrivacy() {
+  try {
+    const response = await axios.get('/api/system-settings/category/ui');
+    const settings = response.data.settings || [];
+    const privacySetting = settings.find(s => s.setting_key === 'ui_privacy_policy');
+    
+    const currentLang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) 
+      ? i18n.getCurrentLanguage() 
+      : 'zh';
+    
+    let privacyText = '加载中...';
+    if (privacySetting) {
+      try {
+        const parsed = JSON.parse(privacySetting.setting_value);
+        privacyText = parsed[currentLang] || parsed['zh'] || privacySetting.setting_value;
+      } catch {
+        privacyText = privacySetting.setting_value;
+      }
+    }
+    
+    const modalHtml = `
+      <div id="privacy-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+           onclick="if(event.target === this) closeModal('privacy-modal')">
+        <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden">
+          <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 flex justify-between items-center">
+            <h2 class="text-2xl font-bold">
+              <i class="fas fa-shield-alt mr-2"></i>${i18n.t('privacyPolicy')}
+            </h2>
+            <button onclick="closeModal('privacy-modal')" class="text-white hover:text-gray-200 transition">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          <div class="p-8 overflow-y-auto max-h-[calc(80vh-120px)]">
+            <div class="prose prose-sm max-w-none">
+              <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${privacyText}</p>
+            </div>
+          </div>
+          <div class="bg-gray-50 p-4 text-center text-sm text-gray-600">
+            <p>${i18n.t('lastUpdated') || '最后更新'}: ${new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  } catch (error) {
+    console.error('Failed to load privacy policy:', error);
+    showNotification('加载失败', 'error');
+  }
+}
+
+/**
+ * Show Pricing Plans modal
+ */
+async function showPricingPlans() {
+  try {
+    // Fetch subscription config from API
+    const response = await axios.get('/api/subscription/config');
+    const plans = response.data.plans || [];
+    
+    const modalHtml = `
+      <div id="pricing-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+           onclick="if(event.target === this) closeModal('pricing-modal')">
+        <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[80vh] overflow-hidden">
+          <div class="bg-gradient-to-r from-green-600 to-teal-600 text-white p-6 flex justify-between items-center">
+            <h2 class="text-2xl font-bold">
+              <i class="fas fa-tags mr-2"></i>${i18n.t('pricingPlans')}
+            </h2>
+            <button onclick="closeModal('pricing-modal')" class="text-white hover:text-gray-200 transition">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          <div class="p-8 overflow-y-auto max-h-[calc(80vh-100px)]">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              ${plans.map(plan => `
+                <div class="border-2 ${plan.tier === 'premium' ? 'border-indigo-500 shadow-lg scale-105' : 'border-gray-200'} rounded-xl p-6 ${plan.tier === 'premium' ? 'bg-gradient-to-br from-indigo-50 to-blue-50' : 'bg-white'}">
+                  ${plan.tier === 'premium' ? '<div class="text-center mb-2"><span class="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">推荐</span></div>' : ''}
+                  <h3 class="text-2xl font-bold text-gray-900 mb-2 text-center">${plan.name || plan.tier}</h3>
+                  <div class="text-center mb-6">
+                    <span class="text-4xl font-bold text-indigo-600">$${plan.price_usd || 0}</span>
+                    <span class="text-gray-600">/月</span>
+                  </div>
+                  <ul class="space-y-3 mb-6">
+                    <li class="flex items-start">
+                      <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                      <span class="text-gray-700">复盘次数: ${plan.review_limit === -1 ? '无限' : plan.review_limit}</span>
+                    </li>
+                    <li class="flex items-start">
+                      <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                      <span class="text-gray-700">模板访问: ${plan.template_limit === -1 ? '全部' : plan.template_limit + '个'}</span>
+                    </li>
+                    <li class="flex items-start">
+                      <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                      <span class="text-gray-700">团队支持: ${plan.team_support ? '是' : '否'}</span>
+                    </li>
+                    ${plan.ai_features ? '<li class="flex items-start"><i class="fas fa-check text-green-500 mr-2 mt-1"></i><span class="text-gray-700">AI 功能</span></li>' : ''}
+                  </ul>
+                  <button onclick="closeModal('pricing-modal'); ${currentUser ? 'showSubscriptionPage()' : 'showLogin()'}" 
+                          class="w-full py-3 ${plan.tier === 'premium' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-600 hover:bg-gray-700'} text-white rounded-lg font-semibold transition">
+                    ${currentUser ? (plan.tier === 'free' ? '当前计划' : '立即订阅') : '登录订阅'}
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  } catch (error) {
+    console.error('Failed to load pricing plans:', error);
+    showNotification('加载价格方案失败', 'error');
+  }
+}
+
+/**
+ * Close modal by ID
+ */
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.remove();
+  }
 }
