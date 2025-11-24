@@ -26,6 +26,89 @@
 
 ---
 
+## 🔧 V8.6.1 修复 - 复盘列表分类问题 (2025-11-24)
+
+**部署信息**:
+- **部署时间**: 2025-11-24 06:00 UTC
+- **部署 URL**: https://006498b5.review-system.pages.dev
+- **主域名**: https://review-system.pages.dev (自动同步)
+- **Git Tag**: v8.6.1
+- **Worker Bundle**: 392.42 kB
+
+**核心修复**:
+
+**1. 复盘列表分类混淆问题** ✅
+- **问题**: "名著复盘"和"文档复盘"出现在"我的复盘"和"公开复盘"列表中
+- **根本原因**: 
+  - 获取复盘列表的 SQL 查询没有过滤 `review_type` 字段
+  - 导致所有类型的复盘（普通、名著、文档）都混在一起显示
+- **影响**: 用户在"我的复盘"页面看到不应该出现的名著复盘和文档复盘记录
+
+**2. 解决方案** ✅
+- **修复"我的复盘"列表** (`GET /api/reviews/`)
+  ```sql
+  -- 添加过滤条件
+  AND (r.review_type IS NULL OR r.review_type NOT IN ('famous-book', 'document'))
+  ```
+- **修复"公开复盘"列表** (`GET /api/reviews/public`)
+  ```sql
+  -- 添加过滤条件
+  AND (r.review_type IS NULL OR r.review_type NOT IN ('famous-book', 'document'))
+  ```
+
+**3. 复盘类型说明** ✅
+- **普通复盘** (`review_type IS NULL` 或其他值)
+  - 显示在"我的复盘"列表
+  - 显示在"公开复盘"列表（如果是公开的）
+  - 基于模板（灵魂9问、个人年复盘等）
+- **名著复盘** (`review_type = 'famous-book'`)
+  - **仅显示在"名著复盘"列表**
+  - 不显示在"我的复盘"和"公开复盘"中
+  - 通过 AI 分析书籍或视频生成
+- **文档复盘** (`review_type = 'document'`)
+  - **仅显示在"文档复盘"列表**
+  - 不显示在"我的复盘"和"公开复盘"中
+  - 通过 AI 分析文档生成
+
+**技术实现**:
+```typescript
+// 修复前（错误）
+const query = `
+  SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
+  FROM reviews r
+  LEFT JOIN users u ON r.user_id = u.id
+  LEFT JOIN teams t ON r.team_id = t.id
+  WHERE r.user_id = ?
+  ORDER BY r.updated_at DESC
+`;
+
+// 修复后（正确）
+const query = `
+  SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
+  FROM reviews r
+  LEFT JOIN users u ON r.user_id = u.id
+  LEFT JOIN teams t ON r.team_id = t.id
+  WHERE r.user_id = ?
+  AND (r.review_type IS NULL OR r.review_type NOT IN ('famous-book', 'document'))
+  ORDER BY r.updated_at DESC
+`;
+```
+
+**用户体验改进**:
+- ✅ "我的复盘"列表只显示普通复盘
+- ✅ "公开复盘"列表只显示普通的公开复盘
+- ✅ "名著复盘"列表只显示名著复盘
+- ✅ "文档复盘"列表只显示文档复盘
+- ✅ 四个列表完全独立，互不干扰
+
+**测试验证**:
+- ✅ 创建普通复盘 → 只在"我的复盘"显示
+- ✅ 创建名著复盘 → 只在"名著复盘"显示
+- ✅ 创建文档复盘 → 只在"文档复盘"显示
+- ✅ 公开复盘 → 只在"公开复盘"显示（不包含名著和文档）
+
+---
+
 ## 🔧 V8.6.0 功能增强 - 字幕预览确认功能 (2025-11-24)
 
 **部署信息**:
