@@ -2745,13 +2745,37 @@ async function analyzeFamousBook(inputType, content, language) {
     showFamousBookResult(result, inputType, content);
   } catch (error) {
     console.error('Analyze error:', error);
+    
+    // Extract error details
+    const errorData = error.response?.data;
+    const mainError = errorData?.error || i18n.t('operationFailed');
+    const errorsList = errorData?.errors || [];
+    
+    // Create detailed error message
+    let errorDetails = '';
+    if (errorsList.length > 0) {
+      errorDetails = '<div class="mt-4 text-left bg-red-50 p-4 rounded-lg"><p class="font-semibold mb-2">错误详情：</p><ul class="list-disc list-inside text-sm space-y-1">';
+      errorsList.forEach(err => {
+        errorDetails += `<li>${err}</li>`;
+      });
+      errorDetails += '</ul></div>';
+    }
+    
     container.innerHTML = `
       <div class="p-8 text-center">
         <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
-        <p class="text-red-600">${error.response?.data?.error || i18n.t('operationFailed')}</p>
-        <p class="text-sm text-gray-500 mt-2">${error.response?.data?.details || ''}</p>
+        <p class="text-red-600 text-lg font-semibold mb-2">${mainError}</p>
+        ${errorDetails}
+        <div class="mt-6 text-sm text-gray-600 bg-blue-50 p-4 rounded-lg text-left">
+          <p class="font-semibold mb-2"><i class="fas fa-info-circle mr-2"></i>建议：</p>
+          <ul class="list-disc list-inside space-y-1">
+            <li>系统会自动尝试多个 AI 服务（Gemini → OpenAI → Claude → Genspark）</li>
+            <li>如果所有服务都失败，请稍后再试</li>
+            <li>或联系管理员检查 API 密钥配置状态</li>
+          </ul>
+        </div>
         <button onclick="loadFamousBooksReviews()"
-                class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                class="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
           ${i18n.t('backToForm')}
         </button>
       </div>

@@ -13,6 +13,8 @@ type Bindings = {
   DB: D1Database;
   YOUTUBE_API_KEY?: string;
   GEMINI_API_KEY?: string;
+  OPENAI_API_KEY?: string;
+  CLAUDE_API_KEY?: string;
   GENSPARK_API_KEY?: string;
 };
 
@@ -360,42 +362,168 @@ reviews.post('/famous-books/analyze', async (c) => {
       }
     }
     
-    // Fallback to Gemini API for books or if video analysis failed
-    const GEMINI_API_KEY = c.env.GEMINI_API_KEY;
-    if (!GEMINI_API_KEY) {
-      return c.json({ error: 'Gemini API key not configured' }, 500);
-    }
-    
+    // Multi-tier AI service fallback strategy
     // For books or other text content
     const fullPrompt = inputType === 'book' 
       ? `${prompt}\n\n书籍名称：${content}`
       : `${prompt}\n\n内容：${content}`;
     
-    // Call Gemini API
-    const model = 'gemini-2.0-flash-exp';
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ 
-            role: 'user',
-            parts: [{ text: fullPrompt }]
-          }]
-        })
-      }
-    );
+    const errors: string[] = [];
     
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      throw new Error(`Gemini API error: ${geminiResponse.statusText} - ${errorText}`);
+    // Tier 1: Try Gemini API first (fastest and cheapest)
+    const GEMINI_API_KEY = c.env.GEMINI_API_KEY;
+    if (GEMINI_API_KEY) {
+      try {
+        const model = 'gemini-2.0-flash-exp';
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ 
+                role: 'user',
+                parts: [{ text: fullPrompt }]
+              }]
+            })
+          }
+        );
+        
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+          return c.json({ result, source: 'gemini' });
+        } else {
+          const errorText = await geminiResponse.text();
+          errors.push(`Gemini: ${geminiResponse.status} ${geminiResponse.statusText}`);
+          console.log('Gemini API failed, trying OpenAI...', errorText);
+        }
+      } catch (geminiError: any) {
+        errors.push(`Gemini: ${geminiError.message}`);
+        console.log('Gemini error, trying OpenAI:', geminiError);
+      }
     }
     
-    const geminiData = await geminiResponse.json();
-    const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+    // Tier 2: Try OpenAI GPT-4 (high quality)
+    const OPENAI_API_KEY = c.env.OPENAI_API_KEY;
+    if (OPENAI_API_KEY) {
+      try {
+        const openaiResponse = await fetch(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'user', content: fullPrompt }
+              ],
+              temperature: 0.7,
+              max_tokens: 4000
+            })
+          }
+        );
+        
+        if (openaiResponse.ok) {
+          const openaiData = await openaiResponse.json();
+          const result = openaiData.choices?.[0]?.message?.content || 'No response from OpenAI';
+          return c.json({ result, source: 'openai' });
+        } else {
+          const errorText = await openaiResponse.text();
+          errors.push(`OpenAI: ${openaiResponse.status} ${openaiResponse.statusText}`);
+          console.log('OpenAI API failed, trying Claude...', errorText);
+        }
+      } catch (openaiError: any) {
+        errors.push(`OpenAI: ${openaiError.message}`);
+        console.log('OpenAI error, trying Claude:', openaiError);
+      }
+    }
     
-    return c.json({ result, source: 'gemini' });
+    // Tier 3: Try Claude (high quality, Anthropic)
+    const CLAUDE_API_KEY = c.env.CLAUDE_API_KEY;
+    if (CLAUDE_API_KEY) {
+      try {
+        const claudeResponse = await fetch(
+          'https://api.anthropic.com/v1/messages',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': CLAUDE_API_KEY,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+              model: 'claude-3-5-sonnet-20241022',
+              max_tokens: 4000,
+              messages: [
+                { role: 'user', content: fullPrompt }
+              ]
+            })
+          }
+        );
+        
+        if (claudeResponse.ok) {
+          const claudeData = await claudeResponse.json();
+          const result = claudeData.content?.[0]?.text || 'No response from Claude';
+          return c.json({ result, source: 'claude' });
+        } else {
+          const errorText = await claudeResponse.text();
+          errors.push(`Claude: ${claudeResponse.status} ${claudeResponse.statusText}`);
+          console.log('Claude API failed, trying Genspark...', errorText);
+        }
+      } catch (claudeError: any) {
+        errors.push(`Claude: ${claudeError.message}`);
+        console.log('Claude error, trying Genspark:', claudeError);
+      }
+    }
+    
+    // Tier 4: Try Genspark as last resort (already tried earlier for video, but retry for text)
+    const GENSPARK_API_KEY = c.env.GENSPARK_API_KEY;
+    if (GENSPARK_API_KEY) {
+      try {
+        const gensparkResponse = await fetch(
+          'https://www.genspark.ai/api/copilot/query',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${GENSPARK_API_KEY}`
+            },
+            body: JSON.stringify({
+              query: prompt,
+              context: content,
+              mode: 'detailed'
+            })
+          }
+        );
+        
+        if (gensparkResponse.ok) {
+          const gensparkData = await gensparkResponse.json();
+          const result = gensparkData.answer || gensparkData.result || 'No response from Genspark';
+          return c.json({ result, source: 'genspark' });
+        } else {
+          const errorText = await gensparkResponse.text();
+          errors.push(`Genspark: ${gensparkResponse.status} ${gensparkResponse.statusText}`);
+          console.log('Genspark API failed:', errorText);
+        }
+      } catch (gensparkError: any) {
+        errors.push(`Genspark: ${gensparkError.message}`);
+        console.log('Genspark error:', gensparkError);
+      }
+    }
+    
+    // All AI services failed
+    const errorMessage = errors.length > 0 
+      ? `所有 AI 服务暂时不可用。错误详情：${errors.join('; ')}`
+      : 'AI 服务未配置。请联系管理员添加 API 密钥（Gemini/OpenAI/Claude/Genspark）。';
+    
+    return c.json({ 
+      error: errorMessage,
+      errors: errors
+    }, 503);
   } catch (error) {
     console.error('Analyze famous book error:', error);
     return c.json({ error: error.message || 'Internal server error' }, 500);

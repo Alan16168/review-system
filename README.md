@@ -26,6 +26,88 @@
 
 ---
 
+## 🔧 V8.5.0 重大更新 - AI 服务多层降级策略 (2025-11-24)
+
+**部署信息**:
+- **部署时间**: 2025-11-24 04:30 UTC
+- **部署 URL**: https://f0f085b3.review-system.pages.dev
+- **主域名**: https://review-system.pages.dev (自动同步)
+- **Git Tag**: v8.5.0
+- **Worker Bundle**: 389.49 kB
+
+**核心改进**:
+
+**1. 名著复盘/文档复盘 AI 服务多层降级** ✅
+- **问题**: Gemini API 配额超限错误（429 Too Many Requests）导致功能完全不可用
+- **解决方案**: 实现四层 AI 服务自动降级
+  - **Tier 1 - Gemini API**: gemini-2.0-flash-exp（最快最便宜）
+  - **Tier 2 - OpenAI API**: gpt-4o-mini（高质量备选）
+  - **Tier 3 - Claude API**: claude-3-5-sonnet（Anthropic高质量）
+  - **Tier 4 - Genspark API**: 最终后备方案
+- **智能降级**: 当某个服务失败时自动尝试下一个，确保功能可用性
+- **错误处理**: 详细的错误日志和用户友好提示
+
+**2. YouTube 视频分析功能保留** ✅
+- **三步 API 流程**: YouTube Data API → YouTube Transcript API → AI 分析
+- **多语言字幕**: 优先中文字幕，回退英文
+- **完整元数据**: 标题、描述、统计数据、字幕内容
+- **AI 分析整合**: 使用多层降级策略分析视频内容
+
+**3. 前端错误提示优化** ✅
+- **详细错误列表**: 显示每个 AI 服务的失败原因
+- **用户建议**: 提供明确的解决方案和建议
+- **错误卡片设计**: 红色背景卡片，清晰展示错误信息
+- **服务状态可见**: 用户可以看到系统尝试了哪些服务
+
+**4. 环境变量类型定义更新** ✅
+- **新增 API 密钥类型**:
+  ```typescript
+  type Bindings = {
+    DB: D1Database;
+    YOUTUBE_API_KEY?: string;
+    GEMINI_API_KEY?: string;
+    OPENAI_API_KEY?: string;    // 新增
+    CLAUDE_API_KEY?: string;    // 新增
+    GENSPARK_API_KEY?: string;
+  };
+  ```
+
+**技术实现**:
+- **降级策略**: 使用 try-catch 包裹每个 API 调用，失败时自动尝试下一个
+- **错误收集**: 收集所有 API 的错误信息，便于调试
+- **统一响应**: 所有 AI 服务返回统一的 JSON 格式 `{ result, source }`
+- **服务标识**: 返回的 `source` 字段标识使用的 AI 服务（gemini/openai/claude/genspark）
+
+**配置指南**:
+1. **Gemini API**: 访问 https://ai.google.dev/ 获取 API 密钥
+2. **OpenAI API**: 访问 https://platform.openai.com/api-keys 获取 API 密钥
+3. **Claude API**: 访问 https://console.anthropic.com/ 获取 API 密钥
+4. **Genspark API**: 联系管理员获取 API 密钥
+
+**环境变量设置**:
+```bash
+# 使用 wrangler 设置环境变量
+npx wrangler pages secret put GEMINI_API_KEY --project-name review-system
+npx wrangler pages secret put OPENAI_API_KEY --project-name review-system
+npx wrangler pages secret put CLAUDE_API_KEY --project-name review-system
+npx wrangler pages secret put GENSPARK_API_KEY --project-name review-system
+```
+
+**用户体验提升**:
+- 🚀 **高可用性**: 即使某个 AI 服务失败，系统仍可正常工作
+- 💰 **成本优化**: 优先使用便宜的服务，失败时才使用高级服务
+- 🔍 **透明度**: 用户可以看到系统使用了哪个 AI 服务
+- 📊 **可观测性**: 详细的错误日志便于问题诊断
+
+**测试验证**:
+- ✅ Gemini API 配额超限时自动降级到 OpenAI
+- ✅ 所有 AI 服务失败时显示友好错误提示
+- ✅ YouTube 视频分析功能正常工作
+- ✅ 前端错误提示清晰易懂
+- ✅ 生产环境部署成功
+
+---
+
 ## 🔧 V1.2.2 重大更新 - 下架状态视觉优化 + 智能排序 (2025-11-22)
 
 **部署信息**:
