@@ -82,60 +82,85 @@ async function analyzeYouTubeVideo(videoUrl: string, prompt: string, env: any): 
     }
   }
   
-  // Step 2: Try to get transcript using YouTubeTranscript API
+  // Step 2: Try to get transcript by parsing video page
   let transcript = '';
+  let transcriptLanguage = 'unknown';
+  
   try {
-    // Use a public transcript API service
-    const transcriptResponse = await fetch(
-      `https://www.youtube.com/api/timedtext?v=${videoId}&lang=zh-Hans&fmt=json3`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+    // Fetch the video page to extract caption tracks
+    const videoPageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
       }
-    );
+    });
     
-    if (transcriptResponse.ok) {
-      const transcriptData = await transcriptResponse.json();
-      if (transcriptData.events) {
-        transcript = transcriptData.events
-          .filter((event: any) => event.segs)
-          .map((event: any) => 
-            event.segs.map((seg: any) => seg.utf8).join('')
-          )
-          .join(' ');
+    if (videoPageResponse.ok) {
+      const pageHtml = await videoPageResponse.text();
+      
+      // Extract caption tracks from the page
+      const captionTracksMatch = pageHtml.match(/"captionTracks":\[([^\]]+)\]/);
+      
+      if (captionTracksMatch) {
+        const captionTracksJson = '[' + captionTracksMatch[1] + ']';
+        const captionTracks = JSON.parse(captionTracksJson);
+        
+        // Priority: zh-Hans (简体中文) -> zh-Hant (繁体中文) -> zh (中文) -> en (English)
+        const priorityLangs = ['zh-Hans', 'zh-Hant', 'zh', 'en'];
+        let selectedTrack = null;
+        
+        for (const lang of priorityLangs) {
+          selectedTrack = captionTracks.find((track: any) => 
+            track.languageCode === lang || track.languageCode?.startsWith(lang)
+          );
+          if (selectedTrack) {
+            transcriptLanguage = lang;
+            break;
+          }
+        }
+        
+        // If no preferred language found, use first available track
+        if (!selectedTrack && captionTracks.length > 0) {
+          selectedTrack = captionTracks[0];
+          transcriptLanguage = selectedTrack.languageCode || 'unknown';
+        }
+        
+        if (selectedTrack && selectedTrack.baseUrl) {
+          // Fetch the transcript using the base URL
+          const transcriptResponse = await fetch(selectedTrack.baseUrl);
+          
+          if (transcriptResponse.ok) {
+            const transcriptXml = await transcriptResponse.text();
+            
+            // Parse XML transcript (format: <text start="0.000" dur="2.000">Text here</text>)
+            const textMatches = transcriptXml.matchAll(/<text[^>]*>([^<]+)<\/text>/g);
+            const transcriptParts: string[] = [];
+            
+            for (const match of textMatches) {
+              // Decode HTML entities and clean up text
+              const text = match[1]
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/\n/g, ' ')
+                .trim();
+              
+              if (text) {
+                transcriptParts.push(text);
+              }
+            }
+            
+            transcript = transcriptParts.join(' ');
+            
+            console.log(`Transcript fetched successfully. Language: ${transcriptLanguage}, Length: ${transcript.length} characters`);
+          }
+        }
       }
     }
   } catch (error) {
     console.error('Failed to fetch transcript:', error);
-  }
-  
-  // If no Chinese transcript, try English
-  if (!transcript) {
-    try {
-      const transcriptResponse = await fetch(
-        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
-        {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        }
-      );
-      
-      if (transcriptResponse.ok) {
-        const transcriptData = await transcriptResponse.json();
-        if (transcriptData.events) {
-          transcript = transcriptData.events
-            .filter((event: any) => event.segs)
-            .map((event: any) => 
-              event.segs.map((seg: any) => seg.utf8).join('')
-            )
-            .join(' ');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch English transcript:', error);
-    }
   }
   
   // Step 3: Use AI to analyze the content
@@ -152,9 +177,9 @@ async function analyzeYouTubeVideo(videoUrl: string, prompt: string, env: any): 
   }
   
   if (transcript) {
-    context += `【视频字幕/文稿】\n${transcript.substring(0, 50000)}\n\n`;
+    context += `【视频字幕/文稿】（语言：${transcriptLanguage}，字数：${transcript.length}）\n${transcript.substring(0, 50000)}\n\n`;
   } else {
-    context += `【注意】无法获取视频字幕，仅基于视频信息进行分析。\n\n`;
+    context += `【注意】此视频没有可用的字幕（可能是视频创作者未添加字幕，或字幕暂时无法获取）。\n分析将仅基于视频标题、描述和其他元数据进行。如果需要更准确的分析，建议使用带有字幕的视频。\n\n`;
   }
   
   // Call Gemini API
