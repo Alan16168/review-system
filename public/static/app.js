@@ -15681,13 +15681,21 @@ async function saveUISettings(event) {
     // Reload settings
     await loadUISettings();
     
-    // Reload dynamic UI settings to update i18n translations
+    // Reload dynamic UI settings to update i18n translations globally
     await loadDynamicUISettings();
     
-    // If currently on home page, re-render to show updated content
-    if (currentView === 'home') {
-      await showHomePage();
+    // Update page title immediately
+    const systemTitle = i18n.t('systemTitle');
+    if (systemTitle) {
+      document.title = systemTitle;
+      const pageTitleEl = document.getElementById('page-title');
+      if (pageTitleEl) {
+        pageTitleEl.textContent = systemTitle;
+      }
     }
+    
+    // Note: Changes will be visible when user navigates to home page
+    showNotification('界面设置已更新，返回首页即可看到最新内容', 'success');
   } catch (error) {
     console.error('Failed to save UI settings:', error);
     const errorMsg = error.response?.data?.error || (typeof i18n !== 'undefined' && i18n.t ? i18n.t('saveFailed') : '保存失败');
@@ -19414,10 +19422,16 @@ async function showPricingPlans() {
                     <span class="text-gray-700">全部模板访问</span>
                   </li>
                 </ul>
-                <button onclick="closeModal('pricing-modal'); ${currentUser ? 'showSubscriptionPage()' : 'showLogin()'}" 
-                        class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
-                  ${currentUser ? '立即订阅' : '登录订阅'}
-                </button>
+                <div class="flex gap-2">
+                  <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('premium', ${premiumPlan.price_usd || 20})` : 'showLogin()'}" 
+                          class="flex-1 py-3 bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 rounded-lg font-semibold transition">
+                    <i class="fas fa-shopping-cart mr-2"></i>${currentUser ? '加入购物车' : '登录'}
+                  </button>
+                  <button onclick="closeModal('pricing-modal'); ${currentUser ? `quickSubscribe('premium', ${premiumPlan.price_usd || 20})` : 'showLogin()'}" 
+                          class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
+                    ${currentUser ? '立即订阅' : '登录订阅'}
+                  </button>
+                </div>
               </div>
               
               <!-- 超级会员 -->
@@ -19454,10 +19468,16 @@ async function showPricingPlans() {
                     <span class="text-gray-700">更多高级功能</span>
                   </li>
                 </ul>
-                <button onclick="closeModal('pricing-modal'); ${currentUser ? 'showSubscriptionPage()' : 'showLogin()'}" 
-                        class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition">
-                  ${currentUser ? '立即订阅' : '登录订阅'}
-                </button>
+                <div class="flex gap-2">
+                  <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('super', ${superPlan.price_usd || 120})` : 'showLogin()'}" 
+                          class="flex-1 py-3 bg-white border-2 border-purple-600 text-purple-600 hover:bg-purple-50 rounded-lg font-semibold transition">
+                    <i class="fas fa-shopping-cart mr-2"></i>${currentUser ? '加入购物车' : '登录'}
+                  </button>
+                  <button onclick="closeModal('pricing-modal'); ${currentUser ? `quickSubscribe('super', ${superPlan.price_usd || 120})` : 'showLogin()'}" 
+                          class="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition">
+                    ${currentUser ? '立即订阅' : '登录订阅'}
+                  </button>
+                </div>
               </div>
             </div>
             <div class="mt-6 text-center text-sm text-gray-600">
@@ -19482,5 +19502,137 @@ function closeModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
     modal.remove();
+  }
+}
+
+/**
+ * Add subscription to cart
+ */
+async function addToCart(tier, price) {
+  if (!currentUser) {
+    showNotification('请先登录', 'error');
+    showLogin();
+    return;
+  }
+  
+  try {
+    // Add subscription to cart
+    await axios.post('/api/cart/add', {
+      item_type: 'subscription',
+      item_id: tier,
+      item_name: tier === 'premium' ? '高级会员年费' : '超级会员年费',
+      price_usd: price,
+      quantity: 1
+    });
+    
+    showNotification('已加入购物车', 'success');
+    await updateCartCount();
+  } catch (error) {
+    console.error('Add to cart error:', error);
+    showNotification(error.response?.data?.error || '加入购物车失败', 'error');
+  }
+}
+
+/**
+ * Quick subscribe - Direct payment
+ */
+async function quickSubscribe(tier, price) {
+  if (!currentUser) {
+    showNotification('请先登录', 'error');
+    showLogin();
+    return;
+  }
+  
+  // Show confirmation dialog
+  const tierName = tier === 'premium' ? '高级会员' : '超级会员';
+  const confirmed = confirm(`确认订阅${tierName}吗？\n\n价格：$${price}\n有效期：365天`);
+  
+  if (!confirmed) {
+    return;
+  }
+  
+  try {
+    // Create order directly
+    const orderResponse = await axios.post('/api/payment/subscription/order', {
+      tier: tier,
+      price_usd: price
+    });
+    
+    const orderId = orderResponse.data.order_id;
+    const paypalOrderId = orderResponse.data.paypal_order_id;
+    
+    // Show PayPal payment dialog
+    showPayPalPayment(orderId, paypalOrderId, tier);
+  } catch (error) {
+    console.error('Quick subscribe error:', error);
+    showNotification(error.response?.data?.error || '订阅失败', 'error');
+  }
+}
+
+/**
+ * Show PayPal payment dialog
+ */
+function showPayPalPayment(orderId, paypalOrderId, tier) {
+  const modalHtml = `
+    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         onclick="if(event.target === this) closeModal('payment-modal')">
+      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+          <i class="fas fa-credit-card mr-2"></i>完成支付
+        </h2>
+        <div class="mb-6">
+          <p class="text-gray-600 mb-2">订阅类型：${tier === 'premium' ? '高级会员' : '超级会员'}</p>
+          <p class="text-gray-600 mb-4">订单号：${orderId}</p>
+        </div>
+        <div id="paypal-button-container"></div>
+        <button onclick="closeModal('payment-modal')" 
+                class="w-full mt-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+          取消
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // Initialize PayPal button
+  if (typeof paypal !== 'undefined') {
+    paypal.Buttons({
+      createOrder: function() {
+        return paypalOrderId;
+      },
+      onApprove: async function(data) {
+        try {
+          // Capture payment
+          const response = await axios.post('/api/payment/subscription/capture', {
+            order_id: orderId,
+            paypal_order_id: data.orderID
+          });
+          
+          if (response.data.success) {
+            closeModal('payment-modal');
+            showNotification('支付成功！您的订阅已激活', 'success');
+            
+            // Reload user data to reflect subscription update
+            const userResponse = await axios.get('/api/auth/me');
+            currentUser = userResponse.data.user;
+            
+            // Refresh the page if on dashboard
+            if (currentView === 'dashboard') {
+              showDashboard();
+            }
+          }
+        } catch (error) {
+          console.error('Payment capture error:', error);
+          showNotification(error.response?.data?.error || '支付失败', 'error');
+        }
+      },
+      onError: function(err) {
+        console.error('PayPal error:', err);
+        showNotification('支付出错，请重试', 'error');
+      }
+    }).render('#paypal-button-container');
+  } else {
+    showNotification('PayPal 未加载，请刷新页面重试', 'error');
   }
 }
