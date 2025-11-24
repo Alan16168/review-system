@@ -15707,7 +15707,7 @@ async function saveUISettings(event) {
     } else if (currentView === 'dashboard') {
       await showDashboard();
     } else if (currentView === 'admin') {
-      await showAdminPanel();
+      await showAdmin();
     } else if (currentView === 'my-documents') {
       await showMyDocuments();
     } else {
