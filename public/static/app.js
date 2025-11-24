@@ -8574,6 +8574,11 @@ function showAdminCategory(category) {
                       data-subtab="keywords">
                 <i class="fas fa-key mr-2"></i>${i18n.t('keywordsManagement')}
               </button>
+              <button onclick="showAdminSubTab('uiSettings')" 
+                      class="admin-subtab py-3 px-1 border-b-2 font-medium"
+                      data-subtab="uiSettings">
+                <i class="fas fa-palette mr-2"></i>${i18n.t('uiSettings')}
+              </button>
             ` : ''}
           </nav>
         </div>
@@ -8681,6 +8686,9 @@ async function showAdminSubTab(subtab) {
       break;
     case 'keywords':
       await showKeywordsManagement(content);
+      break;
+    case 'uiSettings':
+      await showUISettingsManagement(content);
       break;
     case 'aiSettings':
       await showAISettingsManagement(content);
@@ -15377,6 +15385,267 @@ async function toggleKeywordStatus(id) {
   } catch (error) {
     console.error('Failed to toggle keyword status:', error);
     showNotification(error.response?.data?.error || i18n.t('operationFailed') || '操作失败', 'error');
+  }
+}
+
+// ==================== UI Settings Management ====================
+
+async function showUISettingsManagement(container) {
+  container.innerHTML = `
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800">
+          <i class="fas fa-palette mr-2"></i>${i18n.t('uiSettings')}
+        </h2>
+      </div>
+
+      <!-- Language Selector -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">${i18n.t('language')}</label>
+        <select id="ui-settings-language" onchange="loadUISettings()" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+          <option value="zh">简体中文 (Simplified Chinese)</option>
+          <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
+          <option value="en">English</option>
+          <option value="fr">Français (French)</option>
+          <option value="es">Español (Spanish)</option>
+          <option value="ja">日本語 (Japanese)</option>
+        </select>
+      </div>
+
+      <!-- UI Settings Form -->
+      <form id="ui-settings-form" onsubmit="saveUISettings(event)" class="space-y-6">
+        <!-- System Title -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-heading mr-2"></i>${i18n.t('uiSystemTitle')}
+          </label>
+          <input type="text" id="ui-system-title" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('uiSystemTitle')}">
+          <p class="mt-1 text-sm text-gray-500">${i18n.t('displayedInHeader') || '显示在页面头部和浏览器标签页'}</p>
+        </div>
+
+        <!-- Homepage Hero Title -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-star mr-2"></i>${i18n.t('uiHomepageHeroTitle')}
+          </label>
+          <input type="text" id="ui-hero-title" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('uiHomepageHeroTitle')}">
+          <p class="mt-1 text-sm text-gray-500">${i18n.t('mainTitleOnHomepage') || '首页主标题'}</p>
+        </div>
+
+        <!-- Homepage Hero Subtitle -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-align-center mr-2"></i>${i18n.t('uiHomepageHeroSubtitle')}
+          </label>
+          <input type="text" id="ui-hero-subtitle" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('uiHomepageHeroSubtitle')}">
+          <p class="mt-1 text-sm text-gray-500">${i18n.t('subtitleOnHomepage') || '首页副标题'}</p>
+        </div>
+
+        <!-- About Us Content -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-info-circle mr-2"></i>${i18n.t('uiAboutUsContent')}
+          </label>
+          <textarea id="ui-about-us" required rows="4"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    placeholder="${i18n.t('uiAboutUsContent')}"></textarea>
+          <p class="mt-1 text-sm text-gray-500">${i18n.t('aboutUsSectionContent') || '关于我们部分的内容'}</p>
+        </div>
+
+        <!-- Footer Company Info -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-building mr-2"></i>${i18n.t('uiFooterCompanyInfo')}
+          </label>
+          <input type="text" id="ui-footer-info" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('uiFooterCompanyInfo')}">
+          <p class="mt-1 text-sm text-gray-500">${i18n.t('footerCopyrightInfo') || '页脚版权信息'}</p>
+        </div>
+
+        <!-- Save Button -->
+        <div class="flex justify-end">
+          <button type="submit" 
+                  class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+            <i class="fas fa-save mr-2"></i>${i18n.t('save')}
+          </button>
+        </div>
+      </form>
+
+      <!-- Loading Overlay -->
+      <div id="ui-settings-loading" class="hidden absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+        <i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i>
+      </div>
+    </div>
+  `;
+
+  // Set current language as default
+  const currentLang = i18n.getCurrentLanguage();
+  const langSelect = document.getElementById('ui-settings-language');
+  if (langSelect && currentLang) {
+    langSelect.value = currentLang;
+  }
+
+  await loadUISettings();
+}
+
+let currentUISettings = {};
+
+async function loadUISettings() {
+  console.log('Loading UI settings...');
+  try {
+    // Check if user is logged in
+    if (!currentUser) {
+      showNotification('请先登录', 'error');
+      showLogin();
+      return;
+    }
+
+    const language = document.getElementById('ui-settings-language')?.value || 'zh';
+    
+    // Show loading
+    const loadingEl = document.getElementById('ui-settings-loading');
+    if (loadingEl) loadingEl.classList.remove('hidden');
+
+    // Fetch all UI settings
+    const response = await axios.get('/api/system-settings/category/ui', {
+      headers: {
+        'X-User-ID': currentUser.id,
+        'X-User-Role': currentUser.role
+      }
+    });
+
+    const settings = response.data.settings || [];
+    console.log('Loaded UI settings:', settings.length);
+    
+    // Store settings
+    currentUISettings = {};
+    settings.forEach(setting => {
+      currentUISettings[setting.setting_key] = setting;
+    });
+
+    // Populate form with current language values
+    populateUISettingsForm(language);
+
+    // Hide loading
+    if (loadingEl) loadingEl.classList.add('hidden');
+  } catch (error) {
+    console.error('Failed to load UI settings:', error);
+    const errorMsg = i18n.t('loadError') || '加载失败';
+    showNotification(errorMsg, 'error');
+    
+    // Hide loading
+    const loadingEl = document.getElementById('ui-settings-loading');
+    if (loadingEl) loadingEl.classList.add('hidden');
+  }
+}
+
+function populateUISettingsForm(language) {
+  // Helper function to get language-specific value
+  const getValue = (key) => {
+    const setting = currentUISettings[key];
+    if (!setting) return '';
+    
+    // Try to parse as JSON for multi-language support
+    try {
+      const parsed = JSON.parse(setting.setting_value);
+      return parsed[language] || parsed['zh'] || setting.setting_value;
+    } catch {
+      // If not JSON, return raw value
+      return setting.setting_value;
+    }
+  };
+
+  // Populate form fields
+  document.getElementById('ui-system-title').value = getValue('ui_system_title');
+  document.getElementById('ui-hero-title').value = getValue('ui_homepage_hero_title');
+  document.getElementById('ui-hero-subtitle').value = getValue('ui_homepage_hero_subtitle');
+  document.getElementById('ui-about-us').value = getValue('ui_about_us_content');
+  document.getElementById('ui-footer-info').value = getValue('ui_footer_company_info');
+}
+
+async function saveUISettings(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  
+  // Check if user is logged in
+  if (!currentUser) {
+    showNotification('请先登录', 'error');
+    showLogin();
+    return;
+  }
+
+  const language = document.getElementById('ui-settings-language').value;
+  
+  // Get form values
+  const formValues = {
+    'ui_system_title': document.getElementById('ui-system-title').value,
+    'ui_homepage_hero_title': document.getElementById('ui-hero-title').value,
+    'ui_homepage_hero_subtitle': document.getElementById('ui-hero-subtitle').value,
+    'ui_about_us_content': document.getElementById('ui-about-us').value,
+    'ui_footer_company_info': document.getElementById('ui-footer-info').value
+  };
+
+  // Show loading
+  const loadingEl = document.getElementById('ui-settings-loading');
+  if (loadingEl) loadingEl.classList.remove('hidden');
+
+  try {
+    // Prepare batch update data
+    const updates = [];
+    
+    for (const [key, value] of Object.entries(formValues)) {
+      const setting = currentUISettings[key];
+      if (!setting) continue;
+      
+      // Try to parse existing value as JSON
+      let newValue;
+      try {
+        const parsed = JSON.parse(setting.setting_value);
+        // Update the specific language
+        parsed[language] = value;
+        newValue = JSON.stringify(parsed);
+      } catch {
+        // If not JSON, create new JSON object
+        newValue = JSON.stringify({ [language]: value });
+      }
+      
+      updates.push({
+        setting_key: key,
+        setting_value: newValue
+      });
+    }
+
+    // Batch update
+    await axios.put('/api/system-settings/batch/update', 
+      { settings: updates },
+      {
+        headers: {
+          'X-User-ID': currentUser.id,
+          'X-User-Role': currentUser.role
+        }
+      }
+    );
+
+    const successMsg = i18n.t('saveSuccess') || '保存成功';
+    showNotification(successMsg, 'success');
+    
+    // Reload settings
+    await loadUISettings();
+  } catch (error) {
+    console.error('Failed to save UI settings:', error);
+    const errorMsg = error.response?.data?.error || i18n.t('saveFailed') || '保存失败';
+    showNotification(errorMsg, 'error');
+  } finally {
+    // Hide loading
+    if (loadingEl) loadingEl.classList.add('hidden');
   }
 }
 
