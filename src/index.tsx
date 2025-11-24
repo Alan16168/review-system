@@ -74,6 +74,39 @@ app.route('/api/marketplace', marketplace);
 app.route('/api/writing-templates', writingTemplates);
 app.route('/api/agents', agents);
 
+// Mobile App - serve directly
+app.get('/mobile', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <title>审查系统 - 移动版</title>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/mobile-styles.css?v=8.6.1" rel="stylesheet">
+</head>
+<body>
+    <div id="mobile-app">
+        <div id="mobile-content"></div>
+        <div id="mobile-bottom-nav"></div>
+    </div>
+    
+    <!-- 加载指示器 -->
+    <div id="mobile-loading">
+        <div class="mobile-loading-spinner"></div>
+        <div class="mobile-loading-text">加载中...</div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/mobile-app.js?v=8.6.1"></script>
+</body>
+</html>
+  `);
+});
+
 // Diagnostic page - serve directly
 app.get('/diagnostic.html', (c) => {
   return c.html(`<!DOCTYPE html>
@@ -813,6 +846,12 @@ app.get('/', (c) => {
         <script src="https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=USD" data-sdk-integration-source="button-factory"></script>
     </head>
     <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+        <!-- 移动版快速入口 -->
+        <a href="/mobile" class="fixed bottom-4 right-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-all z-50 flex items-center gap-2 md:hidden">
+            <i class="fas fa-mobile-alt"></i>
+            <span>移动版</span>
+        </a>
+        
         <div id="app"></div>
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
