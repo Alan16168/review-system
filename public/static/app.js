@@ -15634,14 +15634,14 @@ async function saveUISettings(event) {
       }
     );
 
-    const successMsg = i18n.t('saveSuccess') || '保存成功';
+    const successMsg = (typeof i18n !== 'undefined' && i18n.t) ? i18n.t('saveSuccess') : '保存成功';
     showNotification(successMsg, 'success');
     
     // Reload settings
     await loadUISettings();
   } catch (error) {
     console.error('Failed to save UI settings:', error);
-    const errorMsg = error.response?.data?.error || i18n.t('saveFailed') || '保存失败';
+    const errorMsg = error.response?.data?.error || (typeof i18n !== 'undefined' && i18n.t ? i18n.t('saveFailed') : '保存失败');
     showNotification(errorMsg, 'error');
   } finally {
     // Hide loading
@@ -19038,4 +19038,106 @@ function closeFieldsModal() {
   }
   currentEditingTemplateId = null;
   currentTemplateFields = [];
+}
+
+// ==================== Dynamic UI Settings ====================
+
+/**
+ * Load UI settings from system_settings and override i18n translations
+ * This allows administrators to customize UI text through the admin panel
+ */
+async function loadDynamicUISettings() {
+  try {
+    // Fetch UI settings from API (no authentication required for public settings)
+    const response = await axios.get('/api/system-settings/category/ui');
+    const settings = response.data.settings || [];
+    
+    if (settings.length === 0) return;
+    
+    // Get current language
+    const currentLang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) 
+      ? i18n.getCurrentLanguage() 
+      : 'zh';
+    
+    // Map of setting keys to i18n translation keys
+    const keyMapping = {
+      'ui_system_title': 'systemTitle',
+      'ui_homepage_hero_title': 'heroTitle',
+      'ui_homepage_hero_subtitle': 'heroSubtitle',
+      'ui_about_us_content': 'aboutCompanyText1',
+      'ui_footer_company_info': null // Handle separately
+    };
+    
+    // Override i18n translations with values from system_settings
+    settings.forEach(setting => {
+      const i18nKey = keyMapping[setting.setting_key];
+      if (!i18nKey) return;
+      
+      try {
+        // Try to parse as JSON (multi-language support)
+        const parsed = JSON.parse(setting.setting_value);
+        const value = parsed[currentLang] || parsed['zh'] || setting.setting_value;
+        
+        // Override i18n translation
+        if (typeof i18n !== 'undefined' && i18n.translations && i18n.translations[currentLang]) {
+          i18n.translations[currentLang][i18nKey] = value;
+        }
+      } catch {
+        // If not JSON, use raw value
+        if (typeof i18n !== 'undefined' && i18n.translations && i18n.translations[currentLang]) {
+          i18n.translations[currentLang][i18nKey] = setting.setting_value;
+        }
+      }
+    });
+    
+    // Update page title if systemTitle was customized
+    if (typeof i18n !== 'undefined' && i18n.t) {
+      const systemTitle = i18n.t('systemTitle');
+      if (systemTitle) {
+        document.title = systemTitle;
+        const pageTitleEl = document.getElementById('page-title');
+        if (pageTitleEl) {
+          pageTitleEl.textContent = systemTitle;
+        }
+      }
+    }
+    
+    // Update footer company info
+    const footerSetting = settings.find(s => s.setting_key === 'ui_footer_company_info');
+    if (footerSetting) {
+      try {
+        const parsed = JSON.parse(footerSetting.setting_value);
+        const footerText = parsed[currentLang] || parsed['zh'] || footerSetting.setting_value;
+        updateFooterInfo(footerText);
+      } catch {
+        updateFooterInfo(footerSetting.setting_value);
+      }
+    }
+    
+    console.log('Dynamic UI settings loaded successfully');
+  } catch (error) {
+    console.error('Failed to load dynamic UI settings:', error);
+    // Fail silently - use default i18n translations
+  }
+}
+
+/**
+ * Update footer company information
+ */
+function updateFooterInfo(text) {
+  // Find footer element and update it
+  const footerElements = document.querySelectorAll('footer p, footer .text-gray-400');
+  footerElements.forEach(el => {
+    if (el.textContent.includes('©') || el.textContent.includes('版权')) {
+      el.textContent = text;
+    }
+  });
+}
+
+// Auto-load dynamic UI settings when page loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadDynamicUISettings);
+} else {
+  // DOM already loaded
+  loadDynamicUISettings();
 }
