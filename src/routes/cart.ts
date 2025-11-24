@@ -32,32 +32,52 @@ cart.get('/', async (c) => {
   }
 });
 
-// Add item to cart
-cart.post('/', async (c) => {
+// Add item to cart (support both / and /add endpoints)
+const addToCartHandler = async (c: any) => {
   try {
     const user = c.get('user') as UserPayload;
-    const { item_type, subscription_tier, price_usd, duration_days, description, description_en } = await c.req.json();
+    const body = await c.req.json();
+    
+    // Support both old format (subscription_tier) and new format (item_id)
+    const subscription_tier = body.subscription_tier || body.item_id;
+    const item_type = body.item_type || 'subscription';
+    const price_usd = body.price_usd;
+    const item_name = body.item_name;
     
     // Validate required fields
-    if (!item_type || !subscription_tier || !price_usd || !duration_days) {
-      return c.json({ error: 'Missing required fields' }, 400);
+    if (!subscription_tier || !price_usd) {
+      return c.json({ error: 'Missing required fields: item_id/subscription_tier and price_usd' }, 400);
     }
     
-    // Validate item_type
-    if (!['upgrade', 'renewal'].includes(item_type)) {
-      return c.json({ error: 'Invalid item type' }, 400);
+    // Get subscription config for duration
+    let duration_days = 365;
+    let description = item_name || (subscription_tier === 'premium' ? '高级会员年费' : '超级会员年费');
+    let description_en = subscription_tier === 'premium' ? 'Premium Member - Annual' : 'Super Member - Annual';
+    
+    try {
+      const config = await c.env.DB.prepare(
+        'SELECT duration_days, description, description_en FROM subscription_config WHERE tier = ? AND is_active = 1'
+      ).bind(subscription_tier).first();
+      
+      if (config) {
+        duration_days = config.duration_days || 365;
+        description = config.description || description;
+        description_en = config.description_en || description_en;
+      }
+    } catch (e) {
+      console.warn('Could not fetch subscription config:', e);
     }
     
-    // Check if item already exists in cart (prevent duplicates of same type)
+    // Check if item already exists in cart (prevent duplicates)
     const existing = await c.env.DB.prepare(`
       SELECT id FROM shopping_cart 
-      WHERE user_id = ? AND item_type = ? AND subscription_tier = ?
-    `).bind(user.id, item_type, subscription_tier).first();
+      WHERE user_id = ? AND subscription_tier = ?
+    `).bind(user.id, subscription_tier).first();
     
     if (existing) {
       return c.json({ 
         error: 'Item already in cart',
-        message: 'This item is already in your shopping cart'
+        message: '该商品已在购物车中'
       }, 400);
     }
     
@@ -73,19 +93,29 @@ cart.post('/', async (c) => {
       subscription_tier,
       price_usd,
       duration_days,
-      description || null,
-      description_en || null
+      description,
+      description_en
     ).run();
     
+    // Get updated cart count
+    const countResult = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM shopping_cart WHERE user_id = ?'
+    ).bind(user.id).first();
+    
     return c.json({ 
-      message: 'Item added to cart',
-      id: result.meta.last_row_id 
+      success: true,
+      message: '已加入购物车',
+      cart_id: result.meta.last_row_id,
+      item_count: countResult?.count || 1
     }, 201);
   } catch (error) {
     console.error('Add to cart error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
-});
+};
+
+cart.post('/', addToCartHandler);
+cart.post('/add', addToCartHandler);
 
 // Remove item from cart
 cart.delete('/:id', async (c) => {
