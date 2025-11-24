@@ -3462,11 +3462,10 @@ async function editDocumentReview(id) {
             <label class="block text-sm font-medium text-gray-700 mb-2">
               ${i18n.t('content')}
             </label>
-            <div id="edit-doc-editor-loading" class="flex items-center justify-center py-12 border border-gray-300 rounded-lg bg-gray-50">
-              <i class="fas fa-spinner fa-spin text-2xl text-indigo-600 mr-3"></i>
-              <span class="text-gray-600">Loading editor...</span>
-            </div>
-            <textarea id="edit-doc-editor" style="display:none;">${escapeHtml(review.description || '')}</textarea>
+            <textarea id="edit-doc-editor" 
+                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                      rows="20"
+                      required>${escapeHtml(review.description || '')}</textarea>
           </div>
           
           <div class="flex justify-end space-x-3">
@@ -3483,70 +3482,13 @@ async function editDocumentReview(id) {
       </div>
     `;
     
-    // Fallback to simple textarea editor
-    window.showSimpleEditor = function() {
-      const loadingDiv = document.getElementById('edit-doc-editor-loading');
-      if (loadingDiv) {
-        loadingDiv.style.display = 'none';
-      }
-      const textarea = document.getElementById('edit-doc-editor');
-      textarea.style.display = 'block';
-      textarea.className = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 min-h-[600px] font-mono text-sm';
-    };
-    
-    // Initialize TinyMCE editor with safe loading
-    initTinyMCE({
-      selector: '#edit-doc-editor',
-      height: 600,
-      menubar: false,
-      plugins: 'lists link image table code',
-      toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
-      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
-      init_instance_callback: function(editor) {
-        console.log('TinyMCE editor initialized successfully');
-        const loadingDiv = document.getElementById('edit-doc-editor-loading');
-        if (loadingDiv) {
-          loadingDiv.style.display = 'none';
-        }
-        document.getElementById('edit-doc-editor').style.display = 'block';
-      },
-      setup: function(editor) {
-        editor.on('init', function() {
-          console.log('TinyMCE init event fired');
-        });
-      }
-    }, () => {
-      // Fallback: show error and simple editor button
-      const loadingDiv = document.getElementById('edit-doc-editor-loading');
-      if (loadingDiv) {
-        loadingDiv.innerHTML = `
-          <div class="text-center">
-            <i class="fas fa-exclamation-triangle text-2xl text-yellow-600 mb-3"></i>
-            <p class="text-gray-700 mb-3">编辑器加载失败，使用简化模式</p>
-            <button onclick="showSimpleEditor()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-              使用文本编辑器
-            </button>
-          </div>
-        `;
-      }
-    });
-    
-    // Attach form submit handler
+    // Attach form submit handler (simple textarea only, no TinyMCE)
     document.getElementById('edit-document-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       
       try {
         const title = document.getElementById('edit-title').value;
-        let content;
-        
-        // Try to get content from TinyMCE, fallback to textarea
-        const editor = tinymce.get('edit-doc-editor');
-        if (editor) {
-          content = editor.getContent();
-        } else {
-          // Fallback to textarea value
-          content = document.getElementById('edit-doc-editor').value;
-        }
+        const content = document.getElementById('edit-doc-editor').value;
         
         await axios.put(`/api/reviews/${id}`, {
           title,

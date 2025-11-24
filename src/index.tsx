@@ -804,8 +804,7 @@ app.get('/', (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
-        <!-- TinyMCE Editor - 使用 jsDelivr CDN 的免费版本 -->
-        <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+        <!-- TinyMCE removed - using simple textarea for better reliability -->
         <!-- Marked.js - Markdown to HTML converter -->
         <script src="https://cdn.jsdelivr.net/npm/marked@11.0.0/marked.min.js"></script>
         <!-- Google Sign-In -->
