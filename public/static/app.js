@@ -19354,10 +19354,14 @@ async function showPricingPlans() {
     const response = await axios.get('/api/subscription/config');
     const plans = response.data.plans || [];
     
+    // Find premium and super plans
+    const premiumPlan = plans.find(p => p.tier === 'premium') || {};
+    const superPlan = plans.find(p => p.tier === 'super') || {};
+    
     const modalHtml = `
       <div id="pricing-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
            onclick="if(event.target === this) closeModal('pricing-modal')">
-        <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[80vh] overflow-hidden">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
           <div class="bg-gradient-to-r from-green-600 to-teal-600 text-white p-6 flex justify-between items-center">
             <h2 class="text-2xl font-bold">
               <i class="fas fa-tags mr-2"></i>${i18n.t('pricingPlans')}
@@ -19367,36 +19371,89 @@ async function showPricingPlans() {
             </button>
           </div>
           <div class="p-8 overflow-y-auto max-h-[calc(80vh-100px)]">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              ${plans.map(plan => `
-                <div class="border-2 ${plan.tier === 'premium' ? 'border-indigo-500 shadow-lg scale-105' : 'border-gray-200'} rounded-xl p-6 ${plan.tier === 'premium' ? 'bg-gradient-to-br from-indigo-50 to-blue-50' : 'bg-white'}">
-                  ${plan.tier === 'premium' ? '<div class="text-center mb-2"><span class="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">推荐</span></div>' : ''}
-                  <h3 class="text-2xl font-bold text-gray-900 mb-2 text-center">${plan.name || plan.tier}</h3>
-                  <div class="text-center mb-6">
-                    <span class="text-4xl font-bold text-indigo-600">$${plan.price_usd || 0}</span>
-                    <span class="text-gray-600">/月</span>
-                  </div>
-                  <ul class="space-y-3 mb-6">
-                    <li class="flex items-start">
-                      <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
-                      <span class="text-gray-700">复盘次数: ${plan.review_limit === -1 ? '无限' : plan.review_limit}</span>
-                    </li>
-                    <li class="flex items-start">
-                      <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
-                      <span class="text-gray-700">模板访问: ${plan.template_limit === -1 ? '全部' : plan.template_limit + '个'}</span>
-                    </li>
-                    <li class="flex items-start">
-                      <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
-                      <span class="text-gray-700">团队支持: ${plan.team_support ? '是' : '否'}</span>
-                    </li>
-                    ${plan.ai_features ? '<li class="flex items-start"><i class="fas fa-check text-green-500 mr-2 mt-1"></i><span class="text-gray-700">AI 功能</span></li>' : ''}
-                  </ul>
-                  <button onclick="closeModal('pricing-modal'); ${currentUser ? 'showSubscriptionPage()' : 'showLogin()'}" 
-                          class="w-full py-3 ${plan.tier === 'premium' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-600 hover:bg-gray-700'} text-white rounded-lg font-semibold transition">
-                    ${currentUser ? (plan.tier === 'free' ? '当前计划' : '立即订阅') : '登录订阅'}
-                  </button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- 高级会员 -->
+              <div class="border-2 border-indigo-500 rounded-xl p-6 bg-gradient-to-br from-indigo-50 to-blue-50">
+                <div class="text-center mb-2">
+                  <span class="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">推荐</span>
                 </div>
-              `).join('')}
+                <h3 class="text-2xl font-bold text-gray-900 mb-4 text-center">高级会员</h3>
+                <div class="space-y-3 mb-6">
+                  <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                    <span class="text-gray-700 font-medium">年费（首次购买）</span>
+                    <span class="text-2xl font-bold text-indigo-600">$${premiumPlan.price_usd || 20}</span>
+                  </div>
+                  <div class="flex justify-between items-center py-2">
+                    <span class="text-gray-700 font-medium">续费费用（年费）</span>
+                    <span class="text-2xl font-bold text-green-600">$${premiumPlan.renewal_price_usd || 20}</span>
+                  </div>
+                </div>
+                <ul class="space-y-2 mb-6 text-sm">
+                  <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                    <span class="text-gray-700">创建团队功能</span>
+                  </li>
+                  <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                    <span class="text-gray-700">邀请团队成员</span>
+                  </li>
+                  <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                    <span class="text-gray-700">无限复盘次数</span>
+                  </li>
+                  <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                    <span class="text-gray-700">全部模板访问</span>
+                  </li>
+                </ul>
+                <button onclick="closeModal('pricing-modal'); ${currentUser ? 'showSubscriptionPage()' : 'showLogin()'}" 
+                        class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
+                  ${currentUser ? '立即订阅' : '登录订阅'}
+                </button>
+              </div>
+              
+              <!-- 超级会员 -->
+              <div class="border-2 border-purple-500 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-pink-50">
+                <div class="text-center mb-2">
+                  <span class="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">高级</span>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4 text-center">超级会员</h3>
+                <div class="space-y-3 mb-6">
+                  <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                    <span class="text-gray-700 font-medium">年费（首次购买）</span>
+                    <span class="text-2xl font-bold text-purple-600">$${superPlan.price_usd || 120}</span>
+                  </div>
+                  <div class="flex justify-between items-center py-2">
+                    <span class="text-gray-700 font-medium">续费费用（年费）</span>
+                    <span class="text-2xl font-bold text-green-600">$${superPlan.renewal_price_usd || 100}</span>
+                  </div>
+                </div>
+                <ul class="space-y-2 mb-6 text-sm">
+                  <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                    <span class="text-gray-700">包含高级会员所有功能</span>
+                  </li>
+                  <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                    <span class="text-gray-700">AI 智能写作助手</span>
+                  </li>
+                  <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                    <span class="text-gray-700">AI 内容生成</span>
+                  </li>
+                  <li class="flex items-start">
+                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                    <span class="text-gray-700">更多高级功能</span>
+                  </li>
+                </ul>
+                <button onclick="closeModal('pricing-modal'); ${currentUser ? 'showSubscriptionPage()' : 'showLogin()'}" 
+                        class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition">
+                  ${currentUser ? '立即订阅' : '登录订阅'}
+                </button>
+              </div>
+            </div>
+            <div class="mt-6 text-center text-sm text-gray-600">
+              <p><i class="fas fa-info-circle mr-1"></i>所有价格以美元（USD）计算，有效期为365天</p>
             </div>
           </div>
         </div>
