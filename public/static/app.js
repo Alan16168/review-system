@@ -2797,6 +2797,9 @@ async function analyzeFamousBook(inputType, content, language) {
 function showFamousBookResult(result, inputType, content) {
   const container = document.getElementById('famous-books-container');
   
+  // Escape HTML for textarea
+  const escapedResult = escapeHtml(result);
+  
   container.innerHTML = `
     <div class="p-6">
       <div class="mb-6 flex justify-between items-center">
@@ -2810,7 +2813,12 @@ function showFamousBookResult(result, inputType, content) {
       </div>
       
       <div class="mb-6">
-        <div id="result-editor"></div>
+        <textarea id="result-textarea" rows="25"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm">${escapedResult}</textarea>
+        <p class="mt-2 text-sm text-gray-500">
+          <i class="fas fa-info-circle mr-1"></i>
+          您可以编辑分析结果，保存后将自动格式化
+        </p>
       </div>
       
       <div class="flex justify-end space-x-3">
@@ -2829,24 +2837,6 @@ function showFamousBookResult(result, inputType, content) {
       </div>
     </div>
   `;
-  
-  // Initialize TinyMCE editor with result (using safe helper)
-  initTinyMCE({
-    selector: '#result-editor',
-    height: 600,
-    menubar: false,
-    plugins: 'lists link image table code',
-    toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
-    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
-    setup: function(editor) {
-      editor.on('init', function() {
-        editor.setContent(result.replace(/\n/g, '<br>'));
-      });
-    }
-  }, () => {
-    // Fallback: show error
-    document.getElementById('result-editor').innerHTML = '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded"><p class="text-yellow-800">编辑器加载失败，请刷新页面重试</p></div>';
-  });
 }
 
 // Export document (placeholder)
@@ -2857,17 +2847,34 @@ function exportDocument(format) {
 // Save Famous Book Review
 async function saveFamousBookReview(inputType, content) {
   try {
-    // Check if TinyMCE is available
-    if (typeof tinymce === 'undefined' || !tinymce.get('result-editor')) {
-      showNotification('编辑器未加载，请刷新页面重试', 'error');
+    const textarea = document.getElementById('result-textarea');
+    
+    if (!textarea) {
+      showNotification('编辑器未找到，请刷新页面重试', 'error');
       return;
     }
     
-    const editorContent = tinymce.get('result-editor').getContent();
+    const plainText = textarea.value;
+    
+    if (!plainText.trim()) {
+      showNotification('内容不能为空', 'error');
+      return;
+    }
+    
+    // Convert plain text to HTML with proper formatting
+    const htmlContent = plainText
+      .split('\n\n')
+      .map(para => {
+        const lines = para.trim().split('\n').filter(line => line.trim());
+        if (lines.length === 0) return '';
+        return '<p>' + lines.map(line => escapeHtml(line)).join('<br>') + '</p>';
+      })
+      .filter(p => p)
+      .join('\n');
     
     const response = await axios.post('/api/reviews/famous-books/save', {
       title: inputType === 'video' ? `视频分析：${content.substring(0, 50)}...` : `书籍分析：${content}`,
-      content: editorContent,
+      content: htmlContent,
       inputType,
       source: content
     });
@@ -3261,6 +3268,9 @@ async function analyzeDocument() {
 function showDocumentResult(result, fileName) {
   const container = document.getElementById('documents-container');
   
+  // Escape HTML for textarea
+  const escapedResult = escapeHtml(result);
+  
   container.innerHTML = `
     <div class="p-6">
       <div class="mb-6 flex justify-between items-center">
@@ -3274,7 +3284,12 @@ function showDocumentResult(result, fileName) {
       </div>
       
       <div class="mb-6">
-        <div id="doc-result-editor"></div>
+        <textarea id="doc-result-textarea" rows="25"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm">${escapedResult}</textarea>
+        <p class="mt-2 text-sm text-gray-500">
+          <i class="fas fa-info-circle mr-1"></i>
+          您可以编辑分析结果，保存后将自动格式化
+        </p>
       </div>
       
       <div class="flex justify-end space-x-3">
@@ -3293,40 +3308,39 @@ function showDocumentResult(result, fileName) {
       </div>
     </div>
   `;
-  
-  // Initialize TinyMCE editor with result (using safe helper)
-  initTinyMCE({
-    selector: '#doc-result-editor',
-    height: 600,
-    menubar: false,
-    plugins: 'lists link image table code',
-    toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
-    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
-    setup: function(editor) {
-      editor.on('init', function() {
-        editor.setContent(result.replace(/\n/g, '<br>'));
-      });
-    }
-  }, () => {
-    // Fallback: show error
-    document.getElementById('doc-result-editor').innerHTML = '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded"><p class="text-yellow-800">编辑器加载失败，请刷新页面重试</p></div>';
-  });
 }
 
 // Save Document Review
 async function saveDocumentReview(fileName) {
   try {
-    // Check if TinyMCE is available
-    if (typeof tinymce === 'undefined' || !tinymce.get('doc-result-editor')) {
-      showNotification('编辑器未加载，请刷新页面重试', 'error');
+    const textarea = document.getElementById('doc-result-textarea');
+    
+    if (!textarea) {
+      showNotification('编辑器未找到，请刷新页面重试', 'error');
       return;
     }
     
-    const editorContent = tinymce.get('doc-result-editor').getContent();
+    const plainText = textarea.value;
+    
+    if (!plainText.trim()) {
+      showNotification('内容不能为空', 'error');
+      return;
+    }
+    
+    // Convert plain text to HTML with proper formatting
+    const content = plainText
+      .split('\n\n')
+      .map(para => {
+        const lines = para.trim().split('\n').filter(line => line.trim());
+        if (lines.length === 0) return '';
+        return '<p>' + lines.map(line => escapeHtml(line)).join('<br>') + '</p>';
+      })
+      .filter(p => p)
+      .join('\n');
     
     const response = await axios.post('/api/reviews/documents/save', {
       title: `文档分析：${fileName}`,
-      content: editorContent,
+      content: content,
       fileName
     });
     
@@ -3730,6 +3744,11 @@ async function editFamousBookReview(id) {
     console.log('Edit review - Review object:', review);
     console.log('Edit review - Description:', review.description);
     
+    // Convert HTML to plain text for editing
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = review.description || '';
+    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+    
     const container = document.getElementById('famous-books-container');
     container.innerHTML = `
       <div class="p-6">
@@ -3754,12 +3773,18 @@ async function editFamousBookReview(id) {
                    required>
           </div>
           
-          <!-- Content Editor -->
+          <!-- Content Editor (Simple Textarea) -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               ${i18n.t('content')}
             </label>
-            <div id="edit-content-editor"></div>
+            <textarea id="edit-content-textarea" rows="20"
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                      placeholder="${i18n.t('enterContent') || '请输入内容...'}">${escapeHtml(plainText)}</textarea>
+            <p class="mt-2 text-sm text-gray-500">
+              <i class="fas fa-info-circle mr-1"></i>
+              支持纯文本编辑，保存后将自动格式化为段落
+            </p>
           </div>
           
           <!-- Action Buttons -->
@@ -3776,39 +3801,6 @@ async function editFamousBookReview(id) {
         </div>
       </div>
     `;
-    
-    // Remove any existing TinyMCE instance first
-    if (typeof tinymce !== 'undefined' && tinymce.get('edit-content-editor')) {
-      tinymce.get('edit-content-editor').remove();
-    }
-    
-    // Store content for initialization
-    const contentToLoad = review.description || '';
-    
-    // Initialize TinyMCE editor with existing content (using safe helper)
-    initTinyMCE({
-      selector: '#edit-content-editor',
-      height: 500,
-      menubar: false,
-      plugins: [
-        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-      ],
-      toolbar: 'undo redo | formatselect | bold italic backcolor | \
-                alignleft aligncenter alignright alignjustify | \
-                bullist numlist outdent indent | removeformat | help',
-      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; font-size: 14px; }',
-      setup: function(editor) {
-        // Set content before editor is fully initialized
-        editor.on('init', function() {
-          editor.setContent(contentToLoad);
-        });
-      }
-    }, () => {
-      // Fallback: show error
-      showNotification('编辑器加载失败，请刷新页面重试', 'error');
-    });
   } catch (error) {
     console.error('Edit error:', error);
     showNotification(error.response?.data?.error || i18n.t('operationFailed'), 'error');
@@ -3818,19 +3810,36 @@ async function editFamousBookReview(id) {
 async function updateFamousBookReview(id) {
   try {
     const title = document.getElementById('edit-title').value;
+    const textarea = document.getElementById('edit-content-textarea');
     
-    // Check if TinyMCE is available
-    if (typeof tinymce === 'undefined' || !tinymce.get('edit-content-editor')) {
-      showNotification('编辑器未加载，请刷新页面重试', 'error');
+    if (!textarea) {
+      showNotification('编辑器未找到，请刷新页面重试', 'error');
       return;
     }
     
-    const content = tinymce.get('edit-content-editor').getContent();
+    const plainText = textarea.value;
     
     if (!title.trim()) {
       showNotification(i18n.t('titleRequired') || 'Title is required', 'error');
       return;
     }
+    
+    if (!plainText.trim()) {
+      showNotification('内容不能为空', 'error');
+      return;
+    }
+    
+    // Convert plain text to HTML with proper formatting
+    // Split by double newlines for paragraphs, single newlines for line breaks
+    const content = plainText
+      .split('\n\n')
+      .map(para => {
+        const lines = para.trim().split('\n').filter(line => line.trim());
+        if (lines.length === 0) return '';
+        return '<p>' + lines.map(line => escapeHtml(line)).join('<br>') + '</p>';
+      })
+      .filter(p => p)
+      .join('\n');
     
     // Use dedicated famous-books endpoint for better permission control
     await axios.put(`/api/reviews/famous-books/${id}`, {
