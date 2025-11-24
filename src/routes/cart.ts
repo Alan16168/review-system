@@ -85,8 +85,17 @@ const addToCartHandler = async (c: any) => {
     
     // Validate required fields
     if (!subscription_tier || !price_usd) {
-      console.error('❌ Missing required fields:', { subscription_tier, price_usd });
-      return c.json({ error: 'Missing required fields: item_id/subscription_tier and price_usd' }, 400);
+      console.error('❌ Missing required fields:', { 
+        subscription_tier, 
+        price_usd,
+        body_received: body,
+        item_id: body.item_id,
+        subscription_tier_field: body.subscription_tier
+      });
+      return c.json({ 
+        error: 'Missing required fields: item_id/subscription_tier and price_usd',
+        received: { subscription_tier, price_usd, body }
+      }, 400);
     }
     
     console.log('✅ Fields validated:', { subscription_tier, item_type, price_usd, item_name });
