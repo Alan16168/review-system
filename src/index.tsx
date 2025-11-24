@@ -74,6 +74,35 @@ app.route('/api/marketplace', marketplace);
 app.route('/api/writing-templates', writingTemplates);
 app.route('/api/agents', agents);
 
+// Public API - Subscription Configuration (no auth required)
+app.get('/api/subscription/config', async (c) => {
+  try {
+    const configs = await c.env.DB.prepare(
+      'SELECT * FROM subscription_config WHERE is_active = 1 ORDER BY tier'
+    ).all();
+    
+    // Format the data for frontend consumption
+    const plans = (configs.results || []).map((config: any) => ({
+      tier: config.tier,
+      name: config.tier === 'premium' ? '高级会员' : config.tier === 'super' ? '超级会员' : '免费',
+      price_usd: config.price_usd || 0,
+      renewal_price_usd: config.renewal_price_usd || 0,
+      duration_days: config.duration_days || 365,
+      description: config.description || '',
+      description_en: config.description_en || '',
+      review_limit: config.tier === 'free' ? 10 : -1,
+      template_limit: config.tier === 'free' ? 5 : -1,
+      team_support: config.tier !== 'free',
+      ai_features: config.tier === 'super'
+    }));
+    
+    return c.json({ plans });
+  } catch (error) {
+    console.error('Get subscription config error:', error);
+    return c.json({ error: 'Internal server error', plans: [] }, 500);
+  }
+});
+
 // Mobile App - serve directly
 app.get('/mobile', (c) => {
   return c.html(`<!DOCTYPE html>
