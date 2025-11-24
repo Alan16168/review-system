@@ -26,6 +26,81 @@
 
 ---
 
+## 🔧 V8.5.1 修复 - YouTube 字幕获取优化 (2025-11-24)
+
+**部署信息**:
+- **部署时间**: 2025-11-24 05:00 UTC
+- **部署 URL**: https://6fb7bf64.review-system.pages.dev
+- **主域名**: https://review-system.pages.dev (自动同步)
+- **Git Tag**: v8.5.1
+- **Worker Bundle**: 390.06 kB
+
+**核心修复**:
+
+**1. YouTube 字幕获取完全重写** ✅
+- **问题**: 字幕 API 调用失败，导致分析结果与视频内容完全无关
+- **根本原因**: 
+  - 直接调用 `youtube.com/api/timedtext` 需要签名和过期时间参数
+  - 简单的 API 调用无法获取字幕数据
+- **解决方案**: 
+  - 解析 YouTube 视频页面，提取 `captionTracks` 数据
+  - 获取完整的字幕 URL（包含签名和过期时间）
+  - 支持多语言优先级：简体中文 → 繁体中文 → 中文 → 英文
+  - 自动选择最佳可用字幕
+
+**2. 字幕解析优化** ✅
+- **XML 格式解析**: 正确解析 YouTube 字幕 XML 格式
+- **HTML 实体解码**: 处理 `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;` 等实体
+- **文本清理**: 移除换行符，合并空格，确保文本干净
+- **字符统计**: 显示获取的字幕语言和字数
+
+**3. 错误提示改进** ✅
+- **明确原因**: 区分"视频没有字幕"和"字幕获取失败"
+- **用户建议**: 提示使用带字幕的视频以获得更准确的分析
+- **详细日志**: 记录字幕语言、字数等信息便于调试
+
+**技术实现**:
+```typescript
+// 1. 获取视频页面
+const videoPageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+const pageHtml = await videoPageResponse.text();
+
+// 2. 提取字幕轨道
+const captionTracksMatch = pageHtml.match(/"captionTracks":\[([^\]]+)\]/);
+const captionTracks = JSON.parse('[' + captionTracksMatch[1] + ']');
+
+// 3. 选择最佳字幕（优先中文）
+const priorityLangs = ['zh-Hans', 'zh-Hant', 'zh', 'en'];
+let selectedTrack = captionTracks.find(track => 
+  priorityLangs.includes(track.languageCode)
+);
+
+// 4. 获取字幕内容
+const transcriptResponse = await fetch(selectedTrack.baseUrl);
+const transcriptXml = await transcriptResponse.text();
+
+// 5. 解析 XML 并提取文本
+const textMatches = transcriptXml.matchAll(/<text[^>]*>([^<]+)<\/text>/g);
+const transcript = Array.from(textMatches)
+  .map(match => decodeHtmlEntities(match[1]))
+  .join(' ');
+```
+
+**用户体验提升**:
+- 🎯 **准确性大幅提升**: 分析结果基于真实的视频字幕内容
+- 🌍 **多语言支持**: 自动选择最合适的字幕语言
+- 📊 **透明度**: 显示使用的字幕语言和字数
+- 💡 **友好提示**: 无字幕时给出明确建议
+
+**测试结果**:
+- ✅ 中文字幕视频：成功获取简体中文字幕
+- ✅ 英文字幕视频：成功获取英文字幕
+- ✅ 多语言字幕视频：按优先级选择最佳字幕
+- ✅ 无字幕视频：显示友好提示信息
+- ✅ 分析结果准确反映视频内容
+
+---
+
 ## 🔧 V8.5.0 重大更新 - AI 服务多层降级策略 (2025-11-24)
 
 **部署信息**:
