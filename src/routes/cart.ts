@@ -35,8 +35,26 @@ cart.get('/', async (c) => {
 // Add item to cart (support both / and /add endpoints)
 const addToCartHandler = async (c: any) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available in c.env');
+      console.error('Available env keys:', Object.keys(c.env));
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing. Please configure it in Cloudflare Pages settings.'
+      }, 500);
+    }
+    
     const user = c.get('user') as UserPayload;
+    if (!user || !user.id) {
+      console.error('❌ User not found in context');
+      return c.json({ error: 'Authentication required' }, 401);
+    }
+    
+    console.log('✅ User authenticated:', { userId: user.id, email: user.email });
+    
     const body = await c.req.json();
+    console.log('📦 Request body:', body);
     
     // Support both old format (subscription_tier) and new format (item_id)
     const subscription_tier = body.subscription_tier || body.item_id;
@@ -46,8 +64,11 @@ const addToCartHandler = async (c: any) => {
     
     // Validate required fields
     if (!subscription_tier || !price_usd) {
+      console.error('❌ Missing required fields:', { subscription_tier, price_usd });
       return c.json({ error: 'Missing required fields: item_id/subscription_tier and price_usd' }, 400);
     }
+    
+    console.log('✅ Fields validated:', { subscription_tier, item_type, price_usd, item_name });
     
     // Get subscription config for duration
     let duration_days = 365;
@@ -55,6 +76,7 @@ const addToCartHandler = async (c: any) => {
     let description_en = subscription_tier === 'premium' ? 'Premium Member - Annual' : 'Super Member - Annual';
     
     try {
+      console.log('🔍 Fetching subscription config for tier:', subscription_tier);
       const config = await c.env.DB.prepare(
         'SELECT duration_days, description, description_en FROM subscription_config WHERE tier = ? AND is_active = 1'
       ).bind(subscription_tier).first();
@@ -63,23 +85,30 @@ const addToCartHandler = async (c: any) => {
         duration_days = config.duration_days || 365;
         description = config.description || description;
         description_en = config.description_en || description_en;
+        console.log('✅ Subscription config found:', config);
+      } else {
+        console.log('⚠️ No subscription config found, using defaults');
       }
     } catch (e) {
-      console.warn('Could not fetch subscription config:', e);
+      console.warn('⚠️ Could not fetch subscription config:', e);
     }
     
     // Check if item already exists in cart (prevent duplicates)
+    console.log('🔍 Checking for existing cart item...');
     const existing = await c.env.DB.prepare(`
       SELECT id FROM shopping_cart 
       WHERE user_id = ? AND subscription_tier = ?
     `).bind(user.id, subscription_tier).first();
     
     if (existing) {
+      console.log('⚠️ Item already in cart:', existing);
       return c.json({ 
         error: 'Item already in cart',
         message: '该商品已在购物车中'
       }, 400);
     }
+    
+    console.log('✅ No duplicate found, adding to cart...');
     
     // Add item to cart
     const result = await c.env.DB.prepare(`
@@ -97,10 +126,14 @@ const addToCartHandler = async (c: any) => {
       description_en
     ).run();
     
+    console.log('✅ Item added to cart:', result);
+    
     // Get updated cart count
     const countResult = await c.env.DB.prepare(
       'SELECT COUNT(*) as count FROM shopping_cart WHERE user_id = ?'
     ).bind(user.id).first();
+    
+    console.log('✅ Cart count updated:', countResult);
     
     return c.json({ 
       success: true,
@@ -109,8 +142,16 @@ const addToCartHandler = async (c: any) => {
       item_count: countResult?.count || 1
     }, 201);
   } catch (error) {
-    console.error('Add to cart error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('❌ Add to cart error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
+    return c.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 };
 
