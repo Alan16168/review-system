@@ -2857,6 +2857,12 @@ function exportDocument(format) {
 // Save Famous Book Review
 async function saveFamousBookReview(inputType, content) {
   try {
+    // Check if TinyMCE is available
+    if (typeof tinymce === 'undefined' || !tinymce.get('result-editor')) {
+      showNotification('编辑器未加载，请刷新页面重试', 'error');
+      return;
+    }
+    
     const editorContent = tinymce.get('result-editor').getContent();
     
     const response = await axios.post('/api/reviews/famous-books/save', {
@@ -3310,6 +3316,12 @@ function showDocumentResult(result, fileName) {
 // Save Document Review
 async function saveDocumentReview(fileName) {
   try {
+    // Check if TinyMCE is available
+    if (typeof tinymce === 'undefined' || !tinymce.get('doc-result-editor')) {
+      showNotification('编辑器未加载，请刷新页面重试', 'error');
+      return;
+    }
+    
     const editorContent = tinymce.get('doc-result-editor').getContent();
     
     const response = await axios.post('/api/reviews/documents/save', {
@@ -3766,7 +3778,7 @@ async function editFamousBookReview(id) {
     `;
     
     // Remove any existing TinyMCE instance first
-    if (tinymce.get('edit-content-editor')) {
+    if (typeof tinymce !== 'undefined' && tinymce.get('edit-content-editor')) {
       tinymce.get('edit-content-editor').remove();
     }
     
@@ -3806,6 +3818,13 @@ async function editFamousBookReview(id) {
 async function updateFamousBookReview(id) {
   try {
     const title = document.getElementById('edit-title').value;
+    
+    // Check if TinyMCE is available
+    if (typeof tinymce === 'undefined' || !tinymce.get('edit-content-editor')) {
+      showNotification('编辑器未加载，请刷新页面重试', 'error');
+      return;
+    }
+    
     const content = tinymce.get('edit-content-editor').getContent();
     
     if (!title.trim()) {
