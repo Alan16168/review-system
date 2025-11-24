@@ -14,21 +14,42 @@ cart.use('/*', authMiddleware);
 // Get user's cart items
 cart.get('/', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available in c.env');
+      console.error('Available env keys:', Object.keys(c.env));
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing. Please configure it in Cloudflare Pages settings.',
+        help: 'Go to Cloudflare Dashboard > Workers & Pages > review-system > Settings > Functions > D1 database bindings'
+      }, 500);
+    }
+    
     const user = c.get('user') as UserPayload;
+    console.log('📦 Getting cart for user:', user.id);
     
     const items = await c.env.DB.prepare(`
       SELECT * FROM shopping_cart 
       WHERE user_id = ?
-      ORDER BY created_at DESC
+      ORDER BY added_at DESC
     `).bind(user.id).all();
+    
+    console.log('✅ Cart items retrieved:', items.results?.length || 0);
     
     return c.json({ 
       items: items.results || [],
       count: items.results?.length || 0
     });
   } catch (error) {
-    console.error('Get cart error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('❌ Get cart error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    return c.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 });
 
@@ -161,8 +182,19 @@ cart.post('/add', addToCartHandler);
 // Remove item from cart
 cart.delete('/:id', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available');
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing. Please configure it in Cloudflare Pages settings.'
+      }, 500);
+    }
+    
     const user = c.get('user') as UserPayload;
     const itemId = c.req.param('id');
+    
+    console.log('🗑️ Removing cart item:', { itemId, userId: user.id });
     
     // Check if item belongs to user
     const item = await c.env.DB.prepare(`
@@ -171,6 +203,7 @@ cart.delete('/:id', async (c) => {
     `).bind(itemId, user.id).first();
     
     if (!item) {
+      console.log('⚠️ Item not found or access denied');
       return c.json({ error: 'Item not found' }, 404);
     }
     
@@ -179,33 +212,65 @@ cart.delete('/:id', async (c) => {
       DELETE FROM shopping_cart WHERE id = ?
     `).bind(itemId).run();
     
+    console.log('✅ Item removed from cart');
+    
     return c.json({ message: 'Item removed from cart' });
   } catch (error) {
-    console.error('Remove from cart error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('❌ Remove from cart error:', error);
+    return c.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 });
 
 // Clear all items from cart
 cart.delete('/', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available');
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing. Please configure it in Cloudflare Pages settings.'
+      }, 500);
+    }
+    
     const user = c.get('user') as UserPayload;
+    
+    console.log('🗑️ Clearing cart for user:', user.id);
     
     await c.env.DB.prepare(`
       DELETE FROM shopping_cart WHERE user_id = ?
     `).bind(user.id).run();
     
+    console.log('✅ Cart cleared');
+    
     return c.json({ message: 'Cart cleared' });
   } catch (error) {
-    console.error('Clear cart error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('❌ Clear cart error:', error);
+    return c.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 });
 
 // Get cart total
 cart.get('/total', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available');
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing. Please configure it in Cloudflare Pages settings.'
+      }, 500);
+    }
+    
     const user = c.get('user') as UserPayload;
+    
+    console.log('💰 Getting cart total for user:', user.id);
     
     const result = await c.env.DB.prepare(`
       SELECT 
@@ -215,13 +280,18 @@ cart.get('/total', async (c) => {
       WHERE user_id = ?
     `).bind(user.id).first();
     
+    console.log('✅ Cart total retrieved:', result);
+    
     return c.json({
       item_count: result?.item_count || 0,
       total_amount: result?.total_amount || 0
     });
   } catch (error) {
-    console.error('Get cart total error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('❌ Get cart total error:', error);
+    return c.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 });
 
