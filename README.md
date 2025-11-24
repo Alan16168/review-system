@@ -31,12 +31,12 @@
 
 **部署信息**:
 - **版本**: V5.34 ✅
-- **部署时间**: 2025-11-24 22:13 UTC
-- **部署状态**: ✅ 代码部署成功 | ⚠️ 需要配置 D1 绑定
+- **部署时间**: 2025-11-24 22:20 UTC
+- **部署状态**: ✅ 生产环境部署成功 | ⚠️ 需要配置 D1 绑定
 - **主域名**: https://review-system.pages.dev
-- **部署ID**: https://d9bfa214.review-system.pages.dev
+- **部署ID**: https://b3e65302.review-system.pages.dev
 - **Worker Bundle**: 396.48 kB
-- **Git Commit**: 241621b
+- **Git Commit**: b9f0a6d
 
 **本次发布修复内容**:
 
