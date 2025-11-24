@@ -26,6 +26,130 @@
 
 ---
 
+## 🔧 V8.6.0 功能增强 - 字幕预览确认功能 (2025-11-24)
+
+**部署信息**:
+- **部署时间**: 2025-11-24 05:30 UTC
+- **部署 URL**: https://a1475463.review-system.pages.dev
+- **主域名**: https://review-system.pages.dev (自动同步)
+- **Git Tag**: v8.6.0
+- **Worker Bundle**: 392.25 kB
+
+**核心功能**:
+
+**1. 字幕预览与确认流程** ✅
+- **问题**: 用户无法确认字幕是否正确就直接进入 AI 分析
+- **解决方案**: 在 AI 分析前显示字幕预览界面，让用户确认
+- **用户流程**:
+  1. 输入 YouTube 视频链接
+  2. 系统自动获取字幕
+  3. **显示字幕预览界面**（新增）
+  4. 用户确认字幕准确性
+  5. 点击"确认并继续分析"
+  6. AI 基于确认的字幕进行分析
+
+**2. 字幕预览界面设计** ✅
+- **视频信息卡片**: 
+  - 视频标题、频道名称
+  - 时长、观看次数、点赞数
+  - 蓝色背景，清晰展示
+- **字幕获取状态**:
+  - 绿色成功提示卡片
+  - 显示字幕语言（简体中文/繁体中文/English 等）
+  - 显示字幕字数统计
+- **字幕内容展示**:
+  - 只读文本框，显示前 5000 字符
+  - 等宽字体，便于阅读
+  - 超过长度自动省略并提示
+- **确认提示**:
+  - 黄色警告卡片
+  - 提醒用户检查字幕准确性
+  - 说明可能的操作选项
+- **操作按钮**:
+  - "取消" - 返回表单
+  - "确认并继续分析" - 开始 AI 分析
+
+**3. 后端 API 优化** ✅
+- **新增端点**: `POST /api/reviews/famous-books/get-transcript`
+  - 专门用于获取字幕的独立端点
+  - 返回完整的字幕数据和视频元数据
+  - 不触发 AI 分析，仅获取字幕
+- **响应数据结构**:
+  ```typescript
+  {
+    hasTranscript: boolean,
+    transcript: string,
+    transcriptLanguage: string,
+    transcriptLength: number,
+    videoMetadata: {
+      title: string,
+      channelTitle: string,
+      duration: string,
+      viewCount: string,
+      likeCount: string
+    },
+    videoId: string
+  }
+  ```
+
+**4. 无字幕视频处理** ✅
+- **友好提示**: 明确告知用户视频没有字幕
+- **用户选择**: 
+  - 可以取消操作
+  - 或选择继续（仅基于元数据分析）
+- **确认对话框**: 使用原生 confirm 对话框快速确认
+
+**技术实现**:
+
+```javascript
+// 前端流程
+async function analyzeFamousBook(inputType, content, language) {
+  // 1. 获取字幕
+  const transcriptResponse = await axios.post(
+    '/api/reviews/famous-books/get-transcript', 
+    { content }
+  );
+  
+  // 2. 显示预览
+  if (transcriptData.hasTranscript) {
+    showTranscriptPreview(transcriptData, ...);
+    return; // 等待用户确认
+  }
+  
+  // 3. 用户点击"确认并继续分析"后
+  continueWithAnalysis(...);
+}
+
+// 字幕预览界面
+function showTranscriptPreview(transcriptData, ...) {
+  // 显示视频信息
+  // 显示字幕内容（前5000字符）
+  // 显示确认按钮
+}
+
+// 继续分析
+async function continueWithAnalysis(...) {
+  // 调用 analyze API
+  // 显示分析结果
+}
+```
+
+**用户体验提升**:
+- 🎯 **透明度**: 用户可以看到完整的字幕内容
+- ✅ **质量控制**: 用户可以确认字幕是否正确
+- 🚫 **避免浪费**: 字幕不准确时可以取消，避免无效分析
+- 📊 **信息完整**: 显示视频元数据和字幕统计信息
+- 💡 **友好提示**: 清晰的指引和建议
+
+**测试验证**:
+- ✅ YouTube 视频分析流程完整
+- ✅ 字幕预览界面正常显示
+- ✅ 用户确认后 AI 分析正常
+- ✅ 无字幕视频显示友好提示
+- ✅ 取消操作返回表单正常
+
+---
+
 ## 🔧 V8.5.1 修复 - YouTube 字幕获取优化 (2025-11-24)
 
 **部署信息**:
