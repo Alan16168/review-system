@@ -223,6 +223,7 @@ reviews.get('/public', async (c) => {
       LEFT JOIN users u ON r.user_id = u.id
       LEFT JOIN teams t ON r.team_id = t.id
       WHERE r.owner_type IN ('public', 'team')
+      AND (r.review_type IS NULL OR r.review_type NOT IN ('famous-book', 'document'))
       ORDER BY r.updated_at DESC
     `;
 
@@ -920,6 +921,7 @@ reviews.get('/', async (c) => {
     // 1. Reviews created by the user (including public ones)
     // 2. Non-public reviews where user is a team member (has team_id and user is in that team)
     // 3. Non-public reviews where user is a collaborator
+    // IMPORTANT: Exclude famous-book and document review types (they have separate lists)
     const query = `
       SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
       FROM reviews r
@@ -931,6 +933,7 @@ reviews.get('/', async (c) => {
         OR (r.owner_type != 'public' AND r.team_id IS NOT NULL AND r.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
         OR (r.owner_type != 'public' AND rc.user_id = ?)
       )
+      AND (r.review_type IS NULL OR r.review_type NOT IN ('famous-book', 'document'))
       ORDER BY r.updated_at DESC
     `;
 
