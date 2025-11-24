@@ -23,6 +23,15 @@ function checkAdminRole(c: Context): boolean {
 // ============================================================================
 app.get('/', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available in system_settings');
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing. Please configure it in Cloudflare Pages settings.'
+      }, 500);
+    }
+    
     if (!checkAdminRole(c)) {
       return c.json({ error: 'Unauthorized - Admin access required' }, 403);
     }
@@ -49,6 +58,15 @@ app.get('/', async (c) => {
 // ============================================================================
 app.get('/:key', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available');
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing.'
+      }, 500);
+    }
+    
     const key = c.req.param('key');
     const { DB } = c.env;
     
@@ -88,6 +106,15 @@ app.get('/:key', async (c) => {
 // ============================================================================
 app.get('/category/:category', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available');
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing.'
+      }, 500);
+    }
+    
     const category = c.req.param('category');
     const { DB } = c.env;
     
@@ -111,6 +138,15 @@ app.get('/category/:category', async (c) => {
 // ============================================================================
 app.put('/:key', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available');
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing.'
+      }, 500);
+    }
+    
     if (!checkAdminRole(c)) {
       return c.json({ error: 'Unauthorized - Admin access required' }, 403);
     }
@@ -172,6 +208,15 @@ app.put('/:key', async (c) => {
 // ============================================================================
 app.put('/batch/update', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available');
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing.'
+      }, 500);
+    }
+    
     if (!checkAdminRole(c)) {
       return c.json({ error: 'Unauthorized - Admin access required' }, 403);
     }
@@ -246,6 +291,15 @@ app.put('/batch/update', async (c) => {
 // ============================================================================
 app.post('/', async (c) => {
   try {
+    // Check if DB binding exists
+    if (!c.env.DB) {
+      console.error('❌ DB binding is not available');
+      return c.json({ 
+        error: 'Database not configured',
+        details: 'D1 database binding is missing.'
+      }, 500);
+    }
+    
     if (!checkAdminRole(c)) {
       return c.json({ error: 'Unauthorized - Admin access required' }, 403);
     }
