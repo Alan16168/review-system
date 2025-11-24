@@ -86,7 +86,7 @@ app.get('/mobile', (c) => {
     <meta name="theme-color" content="#667eea">
     <title>审查系统 - 移动版</title>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/mobile-styles.css?v=8.6.1" rel="stylesheet">
+    <link href="/static/mobile-styles.css?v=8.7.1" rel="stylesheet">
 </head>
 <body>
     <div id="mobile-app">
@@ -101,7 +101,7 @@ app.get('/mobile', (c) => {
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="/static/mobile-app.js?v=8.6.1"></script>
+    <script src="/static/mobile-app.js?v=8.7.1"></script>
 </body>
 </html>
   `);
@@ -859,7 +859,7 @@ app.get('/', (c) => {
         <!-- Manhattan Project - AI Writing System -->
         <script src="/static/ai_books.js?v=8.4.5"></script>
         <script src="/static/agents.js?v=8.4.5"></script>
-        <script src="/static/app.js?v=8.6.1"></script>
+        <script src="/static/app.js?v=8.7.1"></script>
     </body>
     </html>
   `);

@@ -11569,7 +11569,9 @@ function showEditQuestionForm(questionId) {
 
 // Handle question type change
 function handleQuestionTypeChange() {
-  const type = document.getElementById('question-type').value;
+  const type = document.getElementById('question-type')?.value;
+  if (!type) return;
+  
   const answerLengthContainer = document.getElementById('answer-length-container');
   const timeTypeContainer = document.getElementById('time-type-container');
   const optionsContainer = document.getElementById('options-container');
@@ -11580,6 +11582,14 @@ function handleQuestionTypeChange() {
   // Get containers and labels for dynamic field management
   const questionTextContainer = document.getElementById('question-text-container');
   const questionTextLabel = document.getElementById('question-text-label');
+  
+  // Null checks for all elements
+  if (!answerLengthContainer || !timeTypeContainer || !optionsContainer || 
+      !correctAnswerContainer || !singleChoiceAnswer || !multipleChoiceAnswer || 
+      !questionTextContainer || !questionTextLabel) {
+    console.warn('[handleQuestionTypeChange] Some required elements are missing');
+    return;
+  }
   
   // Hide all type-specific containers first
   answerLengthContainer.classList.add('hidden');
@@ -11710,7 +11720,14 @@ function renderCorrectAnswerOptions() {
 
 // Collect form data
 function collectQuestionFormData() {
-  const type = document.getElementById('question-type').value;
+  const typeElement = document.getElementById('question-type');
+  const questionTextElement = document.getElementById('question-text');
+  
+  if (!typeElement || !questionTextElement) {
+    throw new Error('Required form elements are missing');
+  }
+  
+  const type = typeElement.value;
   
   // Collect owner and required values
   const ownerElement = document.getElementById('question-owner');
@@ -11721,7 +11738,7 @@ function collectQuestionFormData() {
   const required = requiredElement ? (requiredElement.value || 'no') : 'no';
   
   const data = {
-    question_text: document.getElementById('question-text').value,
+    question_text: questionTextElement.value,
     question_type: type,
     // V6.7.0: Add owner and required fields
     owner: owner,
