@@ -2108,6 +2108,44 @@ async function deletePublicReview(reviewId) {
   }
 }
 
+// Helper function to safely initialize TinyMCE with loading check
+function initTinyMCE(config, onFallback) {
+  let initAttempts = 0;
+  const maxAttempts = 50; // 10 seconds (50 * 200ms)
+  
+  const tryInit = () => {
+    initAttempts++;
+    
+    if (typeof tinymce !== 'undefined') {
+      // TinyMCE loaded successfully
+      console.log('TinyMCE loaded, initializing with selector:', config.selector);
+      try {
+        // Add default config
+        const fullConfig = {
+          ...config,
+          promotion: false,
+          branding: false,
+          base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',
+          suffix: '.min'
+        };
+        tinymce.init(fullConfig);
+      } catch (error) {
+        console.error('TinyMCE initialization error:', error);
+        if (onFallback) onFallback();
+      }
+    } else if (initAttempts >= maxAttempts) {
+      // Timeout after 10 seconds
+      console.error('TinyMCE failed to load after 10 seconds');
+      if (onFallback) onFallback();
+    } else {
+      // Keep trying
+      setTimeout(tryInit, 200);
+    }
+  };
+  
+  tryInit();
+}
+
 // Load Famous Books Reviews (Premium feature)
 async function loadFamousBooksReviews() {
   try {
@@ -2792,23 +2830,22 @@ function showFamousBookResult(result, inputType, content) {
     </div>
   `;
   
-  // Initialize TinyMCE editor with result
-  tinymce.init({
+  // Initialize TinyMCE editor with result (using safe helper)
+  initTinyMCE({
     selector: '#result-editor',
     height: 600,
     menubar: false,
     plugins: 'lists link image table code',
     toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
     content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
-    promotion: false,
-    branding: false,
-    base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',
-    suffix: '.min',
     setup: function(editor) {
       editor.on('init', function() {
         editor.setContent(result.replace(/\n/g, '<br>'));
       });
     }
+  }, () => {
+    // Fallback: show error
+    document.getElementById('result-editor').innerHTML = '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded"><p class="text-yellow-800">编辑器加载失败，请刷新页面重试</p></div>';
   });
 }
 
@@ -3251,23 +3288,22 @@ function showDocumentResult(result, fileName) {
     </div>
   `;
   
-  // Initialize TinyMCE editor with result
-  tinymce.init({
+  // Initialize TinyMCE editor with result (using safe helper)
+  initTinyMCE({
     selector: '#doc-result-editor',
     height: 600,
     menubar: false,
     plugins: 'lists link image table code',
     toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
     content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
-    promotion: false,
-    branding: false,
-    base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',
-    suffix: '.min',
     setup: function(editor) {
       editor.on('init', function() {
         editor.setContent(result.replace(/\n/g, '<br>'));
       });
     }
+  }, () => {
+    // Fallback: show error
+    document.getElementById('doc-result-editor').innerHTML = '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded"><p class="text-yellow-800">编辑器加载失败，请刷新页面重试</p></div>';
   });
 }
 
@@ -3447,9 +3483,40 @@ async function editDocumentReview(id) {
       </div>
     `;
     
-    // Initialize TinyMCE editor with error handling and timeout
-    const editorTimeout = setTimeout(() => {
-      console.error('TinyMCE initialization timeout');
+    // Fallback to simple textarea editor
+    window.showSimpleEditor = function() {
+      const loadingDiv = document.getElementById('edit-doc-editor-loading');
+      if (loadingDiv) {
+        loadingDiv.style.display = 'none';
+      }
+      const textarea = document.getElementById('edit-doc-editor');
+      textarea.style.display = 'block';
+      textarea.className = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 min-h-[600px] font-mono text-sm';
+    };
+    
+    // Initialize TinyMCE editor with safe loading
+    initTinyMCE({
+      selector: '#edit-doc-editor',
+      height: 600,
+      menubar: false,
+      plugins: 'lists link image table code',
+      toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
+      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
+      init_instance_callback: function(editor) {
+        console.log('TinyMCE editor initialized successfully');
+        const loadingDiv = document.getElementById('edit-doc-editor-loading');
+        if (loadingDiv) {
+          loadingDiv.style.display = 'none';
+        }
+        document.getElementById('edit-doc-editor').style.display = 'block';
+      },
+      setup: function(editor) {
+        editor.on('init', function() {
+          console.log('TinyMCE init event fired');
+        });
+      }
+    }, () => {
+      // Fallback: show error and simple editor button
       const loadingDiv = document.getElementById('edit-doc-editor-loading');
       if (loadingDiv) {
         loadingDiv.innerHTML = `
@@ -3462,57 +3529,7 @@ async function editDocumentReview(id) {
           </div>
         `;
       }
-    }, 10000); // 10 second timeout
-    
-    try {
-      if (typeof tinymce === 'undefined') {
-        throw new Error('TinyMCE library not loaded');
-      }
-      
-      tinymce.init({
-        selector: '#edit-doc-editor',
-        height: 600,
-        menubar: false,
-        plugins: 'lists link image table code',
-        toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
-        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; }',
-        promotion: false,  // 禁用 TinyMCE 推广信息
-        branding: false,   // 禁用品牌信息
-        base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',  // 设置正确的基础 URL
-        suffix: '.min',    // 使用压缩版本
-        init_instance_callback: function(editor) {
-          console.log('TinyMCE editor initialized successfully');
-          clearTimeout(editorTimeout);
-          // Hide loading indicator
-          const loadingDiv = document.getElementById('edit-doc-editor-loading');
-          if (loadingDiv) {
-            loadingDiv.style.display = 'none';
-          }
-          // Show editor
-          document.getElementById('edit-doc-editor').style.display = 'block';
-        },
-        setup: function(editor) {
-          editor.on('init', function() {
-            console.log('TinyMCE init event fired');
-          });
-        }
-      });
-    } catch (error) {
-      console.error('TinyMCE initialization error:', error);
-      clearTimeout(editorTimeout);
-      showSimpleEditor();
-    }
-    
-    // Fallback to simple textarea editor
-    window.showSimpleEditor = function() {
-      const loadingDiv = document.getElementById('edit-doc-editor-loading');
-      if (loadingDiv) {
-        loadingDiv.style.display = 'none';
-      }
-      const textarea = document.getElementById('edit-doc-editor');
-      textarea.style.display = 'block';
-      textarea.className = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 min-h-[600px] font-mono text-sm';
-    };
+    });
     
     // Attach form submit handler
     document.getElementById('edit-document-form').addEventListener('submit', async (e) => {
@@ -3814,8 +3831,8 @@ async function editFamousBookReview(id) {
     // Store content for initialization
     const contentToLoad = review.description || '';
     
-    // Initialize TinyMCE editor with existing content
-    tinymce.init({
+    // Initialize TinyMCE editor with existing content (using safe helper)
+    initTinyMCE({
       selector: '#edit-content-editor',
       height: 500,
       menubar: false,
@@ -3828,16 +3845,15 @@ async function editFamousBookReview(id) {
                 alignleft aligncenter alignright alignjustify | \
                 bullist numlist outdent indent | removeformat | help',
       content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; font-size: 14px; }',
-      promotion: false,
-      branding: false,
-      base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',
-      suffix: '.min',
       setup: function(editor) {
         // Set content before editor is fully initialized
         editor.on('init', function() {
           editor.setContent(contentToLoad);
         });
       }
+    }, () => {
+      // Fallback: show error
+      showNotification('编辑器加载失败，请刷新页面重试', 'error');
     });
   } catch (error) {
     console.error('Edit error:', error);
