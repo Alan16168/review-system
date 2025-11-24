@@ -15565,14 +15565,22 @@ function populateUISettingsForm(language) {
     }
   };
 
-  // Populate form fields
-  document.getElementById('ui-system-title').value = getValue('ui_system_title');
-  document.getElementById('ui-hero-title').value = getValue('ui_homepage_hero_title');
-  document.getElementById('ui-hero-subtitle').value = getValue('ui_homepage_hero_subtitle');
-  document.getElementById('ui-about-us').value = getValue('ui_about_us_content');
-  document.getElementById('ui-footer-info').value = getValue('ui_footer_company_info');
-  document.getElementById('ui-team-description').value = getValue('ui_team_description');
-  document.getElementById('ui-contact-email').value = getValue('ui_contact_email');
+  // Helper function to safely set element value
+  const safeSetValue = (elementId, value) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.value = value || '';
+    }
+  };
+
+  // Populate form fields with safety checks
+  safeSetValue('ui-system-title', getValue('ui_system_title'));
+  safeSetValue('ui-hero-title', getValue('ui_homepage_hero_title'));
+  safeSetValue('ui-hero-subtitle', getValue('ui_homepage_hero_subtitle'));
+  safeSetValue('ui-about-us', getValue('ui_about_us_content'));
+  safeSetValue('ui-footer-info', getValue('ui_footer_company_info'));
+  safeSetValue('ui-team-description', getValue('ui_team_description'));
+  safeSetValue('ui-contact-email', getValue('ui_contact_email'));
   
   // Terms and privacy with character count
   const termsValue = getValue('ui_terms_of_service');
