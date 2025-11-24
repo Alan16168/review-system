@@ -11,7 +11,7 @@ const cart = new Hono<{ Bindings: Bindings }>();
 // All routes require authentication
 cart.use('/*', authMiddleware);
 
-// Get user's cart items
+// Get user's cart items (unified cart for subscriptions and products)
 cart.get('/', async (c) => {
   try {
     // Check if DB binding exists
@@ -26,19 +26,126 @@ cart.get('/', async (c) => {
     }
     
     const user = c.get('user') as UserPayload;
-    console.log('📦 Getting cart for user:', user.id);
+    console.log('📦 Getting unified cart for user:', user.id);
     
-    const items = await c.env.DB.prepare(`
-      SELECT * FROM shopping_cart 
+    const cartItemsRaw = await c.env.DB.prepare(`
+      SELECT 
+        id as cart_id,
+        item_type,
+        product_id,
+        quantity,
+        subscription_tier,
+        price_usd,
+        duration_days,
+        description,
+        description_en,
+        added_at
+      FROM shopping_cart 
       WHERE user_id = ?
       ORDER BY added_at DESC
     `).bind(user.id).all();
     
-    console.log('✅ Cart items retrieved:', items.results?.length || 0);
+    const items = cartItemsRaw.results || [];
+    console.log('✅ Raw cart items retrieved:', items.length);
     
+    // Process each item to fetch product details if needed
+    const cartItems = [];
+    for (const item of items) {
+      if (item.item_type === 'subscription') {
+        // Subscription item - already has all data
+        cartItems.push({
+          cart_id: item.cart_id,
+          item_type: 'subscription',
+          id: `sub_${item.subscription_tier}`,
+          product_type: 'subscription',
+          category: 'subscription',
+          name: item.description || `${item.subscription_tier === 'premium' ? '高级' : '超级'}会员年费`,
+          name_en: item.description_en || `${item.subscription_tier === 'premium' ? 'Premium' : 'Super'} Member - Annual`,
+          description: item.description,
+          description_en: item.description_en,
+          subscription_tier: item.subscription_tier,
+          price_user: item.price_usd,
+          price_premium: item.price_usd,
+          price_super: item.price_usd,
+          duration_days: item.duration_days,
+          quantity: 1,
+          is_active: true,
+          added_at: item.added_at
+        });
+      } else {
+        // Product item - fetch details from products tables
+        const productId = item.product_id as string;
+        let product: any = null;
+        
+        // Check if this is a writing template (prefix 'wt_')
+        if (typeof productId === 'string' && productId.startsWith('wt_')) {
+          const templateId = parseInt(productId.substring(3));
+          product = await c.env.DB.prepare(`
+            SELECT 
+              id,
+              name,
+              description,
+              price_user,
+              price_premium,
+              price_super,
+              'writing_template' as product_type,
+              'writing_template' as category,
+              is_active
+            FROM ai_writing_templates
+            WHERE id = ?
+          `).bind(templateId).first();
+          
+          if (product) {
+            product.id = productId; // Keep the prefixed ID
+          }
+        } else if (typeof productId === 'string' && productId.startsWith('t_')) {
+          // Check if this is a review template (prefix 't_')
+          const templateId = parseInt(productId.substring(2));
+          product = await c.env.DB.prepare(`
+            SELECT 
+              id,
+              name,
+              description,
+              COALESCE(price_basic, price, 0) as price_user,
+              COALESCE(price_premium, price, 0) as price_premium,
+              COALESCE(price_super, price, 0) as price_super,
+              'review_template' as product_type,
+              'review_template' as category,
+              is_active
+            FROM templates
+            WHERE id = ?
+          `).bind(templateId).first();
+          
+          if (product) {
+            product.id = productId; // Keep the prefixed ID
+          }
+        } else {
+          // Regular marketplace product
+          product = await c.env.DB.prepare(`
+            SELECT * FROM marketplace_products WHERE id = ?
+          `).bind(productId).first();
+        }
+        
+        if (product) {
+          cartItems.push({
+            cart_id: item.cart_id,
+            item_type: 'product',
+            quantity: item.quantity || 1,
+            added_at: item.added_at,
+            ...product
+          });
+        }
+      }
+    }
+    
+    console.log('✅ Processed cart items:', cartItems.length);
+    
+    // Return in the format expected by frontend (cart_items field)
     return c.json({ 
-      items: items.results || [],
-      count: items.results?.length || 0
+      success: true,
+      cart_items: cartItems,
+      items: cartItems, // Also include 'items' for backward compatibility
+      count: cartItems.length
     });
   } catch (error) {
     console.error('❌ Get cart error:', error);
@@ -47,6 +154,7 @@ cart.get('/', async (c) => {
       stack: error instanceof Error ? error.stack : undefined
     });
     return c.json({ 
+      success: false,
       error: 'Internal server error',
       details: error instanceof Error ? error.message : String(error)
     }, 500);

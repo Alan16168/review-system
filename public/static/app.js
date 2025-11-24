@@ -12683,7 +12683,8 @@ async function updateCartCount() {
 // Show shopping cart modal
 async function showCart() {
   try {
-    const response = await axios.get('/api/marketplace/cart');
+    // 使用统一的购物车API (支持订阅和产品)
+    const response = await axios.get('/api/cart');
     const items = response.data.cart_items || [];
     
     // 为每个商品计算用户应付价格
@@ -12801,7 +12802,7 @@ function closeCart() {
 // Remove item from cart
 async function removeFromCart(cartId) {
   try {
-    await axios.delete(`/api/marketplace/cart/${cartId}`);
+    await axios.delete(`/api/cart/${cartId}`);
     showNotification(i18n.t('removeFromCart') || '已从购物车移除', 'success');
     closeCart();
     await MarketplaceManager.updateCartCount();
@@ -12821,12 +12822,12 @@ async function clearCart() {
     }
     
     // Get all cart items
-    const cartResponse = await axios.get('/api/marketplace/cart');
+    const cartResponse = await axios.get('/api/cart');
     const items = cartResponse.data.cart_items || [];
     
     // Delete each item
     for (const item of items) {
-      await axios.delete(`/api/marketplace/cart/${item.cart_id}`);
+      await axios.delete(`/api/cart/${item.cart_id}`);
     }
     
     showNotification(i18n.t('cartCleared') || '购物车已清空', 'success');
@@ -12842,7 +12843,7 @@ async function clearCart() {
 async function proceedToCheckout() {
   try {
     // Get cart items
-    const cartResponse = await axios.get('/api/marketplace/cart');
+    const cartResponse = await axios.get('/api/cart');
     const items = cartResponse.data.cart_items || [];
     
     if (items.length === 0) {
@@ -17471,8 +17472,9 @@ const MarketplaceManager = {
 
   async updateCartCount() {
     try {
-      const response = await axios.get('/api/marketplace/cart');
-      const count = response.data.cart_items?.length || 0;
+      // 使用统一的购物车API
+      const response = await axios.get('/api/cart');
+      const count = response.data.count || 0;
       const badge = document.getElementById('cart-count');
       if (badge) {
         badge.textContent = count;
