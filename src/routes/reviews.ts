@@ -11,12 +11,178 @@ import {
 
 type Bindings = {
   DB: D1Database;
+  YOUTUBE_API_KEY?: string;
+  GEMINI_API_KEY?: string;
+  GENSPARK_API_KEY?: string;
 };
 
 const reviews = new Hono<{ Bindings: Bindings }>();
 
 // All routes require authentication
 reviews.use('/*', authMiddleware);
+
+// Helper function to extract YouTube video ID
+function extractYouTubeVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
+}
+
+// Helper function to analyze YouTube video
+async function analyzeYouTubeVideo(videoUrl: string, prompt: string, env: any): Promise<string> {
+  const videoId = extractYouTubeVideoId(videoUrl);
+  if (!videoId) {
+    throw new Error('Invalid YouTube URL');
+  }
+  
+  // Step 1: Get video metadata from YouTube Data API
+  let videoMetadata = '';
+  const YOUTUBE_API_KEY = env.YOUTUBE_API_KEY;
+  
+  if (YOUTUBE_API_KEY) {
+    try {
+      const metadataResponse = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoId}&key=${YOUTUBE_API_KEY}`
+      );
+      
+      if (metadataResponse.ok) {
+        const metadataData = await metadataResponse.json();
+        const video = metadataData.items?.[0];
+        
+        if (video) {
+          const snippet = video.snippet;
+          const statistics = video.statistics;
+          const duration = video.contentDetails?.duration;
+          
+          videoMetadata = `
+视频标题：${snippet.title}
+发布日期：${snippet.publishedAt}
+频道：${snippet.channelTitle}
+描述：${snippet.description}
+观看次数：${statistics.viewCount || '未知'}
+点赞数：${statistics.likeCount || '未知'}
+视频时长：${duration || '未知'}
+`;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch YouTube metadata:', error);
+    }
+  }
+  
+  // Step 2: Try to get transcript using YouTubeTranscript API
+  let transcript = '';
+  try {
+    // Use a public transcript API service
+    const transcriptResponse = await fetch(
+      `https://www.youtube.com/api/timedtext?v=${videoId}&lang=zh-Hans&fmt=json3`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      }
+    );
+    
+    if (transcriptResponse.ok) {
+      const transcriptData = await transcriptResponse.json();
+      if (transcriptData.events) {
+        transcript = transcriptData.events
+          .filter((event: any) => event.segs)
+          .map((event: any) => 
+            event.segs.map((seg: any) => seg.utf8).join('')
+          )
+          .join(' ');
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch transcript:', error);
+  }
+  
+  // If no Chinese transcript, try English
+  if (!transcript) {
+    try {
+      const transcriptResponse = await fetch(
+        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
+        {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        }
+      );
+      
+      if (transcriptResponse.ok) {
+        const transcriptData = await transcriptResponse.json();
+        if (transcriptData.events) {
+          transcript = transcriptData.events
+            .filter((event: any) => event.segs)
+            .map((event: any) => 
+              event.segs.map((seg: any) => seg.utf8).join('')
+            )
+            .join(' ');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch English transcript:', error);
+    }
+  }
+  
+  // Step 3: Use AI to analyze the content
+  const GEMINI_API_KEY = env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) {
+    throw new Error('Gemini API key not configured');
+  }
+  
+  // Build comprehensive context
+  let context = `视频链接：${videoUrl}\n视频ID：${videoId}\n\n`;
+  
+  if (videoMetadata) {
+    context += `【视频信息】\n${videoMetadata}\n\n`;
+  }
+  
+  if (transcript) {
+    context += `【视频字幕/文稿】\n${transcript.substring(0, 50000)}\n\n`;
+  } else {
+    context += `【注意】无法获取视频字幕，仅基于视频信息进行分析。\n\n`;
+  }
+  
+  // Call Gemini API
+  const fullPrompt = `${context}\n${prompt}`;
+  const model = 'gemini-2.0-flash-exp';
+  
+  const geminiResponse = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ 
+          role: 'user',
+          parts: [{ text: fullPrompt }]
+        }]
+      })
+    }
+  );
+  
+  if (!geminiResponse.ok) {
+    const errorText = await geminiResponse.text();
+    throw new Error(`Gemini API error: ${geminiResponse.statusText} - ${errorText}`);
+  }
+  
+  const geminiData = await geminiResponse.json();
+  const result = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from AI';
+  
+  return result;
+}
 
 // Get public reviews (owner_type='public' or 'team')
 // Note: 'team' owner_type reviews are only visible to team members
@@ -183,37 +349,30 @@ reviews.post('/famous-books/analyze', async (c) => {
       }
     }
     
-    // Fallback to Gemini API
+    // Handle video analysis with YouTube APIs
+    if (inputType === 'video' && (content.includes('youtube.com') || content.includes('youtu.be'))) {
+      try {
+        const videoAnalysis = await analyzeYouTubeVideo(content, prompt, c.env);
+        return c.json({ result: videoAnalysis, source: 'youtube+ai' });
+      } catch (videoError) {
+        console.error('YouTube video analysis failed:', videoError);
+        // Fall through to regular AI analysis with video URL as text
+      }
+    }
+    
+    // Fallback to Gemini API for books or if video analysis failed
     const GEMINI_API_KEY = c.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY) {
       return c.json({ error: 'Gemini API key not configured' }, 500);
     }
     
-    // Prepare content parts for Gemini API
-    let contentParts: any[] = [];
+    // For books or other text content
+    const fullPrompt = inputType === 'book' 
+      ? `${prompt}\n\n书籍名称：${content}`
+      : `${prompt}\n\n内容：${content}`;
     
-    // If it's a video URL, use Gemini's native video analysis capability
-    if (inputType === 'video' && (content.includes('youtube.com') || content.includes('youtu.be'))) {
-      // Gemini 2.0 Flash Exp supports direct YouTube video analysis
-      // Format: Add video URL as fileData with mimeType "video/*"
-      contentParts.push({
-        fileData: {
-          mimeType: "video/*",
-          fileUri: content
-        }
-      });
-      contentParts.push({
-        text: prompt
-      });
-    } else {
-      // For books or other text content
-      contentParts.push({
-        text: prompt
-      });
-    }
-    
-    // Call Gemini API with video support (using gemini-2.0-flash)
-    const model = 'gemini-2.0-flash';
+    // Call Gemini API
+    const model = 'gemini-2.0-flash-exp';
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -222,7 +381,7 @@ reviews.post('/famous-books/analyze', async (c) => {
         body: JSON.stringify({
           contents: [{ 
             role: 'user',
-            parts: contentParts 
+            parts: [{ text: fullPrompt }]
           }]
         })
       }
