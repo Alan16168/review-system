@@ -2108,43 +2108,9 @@ async function deletePublicReview(reviewId) {
   }
 }
 
-// Helper function to safely initialize TinyMCE with loading check
-function initTinyMCE(config, onFallback) {
-  let initAttempts = 0;
-  const maxAttempts = 50; // 10 seconds (50 * 200ms)
-  
-  const tryInit = () => {
-    initAttempts++;
-    
-    if (typeof tinymce !== 'undefined') {
-      // TinyMCE loaded successfully
-      console.log('TinyMCE loaded, initializing with selector:', config.selector);
-      try {
-        // Add default config
-        const fullConfig = {
-          ...config,
-          promotion: false,
-          branding: false,
-          base_url: 'https://cdn.jsdelivr.net/npm/tinymce@6.8.2',
-          suffix: '.min'
-        };
-        tinymce.init(fullConfig);
-      } catch (error) {
-        console.error('TinyMCE initialization error:', error);
-        if (onFallback) onFallback();
-      }
-    } else if (initAttempts >= maxAttempts) {
-      // Timeout after 10 seconds
-      console.error('TinyMCE failed to load after 10 seconds');
-      if (onFallback) onFallback();
-    } else {
-      // Keep trying
-      setTimeout(tryInit, 200);
-    }
-  };
-  
-  tryInit();
-}
+// TinyMCE helper function removed - now using simple textarea editors
+// All rich text editing functionality has been replaced with plain text textarea
+// for better performance and clearer content display
 
 // Load Famous Books Reviews (Premium feature)
 async function loadFamousBooksReviews() {
