@@ -19441,16 +19441,10 @@ async function showPricingPlans() {
                     <span class="text-gray-700">全部模板访问</span>
                   </li>
                 </ul>
-                <div class="flex gap-2">
-                  <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('premium', ${premiumPlan.price_usd || 20})` : 'showLogin()'}" 
-                          class="flex-1 py-3 bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 rounded-lg font-semibold transition">
-                    <i class="fas fa-shopping-cart mr-2"></i>${currentUser ? '加入购物车' : '登录'}
-                  </button>
-                  <button onclick="closeModal('pricing-modal'); ${currentUser ? `quickSubscribe('premium', ${premiumPlan.price_usd || 20})` : 'showLogin()'}" 
-                          class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
-                    ${currentUser ? '立即订阅' : '登录订阅'}
-                  </button>
-                </div>
+                <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('premium', ${premiumPlan.price_usd || 20})` : 'showLogin()'}" 
+                        class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
+                  <i class="fas fa-shopping-cart mr-2"></i>${currentUser ? '立即订阅' : '登录订阅'}
+                </button>
               </div>
               
               <!-- 超级会员 -->
@@ -19487,16 +19481,10 @@ async function showPricingPlans() {
                     <span class="text-gray-700">更多高级功能</span>
                   </li>
                 </ul>
-                <div class="flex gap-2">
-                  <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('super', ${superPlan.price_usd || 120})` : 'showLogin()'}" 
-                          class="flex-1 py-3 bg-white border-2 border-purple-600 text-purple-600 hover:bg-purple-50 rounded-lg font-semibold transition">
-                    <i class="fas fa-shopping-cart mr-2"></i>${currentUser ? '加入购物车' : '登录'}
-                  </button>
-                  <button onclick="closeModal('pricing-modal'); ${currentUser ? `quickSubscribe('super', ${superPlan.price_usd || 120})` : 'showLogin()'}" 
-                          class="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition">
-                    ${currentUser ? '立即订阅' : '登录订阅'}
-                  </button>
-                </div>
+                <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('super', ${superPlan.price_usd || 120})` : 'showLogin()'}" 
+                        class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition">
+                  <i class="fas fa-shopping-cart mr-2"></i>${currentUser ? '立即订阅' : '登录订阅'}
+                </button>
               </div>
             </div>
             <div class="mt-6 text-center text-sm text-gray-600">
