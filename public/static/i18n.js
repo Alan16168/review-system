@@ -601,6 +601,7 @@ const translations = {
     
     // Contact
     'contactUs': '联系我们',
+    'emailUsAnytime': '随时通过邮件与我们联系',
     'phone': '电话',
     'address': '地址',
     'addressText': 'Richmond BC',
@@ -805,6 +806,12 @@ const translations = {
     'uiHomepageHeroSubtitle': '首页副标题',
     'uiAboutUsContent': '关于我们内容',
     'uiFooterCompanyInfo': '页脚信息',
+    'uiTeamDescription': '团队介绍',
+    'uiContactEmail': '联系邮箱',
+    'teamIntro': '团队介绍',
+    'teamDescription': '本软件由 GoGlobal AI 团队制作',
+    'contactUs': '联系我们',
+    'emailUsAnytime': '随时通过邮件与我们联系',
     'displayedInHeader': '显示在页面头部和浏览器标签页',
     'mainTitleOnHomepage': '首页主标题',
     'subtitleOnHomepage': '首页副标题',
@@ -816,6 +823,12 @@ const translations = {
     'uiHomepageHeroSubtitle': '首页副标题',
     'uiAboutUsContent': '关于我们内容',
     'uiFooterCompanyInfo': '页脚信息',
+    'uiTeamDescription': '团队介绍',
+    'uiContactEmail': '联系邮箱',
+    'teamIntro': '团队介绍',
+    'teamDescription': '本软件由 GoGlobal AI 团队制作',
+    'contactUs': '联系我们',
+    'emailUsAnytime': '随时通过邮件与我们联系',
     'displayedInHeader': '显示在页面头部和浏览器标签页',
     'mainTitleOnHomepage': '首页主标题',
     'subtitleOnHomepage': '首页副标题',
@@ -1583,6 +1596,7 @@ const translations = {
     
     // Contact
     'contactUs': 'Contact Us',
+    'emailUsAnytime': 'Feel free to contact us by email anytime',
     'phone': 'Phone',
     'address': 'Address',
     'addressText': 'Richmond BC',
@@ -2480,6 +2494,7 @@ const translations = {
     
     // Contact
     'contactUs': 'お問い合わせ',
+    'emailUsAnytime': 'いつでもメールでお問い合わせください',
     'phone': 'Phone',
     'address': 'Address',
     'addressText': 'Richmond BC',
@@ -3377,6 +3392,7 @@ const translations = {
     
     // Contact
     'contactUs': 'Contáctenos',
+    'emailUsAnytime': 'No dude en contactarnos por correo electrónico en cualquier momento',
     'phone': 'Phone',
     'address': 'Address',
     'addressText': 'Richmond BC',
@@ -4273,6 +4289,7 @@ const translations = {
     
     // Contact
     'contactUs': '聯絡我們',
+    'emailUsAnytime': '隨時透過郵件與我們聯絡',
     'phone': '电話',
     'address': '地址',
     'addressText': 'Richmond BC',

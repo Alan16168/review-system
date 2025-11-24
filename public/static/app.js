@@ -440,25 +440,15 @@ async function showHomePage() {
 
       <!-- Team Section -->
       <section class="py-16 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">${i18n.t('ourTeam')}</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div class="bg-white rounded-xl p-8 text-center shadow-lg">
-              <div class="w-28 h-28 bg-indigo-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <i class="fas fa-user-tie text-indigo-600 text-5xl"></i>
-              </div>
-              <h3 class="text-2xl font-bold text-gray-900 mb-2">${i18n.t('founderName')}</h3>
-              <p class="text-indigo-600 mb-3 font-semibold">${i18n.t('founderTitle')}</p>
-              <p class="text-gray-600">${i18n.t('founderBio')}</p>
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 class="text-4xl font-bold text-gray-900 mb-8">${i18n.t('teamIntro')}</h2>
+          <div class="bg-white rounded-xl p-8 shadow-lg">
+            <div class="w-28 h-28 bg-indigo-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+              <i class="fas fa-users text-indigo-600 text-5xl"></i>
             </div>
-            <div class="bg-white rounded-xl p-8 text-center shadow-lg">
-              <div class="w-28 h-28 bg-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <i class="fas fa-paint-brush text-pink-600 text-5xl"></i>
-              </div>
-              <h3 class="text-2xl font-bold text-gray-900 mb-2">${i18n.t('designLeadName')}</h3>
-              <p class="text-pink-600 mb-3 font-semibold">${i18n.t('designLeadTitle')}</p>
-              <p class="text-gray-600">${i18n.t('designLeadBio')}</p>
-            </div>
+            <p id="team-description-text" class="text-xl text-gray-700 leading-relaxed">
+              ${i18n.t('teamDescription') || '本软件由 GoGlobal AI 团队制作'}
+            </p>
           </div>
         </div>
       </section>
@@ -483,55 +473,19 @@ async function showHomePage() {
       </section>
 
       <!-- Contact Section -->
-      <section id="contact" class="py-16 bg-gray-50">
+      <section id="contact" class="py-16 bg-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 class="text-4xl font-bold text-center text-gray-900 mb-12">${i18n.t('contactUs')}</h2>
-          <div class="bg-white rounded-xl shadow-lg p-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div>
-                <div class="flex items-center mb-4">
-                  <i class="fas fa-envelope text-indigo-600 text-2xl mr-4"></i>
-                  <div>
-                    <div class="font-bold text-gray-900">${i18n.t('email')}</div>
-                    <div class="text-gray-600">ireviewsystem@hotmail.com</div>
-                  </div>
-                </div>
-                <div class="flex items-center mb-4">
-                  <i class="fas fa-phone text-indigo-600 text-2xl mr-4"></i>
-                  <div>
-                    <div class="font-bold text-gray-900">${i18n.t('phone')}</div>
-                    <div class="text-gray-600">+1 (778)-883-9266</div>
-                  </div>
-                </div>
-                <div class="flex items-center">
-                  <i class="fas fa-map-marker-alt text-indigo-600 text-2xl mr-4"></i>
-                  <div>
-                    <div class="font-bold text-gray-900">${i18n.t('address')}</div>
-                    <div class="text-gray-600">${i18n.t('addressText')}</div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 class="font-bold text-gray-900 mb-4">${i18n.t('followUs')}</h3>
-                <div class="flex space-x-4">
-                  <a href="#" class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition">
-                    <i class="fab fa-facebook-f"></i>
-                  </a>
-                  <a href="#" class="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center text-white hover:bg-sky-600 transition">
-                    <i class="fab fa-twitter"></i>
-                  </a>
-                  <a href="#" class="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white hover:opacity-90 transition">
-                    <i class="fab fa-instagram"></i>
-                  </a>
-                  <a href="#" class="w-12 h-12 bg-blue-700 rounded-full flex items-center justify-center text-white hover:bg-blue-800 transition">
-                    <i class="fab fa-linkedin-in"></i>
-                  </a>
-                  <a href="#" class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white hover:bg-red-700 transition">
-                    <i class="fab fa-youtube"></i>
-                  </a>
-                </div>
-              </div>
+          <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl shadow-lg p-12 text-center">
+            <div class="w-20 h-20 bg-indigo-600 rounded-full mx-auto mb-6 flex items-center justify-center">
+              <i class="fas fa-envelope text-white text-3xl"></i>
             </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">${i18n.t('email')}</h3>
+            <a id="contact-email-link" href="mailto:ireviewsystem@hotmail.com" 
+               class="text-2xl text-indigo-600 hover:text-indigo-700 font-semibold transition">
+              <span id="contact-email-text">ireviewsystem@hotmail.com</span>
+            </a>
+            <p class="mt-6 text-gray-600">${i18n.t('emailUsAnytime') || '随时通过邮件与我们联系'}</p>
           </div>
         </div>
       </section>
@@ -15470,6 +15424,28 @@ async function showUISettingsManagement(container) {
           <p class="mt-1 text-sm text-gray-500">${i18n.t('footerCopyrightInfo') || '页脚版权信息'}</p>
         </div>
 
+        <!-- Team Description -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-users mr-2"></i>${i18n.t('uiTeamDescription')}
+          </label>
+          <textarea id="ui-team-description" required rows="2"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    placeholder="${i18n.t('uiTeamDescription')}"></textarea>
+          <p class="mt-1 text-sm text-gray-500">${i18n.t('teamIntroText') || '团队介绍文字'}</p>
+        </div>
+
+        <!-- Contact Email -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-envelope mr-2"></i>${i18n.t('uiContactEmail')}
+          </label>
+          <input type="email" id="ui-contact-email" required
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                 placeholder="${i18n.t('uiContactEmail')}">
+          <p class="mt-1 text-sm text-gray-500">${i18n.t('contactEmailDesc') || '联系邮箱地址'}</p>
+        </div>
+
         <!-- Save Button -->
         <div class="flex justify-end">
           <button type="submit" 
@@ -15569,6 +15545,8 @@ function populateUISettingsForm(language) {
   document.getElementById('ui-hero-subtitle').value = getValue('ui_homepage_hero_subtitle');
   document.getElementById('ui-about-us').value = getValue('ui_about_us_content');
   document.getElementById('ui-footer-info').value = getValue('ui_footer_company_info');
+  document.getElementById('ui-team-description').value = getValue('ui_team_description');
+  document.getElementById('ui-contact-email').value = getValue('ui_contact_email');
 }
 
 async function saveUISettings(event) {
@@ -15590,7 +15568,9 @@ async function saveUISettings(event) {
     'ui_homepage_hero_title': document.getElementById('ui-hero-title').value,
     'ui_homepage_hero_subtitle': document.getElementById('ui-hero-subtitle').value,
     'ui_about_us_content': document.getElementById('ui-about-us').value,
-    'ui_footer_company_info': document.getElementById('ui-footer-info').value
+    'ui_footer_company_info': document.getElementById('ui-footer-info').value,
+    'ui_team_description': document.getElementById('ui-team-description').value,
+    'ui_contact_email': document.getElementById('ui-contact-email').value
   };
 
   // Show loading
@@ -19065,7 +19045,9 @@ async function loadDynamicUISettings() {
       'ui_homepage_hero_title': 'heroTitle',
       'ui_homepage_hero_subtitle': 'heroSubtitle',
       'ui_about_us_content': 'aboutCompanyText1',
-      'ui_footer_company_info': null // Handle separately
+      'ui_footer_company_info': null, // Handle separately
+      'ui_team_description': 'teamDescription', // Add to i18n
+      'ui_contact_email': null // Handle separately
     };
     
     // Override i18n translations with values from system_settings
@@ -19114,6 +19096,30 @@ async function loadDynamicUISettings() {
       }
     }
     
+    // Update team description
+    const teamSetting = settings.find(s => s.setting_key === 'ui_team_description');
+    if (teamSetting) {
+      try {
+        const parsed = JSON.parse(teamSetting.setting_value);
+        const teamText = parsed[currentLang] || parsed['zh'] || teamSetting.setting_value;
+        updateTeamDescription(teamText);
+      } catch {
+        updateTeamDescription(teamSetting.setting_value);
+      }
+    }
+    
+    // Update contact email
+    const emailSetting = settings.find(s => s.setting_key === 'ui_contact_email');
+    if (emailSetting) {
+      try {
+        const parsed = JSON.parse(emailSetting.setting_value);
+        const emailText = parsed[currentLang] || parsed['zh'] || emailSetting.setting_value;
+        updateContactEmail(emailText);
+      } catch {
+        updateContactEmail(emailSetting.setting_value);
+      }
+    }
+    
     console.log('Dynamic UI settings loaded successfully');
   } catch (error) {
     console.error('Failed to load dynamic UI settings:', error);
@@ -19132,6 +19138,32 @@ function updateFooterInfo(text) {
       el.textContent = text;
     }
   });
+}
+
+/**
+ * Update team description text
+ */
+function updateTeamDescription(text) {
+  const teamDescEl = document.getElementById('team-description-text');
+  if (teamDescEl) {
+    teamDescEl.textContent = text;
+  }
+}
+
+/**
+ * Update contact email
+ */
+function updateContactEmail(email) {
+  const emailTextEl = document.getElementById('contact-email-text');
+  const emailLinkEl = document.getElementById('contact-email-link');
+  
+  if (emailTextEl) {
+    emailTextEl.textContent = email;
+  }
+  
+  if (emailLinkEl) {
+    emailLinkEl.href = `mailto:${email}`;
+  }
 }
 
 // Auto-load dynamic UI settings when page loads
