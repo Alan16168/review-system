@@ -820,7 +820,7 @@ app.get('/', (c) => {
         <!-- Manhattan Project - AI Writing System -->
         <script src="/static/ai_books.js?v=8.4.5"></script>
         <script src="/static/agents.js?v=8.4.5"></script>
-        <script src="/static/app.js?v=8.5.1"></script>
+        <script src="/static/app.js?v=8.6.0"></script>
     </body>
     </html>
   `);

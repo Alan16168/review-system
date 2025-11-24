@@ -2723,12 +2723,48 @@ async function analyzeFamousBook(inputType, content, language) {
   const prompt = document.getElementById('prompt-editor').value;
   const container = document.getElementById('famous-books-container');
   
-  // Show loading state
+  // For video input, first get and show transcript
+  if (inputType === 'video' && (content.includes('youtube.com') || content.includes('youtu.be'))) {
+    // Show loading state
+    container.innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+        <p class="text-gray-600">正在获取视频字幕...</p>
+        <p class="text-sm text-gray-500 mt-2">请稍候，这可能需要几秒钟</p>
+      </div>
+    `;
+    
+    try {
+      const transcriptResponse = await axios.post('/api/reviews/famous-books/get-transcript', {
+        content
+      });
+      
+      const transcriptData = transcriptResponse.data;
+      
+      if (transcriptData.hasTranscript) {
+        // Show transcript preview and ask for confirmation
+        showTranscriptPreview(transcriptData, inputType, content, prompt, language);
+        return;
+      } else {
+        // No transcript, show warning and continue
+        const confirmContinue = confirm('此视频没有可用的字幕。分析将仅基于视频标题和描述进行。\n\n是否继续？');
+        if (!confirmContinue) {
+          loadFamousBooksReviews();
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Get transcript error:', error);
+      // Continue with analysis even if transcript fetch fails
+    }
+  }
+  
+  // Show loading state for analysis
   container.innerHTML = `
     <div class="p-8 text-center">
       <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
       <p class="text-gray-600">${i18n.t('analyzing')}</p>
-      <p class="text-sm text-gray-500 mt-2">${inputType === 'video' ? 'Using Genspark API for video analysis...' : 'Using Gemini AI for book analysis...'}</p>
+      <p class="text-sm text-gray-500 mt-2">${inputType === 'video' ? 'Using AI for video analysis...' : 'Using Gemini AI for book analysis...'}</p>
     </div>
   `;
   
@@ -2739,6 +2775,166 @@ async function analyzeFamousBook(inputType, content, language) {
       prompt,
       language,
       useGenspark: inputType === 'video' // Use Genspark for videos
+    });
+    
+    const result = response.data.result;
+    showFamousBookResult(result, inputType, content);
+  } catch (error) {
+    console.error('Analyze error:', error);
+    
+    // Extract error details
+    const errorData = error.response?.data;
+    const mainError = errorData?.error || i18n.t('operationFailed');
+    const errorsList = errorData?.errors || [];
+    
+    // Create detailed error message
+    let errorDetails = '';
+    if (errorsList.length > 0) {
+      errorDetails = '<div class="mt-4 text-left bg-red-50 p-4 rounded-lg"><p class="font-semibold mb-2">错误详情：</p><ul class="list-disc list-inside text-sm space-y-1">';
+      errorsList.forEach(err => {
+        errorDetails += `<li>${err}</li>`;
+      });
+      errorDetails += '</ul></div>';
+    }
+    
+    container.innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-exclamation-circle text-4xl text-red-600 mb-4"></i>
+        <p class="text-red-600 text-lg font-semibold mb-2">${mainError}</p>
+        ${errorDetails}
+        <div class="mt-6 text-sm text-gray-600 bg-blue-50 p-4 rounded-lg text-left">
+          <p class="font-semibold mb-2"><i class="fas fa-info-circle mr-2"></i>建议：</p>
+          <ul class="list-disc list-inside space-y-1">
+            <li>系统会自动尝试多个 AI 服务（Gemini → OpenAI → Claude → Genspark）</li>
+            <li>如果所有服务都失败，请稍后再试</li>
+            <li>或联系管理员检查 API 密钥配置状态</li>
+          </ul>
+        </div>
+        <button onclick="loadFamousBooksReviews()"
+                class="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+          ${i18n.t('backToForm')}
+        </button>
+      </div>
+    `;
+  }
+}
+
+// Show Transcript Preview (for user confirmation)
+function showTranscriptPreview(transcriptData, inputType, content, prompt, language) {
+  const container = document.getElementById('famous-books-container');
+  const { transcript, transcriptLanguage, transcriptLength, videoMetadata } = transcriptData;
+  
+  // Escape HTML for display
+  const escapedTranscript = escapeHtml(transcript);
+  
+  // Language name mapping
+  const langNames = {
+    'zh-Hans': '简体中文',
+    'zh-Hant': '繁体中文',
+    'zh': '中文',
+    'en': 'English',
+    'ja': '日本語',
+    'unknown': '未知'
+  };
+  
+  const langName = langNames[transcriptLanguage] || transcriptLanguage;
+  
+  container.innerHTML = `
+    <div class="p-6">
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+          <i class="fas fa-closed-captioning mr-2"></i>视频字幕预览
+        </h3>
+        
+        ${videoMetadata ? `
+          <div class="bg-blue-50 p-4 rounded-lg mb-4">
+            <h4 class="font-semibold text-gray-900 mb-2">
+              <i class="fas fa-video mr-2"></i>${escapeHtml(videoMetadata.title)}
+            </h4>
+            <div class="grid grid-cols-2 gap-3 text-sm text-gray-600">
+              <div><i class="fas fa-user mr-2"></i>频道：${escapeHtml(videoMetadata.channelTitle)}</div>
+              <div><i class="fas fa-clock mr-2"></i>时长：${escapeHtml(videoMetadata.duration)}</div>
+              <div><i class="fas fa-eye mr-2"></i>观看：${escapeHtml(videoMetadata.viewCount)}</div>
+              <div><i class="fas fa-thumbs-up mr-2"></i>点赞：${escapeHtml(videoMetadata.likeCount)}</div>
+            </div>
+          </div>
+        ` : ''}
+        
+        <div class="bg-green-50 border border-green-200 p-4 rounded-lg mb-4">
+          <div class="flex items-center mb-2">
+            <i class="fas fa-check-circle text-green-600 mr-2"></i>
+            <span class="font-semibold text-green-800">字幕获取成功</span>
+          </div>
+          <div class="text-sm text-gray-700">
+            <span class="font-semibold">语言：</span>${langName} &nbsp;|&nbsp; 
+            <span class="font-semibold">字数：</span>${transcriptLength.toLocaleString()} 字符
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            字幕内容（前 5000 字符）
+          </label>
+          <textarea readonly
+                    rows="15"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"
+          >${escapedTranscript.substring(0, 5000)}${transcriptLength > 5000 ? '\n\n... （字幕内容较长，已省略部分内容）' : ''}</textarea>
+          <p class="mt-2 text-xs text-gray-500">
+            <i class="fas fa-info-circle mr-1"></i>
+            请确认字幕内容与视频相关。AI 将基于此字幕内容进行分析。
+          </p>
+        </div>
+        
+        <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-4">
+          <div class="flex items-start">
+            <i class="fas fa-exclamation-triangle text-yellow-600 mr-2 mt-1"></i>
+            <div class="text-sm text-gray-700">
+              <p class="font-semibold mb-1">确认字幕准确性</p>
+              <p>请检查字幕内容是否与视频相关。如果字幕内容不正确或不完整，可以：</p>
+              <ul class="list-disc list-inside mt-2 ml-2 space-y-1">
+                <li>取消操作，尝试使用其他视频</li>
+                <li>继续分析，但结果可能不够准确</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button onclick="loadFamousBooksReviews()"
+                class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <i class="fas fa-times mr-2"></i>取消
+        </button>
+        <button onclick="continueWithAnalysis('${inputType}', '${content.replace(/'/g, "\\'")}', '${escapeHtml(prompt).replace(/'/g, "\\'")}', '${language}')"
+                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <i class="fas fa-check mr-2"></i>确认并继续分析
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// Continue with AI analysis after transcript confirmation
+async function continueWithAnalysis(inputType, content, prompt, language) {
+  const container = document.getElementById('famous-books-container');
+  
+  // Show loading state
+  container.innerHTML = `
+    <div class="p-8 text-center">
+      <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+      <p class="text-gray-600">${i18n.t('analyzing')}</p>
+      <p class="text-sm text-gray-500 mt-2">AI 正在分析视频内容...</p>
+      <p class="text-xs text-gray-400 mt-2">这可能需要 30-60 秒</p>
+    </div>
+  `;
+  
+  try {
+    const response = await axios.post('/api/reviews/famous-books/analyze', {
+      inputType,
+      content,
+      prompt,
+      language,
+      useGenspark: inputType === 'video'
     });
     
     const result = response.data.result;

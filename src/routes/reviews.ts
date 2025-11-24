@@ -323,6 +323,150 @@ reviews.get('/documents', async (c) => {
   }
 });
 
+// Get YouTube video transcript (for preview before analysis)
+reviews.post('/famous-books/get-transcript', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    
+    // Check premium subscription
+    if (user.role !== 'admin' && (!user.subscription_tier || user.subscription_tier === 'free')) {
+      return c.json({ error: 'Premium subscription required' }, 403);
+    }
+    
+    const { content } = await c.req.json();
+    
+    if (!content) {
+      return c.json({ error: 'Content is required' }, 400);
+    }
+    
+    // Check if it's a YouTube video URL
+    const videoId = extractYouTubeVideoId(content);
+    if (!videoId) {
+      return c.json({ 
+        hasTranscript: false, 
+        message: 'Not a YouTube video URL' 
+      });
+    }
+    
+    // Get video metadata
+    let videoMetadata: any = null;
+    const YOUTUBE_API_KEY = c.env.YOUTUBE_API_KEY;
+    
+    if (YOUTUBE_API_KEY) {
+      try {
+        const metadataResponse = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoId}&key=${YOUTUBE_API_KEY}`
+        );
+        
+        if (metadataResponse.ok) {
+          const metadataData = await metadataResponse.json();
+          const video = metadataData.items?.[0];
+          
+          if (video) {
+            const snippet = video.snippet;
+            const statistics = video.statistics;
+            const duration = video.contentDetails?.duration;
+            
+            videoMetadata = {
+              title: snippet.title,
+              publishedAt: snippet.publishedAt,
+              channelTitle: snippet.channelTitle,
+              description: snippet.description,
+              viewCount: statistics.viewCount || '未知',
+              likeCount: statistics.likeCount || '未知',
+              duration: duration || '未知'
+            };
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch YouTube metadata:', error);
+      }
+    }
+    
+    // Get transcript by parsing video page
+    let transcript = '';
+    let transcriptLanguage = 'unknown';
+    
+    try {
+      const videoPageResponse = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+        }
+      });
+      
+      if (videoPageResponse.ok) {
+        const pageHtml = await videoPageResponse.text();
+        const captionTracksMatch = pageHtml.match(/"captionTracks":\[([^\]]+)\]/);
+        
+        if (captionTracksMatch) {
+          const captionTracksJson = '[' + captionTracksMatch[1] + ']';
+          const captionTracks = JSON.parse(captionTracksJson);
+          
+          const priorityLangs = ['zh-Hans', 'zh-Hant', 'zh', 'en'];
+          let selectedTrack = null;
+          
+          for (const lang of priorityLangs) {
+            selectedTrack = captionTracks.find((track: any) => 
+              track.languageCode === lang || track.languageCode?.startsWith(lang)
+            );
+            if (selectedTrack) {
+              transcriptLanguage = lang;
+              break;
+            }
+          }
+          
+          if (!selectedTrack && captionTracks.length > 0) {
+            selectedTrack = captionTracks[0];
+            transcriptLanguage = selectedTrack.languageCode || 'unknown';
+          }
+          
+          if (selectedTrack && selectedTrack.baseUrl) {
+            const transcriptResponse = await fetch(selectedTrack.baseUrl);
+            
+            if (transcriptResponse.ok) {
+              const transcriptXml = await transcriptResponse.text();
+              const textMatches = transcriptXml.matchAll(/<text[^>]*>([^<]+)<\/text>/g);
+              const transcriptParts: string[] = [];
+              
+              for (const match of textMatches) {
+                const text = match[1]
+                  .replace(/&amp;/g, '&')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&#39;/g, "'")
+                  .replace(/\n/g, ' ')
+                  .trim();
+                
+                if (text) {
+                  transcriptParts.push(text);
+                }
+              }
+              
+              transcript = transcriptParts.join(' ');
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch transcript:', error);
+    }
+    
+    return c.json({
+      hasTranscript: transcript.length > 0,
+      transcript: transcript,
+      transcriptLanguage: transcriptLanguage,
+      transcriptLength: transcript.length,
+      videoMetadata: videoMetadata,
+      videoId: videoId
+    });
+  } catch (error) {
+    console.error('Get transcript error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 // Analyze Famous Book with Genspark/Gemini API
 reviews.post('/famous-books/analyze', async (c) => {
   try {
