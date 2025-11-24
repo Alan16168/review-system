@@ -15694,27 +15694,26 @@ async function saveUISettings(event) {
       }
     }
     
-    // Show notification with option to view changes
-    const viewChangesBtn = document.createElement('button');
-    viewChangesBtn.textContent = '查看更新效果';
-    viewChangesBtn.className = 'ml-2 px-3 py-1 bg-white text-blue-600 rounded hover:bg-blue-50 transition';
-    viewChangesBtn.onclick = async () => {
+    // IMPORTANT: Re-render current view to reflect changes
+    // This ensures all i18n.t() calls get the updated translations
+    showNotification('界面设置已更新，正在刷新页面...', 'success');
+    
+    // Wait a moment for notification to be visible
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Re-render the current view
+    if (currentView === 'home') {
       await showHomePage();
-    };
-    
-    showNotification('界面设置已更新', 'success');
-    
-    // Add button to notification
-    setTimeout(() => {
-      const notifications = document.querySelectorAll('.bg-green-500');
-      if (notifications.length > 0) {
-        const lastNotification = notifications[notifications.length - 1];
-        const textSpan = lastNotification.querySelector('span');
-        if (textSpan && textSpan.textContent.includes('界面设置已更新')) {
-          textSpan.appendChild(viewChangesBtn);
-        }
-      }
-    }, 100);
+    } else if (currentView === 'dashboard') {
+      await showDashboard();
+    } else if (currentView === 'admin') {
+      await showAdminPanel();
+    } else if (currentView === 'my-documents') {
+      await showMyDocuments();
+    } else {
+      // Default to home page if view unknown
+      await showHomePage();
+    }
   } catch (error) {
     console.error('Failed to save UI settings:', error);
     const errorMsg = error.response?.data?.error || (typeof i18n !== 'undefined' && i18n.t ? i18n.t('saveFailed') : '保存失败');
