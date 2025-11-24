@@ -27,6 +27,50 @@
 
 ---
 
+## 🐛 V8.7.1 修复 - 保存复盘错误修复 (2025-11-24)
+
+**问题描述**:
+- 用户保存复盘时出现 `TypeError: Cannot set properties of null (setting 'textContent')` 错误
+- 错误发生在 `handleQuestionTypeChange()` 函数中
+- 导致无法正常保存复盘数据到数据库
+
+**根本原因**:
+- `handleQuestionTypeChange()` 和 `collectQuestionFormData()` 函数缺少null检查
+- 当DOM元素不存在时，尝试访问或设置属性导致TypeError
+- 在某些情况下，保存复盘时会调用这些函数，但相关表单元素可能不在DOM中
+
+**解决方案** ✅:
+1. **handleQuestionTypeChange()**: 添加全面的null检查
+   ```javascript
+   // 检查所有必需元素是否存在
+   if (!answerLengthContainer || !timeTypeContainer || !optionsContainer || 
+       !correctAnswerContainer || !singleChoiceAnswer || !multipleChoiceAnswer || 
+       !questionTextContainer || !questionTextLabel) {
+     console.warn('[handleQuestionTypeChange] Some required elements are missing');
+     return;
+   }
+   ```
+
+2. **collectQuestionFormData()**: 添加表单元素null检查
+   ```javascript
+   const typeElement = document.getElementById('question-type');
+   const questionTextElement = document.getElementById('question-text');
+   
+   if (!typeElement || !questionTextElement) {
+     throw new Error('Required form elements are missing');
+   }
+   ```
+
+3. **版本更新**: 更新版本号到 8.7.1，强制浏览器刷新缓存
+
+**测试验证**:
+- ✅ 保存复盘功能正常
+- ✅ 不再出现 TypeError
+- ✅ 数据正确保存到数据库
+- ✅ 所有表单操作正常
+
+---
+
 ## 📱 V8.7.0 新增 - 移动端专属应用 (2025-11-24)
 
 **重大更新**: 全新打造的移动端专属应用界面！
