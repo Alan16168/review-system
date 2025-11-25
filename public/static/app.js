@@ -12596,7 +12596,7 @@ async function showSubscriptionManagement(container) {
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 超级会员年费（美元）
               </label>
-              <input type="number" step="0.01" id="super-price" value="${premiumConfig?.super_price_usd || 120}" 
+              <input type="number" step="0.01" id="super-price" value="${premiumConfig?.super_price_usd || 2}" 
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
               <p class="text-xs text-gray-500 mt-1">新用户升级至超级会员价格</p>
             </div>
@@ -12604,7 +12604,7 @@ async function showSubscriptionManagement(container) {
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 超级会员续费费用（美元）
               </label>
-              <input type="number" step="0.01" id="super-renewal-price" value="${premiumConfig?.super_renewal_price_usd || 120}" 
+              <input type="number" step="0.01" id="super-renewal-price" value="${premiumConfig?.super_renewal_price_usd || 2}" 
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
               <p class="text-xs text-gray-500 mt-1">现有超级会员续费价格</p>
             </div>
@@ -19478,11 +19478,11 @@ async function showPricingPlans() {
                 <div class="space-y-3 mb-6">
                   <div class="flex justify-between items-center py-2 border-b border-gray-200">
                     <span class="text-gray-700 font-medium">年费（首次购买）</span>
-                    <span class="text-2xl font-bold text-purple-600">$${superPlan.price_usd || 120}</span>
+                    <span class="text-2xl font-bold text-purple-600">$${superPlan.price_usd || 2}</span>
                   </div>
                   <div class="flex justify-between items-center py-2">
                     <span class="text-gray-700 font-medium">续费费用（年费）</span>
-                    <span class="text-2xl font-bold text-green-600">$${superPlan.renewal_price_usd || 100}</span>
+                    <span class="text-2xl font-bold text-green-600">$${superPlan.renewal_price_usd || 2}</span>
                   </div>
                 </div>
                 <ul class="space-y-2 mb-6 text-sm">
@@ -19503,7 +19503,7 @@ async function showPricingPlans() {
                     <span class="text-gray-700">更多高级功能</span>
                   </li>
                 </ul>
-                <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('super', ${superPlan.price_usd || 120})` : 'showLogin()'}" 
+                <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('super', ${superPlan.price_usd || 2})` : 'showLogin()'}" 
                         class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition">
                   <i class="fas fa-shopping-cart mr-2"></i>${currentUser ? '立即订阅' : '登录订阅'}
                 </button>
