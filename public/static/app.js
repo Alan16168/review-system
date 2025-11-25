@@ -12939,7 +12939,7 @@ async function proceedToCheckout() {
                   id: item.id,
                   tier: item.subscription_tier,
                   item_type: item.item_type,
-                  price_usd: item.price_usd,
+                  price_usd: item.price_usd || item.price_user || item.user_price,
                   duration_days: item.duration_days
                 }))
               });
@@ -13079,7 +13079,14 @@ async function confirmCheckout() {
     
   } catch (error) {
     console.error('Confirm checkout error:', error);
-    showNotification(i18n.t('paymentFailed') || '支付失败: ' + (error.response?.data?.error || error.message), 'error');
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
+    const errorMessage = error.response?.data?.error || error.response?.data?.details || error.message || 'Unknown error';
+    showNotification(i18n.t('paymentFailed') || '支付失败: ' + errorMessage, 'error');
     
     const confirmBtn = document.getElementById('confirm-checkout-btn');
     if (confirmBtn) {

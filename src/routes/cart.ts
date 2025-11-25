@@ -67,6 +67,7 @@ cart.get('/', async (c) => {
           price_user: item.price_usd,
           price_premium: item.price_usd,
           price_super: item.price_usd,
+          price_usd: item.price_usd,  // Add this for compatibility with payment API
           duration_days: item.duration_days,
           quantity: 1,
           is_active: true,
@@ -106,9 +107,9 @@ cart.get('/', async (c) => {
               id,
               name,
               description,
-              COALESCE(price_basic, price, 0) as price_user,
-              COALESCE(price_premium, price, 0) as price_premium,
-              COALESCE(price_super, price, 0) as price_super,
+              price as price_user,
+              price_premium,
+              price_super,
               'review_template' as product_type,
               'review_template' as category,
               is_active

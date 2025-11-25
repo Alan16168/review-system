@@ -87,9 +87,9 @@ app.get('/products', async (c) => {
           NULL as name_en,
           description,
           NULL as description_en,
-          COALESCE(price_basic, price, 0) as price_user,
-          COALESCE(price_premium, price, 0) as price_premium,
-          COALESCE(price_super, price, 0) as price_super,
+          price as price_user,
+          price_premium,
+          price_super,
           0 as is_free,
           0 as is_subscription,
           NULL as subscription_tier,
@@ -216,10 +216,10 @@ app.get('/products/:id', async (c) => {
           NULL as name_en,
           description,
           NULL as description_en,
-          COALESCE(price_basic, price, 0) as price_user,
-          COALESCE(price_premium, price, 0) as price_premium,
-          COALESCE(price_super, price, 0) as price_super,
-          CASE WHEN COALESCE(price_basic, price, 0) = 0 THEN 1 ELSE 0 END as is_free,
+          price as price_user,
+          price_premium,
+          price_super,
+          CASE WHEN price = 0 THEN 1 ELSE 0 END as is_free,
           0 as is_subscription,
           NULL as subscription_tier,
           0 as credits_cost,
@@ -901,11 +901,12 @@ app.post('/checkout', async (c) => {
     const cartItems = [];
     for (const cartItem of cartItemsRaw.results) {
       const productId = cartItem.product_id;
-      console.log('Processing cart item:', productId);
+      console.log('Processing cart item:', { productId, cartItem });
       let product: any = null;
       
       // Check if writing template (wt_)
       if (typeof productId === 'string' && productId.startsWith('wt_')) {
+        console.log('Identified as writing template:', productId);
         const templateId = parseInt(productId.substring(3));
         product = await c.env.DB.prepare(`
           SELECT 
@@ -922,18 +923,22 @@ app.post('/checkout', async (c) => {
         
         if (product) {
           product.id = productId; // Keep prefixed ID
+          // Ensure is_active is treated as boolean
+          product.is_active = product.is_active === 1 || product.is_active === true;
         }
       } 
       // Check if review template (t_)
       else if (typeof productId === 'string' && productId.startsWith('t_')) {
+        console.log('Identified as review template:', productId);
         const templateId = parseInt(productId.substring(2));
+        console.log('Extracted template ID:', templateId);
         product = await c.env.DB.prepare(`
           SELECT 
             id,
             name,
-            COALESCE(price_basic, price, 0) as price_user,
-            COALESCE(price_premium, price, 0) as price_premium,
-            COALESCE(price_super, price, 0) as price_super,
+            price as price_user,
+            price_premium,
+            price_super,
             'review_template' as product_type,
             is_active
           FROM templates
@@ -941,11 +946,18 @@ app.post('/checkout', async (c) => {
         `).bind(templateId).first();
         
         if (product) {
+          console.log('Found template:', { id: product.id, name: product.name, is_active: product.is_active });
           product.id = productId; // Keep prefixed ID
+          // Ensure is_active is treated as boolean
+          product.is_active = product.is_active === 1 || product.is_active === true;
+          console.log('After boolean conversion, is_active:', product.is_active);
+        } else {
+          console.error('Template not found in database for ID:', templateId);
         }
       }
       // Regular marketplace product
       else {
+        console.log('Identified as marketplace product:', productId);
         product = await c.env.DB.prepare(`
           SELECT 
             id,
@@ -969,14 +981,27 @@ app.post('/checkout', async (c) => {
           ...product
         });
       } else {
-        console.warn('Product not found or inactive:', productId);
+        console.warn('Product not found or inactive:', {
+          productId,
+          productExists: !!product,
+          isActive: product?.is_active,
+          productData: product
+        });
       }
     }
     
     console.log('Final cart items count:', cartItems.length);
+    console.log('Cart items details:', JSON.stringify(cartItems, null, 2));
     
     if (cartItems.length === 0) {
-      return c.json({ success: false, error: 'No active products in cart' }, 400);
+      console.error('Checkout failed: No active products in cart');
+      console.error('Raw cart items from DB:', JSON.stringify(items, null, 2));
+      return c.json({ 
+        success: false, 
+        error: 'No active products in cart',
+        details: 'All products in cart are either not found or inactive',
+        cartItemCount: items.length
+      }, 400);
     }
     
     // Create purchase records for each item

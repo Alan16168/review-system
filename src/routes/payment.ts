@@ -165,7 +165,11 @@ payment.post('/subscription/create-order', async (c) => {
     });
   } catch (error) {
     console.error('Create order error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('Error stack:', error instanceof Error ? error.stack : String(error));
+    return c.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 });
 
@@ -410,7 +414,11 @@ payment.post('/cart/create-order', authMiddleware, async (c) => {
     return c.json({ orderId: order.id });
   } catch (error) {
     console.error('Create cart order error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('Error stack:', error instanceof Error ? error.stack : String(error));
+    return c.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 });
 
