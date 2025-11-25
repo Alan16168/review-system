@@ -323,14 +323,27 @@ export default payment;
 payment.post('/cart/create-order', authMiddleware, async (c) => {
   try {
     const user = c.get('user') as UserPayload;
-    const { items } = await c.req.json();
     
-    if (!items || items.length === 0) {
+    // Parse request body and validate items
+    const body = await c.req.json();
+    console.log('📦 Create order request body:', body);
+    
+    const checkoutItems = body.items;
+    
+    if (!checkoutItems || !Array.isArray(checkoutItems) || checkoutItems.length === 0) {
+      console.error('❌ Cart is empty or invalid:', { checkoutItems });
       return c.json({ error: 'Cart is empty' }, 400);
     }
     
+    console.log('✅ Checkout items validated:', checkoutItems.length);
+    
     // Calculate total
-    const total = items.reduce((sum: number, item: any) => sum + parseFloat(item.price_usd), 0);
+    const total = checkoutItems.reduce((sum: number, item: any) => {
+      const price = parseFloat(item.price_usd || item.price_user || '0');
+      return sum + price;
+    }, 0);
+    
+    console.log('💰 Total calculated:', total);
     
     // Get PayPal credentials
     const clientId = c.env.PAYPAL_CLIENT_ID;
@@ -338,16 +351,38 @@ payment.post('/cart/create-order', authMiddleware, async (c) => {
     const mode = c.env.PAYPAL_MODE || 'sandbox';
     
     if (!clientId || !clientSecret) {
+      console.error('❌ PayPal not configured');
       return c.json({ error: 'PayPal not configured' }, 500);
     }
     
     // Get access token
     const accessToken = await getPayPalAccessToken(clientId, clientSecret, mode);
+    console.log('✅ PayPal access token obtained');
     
     // Create order
     const base = mode === 'live' 
       ? 'https://api-m.paypal.com'
       : 'https://api-m.sandbox.paypal.com';
+    
+    const paypalItems = checkoutItems.map((item: any) => {
+      const itemName = item.item_type === 'subscription' 
+        ? `${item.tier === 'premium' ? 'Premium' : 'Super'} Membership`
+        : (item.name_en || item.name || 'Product');
+      
+      const price = parseFloat(item.price_usd || item.price_user || '0');
+      
+      return {
+        name: itemName,
+        description: `${item.duration_days || 365} days subscription`,
+        unit_amount: {
+          currency_code: 'USD',
+          value: price.toFixed(2)
+        },
+        quantity: '1'
+      };
+    });
+    
+    console.log('📝 PayPal items prepared:', paypalItems);
     
     const orderData = {
       intent: 'CAPTURE',
@@ -362,15 +397,7 @@ payment.post('/cart/create-order', authMiddleware, async (c) => {
             }
           }
         },
-        items: items.map((item: any) => ({
-          name: item.item_type === 'upgrade' ? 'Premium Upgrade' : 'Premium Renewal',
-          description: `${item.duration_days} days subscription`,
-          unit_amount: {
-            currency_code: 'USD',
-            value: parseFloat(item.price_usd).toFixed(2)
-          },
-          quantity: '1'
-        }))
+        items: paypalItems
       }]
     };
     
@@ -386,12 +413,18 @@ payment.post('/cart/create-order', authMiddleware, async (c) => {
     const order = await orderResponse.json();
     
     if (!orderResponse.ok) {
-      console.error('PayPal create order error:', order);
-      return c.json({ error: 'Failed to create PayPal order' }, 500);
+      console.error('❌ PayPal create order error:', order);
+      return c.json({ error: 'Failed to create PayPal order', details: order }, 500);
     }
     
+    console.log('✅ PayPal order created:', order.id);
+    
     // Save payment records for each item
-    for (const item of items) {
+    for (const item of checkoutItems) {
+      const price = parseFloat(item.price_usd || item.price_user || '0');
+      const tier = item.subscription_tier || item.tier || 'premium';
+      const durationDays = item.duration_days || 365;
+      
       await c.env.DB.prepare(`
         INSERT INTO payments (
           user_id, amount_usd, currency, payment_method, payment_status,
@@ -400,22 +433,31 @@ payment.post('/cart/create-order', authMiddleware, async (c) => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         user.id,
-        parseFloat(item.price_usd),
+        price,
         'USD',
         'paypal',
         'pending',
         order.id,
-        item.tier,
-        item.duration_days,
-        JSON.stringify({ cart_item_id: item.id, item_type: item.item_type })
+        tier,
+        durationDays,
+        JSON.stringify({ cart_item_id: item.id, item_type: item.item_type || 'subscription' })
       ).run();
+      
+      console.log('✅ Payment record saved for item:', item.id);
     }
     
-    return c.json({ orderId: order.id });
-  } catch (error) {
-    console.error('Create cart order error:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : String(error));
     return c.json({ 
+      success: true,
+      orderId: order.id 
+    });
+  } catch (error) {
+    console.error('❌ Create cart order error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    return c.json({ 
+      success: false,
       error: 'Internal server error',
       details: error instanceof Error ? error.message : String(error)
     }, 500);
