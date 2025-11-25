@@ -995,7 +995,7 @@ app.post('/checkout', async (c) => {
     
     if (cartItems.length === 0) {
       console.error('Checkout failed: No active products in cart');
-      console.error('Raw cart items from DB:', JSON.stringify(items, null, 2));
+      console.error('Raw cart items from DB:', JSON.stringify(cartItemsRaw.results, null, 2));
       return c.json({ 
         success: false, 
         error: 'No active products in cart',
