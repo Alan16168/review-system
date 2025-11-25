@@ -6111,29 +6111,75 @@ async function showTeamReviewCollaboration(id) {
                     </div>
                     
                     ${otherAnswers.length > 0 ? `
-                      <!-- Other Members' Answers (Readonly) -->
+                      <!-- Other Members' Answers (Readonly) - Grouped by Username -->
                       <div class="space-y-3 pt-2">
-                        ${otherAnswers.map(answer => `
-                          <div class="border-l-4 border-green-500 pl-4 bg-gray-50 p-3 rounded-r">
-                            <div class="flex justify-between items-start mb-2">
-                              <div class="flex items-center">
-                                <i class="fas fa-user-circle text-lg text-gray-400 mr-2"></i>
-                                <div>
-                                  <span class="text-sm font-semibold text-gray-700">
-                                    <i class="fas fa-users mr-1"></i>${i18n.t('memberAnswers')} - ${escapeHtml(answer.username)}
-                                  </span>
-                                  <span class="text-xs text-gray-500 ml-2">
-                                    <i class="fas fa-clock mr-1"></i>${new Date(answer.updated_at).toLocaleString()}
-                                  </span>
+                        ${(() => {
+                          // Group answers by username
+                          const groupedByUser = {};
+                          otherAnswers.forEach(answer => {
+                            const username = answer.username || 'Unknown';
+                            if (!groupedByUser[username]) {
+                              groupedByUser[username] = [];
+                            }
+                            groupedByUser[username].push(answer);
+                          });
+                          
+                          // Sort groups by most recent answer timestamp (newest first)
+                          const sortedUsers = Object.keys(groupedByUser).sort((a, b) => {
+                            const aLatest = Math.max(...groupedByUser[a].map(ans => new Date(ans.updated_at).getTime()));
+                            const bLatest = Math.max(...groupedByUser[b].map(ans => new Date(ans.updated_at).getTime()));
+                            return bLatest - aLatest; // Descending order (newest first)
+                          });
+                          
+                          // Generate HTML for each user group
+                          return sortedUsers.map(username => {
+                            const userAnswers = groupedByUser[username];
+                            const groupId = 'user-group-' + num + '-' + username.replace(/[^a-zA-Z0-9]/g, '');
+                            const latestTimestamp = Math.max(...userAnswers.map(ans => new Date(ans.updated_at).getTime()));
+                            const answerCount = userAnswers.length;
+                            
+                            return `
+                              <div class="border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+                                <!-- Group Header with Collapse/Expand Button -->
+                                <div class="flex justify-between items-center p-3 bg-green-50 border-b border-gray-300">
+                                  <div class="flex items-center">
+                                    <i class="fas fa-user-circle text-xl text-gray-600 mr-2"></i>
+                                    <div>
+                                      <span class="text-sm font-semibold text-gray-800">
+                                        ${escapeHtml(username)}
+                                      </span>
+                                      <span class="text-xs text-gray-500 ml-2">
+                                        (${answerCount} ${answerCount === 1 ? i18n.t('answer') || '个答案' : i18n.t('answers') || '个答案'})
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <button 
+                                    onclick="toggleUserGroup('${groupId}')"
+                                    class="px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition-colors"
+                                    id="toggle-btn-${groupId}"
+                                  >
+                                    <i class="fas fa-chevron-up mr-1"></i>
+                                    <span id="toggle-text-${groupId}">${i18n.t('collapse') || '收起'}</span>
+                                  </button>
+                                </div>
+                                
+                                <!-- User's Answers (Collapsible) -->
+                                <div id="${groupId}" class="space-y-3 p-3">
+                                  ${userAnswers.map(answer => `
+                                    <div class="border-l-4 border-green-500 pl-4 bg-white p-3 rounded-r">
+                                      <div class="flex justify-between items-start mb-2">
+                                        <span class="text-xs text-gray-500">
+                                          <i class="fas fa-clock mr-1"></i>${new Date(answer.updated_at).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      <p class="text-gray-800 whitespace-pre-wrap">${escapeHtml(answer.answer)}</p>
+                                    </div>
+                                  `).join('')}
                                 </div>
                               </div>
-                            </div>
-                            <p class="text-gray-800 whitespace-pre-wrap">${escapeHtml(answer.answer)}</p>
-                            <p class="text-xs text-gray-500 mt-2">
-                              <i class="fas fa-lock mr-1"></i>${i18n.t('cannotEditOthersAnswers') || '不能修改其他成员的答案'}
-                            </p>
-                          </div>
-                        `).join('')}
+                            `;
+                          }).join('');
+                        })()}
                       </div>
                     ` : `
                       <div class="text-center py-6 text-gray-400 bg-gray-50 rounded-lg">
@@ -6152,6 +6198,30 @@ async function showTeamReviewCollaboration(id) {
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     showReviewDetail(id);
+  }
+}
+
+// Toggle user group collapse/expand
+function toggleUserGroup(groupId) {
+  const groupDiv = document.getElementById(groupId);
+  const toggleBtn = document.getElementById('toggle-btn-' + groupId);
+  const toggleText = document.getElementById('toggle-text-' + groupId);
+  const icon = toggleBtn.querySelector('i');
+  
+  if (!groupDiv || !toggleText || !icon) return;
+  
+  if (groupDiv.classList.contains('hidden')) {
+    // Expand
+    groupDiv.classList.remove('hidden');
+    icon.classList.remove('fa-chevron-down');
+    icon.classList.add('fa-chevron-up');
+    toggleText.textContent = i18n.t('collapse') || '收起';
+  } else {
+    // Collapse
+    groupDiv.classList.add('hidden');
+    icon.classList.remove('fa-chevron-up');
+    icon.classList.add('fa-chevron-down');
+    toggleText.textContent = i18n.t('expand') || '展开';
   }
 }
 
