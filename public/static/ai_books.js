@@ -1815,13 +1815,13 @@ const AIBooksManager = {
           </div>
           
           <!-- Editor Container -->
-          <div class="flex-1 overflow-y-auto px-6 py-4">
+          <div class="flex-1 overflow-y-auto px-6 py-4" style="min-height: 600px;">
             <div class="mb-4">
               <label class="block text-sm font-semibold text-gray-700 mb-2">
                 <i class="fas fa-file-alt mr-1"></i>小节内容
               </label>
               <!-- TinyMCE Editor -->
-              <textarea id="tinymceEditor">${contentForEditor}</textarea>
+              <textarea id="tinymceEditor" style="min-height: 500px;">${contentForEditor}</textarea>
               <div class="mt-3 flex justify-between items-center">
                 <small class="text-gray-500">
                   <i class="fas fa-info-circle"></i>
@@ -1885,7 +1885,7 @@ const AIBooksManager = {
     // Initialize TinyMCE Editor with full features
     tinymce.init({
       selector: '#tinymceEditor',
-      height: 500,
+      height: 600,
       language: 'zh_CN',
       promotion: false, // 隐藏域名警告和升级提示
       branding: false,  // 隐藏 "Powered by TinyMCE"
