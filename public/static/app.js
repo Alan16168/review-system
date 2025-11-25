@@ -181,7 +181,18 @@ document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
 });
 
-function checkAuth() {
+async function checkAuth() {
+  // Load dynamic UI settings first to ensure custom titles are available
+  await loadDynamicUISettings();
+  
+  // Check if we should show home page after reload (e.g., after language change)
+  const showHomeAfterReload = sessionStorage.getItem('showHomeAfterReload');
+  if (showHomeAfterReload) {
+    sessionStorage.removeItem('showHomeAfterReload');
+    // Force showing home page
+    currentView = 'home';
+  }
+  
   // Check if URL contains password reset token or invitation token
   const urlParams = new URLSearchParams(window.location.search);
   const resetToken = urlParams.get('token');
@@ -216,8 +227,8 @@ function checkAuth() {
     authToken = token;
     currentUser = JSON.parse(user);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    // If on home page, stay on home; otherwise show dashboard
-    if (currentView === 'home') {
+    // If showHomeAfterReload flag is set or on home page, show home page
+    if (showHomeAfterReload || currentView === 'home') {
       showHomePage();
     } else {
       showDashboard();
@@ -265,6 +276,9 @@ async function showHomePage() {
   
   currentView = 'home';
   const app = document.getElementById('app');
+  
+  // Debug: Check if systemTitle is set correctly
+  console.log('[HomePage] systemTitle =', i18n.t('systemTitle'));
   
   app.innerHTML = `
     <div class="min-h-screen bg-white">
@@ -536,6 +550,9 @@ async function showHomePage() {
   
   // Initialize carousel
   initCarousel();
+  
+  // Apply dynamic UI settings after DOM is ready
+  await applyUISettingsToDOM();
 }
 
 // Carousel functionality
@@ -10206,9 +10223,21 @@ async function showUserSettings() {
                     <!-- Current Level -->
                     <div>
                       <p class="text-sm text-gray-600 mb-1">${i18n.t('currentLevel') || '当前级别'}</p>
-                      <p class="text-2xl font-bold ${settings.role === 'premium' ? 'text-yellow-600' : 'text-gray-700'}">
-                        <i class="fas ${settings.role === 'premium' ? 'fa-crown' : 'fa-user-circle'} mr-2"></i>
-                        ${settings.role === 'premium' ? (i18n.t('premiumUser') || '高级用户') : (i18n.t('freeUser') || '免费用户')}
+                      <p class="text-2xl font-bold ${
+                        settings.subscription_tier === 'super' ? 'text-orange-600' : 
+                        settings.subscription_tier === 'premium' ? 'text-yellow-600' : 
+                        'text-gray-700'
+                      }">
+                        <i class="fas ${
+                          settings.subscription_tier === 'super' ? 'fa-gem' : 
+                          settings.subscription_tier === 'premium' ? 'fa-crown' : 
+                          'fa-user-circle'
+                        } mr-2"></i>
+                        ${
+                          settings.subscription_tier === 'super' ? (i18n.t('superMember') || '超级会员') :
+                          settings.subscription_tier === 'premium' ? (i18n.t('premiumMember') || '高级会员') : 
+                          (i18n.t('freeUser') || '免费用户')
+                        }
                       </p>
                     </div>
                     
@@ -10220,7 +10249,7 @@ async function showUserSettings() {
                           ? new Date(settings.subscription_expires_at).toLocaleDateString() 
                           : (i18n.t('forever') || '永久')}
                       </p>
-                      ${settings.role === 'premium' && settings.subscription_expires_at && settings.subscription_expires_at !== '9999-12-31 23:59:59' ? `
+                      ${(settings.subscription_tier === 'premium' || settings.subscription_tier === 'super') && settings.subscription_expires_at && settings.subscription_expires_at !== '9999-12-31 23:59:59' ? `
                         <p class="text-xs text-gray-500 mt-1">
                           ${(() => {
                             const daysLeft = Math.ceil((new Date(settings.subscription_expires_at) - new Date()) / (1000 * 60 * 60 * 24));
@@ -10233,9 +10262,21 @@ async function showUserSettings() {
                     <!-- Action Button -->
                     <div class="flex items-center justify-end">
                       <button onclick="showUpgradeModal()" 
-                              class="bg-gradient-to-r ${settings.role === 'premium' ? 'from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700' : 'from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'} text-white px-8 py-3 rounded-lg transition font-semibold shadow-lg transform hover:scale-105">
-                        <i class="fas ${settings.role === 'premium' ? 'fa-sync-alt' : 'fa-arrow-up'} mr-2"></i>
-                        ${settings.role === 'premium' ? (i18n.t('renew') || '续费') : (i18n.t('upgrade') || '升级')}
+                              class="bg-gradient-to-r ${
+                                (settings.subscription_tier === 'premium' || settings.subscription_tier === 'super') 
+                                  ? 'from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700' 
+                                  : 'from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
+                              } text-white px-8 py-3 rounded-lg transition font-semibold shadow-lg transform hover:scale-105">
+                        <i class="fas ${
+                          (settings.subscription_tier === 'premium' || settings.subscription_tier === 'super') 
+                            ? 'fa-sync-alt' 
+                            : 'fa-arrow-up'
+                        } mr-2"></i>
+                        ${
+                          (settings.subscription_tier === 'premium' || settings.subscription_tier === 'super') 
+                            ? (i18n.t('renew') || '续费') 
+                            : (i18n.t('upgrade') || '升级')
+                        }
                       </button>
                     </div>
                   </div>
@@ -10331,9 +10372,11 @@ async function handleSaveSettings() {
     
     showNotification(i18n.t('settingsUpdated'), 'success');
     
-    // If language changed, reload to apply new language
+    // If language changed, reload to apply new language and show home page
     if (language !== i18n.getCurrentLanguage()) {
       setTimeout(() => {
+        // Set flag to show home page after reload
+        sessionStorage.setItem('showHomeAfterReload', 'true');
         i18n.setLanguage(language);
       }, 1000);
     } else {
@@ -12484,29 +12527,150 @@ async function showUpgradeModal() {
     ]);
     
     const user = userResponse.data;
-    const { premium } = configResponse.data;
-    const isRenewal = user.role === 'premium';
+    const { premium, super: superPlan } = configResponse.data;
+    const isRenewal = user.subscription_tier === 'premium' || user.subscription_tier === 'super';
     
-    // Determine price based on user type
-    const price = isRenewal ? premium.renewal_price : premium.price;
-    const itemType = isRenewal ? 'renewal' : 'upgrade';
-    const serviceTitle = isRenewal ? (i18n.t('renewalService') || '续费服务') : (i18n.t('upgradeService') || '升级服务');
+    // Determine prices based on user type
+    const premiumPrice = isRenewal ? premium.renewal_price : premium.price;
+    const superPrice = isRenewal ? superPlan.renewal_price : superPlan.price;
+    
+    // Create modal HTML
+    const modalHtml = `
+      <div id="upgrade-selection-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <!-- Header -->
+          <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-t-lg">
+            <div class="flex justify-between items-center">
+              <h2 class="text-2xl font-bold">
+                <i class="fas fa-crown mr-2"></i>
+                ${isRenewal ? (i18n.t('renewSubscription') || '续费会员') : (i18n.t('upgradeToMember') || '升级会员')}
+              </h2>
+              <button onclick="closeUpgradeSelectionModal()" class="text-white hover:text-gray-200 transition">
+                <i class="fas fa-times text-2xl"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Content -->
+          <div class="p-6 space-y-4">
+            <p class="text-gray-600 text-center mb-6">
+              ${i18n.t('selectMembershipPlan') || '请选择您要购买的会员套餐'}
+            </p>
+            
+            <!-- Premium Plan -->
+            <div class="border-2 border-purple-200 rounded-lg p-6 hover:border-purple-400 transition cursor-pointer bg-gradient-to-br from-purple-50 to-indigo-50"
+                 onclick="addSubscriptionToCart('premium', ${premiumPrice})">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h3 class="text-xl font-bold text-purple-700 mb-2">
+                    <i class="fas fa-star mr-2"></i>
+                    ${i18n.t('premiumMember') || '高级会员'}
+                  </h3>
+                  <p class="text-sm text-gray-600">${premium.description || '享受高级功能和服务'}</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-3xl font-bold text-purple-600">$${premiumPrice}</div>
+                  <div class="text-sm text-gray-500">${i18n.t('perYear') || '/ 年'}</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-4 border-t border-purple-200">
+                <span class="text-sm text-gray-600">
+                  <i class="fas fa-calendar-alt mr-2"></i>
+                  ${i18n.t('validFor365Days') || '有效期 365 天'}
+                </span>
+                <button class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-semibold">
+                  <i class="fas fa-shopping-cart mr-2"></i>
+                  ${i18n.t('select') || '选择'}
+                </button>
+              </div>
+            </div>
+            
+            <!-- Super Plan -->
+            <div class="border-2 border-yellow-200 rounded-lg p-6 hover:border-yellow-400 transition cursor-pointer bg-gradient-to-br from-yellow-50 to-orange-50"
+                 onclick="addSubscriptionToCart('super', ${superPrice})">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h3 class="text-xl font-bold text-yellow-700 mb-2">
+                    <i class="fas fa-gem mr-2"></i>
+                    ${i18n.t('superMember') || '超级会员'}
+                  </h3>
+                  <p class="text-sm text-gray-600">${superPlan.description || '尊享顶级功能和专属服务'}</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-3xl font-bold text-yellow-600">$${superPrice}</div>
+                  <div class="text-sm text-gray-500">${i18n.t('perYear') || '/ 年'}</div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-4 border-t border-yellow-200">
+                <span class="text-sm text-gray-600">
+                  <i class="fas fa-calendar-alt mr-2"></i>
+                  ${i18n.t('validFor365Days') || '有效期 365 天'}
+                </span>
+                <button class="bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-6 py-2 rounded-lg hover:from-yellow-700 hover:to-orange-700 transition font-semibold">
+                  <i class="fas fa-shopping-cart mr-2"></i>
+                  ${i18n.t('select') || '选择'}
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div class="bg-gray-50 px-6 py-4 rounded-b-lg border-t border-gray-200">
+            <p class="text-sm text-gray-500 text-center">
+              <i class="fas fa-info-circle mr-2"></i>
+              ${i18n.t('addToCartNote') || '选择后将添加到购物车，您可以继续选购其他商品后统一结算'}
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Add modal to page
+    const existingModal = document.getElementById('upgrade-selection-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+  } catch (error) {
+    console.error('Show upgrade modal error:', error);
+    showNotification(i18n.t('operationFailed') || '操作失败', 'error');
+  }
+}
+
+// Close upgrade selection modal
+function closeUpgradeSelectionModal() {
+  const modal = document.getElementById('upgrade-selection-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Add selected subscription to cart
+async function addSubscriptionToCart(tier, price) {
+  try {
+    const isRenewal = currentUser.subscription_tier === 'premium' || currentUser.subscription_tier === 'super';
+    const serviceTitle = tier === 'premium' 
+      ? (i18n.t('premiumMember') || '高级会员')
+      : (i18n.t('superMember') || '超级会员');
     
     // Add to cart
-    // Note: item_type must be 'subscription' or 'product' (database constraint)
     await axios.post('/api/cart', {
-      item_type: 'subscription',  // Fixed: must be 'subscription', not 'upgrade'/'renewal'
-      subscription_tier: 'premium',
+      item_type: 'subscription',
+      subscription_tier: tier,
       price_usd: price,
       duration_days: 365,
       description: serviceTitle + (isRenewal ? ' (续费)' : ' (升级)'),
-      description_en: (isRenewal ? 'Renewal Service' : 'Upgrade Service') + ' - Premium'
+      description_en: `${tier === 'premium' ? 'Premium' : 'Super'} Member ${isRenewal ? '(Renewal)' : '(Upgrade)'}`
     });
     
     showNotification(i18n.t('addedToCart') || '已添加到购物车', 'success');
     
     // Update cart count
     await updateCartCount();
+    
+    // Close modal
+    closeUpgradeSelectionModal();
     
   } catch (error) {
     console.error('Add to cart error:', error);
@@ -19178,14 +19342,16 @@ async function loadDynamicUISettings() {
         const parsed = JSON.parse(setting.setting_value);
         const value = parsed[currentLang] || parsed['zh'] || setting.setting_value;
         
-        // Override i18n translation
-        if (typeof i18n !== 'undefined' && i18n.translations && i18n.translations[currentLang]) {
-          i18n.translations[currentLang][i18nKey] = value;
+        // Override global translations object (used by i18n.t())
+        if (typeof translations !== 'undefined' && translations[currentLang]) {
+          console.log(`[Dynamic UI] Setting ${i18nKey} = "${value}"`);
+          translations[currentLang][i18nKey] = value;
         }
       } catch {
         // If not JSON, use raw value
-        if (typeof i18n !== 'undefined' && i18n.translations && i18n.translations[currentLang]) {
-          i18n.translations[currentLang][i18nKey] = setting.setting_value;
+        if (typeof translations !== 'undefined' && translations[currentLang]) {
+          console.log(`[Dynamic UI] Setting ${i18nKey} = "${setting.setting_value}" (raw)`);
+          translations[currentLang][i18nKey] = setting.setting_value;
         }
       }
     });
@@ -19284,13 +19450,55 @@ function updateContactEmail(email) {
   }
 }
 
-// Auto-load dynamic UI settings when page loads
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', loadDynamicUISettings);
-} else {
-  // DOM already loaded
-  loadDynamicUISettings();
+/**
+ * Apply UI settings to DOM after page rendering
+ * This ensures dynamic settings are applied even after page content is rendered
+ */
+async function applyUISettingsToDOM() {
+  try {
+    // Fetch UI settings from API
+    const response = await axios.get('/api/system-settings/category/ui');
+    const settings = response.data.settings || [];
+    
+    if (settings.length === 0) return;
+    
+    // Get current language
+    const currentLang = (typeof i18n !== 'undefined' && i18n.getCurrentLanguage) 
+      ? i18n.getCurrentLanguage() 
+      : 'zh';
+    
+    // Update contact email
+    const emailSetting = settings.find(s => s.setting_key === 'ui_contact_email');
+    if (emailSetting) {
+      try {
+        const parsed = JSON.parse(emailSetting.setting_value);
+        const emailText = parsed[currentLang] || parsed['zh'] || emailSetting.setting_value;
+        updateContactEmail(emailText);
+      } catch {
+        updateContactEmail(emailSetting.setting_value);
+      }
+    }
+    
+    // Update team description
+    const teamDescSetting = settings.find(s => s.setting_key === 'ui_team_description');
+    if (teamDescSetting) {
+      try {
+        const parsed = JSON.parse(teamDescSetting.setting_value);
+        const teamText = parsed[currentLang] || parsed['zh'] || teamDescSetting.setting_value;
+        updateTeamDescription(teamText);
+      } catch {
+        updateTeamDescription(teamDescSetting.setting_value);
+      }
+    }
+    
+    console.log('UI settings applied to DOM successfully');
+  } catch (error) {
+    console.error('Failed to apply UI settings to DOM:', error);
+  }
 }
+
+// Note: Dynamic UI settings are now loaded in checkAuth() to ensure
+// they are applied before rendering any page content
 
 // ==================== Legal Documents & Pricing ====================
 

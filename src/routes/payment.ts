@@ -59,10 +59,13 @@ payment.get('/subscription/info', async (c) => {
       return c.json({ error: 'User not found' }, 404);
     }
     
-    // Get premium subscription config
-    const config = await getSubscriptionConfig(c.env.DB, 'premium');
+    // Get both premium and super subscription configs
+    const [premiumConfig, superConfig] = await Promise.all([
+      getSubscriptionConfig(c.env.DB, 'premium'),
+      getSubscriptionConfig(c.env.DB, 'super')
+    ]);
     
-    if (!config) {
+    if (!premiumConfig || !superConfig) {
       return c.json({ error: 'Subscription config not found' }, 404);
     }
     
@@ -70,11 +73,18 @@ payment.get('/subscription/info', async (c) => {
       currentTier: user.subscription_tier || 'free',
       expiresAt: user.subscription_expires_at,
       premium: {
-        price: config.price_usd,
-        renewal_price: config.renewal_price_usd || config.price_usd,
-        durationDays: config.duration_days,
-        description: config.description,
-        descriptionEn: config.description_en,
+        price: premiumConfig.price_usd,
+        renewal_price: premiumConfig.renewal_price_usd || premiumConfig.price_usd,
+        durationDays: premiumConfig.duration_days,
+        description: premiumConfig.description,
+        descriptionEn: premiumConfig.description_en,
+      },
+      super: {
+        price: superConfig.price_usd,
+        renewal_price: superConfig.renewal_price_usd || superConfig.price_usd,
+        durationDays: superConfig.duration_days,
+        description: superConfig.description,
+        descriptionEn: superConfig.description_en,
       }
     });
   } catch (error) {

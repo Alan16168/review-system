@@ -884,9 +884,17 @@ app.post('/checkout', async (c) => {
       return c.json({ success: false, error: 'User not found' }, 404);
     }
     
-    // Get all cart items (raw product_ids)
+    // Get all cart items (including both marketplace products and subscriptions)
     const cartItemsRaw: any = await c.env.DB.prepare(`
-      SELECT id as cart_id, product_id
+      SELECT 
+        id as cart_id, 
+        item_type,
+        product_id,
+        subscription_tier,
+        price_usd,
+        duration_days,
+        description,
+        description_en
       FROM shopping_cart
       WHERE user_id = ?
     `).bind(user.id).all();
@@ -900,12 +908,40 @@ app.post('/checkout', async (c) => {
     // Fetch product details for each cart item
     const cartItems = [];
     for (const cartItem of cartItemsRaw.results) {
+      const itemType = cartItem.item_type;
       const productId = cartItem.product_id;
-      console.log('Processing cart item:', { productId, cartItem });
+      console.log('Processing cart item:', { itemType, productId, cartItem });
       let product: any = null;
       
+      // Handle subscription items (no product_id, use subscription_tier)
+      if (itemType === 'subscription' && cartItem.subscription_tier) {
+        console.log('Identified as subscription:', cartItem.subscription_tier);
+        
+        // Get subscription config
+        const subscriptionConfig = await c.env.DB.prepare(`
+          SELECT * FROM subscription_config WHERE tier = ? AND is_active = 1
+        `).bind(cartItem.subscription_tier).first();
+        
+        if (subscriptionConfig) {
+          product = {
+            id: `sub_${cartItem.subscription_tier}`,
+            name: cartItem.description || `${cartItem.subscription_tier} Membership`,
+            name_en: cartItem.description_en || `${cartItem.subscription_tier} Membership`,
+            price_user: parseFloat(cartItem.price_usd || subscriptionConfig.price_usd),
+            price_premium: parseFloat(subscriptionConfig.renewal_price_usd || subscriptionConfig.price_usd),
+            price_super: parseFloat(subscriptionConfig.renewal_price_usd || subscriptionConfig.price_usd),
+            product_type: 'subscription',
+            subscription_tier: cartItem.subscription_tier,
+            duration_days: cartItem.duration_days || subscriptionConfig.duration_days,
+            is_active: true
+          };
+          console.log('Created subscription product:', product);
+        } else {
+          console.error('Subscription config not found for tier:', cartItem.subscription_tier);
+        }
+      }
       // Check if writing template (wt_)
-      if (typeof productId === 'string' && productId.startsWith('wt_')) {
+      else if (typeof productId === 'string' && productId.startsWith('wt_')) {
         console.log('Identified as writing template:', productId);
         const templateId = parseInt(productId.substring(3));
         product = await c.env.DB.prepare(`
@@ -974,15 +1010,17 @@ app.post('/checkout', async (c) => {
       
       // Only add active products
       if (product && product.is_active) {
-        console.log('Added product to cart items:', productId, product.name);
+        console.log('Added product to cart items:', product.id, product.name);
         cartItems.push({
           cart_id: cartItem.cart_id,
-          product_id: productId,
+          product_id: product.id,  // Use product.id which is set for all types
           ...product
         });
       } else {
         console.warn('Product not found or inactive:', {
+          itemType,
           productId,
+          subscriptionTier: cartItem.subscription_tier,
           productExists: !!product,
           isActive: product?.is_active,
           productData: product
@@ -1000,7 +1038,7 @@ app.post('/checkout', async (c) => {
         success: false, 
         error: 'No active products in cart',
         details: 'All products in cart are either not found or inactive',
-        cartItemCount: items.length
+        cartItemCount: cartItemsRaw.results.length
       }, 400);
     }
     
@@ -1040,15 +1078,57 @@ app.post('/checkout', async (c) => {
         throw new Error(`Failed to create purchase for ${item.name}: ${dbError.message}`);
       }
       
-      // Update product purchase count (only for marketplace products)
-      if (!item.product_id.toString().startsWith('wt_') && !item.product_id.toString().startsWith('t_')) {
+      // Update product purchase count (only for marketplace products, skip subscriptions)
+      if (item.product_type !== 'subscription' && 
+          item.product_id && 
+          !item.product_id.toString().startsWith('wt_') && 
+          !item.product_id.toString().startsWith('t_') &&
+          !item.product_id.toString().startsWith('sub_')) {
         await c.env.DB.prepare(
           'UPDATE marketplace_products SET purchase_count = purchase_count + 1 WHERE id = ?'
         ).bind(item.product_id).run();
       }
       
+      // Handle subscription upgrade
+      if (item.product_type === 'subscription' && item.subscription_tier) {
+        console.log('Processing subscription upgrade:', item.subscription_tier);
+        
+        // Calculate new expiration date (add duration to current date or existing expiration)
+        const currentUser = await c.env.DB.prepare(
+          'SELECT subscription_tier, subscription_expires_at FROM users WHERE id = ?'
+        ).bind(user.id).first();
+        
+        let newExpiresAt: string;
+        const now = new Date();
+        const currentExpires = currentUser?.subscription_expires_at ? new Date(currentUser.subscription_expires_at) : null;
+        
+        // If current subscription is still valid, extend from that date
+        // Otherwise, extend from now
+        if (currentExpires && currentExpires > now) {
+          const extendedDate = new Date(currentExpires);
+          extendedDate.setDate(extendedDate.getDate() + (item.duration_days || 365));
+          newExpiresAt = extendedDate.toISOString();
+        } else {
+          const extendedDate = new Date(now);
+          extendedDate.setDate(extendedDate.getDate() + (item.duration_days || 365));
+          newExpiresAt = extendedDate.toISOString();
+        }
+        
+        // Update user subscription
+        await c.env.DB.prepare(`
+          UPDATE users 
+          SET subscription_tier = ?,
+              subscription_expires_at = ?
+          WHERE id = ?
+        `).bind(item.subscription_tier, newExpiresAt, user.id).run();
+        
+        console.log('Subscription updated:', {
+          tier: item.subscription_tier,
+          expires: newExpiresAt
+        });
+      }
       // Add buyer to appropriate buyers table based on product type
-      if (item.product_type === 'review_template') {
+      else if (item.product_type === 'review_template') {
         // Extract template ID from product_id (format: 't_123')
         const templateId = parseInt(item.product_id.toString().replace(/^t_/, ''));
         await c.env.DB.prepare(`
