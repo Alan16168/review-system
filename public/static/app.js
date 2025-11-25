@@ -12933,9 +12933,15 @@ async function proceedToCheckout() {
         paypal.Buttons({
           createOrder: async () => {
             try {
+              // Get cart items from global variable
+              const checkoutItems = window.currentCheckoutItems;
+              if (!checkoutItems || checkoutItems.length === 0) {
+                throw new Error('No items in checkout');
+              }
+              
               // Create order with cart items
               const orderResponse = await axios.post('/api/payment/cart/create-order', {
-                items: items.map(item => ({
+                items: checkoutItems.map(item => ({
                   id: item.id,
                   tier: item.subscription_tier,
                   item_type: item.item_type,
