@@ -12493,13 +12493,14 @@ async function showUpgradeModal() {
     const serviceTitle = isRenewal ? (i18n.t('renewalService') || '续费服务') : (i18n.t('upgradeService') || '升级服务');
     
     // Add to cart
+    // Note: item_type must be 'subscription' or 'product' (database constraint)
     await axios.post('/api/cart', {
-      item_type: itemType,
+      item_type: 'subscription',  // Fixed: must be 'subscription', not 'upgrade'/'renewal'
       subscription_tier: 'premium',
       price_usd: price,
       duration_days: 365,
-      description: serviceTitle,
-      description_en: isRenewal ? 'Renewal Service' : 'Upgrade Service'
+      description: serviceTitle + (isRenewal ? ' (续费)' : ' (升级)'),
+      description_en: (isRenewal ? 'Renewal Service' : 'Upgrade Service') + ' - Premium'
     });
     
     showNotification(i18n.t('addedToCart') || '已添加到购物车', 'success');
@@ -12531,13 +12532,14 @@ async function showRenewModal() {
     const serviceTitle = i18n.t('renewalService') || '续费服务';
     
     // Add renewal service to cart
+    // Note: item_type must be 'subscription' or 'product' (database constraint)
     await axios.post('/api/cart', {
-      item_type: 'renewal',
+      item_type: 'subscription',  // Fixed: must be 'subscription', not 'renewal'
       subscription_tier: 'premium',
       price_usd: price,
       duration_days: 365,
-      description: serviceTitle,
-      description_en: 'Renewal Service'
+      description: serviceTitle + ' (续费)',
+      description_en: 'Premium Renewal Service'
     });
     
     showNotification(i18n.t('addedToCart') || '已添加到购物车', 'success');
