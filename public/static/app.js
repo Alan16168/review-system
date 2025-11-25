@@ -10195,7 +10195,6 @@ async function showUserSettings() {
             </div>
             
             <!-- User Level Management Section -->
-            ${settings.role !== 'admin' ? `
             <div class="mt-8">
               <h3 class="text-xl font-semibold text-gray-700 mb-4 pb-2 border-b border-gray-200">
                 <i class="fas fa-star text-yellow-500 mr-2"></i>${i18n.t('userLevelManagement') || '用户级别管理'}
@@ -10243,7 +10242,6 @@ async function showUserSettings() {
                 </div>
               </div>
             </div>
-            ` : ''}
             
             <!-- Password Change Section -->
             <div class="mt-8">
@@ -19438,11 +19436,11 @@ async function showPricingPlans() {
                 <div class="space-y-3 mb-6">
                   <div class="flex justify-between items-center py-2 border-b border-gray-200">
                     <span class="text-gray-700 font-medium">年费（首次购买）</span>
-                    <span class="text-2xl font-bold text-indigo-600">$${premiumPlan.price_usd || 20}</span>
+                    <span class="text-2xl font-bold text-indigo-600">$${premiumPlan.price_usd || 2}</span>
                   </div>
                   <div class="flex justify-between items-center py-2">
                     <span class="text-gray-700 font-medium">续费费用（年费）</span>
-                    <span class="text-2xl font-bold text-green-600">$${premiumPlan.renewal_price_usd || 20}</span>
+                    <span class="text-2xl font-bold text-green-600">$${premiumPlan.renewal_price_usd || 2}</span>
                   </div>
                 </div>
                 <ul class="space-y-2 mb-6 text-sm">
@@ -19463,10 +19461,6 @@ async function showPricingPlans() {
                     <span class="text-gray-700">全部模板访问</span>
                   </li>
                 </ul>
-                <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('premium', ${premiumPlan.price_usd || 20})` : 'showLogin()'}" 
-                        class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
-                  <i class="fas fa-shopping-cart mr-2"></i>${currentUser ? '立即订阅' : '登录订阅'}
-                </button>
               </div>
               
               <!-- 超级会员 -->
@@ -19503,10 +19497,6 @@ async function showPricingPlans() {
                     <span class="text-gray-700">更多高级功能</span>
                   </li>
                 </ul>
-                <button onclick="closeModal('pricing-modal'); ${currentUser ? `addToCart('super', ${superPlan.price_usd || 2})` : 'showLogin()'}" 
-                        class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition">
-                  <i class="fas fa-shopping-cart mr-2"></i>${currentUser ? '立即订阅' : '登录订阅'}
-                </button>
               </div>
             </div>
             <div class="mt-6 text-center text-sm text-gray-600">
