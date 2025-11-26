@@ -14309,38 +14309,51 @@ function renderAnswerSet(reviewId) {
       // Render time with text type - no "answer" label, just show the answer with edit button (hidden when locked)
       const isLocked = currentSet.is_locked === 'yes';
       console.log('[renderAnswerSet] time_with_text - Question:', q.question_number, 'isLocked:', isLocked, 'currentSet.is_locked:', currentSet.is_locked);
-      answerElement.innerHTML = `
-        <div class="space-y-3">
-          ${answerText ? `
-            <div class="relative">
-              <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg ${isLocked ? '' : 'pr-20'}">
-                <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
-              </div>
-              ${isLocked ? '' : `
+      
+      let contentHtml = '';
+      if (answerText) {
+        const editButtonHtml = !isLocked ? `
                 <button type="button" 
                         onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
                         class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
                   <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
                 </button>
-              `}
+              ` : '';
+        contentHtml = `
+            <div class="relative">
+              <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg ${isLocked ? '' : 'pr-20'}">
+                <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
+              </div>
+              ${editButtonHtml}
             </div>
-          ` : `
-            ${isLocked ? `
+          `;
+      } else {
+        if (isLocked) {
+          contentHtml = `
               <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                 <i class="fas fa-lock mr-1"></i>${i18n.t('noAnswerInThisSet')}
               </div>
-            ` : `
+            `;
+        } else {
+          contentHtml = `
               <div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
                    class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
                 <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
               </div>
-            `}
-          `}
-          ${answer ? `
+            `;
+        }
+      }
+      
+      const timestampHtml = answer ? `
             <p class="text-xs text-gray-500">
               <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
             </p>
-          ` : ''}
+          ` : '';
+      
+      answerElement.innerHTML = `
+        <div class="space-y-3">
+          ${contentHtml}
+          ${timestampHtml}
         </div>
       `;
       
@@ -14357,6 +14370,13 @@ function renderAnswerSet(reviewId) {
       const isLocked = currentSet.is_locked === 'yes';
       console.log('[renderAnswerSet] default text - Question:', q.question_number, 'isLocked:', isLocked, 'currentSet.is_locked:', currentSet.is_locked, 'answerText:', answerText ? 'exists' : 'empty');
       if (answerText) {
+        const editButtonHtml = !isLocked ? `
+              <button type="button" 
+                      onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
+                      class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
+                <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
+              </button>
+            ` : '';
         answerElement.innerHTML = `
           <div class="relative">
             <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg ${isLocked ? '' : 'pr-20'}">
@@ -14365,13 +14385,7 @@ function renderAnswerSet(reviewId) {
                 <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
               </p>
             </div>
-            ${isLocked ? '' : `
-              <button type="button" 
-                      onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
-                      class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
-                <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
-              </button>
-            `}
+            ${editButtonHtml}
           </div>
         `;
       } else {
