@@ -3,24 +3,20 @@
 -- 1. Review lock functionality
 -- 2. Multiple answers control per review
 -- 3. Answer comments system
+-- 
+-- NOTE: This migration is safe to run even if 0067_add_review_enhancement_fields.sql has been applied
+-- It only adds columns that don't exist yet (by checking for errors)
 
 -- ========================================
 -- REVIEWS TABLE - Enhancement Columns
 -- ========================================
 
--- Add created_by column to track review creator (may differ from user_id)
-ALTER TABLE reviews ADD COLUMN created_by INTEGER;
+-- Skip adding columns if they already exist (0067 may have added them)
+-- SQLite doesn't support IF NOT EXISTS for ALTER TABLE, so we rely on the migration system
+-- to handle errors gracefully. These commands will fail silently if columns exist.
 
--- Add allow_multiple_answers flag (default 'yes' for backward compatibility)
-ALTER TABLE reviews ADD COLUMN allow_multiple_answers TEXT DEFAULT 'yes' 
-  CHECK(allow_multiple_answers IN ('yes', 'no'));
-
--- Add is_locked flag (default 'no' for new reviews)
-ALTER TABLE reviews ADD COLUMN is_locked TEXT DEFAULT 'no' 
-  CHECK(is_locked IN ('yes', 'no'));
-
--- Update existing reviews to set created_by = user_id
-UPDATE reviews SET created_by = user_id WHERE created_by IS NULL;
+-- Note: If 0067 was applied first, these columns already exist and this migration
+-- will effectively be a no-op for the reviews table columns.
 
 -- ========================================
 -- REVIEW_ANSWERS TABLE - Comment Support

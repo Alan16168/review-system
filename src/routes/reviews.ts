@@ -1108,6 +1108,10 @@ reviews.get('/:id', async (c) => {
       questions: questionsResult.results || [],
       answersByQuestion,
       collaborators: collaborators.results || []
+    }, 200, {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     });
   } catch (error) {
     console.error('[DETAILED ERROR] Get review error:', {
