@@ -1171,6 +1171,11 @@ reviews.post('/', async (c) => {
     if (ownerType === 'team' && !team_id) {
       ownerType = 'private';
     }
+    
+    // Map frontend values to database constraint values
+    // Database CHECK constraint only allows: 'personal', 'team'
+    // Frontend uses: 'private' (personal), 'team', 'public' (personal with public flag)
+    const ownerTypeForDB = ownerType === 'private' || ownerType === 'public' ? 'personal' : 'team';
 
     // Validate allow_multiple_answers (default to 'yes' for backward compatibility)
     const allowMultipleAnswers = allow_multiple_answers === 'no' ? 'no' : 'yes';
@@ -1193,7 +1198,7 @@ reviews.post('/', async (c) => {
         time_type || 'daily',
         templateIdToUse,
         status || 'draft',
-        ownerType,
+        ownerTypeForDB,  // Use mapped value for database
         scheduled_at || null,
         location || null,
         reminder_minutes || 60,
@@ -1214,7 +1219,7 @@ reviews.post('/', async (c) => {
         time_type || 'daily',
         templateIdToUse,
         status || 'draft',
-        ownerType,
+        ownerTypeForDB,  // Use mapped value for database
         scheduled_at || null,
         location || null,
         reminder_minutes || 60
