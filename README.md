@@ -8,9 +8,9 @@
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
-**🚀 最新部署**: https://review-system.pages.dev (2025-11-26 04:01 UTC)  
-**🚀 部署 ID**: https://a484216d.review-system.pages.dev  
-**✅ 当前版本**: V8.9.0 - 复盘详情查看体验优化 (2025-11-26)  
+**🚀 最新部署**: https://review-system.pages.dev (2025-11-26 待部署)  
+**✅ 当前版本**: V9.0.0 - 复盘系统功能增强 (2025-11-26) 🆕  
+**🎯 新功能**: ✅ 多答案开关 + 锁定功能 + 答案评论（后端完成，前端待实现）  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
 **✅ 当前版本**: V1.2.0 - 商城产品详情 + 分层定价 + 团队功能修复 (2025-11-22)  
@@ -24,6 +24,76 @@
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 **📱 移动端专属版**: https://review-system.pages.dev/mobile （触控优化界面）
+
+---
+
+## 🚀 V9.0.0 部署 - 复盘系统功能增强 (2025-11-26)
+
+**部署信息**:
+- **版本**: V9.0.0 ⏳ (后端完成，待部署)
+- **部署时间**: 待定
+- **部署状态**: 🔧 开发中 (Backend ✅ | Frontend ⏳)
+- **Git Commit**: 1231854
+- **文档**: `DEPLOYMENT_V9.0.0.md`, `REVIEW_ENHANCEMENT_IMPLEMENTATION.md`
+
+**本次更新内容**:
+
+### 🎉 三大新功能
+
+**1. 是否允许多个复盘答案** ✅ (Backend)
+- **功能描述**: 创建复盘时可选择允许/不允许多答案集合
+- **使用场景**: 
+  - 允许多答案：团队协作、多次复盘（显示答案组管理）
+  - 不允许多答案：单次复盘、简化界面（隐藏答案组管理）
+- **默认值**: "是"（向后兼容）
+- **API**: `POST /api/reviews/` 支持 `allow_multiple_answers` 参数
+
+**2. 复盘锁定功能** ✅ (Backend)
+- **功能描述**: 创建者可锁定复盘，锁定后不可编辑但可查看
+- **权限控制**: 仅复盘创建者（created_by）可锁定/解锁
+- **使用场景**: 复盘完成后锁定，防止误操作
+- **API**: 
+  - `PUT /api/reviews/:id/lock` - 锁定
+  - `PUT /api/reviews/:id/unlock` - 解锁
+
+**3. 答案评论功能** ✅ (Backend)
+- **功能描述**: 为每个答案添加私密评论
+- **可见性规则**: 
+  - 复盘创建者：可查看和编辑所有答案的评论
+  - 答案创建者：可查看和编辑自己答案的评论
+  - 其他用户：完全看不到评论
+- **API**: 
+  - `POST /api/reviews/:reviewId/answers/:answerId/comment` - 保存评论
+  - `GET /api/reviews/:reviewId/answers/:answerId/comment` - 获取评论
+
+### 🔧 技术实现
+
+**数据库变更** ✅:
+- reviews表新增: `allow_multiple_answers`, `is_locked`, `created_by`
+- review_answers表新增: `comment`, `comment_updated_at`
+- Migration: `migrations/0067_add_review_enhancement_fields.sql`
+
+**后端API** ✅:
+- 4个新API端点（lock/unlock/comment get/post）
+- 更新创建和查询API支持新字段
+- 完整的权限检查和fallback逻辑
+
+**前端UI** ⏳:
+- 创建复盘表单：添加"允许多答案"开关
+- 查看复盘页面：锁定状态控制、答案组管理显示控制
+- 评论功能UI：评论按钮和弹窗
+
+### 📋 待完成事项
+
+- [ ] 前端UI实现（预计4-6小时）
+- [ ] 国际化文本添加
+- [ ] 功能测试
+- [ ] 生产环境部署
+
+### 📚 相关文档
+
+- **实现指南**: `REVIEW_ENHANCEMENT_IMPLEMENTATION.md`
+- **部署计划**: `DEPLOYMENT_V9.0.0.md`
 
 ---
 
