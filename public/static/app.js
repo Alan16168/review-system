@@ -6631,7 +6631,7 @@ async function showEditReview(id) {
               <!-- Answer Set Navigation -->
               <div id="answer-set-navigation" class="mb-4"></div>
               
-              <!-- Action Buttons Row: Create New Answer Set + Lock/Unlock (Only for Creator) -->
+              <!-- Action Buttons Row: Create New Answer Set + Lock/Unlock Current Set -->
               <div class="flex gap-3 mb-4">
                 <!-- Create New Answer Set Button -->
                 <button type="button" 
@@ -6640,17 +6640,19 @@ async function showEditReview(id) {
                   <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
                 </button>
                 
-                <!-- Lock/Unlock Button (Only for Creator) -->
-                ${isCreator ? `
+                <!-- Lock/Unlock Current Answer Set Button (Always visible to user, locks THEIR current set) -->
                 <button type="button" 
-                        id="toggle-lock-btn-edit"
-                        onclick="toggleReviewLock(${id}, ${review.is_locked === 'yes'})"
-                        class="px-6 py-3 ${review.is_locked === 'yes' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded-lg shadow-lg transition-colors">
-                  <i class="fas ${review.is_locked === 'yes' ? 'fa-lock-open' : 'fa-lock'} mr-2"></i>
-                  <span id="lock-btn-text-edit">${review.is_locked === 'yes' ? (i18n.t('unlock') || '解锁') : (i18n.t('lock') || '锁定')}</span>
+                        id="toggle-answer-set-lock-btn"
+                        onclick="toggleCurrentAnswerSetLock(${id})"
+                        class="px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50"
+                        disabled>
+                  <i id="answer-set-lock-icon" class="fas fa-lock mr-2"></i>
+                  <span id="answer-set-lock-text">${i18n.t('lock') || '锁定'}</span>
                 </button>
-                ` : ''}
               </div>
+              <p class="text-xs text-gray-500 mb-4">
+                <i class="fas fa-info-circle mr-1"></i>${i18n.t('lockAnswerSetHint') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。'}
+              </p>
             </div>
 
             <!-- Dynamic Questions -->
@@ -14417,6 +14419,14 @@ function renderAnswerSet(reviewId) {
   // we don't need to worry about delayed events
   window.isRenderingAnswerSet = false;
   console.log('[renderAnswerSet] Rendering complete, flag set to FALSE');
+  
+  // Update lock button to reflect current answer set's lock status
+  const isLocked = currentSet.is_locked === 'yes';
+  updateAnswerSetLockButton(isLocked);
+  updateAnswerEditability(isLocked);
+  
+  // Store current set index for lock function
+  window.currentAnswerSetIndex = index;
 }
 
 /**
@@ -20160,5 +20170,150 @@ function showPayPalPayment(orderId, paypalOrderId, tier) {
     }).render('#paypal-button-container');
   } else {
     showNotification('PayPal 未加载，请刷新页面重试', 'error');
+  }
+}
+
+// ============================================================================
+// Answer Set Lock/Unlock Functions
+// ============================================================================
+
+/**
+ * Toggle lock status of current answer set
+ * @param {number} reviewId - Review ID
+ */
+async function toggleCurrentAnswerSetLock(reviewId) {
+  try {
+    // Get current answer set info
+    if (!window.currentAnswerSets || window.currentAnswerSets.length === 0) {
+      showNotification(i18n.t('noAnswerSetsToLock') || '没有答案组可以锁定', 'warning');
+      return;
+    }
+    
+    const currentIndex = window.currentAnswerSetIndex || 0;
+    const currentSet = window.currentAnswerSets[currentIndex];
+    
+    if (!currentSet) {
+      showNotification(i18n.t('cannotFindCurrentSet') || '无法找到当前答案组', 'error');
+      return;
+    }
+    
+    const isLocked = currentSet.is_locked === 'yes';
+    const action = isLocked ? 'unlock' : 'lock';
+    const setNumber = currentSet.set_number;
+    
+    // Confirm action
+    const confirmMessage = isLocked
+      ? (i18n.t('confirmUnlockAnswerSet') || `确定要解锁答案组 ${setNumber} 吗？解锁后可以编辑。`)
+      : (i18n.t('confirmLockAnswerSet') || `确定要锁定答案组 ${setNumber} 吗？锁定后将无法编辑。`);
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    
+    // Call API
+    const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}/${action}`, {}, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    if (response.data.success) {
+      showNotification(
+        response.data.message || (isLocked ? i18n.t('unlockSuccess') : i18n.t('lockSuccess')),
+        'success'
+      );
+      
+      // Update current set's lock status
+      currentSet.is_locked = response.data.is_locked;
+      
+      // Update lock button UI
+      updateAnswerSetLockButton(response.data.is_locked === 'yes');
+      
+      // Update answer edit UI
+      updateAnswerEditability(response.data.is_locked === 'yes');
+    }
+  } catch (error) {
+    console.error('Toggle answer set lock error:', error);
+    showNotification(
+      error.response?.data?.error || i18n.t('operationFailed'),
+      'error'
+    );
+  }
+}
+
+/**
+ * Update lock button UI based on lock status
+ * @param {boolean} isLocked - Whether current answer set is locked
+ */
+function updateAnswerSetLockButton(isLocked) {
+  const btn = document.getElementById('toggle-answer-set-lock-btn');
+  const icon = document.getElementById('answer-set-lock-icon');
+  const text = document.getElementById('answer-set-lock-text');
+  
+  if (!btn || !icon || !text) return;
+  
+  // Enable button (it should always be enabled if there are answer sets)
+  btn.disabled = false;
+  
+  if (isLocked) {
+    // Show unlock button (green)
+    btn.className = 'px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg transition-colors';
+    icon.className = 'fas fa-lock-open mr-2';
+    text.textContent = i18n.t('unlock') || '解锁';
+  } else {
+    // Show lock button (red)
+    btn.className = 'px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg transition-colors';
+    icon.className = 'fas fa-lock mr-2';
+    text.textContent = i18n.t('lock') || '锁定';
+  }
+}
+
+/**
+ * Update answer editability based on lock status
+ * @param {boolean} isLocked - Whether current answer set is locked
+ */
+function updateAnswerEditability(isLocked) {
+  if (isLocked) {
+    // Disable all answer inputs and edit buttons
+    document.querySelectorAll('#edit-review-form input, #edit-review-form textarea, #edit-review-form select').forEach(input => {
+      // Don't disable the review-level fields (title, description, etc.)
+      const isAnswerField = input.closest('[id^="answer-display-"]') || 
+                           input.id.startsWith('question') ||
+                           input.id.startsWith('inline-answer-') ||
+                           input.id.startsWith('time-input-');
+      if (isAnswerField) {
+        input.disabled = true;
+        input.classList.add('bg-gray-100', 'cursor-not-allowed');
+      }
+    });
+    
+    // Disable edit-related buttons
+    document.querySelectorAll('button[onclick*="editEmptyAnswerInSet"], button[onclick*="updateMultipleChoiceInSet"]').forEach(btn => {
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+      const originalOnclick = btn.onclick;
+      btn.onclick = (e) => {
+        e.preventDefault();
+        showNotification(i18n.t('answerSetIsLocked') || '当前答案组已锁定，无法编辑', 'warning');
+      };
+    });
+  } else {
+    // Enable all answer inputs and edit buttons
+    document.querySelectorAll('#edit-review-form input, #edit-review-form textarea, #edit-review-form select').forEach(input => {
+      const isAnswerField = input.closest('[id^="answer-display-"]') || 
+                           input.id.startsWith('question') ||
+                           input.id.startsWith('inline-answer-') ||
+                           input.id.startsWith('time-input-');
+      if (isAnswerField) {
+        input.disabled = false;
+        input.classList.remove('bg-gray-100', 'cursor-not-allowed');
+      }
+    });
+    
+    // Enable edit-related buttons
+    document.querySelectorAll('button[onclick*="editEmptyAnswerInSet"], button[onclick*="updateMultipleChoiceInSet"]').forEach(btn => {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    });
   }
 }

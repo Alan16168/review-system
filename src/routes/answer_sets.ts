@@ -26,9 +26,9 @@ answerSets.get('/:reviewId', async (c: Context) => {
       return c.json({ error: 'Invalid review ID' }, 400);
     }
 
-    // Get all answer sets for this review/user
+    // Get all answer sets for this review/user (include lock status)
     const sets = await c.env.DB.prepare(`
-      SELECT id, set_number, created_at, updated_at
+      SELECT id, set_number, created_at, updated_at, is_locked, locked_at, locked_by
       FROM review_answer_sets
       WHERE review_id = ? AND user_id = ?
       ORDER BY set_number ASC
@@ -62,11 +62,14 @@ answerSets.get('/:reviewId', async (c: Context) => {
       });
     }
 
-    // Combine sets with their answers
+    // Combine sets with their answers (include lock status)
     const result = sets.results.map((set: any) => ({
       set_number: set.set_number,
       created_at: set.created_at,
       updated_at: set.updated_at,
+      is_locked: set.is_locked || 'no',
+      locked_at: set.locked_at,
+      locked_by: set.locked_by,
       answers: answersBySet[set.id] || []
     }));
 
@@ -241,14 +244,22 @@ answerSets.put('/:reviewId/:setNumber', async (c: Context) => {
       return c.json({ error: 'Invalid parameters' }, 400);
     }
 
-    // Get set ID
+    // Get set ID and check if it's locked
     const set = await c.env.DB.prepare(`
-      SELECT id FROM review_answer_sets
+      SELECT id, is_locked FROM review_answer_sets
       WHERE review_id = ? AND user_id = ? AND set_number = ?
     `).bind(reviewId, userId, setNumber).first();
 
     if (!set) {
       return c.json({ error: 'Answer set not found' }, 404);
+    }
+
+    // Prevent editing locked answer sets
+    if (set.is_locked === 'yes') {
+      return c.json({ 
+        error: 'This answer set is locked and cannot be edited. Please unlock it first.',
+        is_locked: 'yes'
+      }, 403);
     }
 
     const setId = set.id;
@@ -344,6 +355,22 @@ answerSets.delete('/:reviewId/:setNumber', async (c: Context) => {
       return c.json({ error: 'Invalid parameters' }, 400);
     }
 
+    // Check if answer set is locked before deleting
+    const set = await c.env.DB.prepare(`
+      SELECT is_locked FROM review_answer_sets
+      WHERE review_id = ? AND user_id = ? AND set_number = ?
+    `).bind(reviewId, userId, setNumber).first();
+
+    if (!set) {
+      return c.json({ error: 'Answer set not found' }, 404);
+    }
+
+    if (set.is_locked === 'yes') {
+      return c.json({ 
+        error: 'Cannot delete locked answer set. Please unlock it first.' 
+      }, 403);
+    }
+
     // Delete the answer set (CASCADE will delete associated answers)
     const result = await c.env.DB.prepare(`
       DELETE FROM review_answer_sets
@@ -359,6 +386,116 @@ answerSets.delete('/:reviewId/:setNumber', async (c: Context) => {
   } catch (error: any) {
     console.error('Error deleting answer set:', error);
     return c.json({ error: 'Failed to delete answer set' }, 500);
+  }
+});
+
+/**
+ * Lock an answer set
+ * PUT /api/answer-sets/:reviewId/:setNumber/lock
+ * Only the owner of the answer set can lock it
+ */
+answerSets.put('/:reviewId/:setNumber/lock', async (c: Context) => {
+  try {
+    const reviewId = parseInt(c.req.param('reviewId'));
+    const setNumber = parseInt(c.req.param('setNumber'));
+    const user = c.get('user') as any;
+    const userId = user?.id;
+
+    if (isNaN(reviewId) || isNaN(setNumber)) {
+      return c.json({ error: 'Invalid parameters' }, 400);
+    }
+
+    // Check if user owns this answer set
+    const set = await c.env.DB.prepare(`
+      SELECT id, is_locked FROM review_answer_sets
+      WHERE review_id = ? AND user_id = ? AND set_number = ?
+    `).bind(reviewId, userId, setNumber).first();
+
+    if (!set) {
+      return c.json({ error: 'Answer set not found or you don\'t have permission' }, 404);
+    }
+
+    if (set.is_locked === 'yes') {
+      return c.json({ 
+        error: 'Answer set is already locked',
+        is_locked: 'yes'
+      }, 400);
+    }
+
+    // Lock the answer set
+    await c.env.DB.prepare(`
+      UPDATE review_answer_sets
+      SET is_locked = 'yes',
+          locked_at = CURRENT_TIMESTAMP,
+          locked_by = ?
+      WHERE id = ?
+    `).bind(userId, set.id).run();
+
+    return c.json({ 
+      success: true,
+      message: 'Answer set locked successfully',
+      is_locked: 'yes',
+      set_number: setNumber
+    });
+
+  } catch (error: any) {
+    console.error('Error locking answer set:', error);
+    return c.json({ error: 'Failed to lock answer set' }, 500);
+  }
+});
+
+/**
+ * Unlock an answer set
+ * PUT /api/answer-sets/:reviewId/:setNumber/unlock
+ * Only the owner of the answer set can unlock it
+ */
+answerSets.put('/:reviewId/:setNumber/unlock', async (c: Context) => {
+  try {
+    const reviewId = parseInt(c.req.param('reviewId'));
+    const setNumber = parseInt(c.req.param('setNumber'));
+    const user = c.get('user') as any;
+    const userId = user?.id;
+
+    if (isNaN(reviewId) || isNaN(setNumber)) {
+      return c.json({ error: 'Invalid parameters' }, 400);
+    }
+
+    // Check if user owns this answer set
+    const set = await c.env.DB.prepare(`
+      SELECT id, is_locked FROM review_answer_sets
+      WHERE review_id = ? AND user_id = ? AND set_number = ?
+    `).bind(reviewId, userId, setNumber).first();
+
+    if (!set) {
+      return c.json({ error: 'Answer set not found or you don\'t have permission' }, 404);
+    }
+
+    if (set.is_locked === 'no') {
+      return c.json({ 
+        error: 'Answer set is already unlocked',
+        is_locked: 'no'
+      }, 400);
+    }
+
+    // Unlock the answer set
+    await c.env.DB.prepare(`
+      UPDATE review_answer_sets
+      SET is_locked = 'no',
+          locked_at = NULL,
+          locked_by = NULL
+      WHERE id = ?
+    `).bind(set.id).run();
+
+    return c.json({ 
+      success: true,
+      message: 'Answer set unlocked successfully',
+      is_locked: 'no',
+      set_number: setNumber
+    });
+
+  } catch (error: any) {
+    console.error('Error unlocking answer set:', error);
+    return c.json({ error: 'Failed to unlock answer set' }, 500);
   }
 });
 
