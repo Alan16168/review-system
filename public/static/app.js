@@ -5881,9 +5881,6 @@ async function showReviewDetail(id, readOnly = false) {
           </div>
         </div>
 
-          <!-- Lock Status Section (Only for Creator) -->
-          ${review.is_creator ? renderLockStatusSection(review) : ''}
-
           <!-- Dynamic Questions Display -->
           <div class="bg-white rounded-lg shadow-md p-6">
             <h2 class="text-xl font-bold text-gray-800 border-b pb-3 mb-4">
