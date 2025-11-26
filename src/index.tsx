@@ -886,11 +886,12 @@ app.get('/', (c) => {
         <div id="app"></div>
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/i18n.js?v=8.9.0"></script>
+        <script src="/static/i18n.js?v=9.0.0"></script>
+        <script src="/static/review_enhancements.js?v=9.0.0"></script>
         <!-- Manhattan Project - AI Writing System -->
-        <script src="/static/ai_books.js?v=8.9.0"></script>
-        <script src="/static/agents.js?v=8.9.0"></script>
-        <script src="/static/app.js?v=8.9.0"></script>
+        <script src="/static/ai_books.js?v=9.0.0"></script>
+        <script src="/static/agents.js?v=9.0.0"></script>
+        <script src="/static/app.js?v=9.0.0"></script>
     </body>
     </html>
   `);

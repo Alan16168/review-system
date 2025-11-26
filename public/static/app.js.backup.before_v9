@@ -4580,36 +4580,6 @@ async function showCreateReview(preservedData = null) {
             </div>
           </div>
 
-          <!-- Allow Multiple Answers -->
-          <div class="border-t pt-6">
-            <div class="flex items-start">
-              <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-list-check mr-1"></i>${i18n.t('allowMultipleAnswers')}
-                </label>
-                <p class="text-xs text-gray-500 mb-3">
-                  <i class="fas fa-info-circle mr-1"></i>${i18n.t('allowMultipleAnswersHint')}
-                </p>
-              </div>
-            </div>
-            <div class="flex space-x-4">
-              <label class="flex items-center cursor-pointer">
-                <input type="radio" name="allow_multiple_answers" value="yes" checked
-                       class="mr-2 text-indigo-600 focus:ring-indigo-500">
-                <span class="text-sm text-gray-700">
-                  <i class="fas fa-check-circle text-green-600 mr-1"></i>${i18n.t('yes')}
-                </span>
-              </label>
-              <label class="flex items-center cursor-pointer">
-                <input type="radio" name="allow_multiple_answers" value="no"
-                       class="mr-2 text-indigo-600 focus:ring-indigo-500">
-                <span class="text-sm text-gray-700">
-                  <i class="fas fa-times-circle text-red-600 mr-1"></i>${i18n.t('no')}
-                </span>
-              </label>
-            </div>
-          </div>
-
           <!-- Status -->
           <div class="border-t pt-6">
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -4782,9 +4752,6 @@ async function handleStep1Submit(e) {
   const timeType = document.getElementById('review-time-type').value;
   const status = document.querySelector('input[name="status"]:checked').value;
   
-  // Get allow_multiple_answers field
-  const allowMultipleAnswers = document.querySelector('input[name="allow_multiple_answers"]:checked')?.value || 'yes';
-  
   // Get calendar fields (optional)
   const scheduledAt = document.getElementById('review-scheduled-at').value || null;
   const location = document.getElementById('review-location').value || null;
@@ -4801,8 +4768,7 @@ async function handleStep1Submit(e) {
     status: 'draft', // Always create as draft first
     scheduled_at: scheduledAt,
     location: location,
-    reminder_minutes: reminderMinutes,
-    allow_multiple_answers: allowMultipleAnswers
+    reminder_minutes: reminderMinutes
   };
   
   try {
@@ -5881,9 +5847,6 @@ async function showReviewDetail(id, readOnly = false) {
           </div>
         </div>
 
-          <!-- Lock Status Section (Only for Creator) -->
-          ${review.is_creator ? renderLockStatusSection(review) : ''}
-
           <!-- Dynamic Questions Display -->
           <div class="bg-white rounded-lg shadow-md p-6">
             <h2 class="text-xl font-bold text-gray-800 border-b pb-3 mb-4">
@@ -6018,7 +5981,6 @@ async function showReviewDetail(id, readOnly = false) {
                               '</span>' +
                             '</div>' +
                             answerDisplay +
-                            renderCommentButton(ans, review.id) +
                           '</div>';
                         }).join('');
                         
@@ -6078,15 +6040,9 @@ async function showReviewDetail(id, readOnly = false) {
             </div>
           </div>
           ` : ''}
-
-          <!-- Comment Modal -->
-          ${renderCommentModal()}
         </div>
       </div>
     `;
-    
-    // Initialize lock UI event listeners
-    initializeLockUI();
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     showReviews();
