@@ -1255,6 +1255,24 @@ reviews.post('/', async (c) => {
       ).bind(reviewId, user.id).run();
     }
 
+    // If allow_multiple_answers is 'no', automatically create the first answer set
+    if (allowMultipleAnswers === 'no') {
+      // Get the next set_number (should be 1 for a new review)
+      const existingSetsResult = await c.env.DB.prepare(`
+        SELECT COALESCE(MAX(set_number), 0) as max_set_number
+        FROM review_answer_sets
+        WHERE review_id = ? AND user_id = ?
+      `).bind(reviewId, user.id).first();
+      
+      const nextSetNumber = (existingSetsResult?.max_set_number || 0) + 1;
+      
+      // Create the first answer set
+      await c.env.DB.prepare(`
+        INSERT INTO review_answer_sets (review_id, user_id, set_number, created_at, updated_at)
+        VALUES (?, ?, ?, datetime('now'), datetime('now'))
+      `).bind(reviewId, user.id, nextSetNumber).run();
+    }
+
     return c.json({ 
       id: reviewId,
       message: 'Review created successfully'

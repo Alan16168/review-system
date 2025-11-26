@@ -6386,6 +6386,9 @@ async function showEditReview(id) {
     const questions = response.data.questions || [];
     const answersByQuestion = response.data.answersByQuestion || {};
     
+    // Store review globally for use in other functions
+    window.currentEditReview = review;
+    
     console.log('[showEditReview] 复盘信息:', review);
     console.log('[showEditReview] 问题数量:', questions.length);
     console.log('[showEditReview] 答案数据:', answersByQuestion);
@@ -6571,6 +6574,29 @@ async function showEditReview(id) {
             </div>
             ` : ''}
 
+            <!-- Allow Multiple Answers (Read-only Display) -->
+            <div class="border-t pt-4 mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-list-check mr-1"></i>${i18n.t('allowMultipleAnswers') || '是否允许多个复盘答案'}
+              </label>
+              <div class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                <div class="flex items-center">
+                  ${review.allow_multiple_answers === 'yes' ? `
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                    <span class="text-gray-800 font-medium">${i18n.t('yes') || '是'}</span>
+                    <span class="text-xs text-gray-600 ml-2">(${i18n.t('canCreateMultipleSets') || '可创建多个答案组'})</span>
+                  ` : `
+                    <i class="fas fa-times-circle text-red-600 mr-2"></i>
+                    <span class="text-gray-800 font-medium">${i18n.t('no') || '否'}</span>
+                    <span class="text-xs text-gray-600 ml-2">(${i18n.t('singleSetOnly') || '仅一个答案组'})</span>
+                  `}
+                </div>
+              </div>
+              <p class="mt-1 text-xs text-gray-500">
+                <i class="fas fa-info-circle mr-1"></i>${i18n.t('allowMultipleAnswersCannotChange') || '此设置在创建时确定，不可更改'}
+              </p>
+            </div>
+
             <!-- Status -->
             <div class="border-t pt-4 mt-4">
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -6630,18 +6656,20 @@ async function showEditReview(id) {
               
               <!-- Action Buttons Row: Create New Answer Set + Lock/Unlock Current Set -->
               <div class="flex gap-3 mb-4">
-                <!-- Create New Answer Set Button -->
-                <button type="button" 
-                        onclick="createNewAnswerSet(${id})"
-                        class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors">
-                  <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
-                </button>
+                ${review.allow_multiple_answers === 'yes' ? `
+                  <!-- Create New Answer Set Button (only shown when allow_multiple_answers is 'yes') -->
+                  <button type="button" 
+                          onclick="createNewAnswerSet(${id})"
+                          class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors">
+                    <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
+                  </button>
+                ` : ''}
                 
-                <!-- Lock/Unlock Current Answer Set Button (Always visible to user, locks THEIR current set) -->
+                <!-- Lock/Unlock Current Answer Set Button (Always visible, regardless of allow_multiple_answers) -->
                 <button type="button" 
                         id="toggle-answer-set-lock-btn"
                         onclick="toggleCurrentAnswerSetLock(${id})"
-                        class="px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50"
+                        class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50"
                         disabled>
                   <i id="answer-set-lock-icon" class="fas fa-lock mr-2"></i>
                   <span id="answer-set-lock-text">${i18n.t('lock') || '锁定'}</span>
@@ -14474,9 +14502,27 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
   const navElement = document.getElementById('answer-set-navigation');
   if (!navElement) return;
   
+  // Check if multiple answer sets are allowed
+  const allowMultipleAnswers = window.currentEditReview?.allow_multiple_answers === 'yes';
+  
   const hasPrev = currentNum > 1;
   const hasNext = currentNum < totalNum;
   
+  // If allow_multiple_answers is 'no', hide navigation buttons
+  if (!allowMultipleAnswers) {
+    navElement.innerHTML = `
+      <div class="flex items-center justify-center p-4 bg-indigo-50 rounded-lg mb-4">
+        <div class="text-center">
+          <p class="text-sm text-gray-600">${i18n.t('answerSet') || '答案组'}</p>
+          <p class="text-xl font-bold text-indigo-600">${currentNum} / ${totalNum}</p>
+          ${totalNum > 0 ? `<p class="text-xs text-gray-500 mt-1">${i18n.t('createdAt')}: ${window.currentAnswerSets[currentNum-1]?.created_at || ''}</p>` : ''}
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
+  // If allow_multiple_answers is 'yes', show full navigation with buttons
   navElement.innerHTML = `
     <div class="flex items-center justify-between p-4 bg-indigo-50 rounded-lg mb-4">
       <button onclick="navigateToPreviousSet(${reviewId})" 
