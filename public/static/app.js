@@ -14306,25 +14306,34 @@ function renderAnswerSet(reviewId) {
         ` : ''}
       `;
     } else if (q.question_type === 'time_with_text') {
-      // Render time with text type - no "answer" label, just show the answer with always visible edit button
+      // Render time with text type - no "answer" label, just show the answer with edit button (hidden when locked)
+      const isLocked = currentSet.is_locked === 'yes';
       answerElement.innerHTML = `
         <div class="space-y-3">
           ${answerText ? `
             <div class="relative">
-              <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg pr-20">
+              <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg ${isLocked ? '' : 'pr-20'}">
                 <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
               </div>
-              <button type="button" 
-                      onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
-                      class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
-                <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
-              </button>
+              ${isLocked ? '' : `
+                <button type="button" 
+                        onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
+                        class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
+                  <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
+                </button>
+              `}
             </div>
           ` : `
-            <div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
-                 class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
-              <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
-            </div>
+            ${isLocked ? `
+              <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <i class="fas fa-lock mr-1"></i>${i18n.t('noAnswerInThisSet')}
+              </div>
+            ` : `
+              <div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
+                   class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
+                <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
+              </div>
+            `}
           `}
           ${answer ? `
             <p class="text-xs text-gray-500">
@@ -14343,30 +14352,41 @@ function renderAnswerSet(reviewId) {
         timeInput.value = '';
       }
     } else {
-      // Default text type - show answer with edit button (always visible)
+      // Default text type - show answer with edit button (hidden when locked)
+      const isLocked = currentSet.is_locked === 'yes';
       if (answerText) {
         answerElement.innerHTML = `
           <div class="relative">
-            <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg pr-20">
+            <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg ${isLocked ? '' : 'pr-20'}">
               <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
               <p class="text-xs text-gray-500 mt-2">
                 <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
               </p>
             </div>
-            <button type="button" 
-                    onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
-                    class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
-              <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
-            </button>
+            ${isLocked ? '' : `
+              <button type="button" 
+                      onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
+                      class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
+                <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
+              </button>
+            `}
           </div>
         `;
       } else {
-        answerElement.innerHTML = `
-          <div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
-               class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
-            <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
-          </div>
-        `;
+        if (isLocked) {
+          answerElement.innerHTML = `
+            <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <i class="fas fa-lock mr-1"></i>${i18n.t('noAnswerInThisSet')}
+            </div>
+          `;
+        } else {
+          answerElement.innerHTML = `
+            <div onclick="editEmptyAnswerInSet(${reviewId}, ${q.question_number})" 
+                 class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 hover:border-gray-400">
+              <i class="fas fa-plus-circle mr-1"></i>${i18n.t('noAnswerInThisSet')} <span class="text-xs">(${i18n.t('clickToAdd')})</span>
+            </div>
+          `;
+        }
       }
     }
   });
