@@ -4730,6 +4730,39 @@ function handleOwnerTypeChange() {
   }
 }
 
+// ========== FIX: Handle owner type change in edit mode with team validation ==========
+function handleOwnerTypeChangeInEdit(reviewId, teams) {
+  const ownerTypeSelect = document.getElementById('review-owner-type');
+  if (!ownerTypeSelect) return;
+  
+  const ownerType = ownerTypeSelect.value;
+  const currentReview = window.currentEditReview;
+  
+  // Check if team selection is needed
+  if (ownerType === 'team') {
+    // Check if user has any teams
+    if (!teams || teams.length === 0) {
+      // Show warning
+      showNotification(
+        i18n.t('noTeamsAvailable') || '您还没有加入任何团队，无法将复盘设置为团队所有',
+        'warning'
+      );
+      
+      // Revert to original value
+      if (currentReview) {
+        setTimeout(() => {
+          ownerTypeSelect.value = currentReview.owner_type || 'private';
+        }, 100);
+      }
+      return;
+    }
+    
+    // Show team information in a non-editable way
+    // Since team_id cannot be changed after creation, we just display current team
+    console.log('[handleOwnerTypeChangeInEdit] Team mode selected, but team cannot be changed');
+  }
+}
+
 async function handleTemplateChangeStep1() {
   try {
     const templateSelect = document.getElementById('review-template');
@@ -6931,6 +6964,69 @@ async function showEditReview(id) {
     // Store questions and creator status in global variable for access
     window.currentEditQuestions = questions;
     window.currentEditIsCreator = isCreator;
+    
+    // ========== FIX: Auto-save header fields on change ==========
+    if (isCreator) {
+      const autoSaveHeaderFields = async () => {
+        try {
+          const title = document.getElementById('review-title')?.value;
+          const description = document.getElementById('review-description')?.value;
+          const timeType = document.getElementById('review-time-type')?.value;
+          const ownerType = document.getElementById('review-owner-type')?.value;
+          const status = document.querySelector('input[name="status"]:checked')?.value;
+          const scheduledAt = document.getElementById('edit-scheduled-at')?.value || null;
+          const location = document.getElementById('edit-location')?.value || null;
+          const reminderMinutes = parseInt(document.getElementById('edit-reminder-minutes')?.value) || 60;
+          
+          const data = {
+            title,
+            description: description || null,
+            time_type: timeType,
+            owner_type: ownerType,
+            status,
+            scheduled_at: scheduledAt,
+            location: location,
+            reminder_minutes: reminderMinutes
+          };
+          
+          await axios.put(\`/api/reviews/\${id}\`, data);
+          
+          // Show subtle save indicator
+          const savedTime = new Date().toLocaleTimeString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          });
+          console.log('[Auto-save] Review header updated at', savedTime);
+        } catch (error) {
+          console.error('[Auto-save] Failed to save header:', error);
+        }
+      };
+      
+      // Add change event listeners with debouncing
+      let saveTimeout;
+      const debouncedSave = () => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(autoSaveHeaderFields, 1000); // Save after 1 second of no changes
+      };
+      
+      document.getElementById('review-title')?.addEventListener('input', debouncedSave);
+      document.getElementById('review-description')?.addEventListener('input', debouncedSave);
+      document.getElementById('review-time-type')?.addEventListener('change', debouncedSave);
+      document.getElementById('review-owner-type')?.addEventListener('change', (e) => {
+        handleOwnerTypeChangeInEdit(id, teams);
+        debouncedSave();
+      });
+      document.querySelectorAll('input[name="status"]').forEach(radio => {
+        radio.addEventListener('change', debouncedSave);
+      });
+      document.getElementById('edit-scheduled-at')?.addEventListener('change', debouncedSave);
+      document.getElementById('edit-location')?.addEventListener('input', debouncedSave);
+      document.getElementById('edit-reminder-minutes')?.addEventListener('change', debouncedSave);
+    }
+    
+    // ========== FIX: Initialize team selection visibility based on current owner_type ==========
+    handleOwnerTypeChangeInEdit(id, teams);
     
     // Load and render answer sets (Phase 1)
     loadAnswerSets(id).then(() => {
