@@ -977,9 +977,11 @@ reviews.get('/:id', async (c) => {
     const query = `
       SELECT r.*, u.username as creator_name, t.name as team_name, 
              tp.name as template_name,
-             tp.description as template_description
+             tp.description as template_description,
+             u2.username as created_by_username
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
+      LEFT JOIN users u2 ON r.created_by = u2.id
       LEFT JOIN teams t ON r.team_id = t.id
       LEFT JOIN templates tp ON r.template_id = tp.id
       WHERE r.id = ? AND (
@@ -1025,6 +1027,7 @@ reviews.get('/:id', async (c) => {
     const answersResult = await c.env.DB.prepare(`
       SELECT ra.id, ra.question_number, ra.answer, 
              ra.datetime_value, ra.datetime_title, ra.datetime_answer,
+             ra.comment, ra.comment_updated_at,
              ras.user_id, u.username, u.email, 
              ra.created_at, ra.updated_at
       FROM review_answers ra
@@ -1035,12 +1038,21 @@ reviews.get('/:id', async (c) => {
     `).bind(reviewId).all();
     console.log('[GET REVIEW] Answers fetched:', answersResult.results?.length || 0);
 
+    // Check if current user is the creator for comment visibility
+    const reviewObj: any = await c.env.DB.prepare(`SELECT user_id, created_by FROM reviews WHERE id = ?`).bind(reviewId).first();
+    const reviewCreatorId = reviewObj?.created_by || reviewObj?.user_id;
+
     // Group answers by question number
     const answersByQuestion: Record<number, any[]> = {};
     (answersResult.results || []).forEach((ans: any) => {
       if (!answersByQuestion[ans.question_number]) {
         answersByQuestion[ans.question_number] = [];
       }
+      
+      // Determine if comment should be visible
+      // Comment is visible to: review creator OR answer creator
+      const canSeeComment = user.id === reviewCreatorId || ans.user_id === user.id;
+      
       answersByQuestion[ans.question_number].push({
         id: ans.id,
         user_id: ans.user_id,
@@ -1049,7 +1061,10 @@ reviews.get('/:id', async (c) => {
         answer: ans.answer,
         created_at: ans.created_at,
         updated_at: ans.updated_at,
-        is_mine: ans.user_id === user.id
+        is_mine: ans.user_id === user.id,
+        comment: canSeeComment ? (ans.comment || '') : null,
+        comment_updated_at: canSeeComment ? ans.comment_updated_at : null,
+        can_comment: canSeeComment
       });
     });
 
@@ -1072,10 +1087,23 @@ reviews.get('/:id', async (c) => {
     `;
     const collaborators = await c.env.DB.prepare(collabQuery).bind(reviewId).all();
 
+    // Check if current user is the creator
+    const creatorId = review.created_by || review.user_id;
+    const isCreator = creatorId === user.id;
+
+    // Check if review is locked (default to false if field doesn't exist)
+    const isLocked = review.is_locked === 'yes';
+
+    // Check if multiple answers are allowed (default to true if field doesn't exist)
+    const allowMultipleAnswers = review.allow_multiple_answers !== 'no';
+
     return c.json({ 
       review: {
         ...review,
-        is_team_member
+        is_team_member,
+        is_creator: isCreator,
+        is_locked: isLocked,
+        allow_multiple_answers: allowMultipleAnswers
       },
       questions: questionsResult.results || [],
       answersByQuestion,
@@ -1104,7 +1132,10 @@ reviews.post('/', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const body = await c.req.json();
-    const { title, description, team_id, time_type, template_id, answers, status, owner_type, scheduled_at, location, reminder_minutes } = body;
+    const { 
+      title, description, team_id, time_type, template_id, answers, status, owner_type, 
+      scheduled_at, location, reminder_minutes, allow_multiple_answers, is_locked 
+    } = body;
 
     if (!title) {
       return c.json({ error: 'Title is required' }, 400);
@@ -1141,22 +1172,54 @@ reviews.post('/', async (c) => {
       ownerType = 'private';
     }
 
-    // Create review with template_id, owner_type, and calendar fields
-    const result = await c.env.DB.prepare(`
-      INSERT INTO reviews (
-        title, description, user_id, team_id, time_type,
-        template_id, status, owner_type, scheduled_at, location, reminder_minutes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
-      title, description || null, user.id, team_id || null,
-      time_type || 'daily',
-      templateIdToUse,
-      status || 'draft',
-      ownerType,
-      scheduled_at || null,
-      location || null,
-      reminder_minutes || 60
-    ).run();
+    // Validate allow_multiple_answers (default to 'yes' for backward compatibility)
+    const allowMultipleAnswers = allow_multiple_answers === 'no' ? 'no' : 'yes';
+
+    // Validate is_locked (default to 'no' for new reviews)
+    const isLocked = is_locked === 'yes' ? 'yes' : 'no';
+
+    // Create review with template_id, owner_type, calendar fields, and enhancement fields
+    // Try to insert with new fields, fall back to old schema if fields don't exist
+    let result;
+    try {
+      result = await c.env.DB.prepare(`
+        INSERT INTO reviews (
+          title, description, user_id, team_id, time_type,
+          template_id, status, owner_type, scheduled_at, location, reminder_minutes,
+          allow_multiple_answers, is_locked, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        title, description || null, user.id, team_id || null,
+        time_type || 'daily',
+        templateIdToUse,
+        status || 'draft',
+        ownerType,
+        scheduled_at || null,
+        location || null,
+        reminder_minutes || 60,
+        allowMultipleAnswers,
+        isLocked,
+        user.id // created_by is the current user
+      ).run();
+    } catch (dbError) {
+      // Fall back to old schema if new fields don't exist
+      console.warn('New fields not available, using old schema:', dbError);
+      result = await c.env.DB.prepare(`
+        INSERT INTO reviews (
+          title, description, user_id, team_id, time_type,
+          template_id, status, owner_type, scheduled_at, location, reminder_minutes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        title, description || null, user.id, team_id || null,
+        time_type || 'daily',
+        templateIdToUse,
+        status || 'draft',
+        ownerType,
+        scheduled_at || null,
+        location || null,
+        reminder_minutes || 60
+      ).run();
+    }
 
     const reviewId = result.meta.last_row_id;
 
@@ -1598,6 +1661,226 @@ reviews.delete('/:id/my-answer/:questionNumber', async (c) => {
     return c.json({ message: 'Answer deleted successfully' });
   } catch (error) {
     console.error('Delete answer error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// ==================== Review Enhancement Features ====================
+
+/**
+ * PUT /api/reviews/:id/lock
+ * Lock a review - only creator can lock
+ * When locked, no editing is allowed but viewing is still possible
+ */
+reviews.put('/:id/lock', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const reviewId = c.req.param('id');
+
+    // Check if user is the creator (created_by or user_id if created_by not exists)
+    const review: any = await c.env.DB.prepare(`
+      SELECT user_id, created_by FROM reviews WHERE id = ?
+    `).bind(reviewId).first();
+
+    if (!review) {
+      return c.json({ error: 'Review not found' }, 404);
+    }
+
+    // Check if user is the creator
+    const creatorId = review.created_by || review.user_id;
+    if (creatorId !== user.id && user.role !== 'admin') {
+      return c.json({ error: 'Only creator can lock the review' }, 403);
+    }
+
+    // Try to update is_locked field (will fail gracefully if field doesn't exist)
+    try {
+      await c.env.DB.prepare(`
+        UPDATE reviews SET is_locked = 'yes', updated_at = datetime('now')
+        WHERE id = ?
+      `).bind(reviewId).run();
+      
+      return c.json({ message: 'Review locked successfully', is_locked: 'yes' });
+    } catch (dbError) {
+      // If field doesn't exist, return error asking to apply migrations
+      console.error('Lock review DB error:', dbError);
+      return c.json({ 
+        error: 'Database schema update required. Please apply migration 0067.',
+        details: 'is_locked field not found in reviews table'
+      }, 500);
+    }
+  } catch (error) {
+    console.error('Lock review error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * PUT /api/reviews/:id/unlock
+ * Unlock a review - only creator can unlock
+ */
+reviews.put('/:id/unlock', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const reviewId = c.req.param('id');
+
+    // Check if user is the creator
+    const review: any = await c.env.DB.prepare(`
+      SELECT user_id, created_by FROM reviews WHERE id = ?
+    `).bind(reviewId).first();
+
+    if (!review) {
+      return c.json({ error: 'Review not found' }, 404);
+    }
+
+    const creatorId = review.created_by || review.user_id;
+    if (creatorId !== user.id && user.role !== 'admin') {
+      return c.json({ error: 'Only creator can unlock the review' }, 403);
+    }
+
+    // Try to update is_locked field
+    try {
+      await c.env.DB.prepare(`
+        UPDATE reviews SET is_locked = 'no', updated_at = datetime('now')
+        WHERE id = ?
+      `).bind(reviewId).run();
+      
+      return c.json({ message: 'Review unlocked successfully', is_locked: 'no' });
+    } catch (dbError) {
+      console.error('Unlock review DB error:', dbError);
+      return c.json({ 
+        error: 'Database schema update required. Please apply migration 0067.',
+        details: 'is_locked field not found in reviews table'
+      }, 500);
+    }
+  } catch (error) {
+    console.error('Unlock review error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * POST /api/reviews/:reviewId/answers/:answerId/comment
+ * Add or update comment on an answer
+ * Only review creator or answer creator can add/edit comments
+ */
+reviews.post('/:reviewId/answers/:answerId/comment', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const reviewId = parseInt(c.req.param('reviewId'));
+    const answerId = parseInt(c.req.param('answerId'));
+    const { comment } = await c.req.json();
+
+    if (!comment || typeof comment !== 'string') {
+      return c.json({ error: 'Comment text is required' }, 400);
+    }
+
+    // Get review and answer information
+    const review: any = await c.env.DB.prepare(`
+      SELECT user_id, created_by FROM reviews WHERE id = ?
+    `).bind(reviewId).first();
+
+    if (!review) {
+      return c.json({ error: 'Review not found' }, 404);
+    }
+
+    // Get answer and its creator through answer_set
+    const answer: any = await c.env.DB.prepare(`
+      SELECT ra.id, ras.user_id as answer_creator_id
+      FROM review_answers ra
+      JOIN review_answer_sets ras ON ra.answer_set_id = ras.id
+      WHERE ra.id = ? AND ras.review_id = ?
+    `).bind(answerId, reviewId).first();
+
+    if (!answer) {
+      return c.json({ error: 'Answer not found' }, 404);
+    }
+
+    // Check permissions: only review creator or answer creator can comment
+    const reviewCreatorId = review.created_by || review.user_id;
+    const answerCreatorId = answer.answer_creator_id;
+    
+    if (user.id !== reviewCreatorId && user.id !== answerCreatorId) {
+      return c.json({ 
+        error: 'Only review creator or answer creator can add comments' 
+      }, 403);
+    }
+
+    // Update comment in review_answers table
+    try {
+      await c.env.DB.prepare(`
+        UPDATE review_answers 
+        SET comment = ?, comment_updated_at = datetime('now'), updated_at = datetime('now')
+        WHERE id = ?
+      `).bind(comment, answerId).run();
+      
+      return c.json({ 
+        message: 'Comment saved successfully',
+        comment,
+        answerId
+      });
+    } catch (dbError) {
+      console.error('Save comment DB error:', dbError);
+      return c.json({ 
+        error: 'Database schema update required. Please apply migration 0067.',
+        details: 'comment field not found in review_answers table'
+      }, 500);
+    }
+  } catch (error) {
+    console.error('Add comment error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+/**
+ * GET /api/reviews/:reviewId/answers/:answerId/comment
+ * Get comment for a specific answer
+ * Only review creator or answer creator can view comments
+ */
+reviews.get('/:reviewId/answers/:answerId/comment', async (c) => {
+  try {
+    const user = c.get('user') as UserPayload;
+    const reviewId = parseInt(c.req.param('reviewId'));
+    const answerId = parseInt(c.req.param('answerId'));
+
+    // Get review information
+    const review: any = await c.env.DB.prepare(`
+      SELECT user_id, created_by FROM reviews WHERE id = ?
+    `).bind(reviewId).first();
+
+    if (!review) {
+      return c.json({ error: 'Review not found' }, 404);
+    }
+
+    // Get answer with comment
+    const answer: any = await c.env.DB.prepare(`
+      SELECT ra.id, ra.comment, ra.comment_updated_at, ras.user_id as answer_creator_id
+      FROM review_answers ra
+      JOIN review_answer_sets ras ON ra.answer_set_id = ras.id
+      WHERE ra.id = ? AND ras.review_id = ?
+    `).bind(answerId, reviewId).first();
+
+    if (!answer) {
+      return c.json({ error: 'Answer not found' }, 404);
+    }
+
+    // Check permissions
+    const reviewCreatorId = review.created_by || review.user_id;
+    const answerCreatorId = answer.answer_creator_id;
+    
+    if (user.id !== reviewCreatorId && user.id !== answerCreatorId) {
+      return c.json({ 
+        error: 'Only review creator or answer creator can view comments' 
+      }, 403);
+    }
+
+    return c.json({ 
+      comment: answer.comment || '',
+      commentUpdatedAt: answer.comment_updated_at,
+      answerId: answer.id,
+      canEdit: user.id === reviewCreatorId || user.id === answerCreatorId
+    });
+  } catch (error) {
+    console.error('Get comment error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
