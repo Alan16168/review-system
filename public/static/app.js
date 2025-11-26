@@ -6085,8 +6085,8 @@ async function showReviewDetail(id, readOnly = false) {
       </div>
     `;
     
-    // Initialize lock UI event listeners
-    initializeLockUI();
+    // Lock UI is initialized via inline event handlers in renderLockStatusSection
+    // No separate initialization needed
   } catch (error) {
     showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     showReviews();
