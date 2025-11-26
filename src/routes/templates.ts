@@ -49,6 +49,7 @@ templates.get('/', async (c) => {
       WHERE is_active = 1
         AND (
           owner = 'public'
+          OR owner = 'system'
           OR created_by = ?
           OR ? = 'admin'
           OR (owner = 'team' AND EXISTS (
@@ -59,7 +60,7 @@ templates.get('/', async (c) => {
           ))
         )
       ORDER BY is_default DESC, created_at DESC
-    `).bind(user.userId || user.id, user.role, user.userId || user.id).all();
+    `).bind(user.id, user.role, user.id).all();
 
     const templateList = templatesResult.results || [];
 
