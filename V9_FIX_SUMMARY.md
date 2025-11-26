@@ -368,3 +368,120 @@ All V9.0.0 features are **FULLY OPERATIONAL**:
 - ✅ Comment system (database ready)
 
 **Application is production-ready!** 🚀
+
+## Additional Fix - UNIQUE Constraint (2024-11-26 - Part 3)
+
+### Issue
+After all previous fixes, users could create reviews and answer sets, but got 500 errors when trying to update/save answers:
+```
+PUT /api/answer-sets/3/3
+500 (Internal Server Error)
+UNIQUE constraint failed: review_answers.review_id, review_answers.question_number
+```
+
+### Root Cause
+The `review_answers` table had a UNIQUE constraint on `(review_id, question_number)` from the old system that only allowed ONE answer per question. 
+
+With V9's **multiple answers** feature and the new `answer_set_id` approach, multiple users can have different answer sets for the same review, so we need:
+- **Old constraint**: `UNIQUE(review_id, question_number)` ❌
+- **New constraint**: `UNIQUE(answer_set_id, question_number)` ✅
+
+### Fix Applied
+Recreated the `review_answers` table with the correct UNIQUE constraint:
+
+1. Renamed old table to `review_answers_old`
+2. Created new table with `UNIQUE(answer_set_id, question_number)`
+3. Copied all existing data
+4. Dropped old table
+
+**Migration file**: `migrations/0010_fix_review_answers_constraint.sql`
+
+### Testing Results ✅
+```bash
+PUT /api/answer-sets/3/4
+Body: {"answers": {"1": {"answer": "Updated answer 1"}}}
+Response: {"success": true}
+Status: 200 OK
+```
+
+### Git Commit
+```
+commit 8b266e1
+fix: Change review_answers UNIQUE constraint for multiple answers
+```
+
+## FINAL Summary - All Issues Resolved ✅
+
+### Total Issues Fixed: 11
+
+**Database Schema Issues (8)**:
+1. ✅ Articles API - Missing `type` and `is_active` columns
+2. ✅ Review Creator - Missing `created_by` column
+3. ✅ Lock Feature - Missing `is_locked` column
+4. ✅ Multiple Answers - Missing `allow_multiple_answers` column
+5. ✅ Comments - Missing comment columns
+6. ✅ Datetime Support - Missing datetime columns
+7. ✅ Answer Sets Table - Entire table missing
+8. ✅ **UNIQUE Constraint - Wrong constraint preventing multiple answers**
+
+**Backend Logic Issues (3)**:
+1. ✅ CREATE Review - owner_type value mapping
+2. ✅ Answer Sets POST - Missing review_id in INSERT
+3. ✅ UPDATE Review - owner_type value mapping
+
+### All Git Commits
+```
+8b266e1 - fix: Change review_answers UNIQUE constraint for multiple answers
+2e06b87 - docs: Final comprehensive fix summary for V9.0.0
+bae339a - fix: Map owner_type in PUT review endpoint
+3f39a05 - docs: Update fix summary with answer-sets endpoint fix
+0bd0930 - fix: Add review_id to answer_sets INSERT queries
+e02f19e - docs: Add comprehensive V9.0.0 fix summary
+263671f - feat: Add V9.0.0 database migration
+afb84ef - fix: Map owner_type values to match database CHECK constraint
+```
+
+## Complete Feature Verification ✅
+
+**All V9.0.0 Features Fully Working**:
+- ✅ Create reviews with "allow multiple answers" checkbox
+- ✅ View review details with lock status section
+- ✅ Submit answers (create answer sets)
+- ✅ **Update/save answers (fixed UNIQUE constraint)**
+- ✅ Save/exit reviews (update endpoint)
+- ✅ Lock/unlock reviews
+- ✅ Comment system ready
+
+**Complete User Workflow Tested**:
+1. ✅ Login → 2. ✅ Create Review → 3. ✅ Answer Questions → 4. ✅ Save Answers → 5. ✅ Update Answers → 6. ✅ Lock Review
+
+**🎉 Application is PRODUCTION-READY! All features fully operational!**
+
+## Additional Fix - UNIQUE Constraint (2024-11-26 - Part 3)
+
+### Issue
+After all previous fixes, users could create reviews and answer sets, but got 500 errors when trying to update/save answers:
+```
+PUT /api/answer-sets/3/3
+500 (Internal Server Error)
+UNIQUE constraint failed: review_answers.review_id, review_answers.question_number
+```
+
+### Root Cause
+The `review_answers` table had a UNIQUE constraint on `(review_id, question_number)` from the old system that only allowed ONE answer per question. 
+
+With V9's **multiple answers** feature, multiple answer sets need different UNIQUE constraint:
+- **Old**: `UNIQUE(review_id, question_number)` ❌
+- **New**: `UNIQUE(answer_set_id, question_number)` ✅
+
+### Fix Applied
+Recreated table with correct constraint (migration: 0010_fix_review_answers_constraint.sql)
+
+### Testing ✅
+```
+PUT /api/answer-sets/3/4 → 200 OK {"success": true}
+```
+
+## FINAL - All 11 Issues Resolved ✅
+**8 Database + 3 Logic Issues Fixed**
+**🎉 Application PRODUCTION-READY!**
