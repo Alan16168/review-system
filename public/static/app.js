@@ -5706,12 +5706,18 @@ async function showReviewDetail(id, readOnly = false) {
             </div>
           </div>
 
-          <!-- Review Header Information -->
-          <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-              <i class="fas fa-info-circle mr-2"></i>${i18n.t('reviewHeader') || '复盘表头'}
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Review Header Information (Collapsible) -->
+          <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+            <button type="button" onclick="toggleSection('review-header-section')" 
+                    class="w-full flex justify-between items-center p-6 hover:bg-gray-50 transition-colors">
+              <h3 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-info-circle mr-2"></i>${i18n.t('reviewHeader') || '复盘表头'}
+              </h3>
+              <i class="fas fa-chevron-down text-gray-600" id="icon-review-header-section"></i>
+            </button>
+            <div id="review-header-section" class="hidden">
+              <div class="p-6 pt-0">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Title -->
               <div>
                 <label class="block text-sm font-medium text-gray-600 mb-1">
@@ -5837,7 +5843,9 @@ async function showReviewDetail(id, readOnly = false) {
               </div>
             </div>
             ` : ''}
+            </div>
           </div>
+        </div>
 
           <!-- Dynamic Questions Display -->
           <div class="bg-white rounded-lg shadow-md p-6">
