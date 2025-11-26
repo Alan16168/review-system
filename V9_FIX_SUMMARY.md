@@ -222,3 +222,62 @@ All V9.0.0 enhancement features are now fully functional:
 - ✅ All database schema issues resolved
 
 The application is ready for testing!
+
+## Additional Fix - Answer Sets Endpoint (2024-11-26)
+
+### Issue
+After initial database fixes, users could view reviews but got 500 errors when creating answer sets:
+```
+POST /api/answer-sets/3
+500 (Internal Server Error)
+NOT NULL constraint failed: review_answers.review_id
+```
+
+### Root Cause
+The `answer_sets.ts` route was inserting into `review_answers` table without the required `review_id` column.
+
+**Lines affected**:
+- Line 197: POST endpoint INSERT statement
+- Line 298: PUT endpoint INSERT statement (UPSERT logic)
+
+### Fix Applied
+Added `review_id` to both INSERT statements:
+
+**Before**:
+```sql
+INSERT INTO review_answers 
+(answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
+VALUES (?, ?, ?, ?, ?, ?)
+```
+
+**After**:
+```sql
+INSERT INTO review_answers 
+(review_id, answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+```
+
+### Testing Results ✅
+```bash
+POST /api/answer-sets/3
+Response: {"success": true, "set_number": 4, "set_id": 4}
+Status: 200 OK
+```
+
+### Git Commit
+```
+commit 0bd0930
+fix: Add review_id to answer_sets INSERT queries
+```
+
+## Final Status
+
+All V9.0.0 features are now **FULLY FUNCTIONAL**:
+- ✅ Database schema complete (all columns added)
+- ✅ Review creation/viewing working
+- ✅ Lock functionality operational
+- ✅ Multiple answers control working
+- ✅ Answer sets creation working
+- ✅ Comment system ready
+
+**Application is ready for production testing!**
