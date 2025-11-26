@@ -6989,7 +6989,7 @@ async function showEditReview(id) {
             reminder_minutes: reminderMinutes
           };
           
-          await axios.put(\`/api/reviews/\${id}\`, data);
+          await axios.put(`/api/reviews/${id}`, data);
           
           // Show subtle save indicator
           const savedTime = new Date().toLocaleTimeString(i18n.getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US', {
