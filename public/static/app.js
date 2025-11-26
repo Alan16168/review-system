@@ -20211,15 +20211,7 @@ async function showPricingPlans() {
   }
 }
 
-/**
- * Close modal by ID
- */
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) {
-    modal.remove();
-  }
-}
+// closeModal function already defined at line 12
 
 /**
  * Add subscription to cart
