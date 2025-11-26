@@ -20269,6 +20269,9 @@ async function toggleCurrentAnswerSetLock(reviewId) {
       
       // Update answer edit UI
       updateAnswerEditability(response.data.is_locked === 'yes');
+      
+      // Re-render answer set to show/hide edit buttons
+      renderAnswerSet(reviewId);
     }
   } catch (error) {
     console.error('Toggle answer set lock error:', error);
