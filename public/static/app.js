@@ -14308,6 +14308,7 @@ function renderAnswerSet(reviewId) {
     } else if (q.question_type === 'time_with_text') {
       // Render time with text type - no "answer" label, just show the answer with edit button (hidden when locked)
       const isLocked = currentSet.is_locked === 'yes';
+      console.log('[renderAnswerSet] time_with_text - Question:', q.question_number, 'isLocked:', isLocked, 'currentSet.is_locked:', currentSet.is_locked);
       answerElement.innerHTML = `
         <div class="space-y-3">
           ${answerText ? `
@@ -14354,6 +14355,7 @@ function renderAnswerSet(reviewId) {
     } else {
       // Default text type - show answer with edit button (hidden when locked)
       const isLocked = currentSet.is_locked === 'yes';
+      console.log('[renderAnswerSet] default text - Question:', q.question_number, 'isLocked:', isLocked, 'currentSet.is_locked:', currentSet.is_locked, 'answerText:', answerText ? 'exists' : 'empty');
       if (answerText) {
         answerElement.innerHTML = `
           <div class="relative">
@@ -14439,6 +14441,11 @@ function renderAnswerSet(reviewId) {
   
   // Update lock button to reflect current answer set's lock status
   const isLocked = currentSet.is_locked === 'yes';
+  console.log('[renderAnswerSet] Final lock status check:');
+  console.log('  - currentSet.is_locked:', currentSet.is_locked);
+  console.log('  - typeof currentSet.is_locked:', typeof currentSet.is_locked);
+  console.log('  - isLocked (=== "yes"):', isLocked);
+  console.log('  - Full currentSet object:', JSON.stringify(currentSet, null, 2));
   updateAnswerSetLockButton(isLocked);
   updateAnswerEditability(isLocked);
   

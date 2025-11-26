@@ -891,7 +891,7 @@ app.get('/', (c) => {
         <!-- Manhattan Project - AI Writing System -->
         <script src="/static/ai_books.js?v=9.0.0"></script>
         <script src="/static/agents.js?v=9.0.0"></script>
-        <script src="/static/app.js?v=9.0.0"></script>
+        <script src="/static/app.js?v=9.1.0"></script>
     </body>
     </html>
   `);
