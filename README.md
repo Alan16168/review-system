@@ -8,7 +8,8 @@
 
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
-**🚀 最新部署**: https://b0992535.review-system.pages.dev (2025-11-26 Latest)  
+**🚀 最新部署**: https://review-system.pages.dev (2025-11-26 04:01 UTC)  
+**🚀 部署 ID**: https://a484216d.review-system.pages.dev  
 **✅ 当前版本**: V8.9.0 - 复盘详情查看体验优化 (2025-11-26)  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
@@ -30,11 +31,12 @@
 
 **部署信息**:
 - **版本**: V8.9.0 ✅
-- **部署时间**: 2025-11-26 UTC
+- **部署时间**: 2025-11-26 04:01 UTC
 - **部署状态**: ✅ 生产环境部署成功
-- **主域名**: https://review-system.pages.dev
-- **部署ID**: https://b0992535.review-system.pages.dev
-- **Git Commit**: 983c40b
+- **主域名**: https://review-system.pages.dev ✅
+- **部署ID**: https://a484216d.review-system.pages.dev
+- **Git Commit**: e6850a3
+- **Worker Bundle**: 405.53 kB
 
 **本次更新内容**:
 
