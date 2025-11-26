@@ -6117,63 +6117,61 @@ async function showTeamReviewCollaboration(id) {
                             const initialIcon = shouldCollapse ? 'fa-chevron-down' : 'fa-chevron-up';
                             const initialText = shouldCollapse ? (i18n.t('expand') || '展开') : (i18n.t('collapse') || '收起');
                             
-                            return \`
-                              <div class="border border-gray-300 rounded-lg overflow-hidden \${isCurrentUser ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50'}">
-                                <!-- Group Header with Collapse/Expand Button -->
-                                <div class="flex justify-between items-center p-3 \${isCurrentUser ? 'bg-indigo-100 border-b border-indigo-200' : 'bg-green-50 border-b border-gray-300'}">
-                                  <div class="flex items-center">
-                                    <i class="fas fa-user-circle text-xl \${isCurrentUser ? 'text-indigo-600' : 'text-gray-600'} mr-2"></i>
-                                    <div>
-                                      <span class="text-sm font-semibold text-gray-800">
-                                        \${escapeHtml(username)}\${isCurrentUser ? ' <span class="text-indigo-600">(' + (i18n.t("myAnswer") || "我") + ')</span>' : ''}
-                                      </span>
-                                      <span class="text-xs text-gray-500 ml-2">
-                                        (\${answerCount} \${answerCount === 1 ? i18n.t('answer') || '个答案' : i18n.t('answers') || '个答案'})
-                                      </span>
-                                    </div>
-                                  </div>
-                                  \${answerCount > 1 ? \`
-                                    <button 
-                                      onclick="toggleUserGroup('\${groupId}')"
-                                      class="px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition-colors"
-                                      id="toggle-btn-\${groupId}"
-                                    >
-                                      <i class="fas \${initialIcon} mr-1"></i>
-                                      <span id="toggle-text-\${groupId}">\${initialText}</span>
-                                    </button>
-                                  \` : ''}
-                                </div>
-                                
-                                <!-- User's Answers (Collapsible if more than 1) -->
-                                <div id="\${groupId}" class="space-y-3 p-3 \${initialClass}">
-                                  \${userAnswers.map((answer, idx) => {
-                                    const isOwner = answer.user_id === currentUserId;
-                                    return \`
-                                      <div class="border-l-4 \${isOwner ? 'border-indigo-500 bg-indigo-50' : 'border-green-500 bg-white'} pl-4 p-3 rounded-r">
-                                        <div class="flex justify-between items-start mb-2">
-                                          <div class="flex-1">
-                                            <span class="text-xs text-gray-500">
-                                              <i class="fas fa-clock mr-1"></i>\${new Date(answer.created_at || answer.updated_at).toLocaleString()}
-                                            </span>
-                                            \${idx === 0 && answerCount > 1 ? '<span class="ml-2 text-xs font-semibold text-blue-600"><i class="fas fa-star mr-1"></i>' + (i18n.t('latest') || '最新') + '</span>' : ''}
-                                          </div>
-                                          \${isOwner ? \`
-                                            <button 
-                                              onclick="handleDeleteMyAnswer(\${id}, \${num}, \${answer.id})"
-                                              class="text-red-600 hover:text-red-800 text-xs px-2 py-1 hover:bg-red-50 rounded ml-2"
-                                              title="\${i18n.t('deleteAnswer')}"
-                                            >
-                                              <i class="fas fa-trash"></i>
-                                            </button>
-                                          \` : ''}
-                                        </div>
-                                        <p class="text-gray-800 whitespace-pre-wrap">\${escapeHtml(answer.answer)}</p>
-                                      </div>
-                                    \`;
-                                  }).join('')}
-                                </div>
-                              </div>
-                            \`;
+                            // Build user badge
+                            const userBadge = isCurrentUser ? ' <span class="text-indigo-600">(' + (i18n.t("myAnswer") || "我") + ')</span>' : '';
+                            
+                            // Build collapse button HTML
+                            const collapseButton = answerCount > 1 ? 
+                              '<button onclick="toggleUserGroup(\'' + groupId + '\')" class="px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition-colors" id="toggle-btn-' + groupId + '">' +
+                                '<i class="fas ' + initialIcon + ' mr-1"></i>' +
+                                '<span id="toggle-text-' + groupId + '">' + initialText + '</span>' +
+                              '</button>' : '';
+                            
+                            // Build answers HTML
+                            const answersHtml = userAnswers.map((answer, idx) => {
+                              const isOwner = answer.user_id === currentUserId;
+                              const latestBadge = (idx === 0 && answerCount > 1) ? 
+                                '<span class="ml-2 text-xs font-semibold text-blue-600"><i class="fas fa-star mr-1"></i>' + (i18n.t('latest') || '最新') + '</span>' : '';
+                              const deleteButton = isOwner ? 
+                                '<button onclick="handleDeleteMyAnswer(' + id + ', ' + num + ', ' + answer.id + ')" class="text-red-600 hover:text-red-800 text-xs px-2 py-1 hover:bg-red-50 rounded ml-2" title="' + i18n.t('deleteAnswer') + '">' +
+                                  '<i class="fas fa-trash"></i>' +
+                                '</button>' : '';
+                              
+                              return '<div class="border-l-4 ' + (isOwner ? 'border-indigo-500 bg-indigo-50' : 'border-green-500 bg-white') + ' pl-4 p-3 rounded-r">' +
+                                '<div class="flex justify-between items-start mb-2">' +
+                                  '<div class="flex-1">' +
+                                    '<span class="text-xs text-gray-500">' +
+                                      '<i class="fas fa-clock mr-1"></i>' + new Date(answer.created_at || answer.updated_at).toLocaleString() +
+                                    '</span>' +
+                                    latestBadge +
+                                  '</div>' +
+                                  deleteButton +
+                                '</div>' +
+                                '<p class="text-gray-800 whitespace-pre-wrap">' + escapeHtml(answer.answer) + '</p>' +
+                              '</div>';
+                            }).join('');
+                            
+                            return '<div class="border border-gray-300 rounded-lg overflow-hidden ' + (isCurrentUser ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50') + '">' +
+                              '<!-- Group Header with Collapse/Expand Button -->' +
+                              '<div class="flex justify-between items-center p-3 ' + (isCurrentUser ? 'bg-indigo-100 border-b border-indigo-200' : 'bg-green-50 border-b border-gray-300') + '">' +
+                                '<div class="flex items-center">' +
+                                  '<i class="fas fa-user-circle text-xl ' + (isCurrentUser ? 'text-indigo-600' : 'text-gray-600') + ' mr-2"></i>' +
+                                  '<div>' +
+                                    '<span class="text-sm font-semibold text-gray-800">' +
+                                      escapeHtml(username) + userBadge +
+                                    '</span>' +
+                                    '<span class="text-xs text-gray-500 ml-2">' +
+                                      '(' + answerCount + ' ' + (answerCount === 1 ? i18n.t('answer') || '个答案' : i18n.t('answers') || '个答案') + ')' +
+                                    '</span>' +
+                                  '</div>' +
+                                '</div>' +
+                                collapseButton +
+                              '</div>' +
+                              '<!-- User\'s Answers (Collapsible if more than 1) -->' +
+                              '<div id="' + groupId + '" class="space-y-3 p-3 ' + initialClass + '">' +
+                                answersHtml +
+                              '</div>' +
+                            '</div>';
                           }).join('');
                         })()}
                       </div>
