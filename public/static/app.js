@@ -6070,8 +6070,6 @@ async function showTeamReviewCollaboration(id) {
             ${(questions && questions.length > 0) ? questions.map(q => {
               const num = q.question_number;
               const memberAnswers = answersByQuestion[num] || [];
-              const myAnswer = memberAnswers.find(a => a.user_id === currentUserId);
-              const otherAnswers = memberAnswers.filter(a => a.user_id !== currentUserId);
               
               return `
                 <div class="bg-white rounded-lg shadow-md p-6">
@@ -6080,43 +6078,13 @@ async function showTeamReviewCollaboration(id) {
                   </h2>
                   
                   <div class="space-y-4">
-                    <!-- My Answer (Editable) -->
-                    <div class="border-l-4 border-indigo-500 pl-4">
-                      <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-sm font-semibold text-indigo-700">
-                          <i class="fas fa-user-edit mr-1"></i>${i18n.t('myAnswer')}
-                        </h3>
-                        <div class="flex items-center space-x-2">
-                          <span class="text-xs text-gray-500" id="save-status-${num}">
-                            ${myAnswer ? '<i class="fas fa-check text-green-600 mr-1"></i>' + i18n.t('autoSaved') : ''}
-                          </span>
-                          ${myAnswer ? `
-                            <button 
-                              onclick="handleDeleteMyAnswer(${id}, ${num})"
-                              class="text-red-600 hover:text-red-800 text-xs px-2 py-1 hover:bg-red-50 rounded"
-                              title="${i18n.t('deleteAnswer')}"
-                            >
-                              <i class="fas fa-trash mr-1"></i>${i18n.t('delete')}
-                            </button>
-                          ` : ''}
-                        </div>
-                      </div>
-                      <textarea 
-                        id="my-answer-${num}"
-                        rows="4"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-y"
-                        placeholder="${i18n.t('answerPlaceholder')}"
-                        onchange="handleSaveTeamAnswer(${id}, ${num})"
-                      >${myAnswer ? escapeHtml(myAnswer.answer) : ''}</textarea>
-                    </div>
-                    
-                    ${otherAnswers.length > 0 ? `
-                      <!-- Other Members' Answers (Readonly) - Grouped by Username -->
-                      <div class="space-y-3 pt-2">
+                    ${memberAnswers.length > 0 ? `
+                      <!-- All Answers Grouped by Username -->
+                      <div class="space-y-3">
                         ${(() => {
-                          // Group answers by username
+                          // Group ALL answers by username (including current user)
                           const groupedByUser = {};
-                          otherAnswers.forEach(answer => {
+                          memberAnswers.forEach(answer => {
                             const username = answer.username || 'Unknown';
                             if (!groupedByUser[username]) {
                               groupedByUser[username] = [];
@@ -6124,67 +6092,95 @@ async function showTeamReviewCollaboration(id) {
                             groupedByUser[username].push(answer);
                           });
                           
-                          // Sort groups by most recent answer timestamp (newest first)
+                          // Sort groups by username alphabetically
                           const sortedUsers = Object.keys(groupedByUser).sort((a, b) => {
-                            const aLatest = Math.max(...groupedByUser[a].map(ans => new Date(ans.updated_at).getTime()));
-                            const bLatest = Math.max(...groupedByUser[b].map(ans => new Date(ans.updated_at).getTime()));
-                            return bLatest - aLatest; // Descending order (newest first)
+                            return a.localeCompare(b, 'zh-CN'); // Alphabetical order with Chinese support
                           });
                           
                           // Generate HTML for each user group
                           return sortedUsers.map(username => {
                             const userAnswers = groupedByUser[username];
                             const groupId = 'user-group-' + num + '-' + username.replace(/[^a-zA-Z0-9]/g, '');
-                            const latestTimestamp = Math.max(...userAnswers.map(ans => new Date(ans.updated_at).getTime()));
                             const answerCount = userAnswers.length;
+                            const isCurrentUser = userAnswers.some(a => a.user_id === currentUserId);
                             
-                            return `
-                              <div class="border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+                            // Sort user's answers by created_at (newest first)
+                            userAnswers.sort((a, b) => {
+                              const dateA = new Date(a.created_at || a.updated_at).getTime();
+                              const dateB = new Date(b.created_at || b.updated_at).getTime();
+                              return dateB - dateA; // Descending order (newest first)
+                            });
+                            
+                            // Determine if should be collapsed by default (if more than 1 answer)
+                            const shouldCollapse = answerCount > 1;
+                            const initialClass = shouldCollapse ? 'hidden' : '';
+                            const initialIcon = shouldCollapse ? 'fa-chevron-down' : 'fa-chevron-up';
+                            const initialText = shouldCollapse ? (i18n.t('expand') || '展开') : (i18n.t('collapse') || '收起');
+                            
+                            return \`
+                              <div class="border border-gray-300 rounded-lg overflow-hidden \${isCurrentUser ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50'}">
                                 <!-- Group Header with Collapse/Expand Button -->
-                                <div class="flex justify-between items-center p-3 bg-green-50 border-b border-gray-300">
+                                <div class="flex justify-between items-center p-3 \${isCurrentUser ? 'bg-indigo-100 border-b border-indigo-200' : 'bg-green-50 border-b border-gray-300'}">
                                   <div class="flex items-center">
-                                    <i class="fas fa-user-circle text-xl text-gray-600 mr-2"></i>
+                                    <i class="fas fa-user-circle text-xl \${isCurrentUser ? 'text-indigo-600' : 'text-gray-600'} mr-2"></i>
                                     <div>
                                       <span class="text-sm font-semibold text-gray-800">
-                                        ${escapeHtml(username)}
+                                        \${escapeHtml(username)}\${isCurrentUser ? ' <span class="text-indigo-600">(' + (i18n.t("myAnswer") || "我") + ')</span>' : ''}
                                       </span>
                                       <span class="text-xs text-gray-500 ml-2">
-                                        (${answerCount} ${answerCount === 1 ? i18n.t('answer') || '个答案' : i18n.t('answers') || '个答案'})
+                                        (\${answerCount} \${answerCount === 1 ? i18n.t('answer') || '个答案' : i18n.t('answers') || '个答案'})
                                       </span>
                                     </div>
                                   </div>
-                                  <button 
-                                    onclick="toggleUserGroup('${groupId}')"
-                                    class="px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition-colors"
-                                    id="toggle-btn-${groupId}"
-                                  >
-                                    <i class="fas fa-chevron-up mr-1"></i>
-                                    <span id="toggle-text-${groupId}">${i18n.t('collapse') || '收起'}</span>
-                                  </button>
+                                  \${answerCount > 1 ? \`
+                                    <button 
+                                      onclick="toggleUserGroup('\${groupId}')"
+                                      class="px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition-colors"
+                                      id="toggle-btn-\${groupId}"
+                                    >
+                                      <i class="fas \${initialIcon} mr-1"></i>
+                                      <span id="toggle-text-\${groupId}">\${initialText}</span>
+                                    </button>
+                                  \` : ''}
                                 </div>
                                 
-                                <!-- User's Answers (Collapsible) -->
-                                <div id="${groupId}" class="space-y-3 p-3">
-                                  ${userAnswers.map(answer => `
-                                    <div class="border-l-4 border-green-500 pl-4 bg-white p-3 rounded-r">
-                                      <div class="flex justify-between items-start mb-2">
-                                        <span class="text-xs text-gray-500">
-                                          <i class="fas fa-clock mr-1"></i>${new Date(answer.updated_at).toLocaleString()}
-                                        </span>
+                                <!-- User's Answers (Collapsible if more than 1) -->
+                                <div id="\${groupId}" class="space-y-3 p-3 \${initialClass}">
+                                  \${userAnswers.map((answer, idx) => {
+                                    const isOwner = answer.user_id === currentUserId;
+                                    return \`
+                                      <div class="border-l-4 \${isOwner ? 'border-indigo-500 bg-indigo-50' : 'border-green-500 bg-white'} pl-4 p-3 rounded-r">
+                                        <div class="flex justify-between items-start mb-2">
+                                          <div class="flex-1">
+                                            <span class="text-xs text-gray-500">
+                                              <i class="fas fa-clock mr-1"></i>\${new Date(answer.created_at || answer.updated_at).toLocaleString()}
+                                            </span>
+                                            \${idx === 0 && answerCount > 1 ? '<span class="ml-2 text-xs font-semibold text-blue-600"><i class="fas fa-star mr-1"></i>' + (i18n.t('latest') || '最新') + '</span>' : ''}
+                                          </div>
+                                          \${isOwner ? \`
+                                            <button 
+                                              onclick="handleDeleteMyAnswer(\${id}, \${num}, \${answer.id})"
+                                              class="text-red-600 hover:text-red-800 text-xs px-2 py-1 hover:bg-red-50 rounded ml-2"
+                                              title="\${i18n.t('deleteAnswer')}"
+                                            >
+                                              <i class="fas fa-trash"></i>
+                                            </button>
+                                          \` : ''}
+                                        </div>
+                                        <p class="text-gray-800 whitespace-pre-wrap">\${escapeHtml(answer.answer)}</p>
                                       </div>
-                                      <p class="text-gray-800 whitespace-pre-wrap">${escapeHtml(answer.answer)}</p>
-                                    </div>
-                                  `).join('')}
+                                    \`;
+                                  }).join('')}
                                 </div>
                               </div>
-                            `;
+                            \`;
                           }).join('');
                         })()}
                       </div>
                     ` : `
                       <div class="text-center py-6 text-gray-400 bg-gray-50 rounded-lg">
                         <i class="fas fa-inbox text-3xl mb-2"></i>
-                        <p class="text-sm">${i18n.t('noMemberAnswers')}</p>
+                        <p class="text-sm">${i18n.t('noAnswers') || '暂无答案'}</p>
                       </div>
                     `}
                   </div>
@@ -6250,13 +6246,18 @@ async function handleSaveTeamAnswer(reviewId, questionNumber) {
 }
 
 // Delete my own answer (each user can only delete their own answers)
-async function handleDeleteMyAnswer(reviewId, questionNumber) {
+async function handleDeleteMyAnswer(reviewId, questionNumber, answerId) {
   if (!confirm(i18n.t('confirmDeleteAnswer'))) {
     return;
   }
   
   try {
-    await axios.delete(`/api/reviews/${reviewId}/my-answer/${questionNumber}`);
+    // If answerId is provided, delete specific answer; otherwise delete all answers for this question
+    if (answerId) {
+      await axios.delete(`/api/reviews/${reviewId}/answer/${answerId}`);
+    } else {
+      await axios.delete(`/api/reviews/${reviewId}/my-answer/${questionNumber}`);
+    }
     showNotification(i18n.t('answerDeleted'), 'success');
     
     // Reload the page to show updated data
