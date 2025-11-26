@@ -5871,73 +5871,128 @@ async function showReviewDetail(id, readOnly = false) {
                   </div>
                   
                   <div id="${questionId}" class="hidden mt-2">
-                    ${userAnswers.length > 0 ? userAnswers.map(ans => {
-                      // Render based on question type
-                      let answerDisplay = '';
-                      if (q.question_type === 'single_choice' || q.question_type === 'multiple_choice') {
-                        // For choice questions, show selected options with highlighting
-                        if (q.options) {
-                          const options = JSON.parse(q.options);
-                          const selectedLetters = ans.answer.split(',').map(a => a.trim());
-                          const correctLetters = q.correct_answer ? q.correct_answer.split(',').map(a => a.trim()) : [];
-                          
-                          answerDisplay = `
-                            <div class="space-y-2">
-                              ${options.map((opt, idx) => {
-                                const letter = String.fromCharCode(65 + idx);
-                                const isSelected = selectedLetters.includes(letter);
-                                const isCorrect = correctLetters.includes(letter);
-                                
-                                let bgColor = 'bg-white';
-                                let borderColor = 'border-gray-300';
-                                let icon = '';
-                                
-                                if (isSelected && isCorrect) {
-                                  bgColor = 'bg-green-50';
-                                  borderColor = 'border-green-400';
-                                  icon = '<i class="fas fa-check-circle text-green-600 mr-2"></i>';
-                                } else if (isSelected && !isCorrect) {
-                                  bgColor = 'bg-red-50';
-                                  borderColor = 'border-red-400';
-                                  icon = '<i class="fas fa-times-circle text-red-600 mr-2"></i>';
-                                } else if (!isSelected && isCorrect) {
-                                  // Show correct answer that was not selected
-                                  icon = '<i class="fas fa-star text-yellow-500 mr-2"></i>';
-                                }
-                                
-                                return `
-                                  <div class="flex items-center p-2 border rounded ${borderColor} ${bgColor}">
-                                    ${icon}
-                                    <span class="text-sm ${isSelected ? 'font-medium' : ''}">${escapeHtml(opt)}</span>
-                                  </div>
-                                `;
-                              }).join('')}
-                            </div>
-                          `;
-                        } else {
-                          answerDisplay = `<div class="text-sm">${escapeHtml(ans.answer)}</div>`;
+                    ${userAnswers.length > 0 ? (() => {
+                      // Group answers by username
+                      const groupedByUser = {};
+                      userAnswers.forEach(ans => {
+                        const username = ans.username || 'Unknown';
+                        if (!groupedByUser[username]) {
+                          groupedByUser[username] = [];
                         }
-                      } else {
-                        // Text type - regular display
-                        answerDisplay = `<div class="text-sm leading-relaxed">${escapeHtml(ans.answer)}</div>`;
-                      }
+                        groupedByUser[username].push(ans);
+                      });
                       
-                      return `
-                        <div class="text-gray-800 bg-gray-50 p-3 rounded border ${
-                          ans.is_mine ? 'border-indigo-200' : 'border-gray-200'
-                        } mt-2">
-                          <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs text-gray-600 font-medium">
-                              <i class="fas fa-user-circle mr-1"></i>${escapeHtml(ans.username)}${ans.is_mine ? ` <span class="text-indigo-600">(${i18n.t('myAnswer') || '我'})</span>` : ''}
-                            </span>
-                            <span class="text-xs text-gray-500">
-                              <i class="fas fa-clock mr-1"></i>${i18n.t('answerCreatedAt')}: ${formatDate(ans.created_at || ans.updated_at)}
-                            </span>
-                          </div>
-                          ${answerDisplay}
-                        </div>
-                      `;
-                    }).join('') : `
+                      // Sort groups by username alphabetically
+                      const sortedUsers = Object.keys(groupedByUser).sort((a, b) => {
+                        return a.localeCompare(b, 'zh-CN');
+                      });
+                      
+                      // Generate HTML for each user group
+                      return sortedUsers.map(username => {
+                        const userAnswersList = groupedByUser[username];
+                        const answerCount = userAnswersList.length;
+                        const groupId = 'user-group-detail-' + q.question_number + '-' + username.replace(/[^a-zA-Z0-9]/g, '');
+                        const isCurrentUser = userAnswersList.some(a => a.is_mine);
+                        
+                        // Sort user's answers by created_at (newest first)
+                        userAnswersList.sort((a, b) => {
+                          const dateA = new Date(a.created_at || a.updated_at).getTime();
+                          const dateB = new Date(b.created_at || b.updated_at).getTime();
+                          return dateB - dateA;
+                        });
+                        
+                        // Determine if should be collapsed by default
+                        const shouldCollapse = answerCount > 1;
+                        const initialClass = shouldCollapse ? 'hidden' : '';
+                        const initialIcon = shouldCollapse ? 'fa-chevron-down' : 'fa-chevron-up';
+                        const initialText = shouldCollapse ? (i18n.t('expand') || '展开') : (i18n.t('collapse') || '收起');
+                        
+                        // Build user badge
+                        const userBadge = isCurrentUser ? ' <span class="text-indigo-600">(' + (i18n.t("myAnswer") || "我") + ')</span>' : '';
+                        
+                        // Build collapse button
+                        const collapseButton = answerCount > 1 ?
+                          '<button onclick="toggleUserGroup(\'' + groupId + '\')" class="px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100 transition-colors" id="toggle-btn-' + groupId + '">' +
+                            '<i class="fas ' + initialIcon + ' mr-1"></i>' +
+                            '<span id="toggle-text-' + groupId + '">' + initialText + '</span>' +
+                          '</button>' : '';
+                        
+                        // Build answers HTML
+                        const answersHtml = userAnswersList.map((ans, idx) => {
+                          // Render based on question type
+                          let answerDisplay = '';
+                          if (q.question_type === 'single_choice' || q.question_type === 'multiple_choice') {
+                            if (q.options) {
+                              const options = JSON.parse(q.options);
+                              const selectedLetters = ans.answer.split(',').map(a => a.trim());
+                              const correctLetters = q.correct_answer ? q.correct_answer.split(',').map(a => a.trim()) : [];
+                              
+                              answerDisplay = '<div class="space-y-2">' +
+                                options.map((opt, optIdx) => {
+                                  const letter = String.fromCharCode(65 + optIdx);
+                                  const isSelected = selectedLetters.includes(letter);
+                                  const isCorrect = correctLetters.includes(letter);
+                                  
+                                  let bgColor = 'bg-white';
+                                  let borderColor = 'border-gray-300';
+                                  let icon = '';
+                                  
+                                  if (isSelected && isCorrect) {
+                                    bgColor = 'bg-green-50';
+                                    borderColor = 'border-green-400';
+                                    icon = '<i class="fas fa-check-circle text-green-600 mr-2"></i>';
+                                  } else if (isSelected && !isCorrect) {
+                                    bgColor = 'bg-red-50';
+                                    borderColor = 'border-red-400';
+                                    icon = '<i class="fas fa-times-circle text-red-600 mr-2"></i>';
+                                  } else if (!isSelected && isCorrect) {
+                                    icon = '<i class="fas fa-star text-yellow-500 mr-2"></i>';
+                                  }
+                                  
+                                  return '<div class="flex items-center p-2 border rounded ' + borderColor + ' ' + bgColor + '">' +
+                                    icon +
+                                    '<span class="text-sm ' + (isSelected ? 'font-medium' : '') + '">' + escapeHtml(opt) + '</span>' +
+                                  '</div>';
+                                }).join('') +
+                              '</div>';
+                            } else {
+                              answerDisplay = '<div class="text-sm">' + escapeHtml(ans.answer) + '</div>';
+                            }
+                          } else {
+                            answerDisplay = '<div class="text-sm leading-relaxed">' + escapeHtml(ans.answer) + '</div>';
+                          }
+                          
+                          const latestBadge = (idx === 0 && answerCount > 1) ?
+                            '<span class="ml-2 text-xs font-semibold text-blue-600"><i class="fas fa-star mr-1"></i>' + (i18n.t('latest') || '最新') + '</span>' : '';
+                          
+                          return '<div class="text-gray-800 bg-gray-50 p-3 rounded border ' + (ans.is_mine ? 'border-indigo-200' : 'border-gray-200') + ' mt-2">' +
+                            '<div class="flex justify-between items-center mb-2">' +
+                              '<span class="text-xs text-gray-600 font-medium">' +
+                                '<i class="fas fa-clock mr-1"></i>' + formatDate(ans.created_at || ans.updated_at) +
+                                latestBadge +
+                              '</span>' +
+                            '</div>' +
+                            answerDisplay +
+                          '</div>';
+                        }).join('');
+                        
+                        return '<div class="border border-gray-300 rounded-lg overflow-hidden mt-2 ' + (isCurrentUser ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50') + '">' +
+                          '<div class="flex justify-between items-center p-3 ' + (isCurrentUser ? 'bg-indigo-100 border-b border-indigo-200' : 'bg-green-50 border-b border-gray-300') + '">' +
+                            '<div class="flex items-center">' +
+                              '<i class="fas fa-user-circle text-lg ' + (isCurrentUser ? 'text-indigo-600' : 'text-gray-600') + ' mr-2"></i>' +
+                              '<span class="text-xs font-medium text-gray-700">' +
+                                escapeHtml(username) + userBadge +
+                                ' <span class="text-gray-500">(' + answerCount + ' ' + (answerCount === 1 ? i18n.t('answer') || '个答案' : i18n.t('answers') || '个答案') + ')</span>' +
+                              '</span>' +
+                            '</div>' +
+                            collapseButton +
+                          '</div>' +
+                          '<div id="' + groupId + '" class="p-2 ' + initialClass + '">' +
+                            answersHtml +
+                          '</div>' +
+                        '</div>';
+                      }).join('');
+                    })() : `
                       <div class="text-gray-500 text-sm bg-gray-50 p-2 rounded border border-gray-200 mt-2">
                         ${i18n.t('noAnswer') || '未填写'}
                       </div>
