@@ -6631,12 +6631,26 @@ async function showEditReview(id) {
               <!-- Answer Set Navigation -->
               <div id="answer-set-navigation" class="mb-4"></div>
               
-              <!-- Create New Answer Set Button -->
-              <button type="button" 
-                      onclick="createNewAnswerSet(${id})"
-                      class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors mb-4">
-                <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
-              </button>
+              <!-- Action Buttons Row: Create New Answer Set + Lock/Unlock (Only for Creator) -->
+              <div class="flex gap-3 mb-4">
+                <!-- Create New Answer Set Button -->
+                <button type="button" 
+                        onclick="createNewAnswerSet(${id})"
+                        class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors">
+                  <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
+                </button>
+                
+                <!-- Lock/Unlock Button (Only for Creator) -->
+                ${isCreator ? `
+                <button type="button" 
+                        id="toggle-lock-btn-edit"
+                        onclick="toggleReviewLock(${id}, ${review.is_locked === 'yes'})"
+                        class="px-6 py-3 ${review.is_locked === 'yes' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded-lg shadow-lg transition-colors">
+                  <i class="fas ${review.is_locked === 'yes' ? 'fa-lock-open' : 'fa-lock'} mr-2"></i>
+                  <span id="lock-btn-text-edit">${review.is_locked === 'yes' ? (i18n.t('unlock') || '解锁') : (i18n.t('lock') || '锁定')}</span>
+                </button>
+                ` : ''}
+              </div>
             </div>
 
             <!-- Dynamic Questions -->

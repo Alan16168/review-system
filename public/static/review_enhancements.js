@@ -425,7 +425,7 @@ function renderCommentModal() {
  * @returns {string|null}
  */
 function getToken() {
-  return localStorage.getItem('token');
+  return localStorage.getItem('authToken');
 }
 
 /**
