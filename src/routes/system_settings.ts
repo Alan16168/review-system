@@ -118,15 +118,27 @@ app.get('/category/:category', async (c) => {
     const category = c.req.param('category');
     const { DB } = c.env;
     
-    const result = await DB.prepare(`
-      SELECT * FROM system_settings WHERE category = ?
-      ORDER BY setting_key
-    `).bind(category).all();
+    try {
+      const result = await DB.prepare(`
+        SELECT * FROM system_settings WHERE category = ?
+        ORDER BY setting_key
+      `).bind(category).all();
 
-    return c.json({
-      success: true,
-      settings: result.results || []
-    });
+      return c.json({
+        success: true,
+        settings: result.results || []
+      });
+    } catch (dbError: any) {
+      // Table doesn't exist yet - return empty settings
+      if (dbError.message && dbError.message.includes('no such table')) {
+        console.warn('⚠️ system_settings table not found, returning empty settings');
+        return c.json({
+          success: true,
+          settings: []
+        });
+      }
+      throw dbError;
+    }
   } catch (error: any) {
     console.error('Error fetching settings by category:', error);
     return c.json({ error: error.message }, 500);

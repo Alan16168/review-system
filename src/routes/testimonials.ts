@@ -9,26 +9,35 @@ app.get('/latest', async (c: Context) => {
   const lang = c.req.header('X-Language') || 'en';
   
   try {
-    const result = await c.env.DB.prepare(`
-      SELECT id, name, name_en, role, role_en, content, content_en, 
-             avatar_url, rating, created_at
-      FROM testimonials
-      WHERE is_featured = 1
-      ORDER BY created_at DESC
-      LIMIT 3
-    `).all();
-    
-    const testimonials = result.results.map((t: any) => ({
-      id: t.id,
-      name: lang === 'zh' ? t.name : (t.name_en || t.name),
-      role: lang === 'zh' ? t.role : (t.role_en || t.role),
-      content: lang === 'zh' ? t.content : (t.content_en || t.content),
-      avatar_url: t.avatar_url,
-      rating: t.rating,
-      created_at: t.created_at
-    }));
-    
-    return c.json({ testimonials });
+    try {
+      const result = await c.env.DB.prepare(`
+        SELECT id, name, name_en, role, role_en, content, content_en, 
+               avatar_url, rating, created_at
+        FROM testimonials
+        WHERE is_featured = 1
+        ORDER BY created_at DESC
+        LIMIT 3
+      `).all();
+      
+      const testimonials = result.results.map((t: any) => ({
+        id: t.id,
+        name: lang === 'zh' ? t.name : (t.name_en || t.name),
+        role: lang === 'zh' ? t.role : (t.role_en || t.role),
+        content: lang === 'zh' ? t.content : (t.content_en || t.content),
+        avatar_url: t.avatar_url,
+        rating: t.rating,
+        created_at: t.created_at
+      }));
+      
+      return c.json({ testimonials });
+    } catch (dbError: any) {
+      // Table doesn't exist yet - return empty testimonials
+      if (dbError.message && dbError.message.includes('no such table')) {
+        console.warn('⚠️ testimonials table not found, returning empty array');
+        return c.json({ testimonials: [] });
+      }
+      throw dbError;
+    }
   } catch (error) {
     console.error('Error fetching testimonials:', error);
     return c.json({ error: 'Failed to fetch testimonials' }, 500);
