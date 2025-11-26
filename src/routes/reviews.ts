@@ -1297,11 +1297,14 @@ reviews.put('/:id', async (c) => {
 
     // Update basic properties if user is creator or admin
     if (canModifyBasicProperties && (title || description || time_type || status || owner_type || scheduled_at !== undefined || location !== undefined || reminder_minutes !== undefined)) {
-      // Validate owner_type if provided
+      // Validate and map owner_type if provided
       let validOwnerType = null;
       if (owner_type) {
         if (['private', 'team', 'public'].includes(owner_type)) {
-          validOwnerType = owner_type;
+          // Map frontend values to database constraint values
+          // Database CHECK constraint only allows: 'personal', 'team'
+          // Frontend uses: 'private' (personal), 'team', 'public' (personal with public flag)
+          validOwnerType = (owner_type === 'private' || owner_type === 'public') ? 'personal' : 'team';
         }
       }
 
