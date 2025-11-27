@@ -1347,6 +1347,7 @@ reviews.put('/:id', async (c) => {
           scheduled_at = COALESCE(?, scheduled_at),
           location = COALESCE(?, location),
           reminder_minutes = COALESCE(?, reminder_minutes),
+          allow_multiple_answers = COALESCE(?, allow_multiple_answers),
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(
@@ -1358,6 +1359,7 @@ reviews.put('/:id', async (c) => {
         scheduled_at !== undefined ? scheduled_at : null,
         location !== undefined ? location : null,
         reminder_minutes !== undefined ? reminder_minutes : null,
+        allow_multiple_answers !== undefined ? allow_multiple_answers : null,
         reviewId
       ).run();
     }
