@@ -6675,7 +6675,7 @@ async function showEditReview(id) {
             <!-- End of Section 1: Header -->
 
             <!-- ========== Section 2: Answer Sets & Questions (Collapsible) ========== -->
-            <div class="border border-gray-200 rounded-lg overflow-hidden" id="answer-sets-section" style="${review.allow_multiple_answers === 'no' ? 'display: none;' : ''}">
+            <div class="border border-gray-200 rounded-lg overflow-hidden" id="answer-sets-section">
               <button type="button" onclick="toggleSection('answers-section')" 
                       class="w-full flex justify-between items-center p-4 bg-green-50 hover:bg-green-100 transition-colors">
                 <h3 class="text-lg font-semibold text-green-900">
@@ -6687,13 +6687,15 @@ async function showEditReview(id) {
                 <div class="p-6 space-y-4 bg-white">
 
             <!-- Answer Sets Management (Phase 1) -->
-            <div class="border-t pt-6 mb-6" id="answer-sets-management" style="${review.allow_multiple_answers === 'no' ? 'display: none;' : ''}">
+            <div class="border-t pt-6 mb-6" id="answer-sets-management">
               <div class="mb-4">
                 <h3 class="text-lg font-medium text-gray-800 mb-2">
                   <i class="fas fa-layer-group mr-2"></i>${i18n.t('answerSetsManagement') || '答案组管理'}
                 </h3>
                 <p class="text-sm text-gray-600 mb-4">
-                  ${i18n.t('answerSetsDesc') || '您可以为所有问题创建多组答案，使用箭头在不同答案组之间导航'}
+                  ${review.allow_multiple_answers === 'yes' 
+                    ? (i18n.t('answerSetsDesc') || '您可以为所有问题创建多组答案，使用箭头在不同答案组之间导航')
+                    : (i18n.t('singleSetDesc') || '当前复盘只允许一个答案组')}
                 </p>
               </div>
               
