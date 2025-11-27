@@ -6702,41 +6702,41 @@ async function showEditReview(id) {
               <!-- Answer Set Navigation -->
               <div id="answer-set-navigation" class="mb-4"></div>
               
-              <!-- Action Buttons Row: Create New Answer Set + Delete + Lock/Unlock Current Set (Only visible to creator) -->
-              ${isCreator ? `
-                <div class="flex gap-3 mb-4">
-                  ${review.allow_multiple_answers === 'yes' ? `
-                    <!-- Create New Answer Set Button (only shown when allow_multiple_answers is 'yes') -->
-                    <button type="button" 
-                            onclick="createNewAnswerSet(${id})"
-                            class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors">
-                      <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
-                    </button>
-                  ` : ''}
-                  
-                  <!-- Delete Current Answer Set Button (only visible to creator) -->
+              <!-- Action Buttons Row: Create New Answer Set + Delete + Lock/Unlock Current Set -->
+              <!-- All users can see buttons, but availability depends on ownership and lock status -->
+              <div class="flex gap-3 mb-4">
+                ${review.allow_multiple_answers === 'yes' ? `
+                  <!-- Create New Answer Set Button (all users can create their own answer set) -->
                   <button type="button" 
-                          id="delete-answer-set-btn"
-                          onclick="deleteCurrentAnswerSet(${id})"
-                          class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-lg transition-colors disabled:opacity-50"
-                          disabled>
-                    <i class="fas fa-trash-alt mr-2"></i>${i18n.t('delete') || '删除'}
+                          onclick="createNewAnswerSet(${id})"
+                          class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors">
+                    <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
                   </button>
-                  
-                  <!-- Lock/Unlock Current Answer Set Button (only visible to creator) -->
-                  <button type="button" 
-                          id="toggle-answer-set-lock-btn"
-                          onclick="toggleCurrentAnswerSetLock(${id})"
-                          class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50"
-                          disabled>
-                    <i id="answer-set-lock-icon" class="fas fa-lock mr-2"></i>
-                    <span id="answer-set-lock-text">${i18n.t('lock') || '锁定'}</span>
-                  </button>
-                </div>
-                <p class="text-xs text-gray-500 mb-4">
-                  <i class="fas fa-info-circle mr-1"></i>${i18n.t('lockAnswerSetHintCreator') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。删除答案组前请先解锁。'}
-                </p>
-              ` : ''}
+                ` : ''}
+                
+                <!-- Delete Current Answer Set Button (only owner of the set can delete, must be unlocked) -->
+                <button type="button" 
+                        id="delete-answer-set-btn"
+                        onclick="deleteCurrentAnswerSet(${id})"
+                        class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-lg transition-colors disabled:opacity-50"
+                        disabled>
+                  <i class="fas fa-trash-alt mr-2"></i>${i18n.t('delete') || '删除'}
+                </button>
+                
+                <!-- Lock/Unlock Current Answer Set Button (only owner of the set can lock/unlock) -->
+                <button type="button" 
+                        id="toggle-answer-set-lock-btn"
+                        onclick="toggleCurrentAnswerSetLock(${id})"
+                        class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50"
+                        disabled>
+                  <i id="answer-set-lock-icon" class="fas fa-lock mr-2"></i>
+                  <span id="answer-set-lock-text">${i18n.t('lock') || '锁定'}</span>
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mb-4">
+                <i class="fas fa-info-circle mr-1"></i>
+                ${i18n.t('answerSetHint') || '所有团队成员可查看所有答案组。只有答案组创建者可以编辑/删除/锁定自己的答案组。锁定后不可编辑。'}
+              </p>
             </div>
 
             <!-- Dynamic Questions -->
@@ -14689,6 +14689,12 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
   const hasPrev = currentNum > 1;
   const hasNext = currentNum < totalNum;
   
+  // Get current answer set info
+  const currentSet = totalNum > 0 && currentNum > 0 ? window.currentAnswerSets[currentNum-1] : null;
+  const currentUserId = window.currentUser?.id;
+  const isLocked = currentSet?.is_locked === 'yes';
+  const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+  
   // If allow_multiple_answers is 'no', hide navigation buttons
   if (!allowMultipleAnswers) {
     navElement.innerHTML = `
@@ -14696,7 +14702,15 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
         <div class="text-center">
           <p class="text-sm text-gray-600">${i18n.t('answerSet') || '答案组'}</p>
           <p class="text-xl font-bold text-indigo-600">${currentNum} / ${totalNum}</p>
-          ${totalNum > 0 ? `<p class="text-xs text-gray-500 mt-1">${i18n.t('createdAt')}: ${window.currentAnswerSets[currentNum-1]?.created_at || ''}</p>` : ''}
+          ${currentSet ? `
+            <p class="text-xs text-gray-500 mt-1">
+              <i class="fas fa-user mr-1"></i>${escapeHtml(currentSet.username || 'Unknown')}
+            </p>
+            <p class="text-xs text-gray-500">
+              <i class="fas fa-clock mr-1"></i>${currentSet.created_at || ''}
+            </p>
+            ${isLocked ? `<span class="inline-block px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full mt-1"><i class="fas fa-lock mr-1"></i>${i18n.t('locked') || '已锁定'}</span>` : ''}
+          ` : ''}
         </div>
       </div>
     `;
@@ -14715,7 +14729,16 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
       <div class="text-center">
         <p class="text-sm text-gray-600">${i18n.t('answerSet') || '答案组'}</p>
         <p class="text-xl font-bold text-indigo-600">${currentNum} / ${totalNum}</p>
-        ${totalNum > 0 ? `<p class="text-xs text-gray-500 mt-1">${i18n.t('createdAt')}: ${window.currentAnswerSets[currentNum-1]?.created_at || ''}</p>` : ''}
+        ${currentSet ? `
+          <p class="text-xs text-gray-500 mt-1">
+            <i class="fas fa-user mr-1"></i>${escapeHtml(currentSet.username || 'Unknown')}
+            ${isOwnSet ? '<span class="text-green-600 ml-1">(You)</span>' : ''}
+          </p>
+          <p class="text-xs text-gray-500">
+            <i class="fas fa-clock mr-1"></i>${currentSet.created_at || ''}
+          </p>
+          ${isLocked ? `<span class="inline-block px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full mt-1"><i class="fas fa-lock mr-1"></i>${i18n.t('locked') || '已锁定'}</span>` : ''}
+        ` : ''}
       </div>
       
       <button onclick="navigateToNextSet(${reviewId})" 
@@ -20693,30 +20716,51 @@ function updateAnswerSetLockButton(isLocked) {
   
   if (!btn || !icon || !text) return;
   
-  // Enable button (it should always be enabled if there are answer sets)
-  btn.disabled = false;
+  // Get current answer set and check ownership
+  const sets = window.currentAnswerSets || [];
+  const index = window.currentSetIndex || 0;
+  const currentSet = sets[index];
+  const currentUserId = window.currentUser?.id;
+  const isOwnSet = currentSet && currentSet.user_id === currentUserId;
   
-  if (isLocked) {
-    // Show unlock button (green)
-    btn.className = 'px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg transition-colors';
-    icon.className = 'fas fa-lock-open mr-2';
-    text.textContent = i18n.t('unlock') || '解锁';
+  // Lock/Unlock button: only enabled for answer set owner
+  if (isOwnSet) {
+    btn.disabled = false;
     
-    // Disable delete button when locked
-    if (deleteBtn) {
-      deleteBtn.disabled = true;
-      deleteBtn.title = i18n.t('unlockToDelete') || '请先解锁答案组才能删除';
+    if (isLocked) {
+      // Show unlock button (green)
+      btn.className = 'px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg transition-colors';
+      icon.className = 'fas fa-lock-open mr-2';
+      text.textContent = i18n.t('unlock') || '解锁';
+    } else {
+      // Show lock button (red)
+      btn.className = 'px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg transition-colors';
+      icon.className = 'fas fa-lock mr-2';
+      text.textContent = i18n.t('lock') || '锁定';
     }
   } else {
-    // Show lock button (red)
-    btn.className = 'px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg transition-colors';
+    // Not owner: disable lock/unlock button
+    btn.disabled = true;
+    btn.className = 'px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors opacity-50 cursor-not-allowed';
     icon.className = 'fas fa-lock mr-2';
     text.textContent = i18n.t('lock') || '锁定';
-    
-    // Enable delete button when unlocked
-    if (deleteBtn) {
+    btn.title = i18n.t('onlyOwnerCanLock') || '只有答案组创建者可以锁定/解锁';
+  }
+  
+  // Delete button: only enabled for owner AND when unlocked
+  if (deleteBtn) {
+    if (!isOwnSet) {
+      deleteBtn.disabled = true;
+      deleteBtn.title = i18n.t('onlyOwnerCanDelete') || '只有答案组创建者可以删除';
+      deleteBtn.className = deleteBtn.className.replace(/bg-red-\d+/g, 'bg-gray-400').replace(/hover:bg-red-\d+/g, '') + ' opacity-50 cursor-not-allowed';
+    } else if (isLocked) {
+      deleteBtn.disabled = true;
+      deleteBtn.title = i18n.t('unlockToDelete') || '请先解锁答案组才能删除';
+      deleteBtn.className = deleteBtn.className.replace(/bg-red-\d+/g, 'bg-gray-400').replace(/hover:bg-red-\d+/g, '') + ' opacity-50 cursor-not-allowed';
+    } else {
       deleteBtn.disabled = false;
       deleteBtn.title = i18n.t('deleteAnswerSet') || '删除当前答案组';
+      deleteBtn.className = (window.currentEditReview?.allow_multiple_answers === 'yes' ? '' : 'flex-1 ') + 'px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-lg transition-colors';
     }
   }
 }

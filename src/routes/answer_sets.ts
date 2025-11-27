@@ -14,7 +14,10 @@ answerSets.use('/*', authMiddleware);
 /**
  * Get all answer sets for a review
  * GET /api/answer-sets/:reviewId
- * Returns: { sets: [{ set_number, created_at, answers: [...] }] }
+ * Returns: { sets: [{ set_number, created_at, user_id, username, answers: [...] }] }
+ * 
+ * For team reviews, returns all team members' answer sets
+ * For personal reviews, returns only current user's answer sets
  */
 answerSets.get('/:reviewId', async (c: Context) => {
   try {
@@ -26,13 +29,42 @@ answerSets.get('/:reviewId', async (c: Context) => {
       return c.json({ error: 'Invalid review ID' }, 400);
     }
 
-    // Get all answer sets for this review/user (include lock status)
-    const sets = await c.env.DB.prepare(`
-      SELECT id, set_number, created_at, updated_at, is_locked, locked_at, locked_by
-      FROM review_answer_sets
-      WHERE review_id = ? AND user_id = ?
-      ORDER BY set_number ASC
-    `).bind(reviewId, userId).all();
+    // First, get the review to check team_id
+    const review = await c.env.DB.prepare(`
+      SELECT team_id FROM reviews WHERE id = ?
+    `).bind(reviewId).first();
+
+    if (!review) {
+      return c.json({ error: 'Review not found' }, 404);
+    }
+
+    // Get all answer sets for this review
+    // If it's a team review (team_id != null), get all team members' answer sets
+    // Otherwise, only get current user's answer sets
+    let setsQuery;
+    if (review.team_id) {
+      // Team review: get all answer sets from all team members
+      setsQuery = c.env.DB.prepare(`
+        SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
+               ras.is_locked, ras.locked_at, ras.locked_by, u.username
+        FROM review_answer_sets ras
+        LEFT JOIN users u ON ras.user_id = u.id
+        WHERE ras.review_id = ?
+        ORDER BY ras.created_at DESC
+      `).bind(reviewId);
+    } else {
+      // Personal review: only get current user's answer sets
+      setsQuery = c.env.DB.prepare(`
+        SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
+               ras.is_locked, ras.locked_at, ras.locked_by, u.username
+        FROM review_answer_sets ras
+        LEFT JOIN users u ON ras.user_id = u.id
+        WHERE ras.review_id = ? AND ras.user_id = ?
+        ORDER BY ras.created_at DESC
+      `).bind(reviewId, userId);
+    }
+
+    const sets = await setsQuery.all();
 
     if (!sets.results || sets.results.length === 0) {
       return c.json({ sets: [] });
@@ -62,9 +94,12 @@ answerSets.get('/:reviewId', async (c: Context) => {
       });
     }
 
-    // Combine sets with their answers (include lock status)
+    // Combine sets with their answers (include lock status and user info)
     const result = sets.results.map((set: any) => ({
+      id: set.id,  // Add set ID for frontend reference
       set_number: set.set_number,
+      user_id: set.user_id,  // Add user_id so frontend knows who owns each set
+      username: set.username,  // Add username for display
       created_at: set.created_at,
       updated_at: set.updated_at,
       is_locked: set.is_locked || 'no',
