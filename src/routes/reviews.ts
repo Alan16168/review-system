@@ -1101,8 +1101,9 @@ reviews.get('/:id', async (c) => {
     // Check if review is locked (default to false if field doesn't exist)
     const isLocked = review.is_locked === 'yes';
 
-    // Check if multiple answers are allowed (default to true if field doesn't exist)
-    const allowMultipleAnswers = review.allow_multiple_answers !== 'no';
+    // Keep allow_multiple_answers as string value ('yes' or 'no')
+    // Default to 'yes' if not set
+    const allowMultipleAnswers = review.allow_multiple_answers || 'yes';
 
     return c.json({ 
       review: {
