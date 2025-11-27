@@ -6713,27 +6713,31 @@ async function showEditReview(id) {
                   </button>
                 ` : ''}
                 
-                <!-- Delete Current Answer Set Button (Always visible) -->
-                <button type="button" 
-                        id="delete-answer-set-btn"
-                        onclick="deleteCurrentAnswerSet(${id})"
-                        class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-lg transition-colors disabled:opacity-50"
-                        disabled>
-                  <i class="fas fa-trash-alt mr-2"></i>${i18n.t('delete') || '删除'}
-                </button>
+                ${isCreator ? `
+                  <!-- Delete Current Answer Set Button (only visible to creator) -->
+                  <button type="button" 
+                          id="delete-answer-set-btn"
+                          onclick="deleteCurrentAnswerSet(${id})"
+                          class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-lg transition-colors disabled:opacity-50"
+                          disabled>
+                    <i class="fas fa-trash-alt mr-2"></i>${i18n.t('delete') || '删除'}
+                  </button>
+                ` : ''}
                 
                 <!-- Lock/Unlock Current Answer Set Button (Always visible, regardless of allow_multiple_answers) -->
                 <button type="button" 
                         id="toggle-answer-set-lock-btn"
                         onclick="toggleCurrentAnswerSetLock(${id})"
-                        class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50"
+                        class="${!isCreator || review.allow_multiple_answers === 'no' ? 'flex-1' : ''} px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50"
                         disabled>
                   <i id="answer-set-lock-icon" class="fas fa-lock mr-2"></i>
                   <span id="answer-set-lock-text">${i18n.t('lock') || '锁定'}</span>
                 </button>
               </div>
               <p class="text-xs text-gray-500 mb-4">
-                <i class="fas fa-info-circle mr-1"></i>${i18n.t('lockAnswerSetHint') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。删除答案组前请先解锁。'}
+                <i class="fas fa-info-circle mr-1"></i>${isCreator 
+                  ? (i18n.t('lockAnswerSetHintCreator') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。删除答案组前请先解锁。')
+                  : (i18n.t('lockAnswerSetHint') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。')}
               </p>
             </div>
 
