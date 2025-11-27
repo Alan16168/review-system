@@ -7591,6 +7591,11 @@ async function handleSaveAndExitReview(id) {
   
   // Build data object based on permissions
   let data;
+  // Variables for checking if allow_multiple_answers changed (declare outside if block)
+  let allowMultipleAnswers = 'yes';
+  let originalAllowMultipleAnswers = 'yes';
+  let allowMultipleAnswersChanged = false;
+
   if (isCreator) {
     // Creator can edit everything
     const title = document.getElementById('review-title').value;
@@ -7605,11 +7610,11 @@ async function handleSaveAndExitReview(id) {
     const reminderMinutes = parseInt(document.getElementById('edit-reminder-minutes').value) || 60;
     
     // Get allow_multiple_answers field
-    const allowMultipleAnswers = document.querySelector('input[name="allow_multiple_answers"]:checked')?.value || 'yes';
+    allowMultipleAnswers = document.querySelector('input[name="allow_multiple_answers"]:checked')?.value || 'yes';
     
     // Check if allow_multiple_answers has changed
-    const originalAllowMultipleAnswers = window.currentEditReview?.allow_multiple_answers || 'yes';
-    const allowMultipleAnswersChanged = allowMultipleAnswers !== originalAllowMultipleAnswers;
+    originalAllowMultipleAnswers = window.currentEditReview?.allow_multiple_answers || 'yes';
+    allowMultipleAnswersChanged = allowMultipleAnswers !== originalAllowMultipleAnswers;
     
     console.log('[handleSaveAndExitReview] allow_multiple_answers检查:', {
       original: originalAllowMultipleAnswers,
@@ -7635,6 +7640,7 @@ async function handleSaveAndExitReview(id) {
       answers
     };
   }
+  
 
   try {
     console.log('[handleSaveAndExitReview] 开始保存复盘，ID:', id);
@@ -7655,7 +7661,7 @@ async function handleSaveAndExitReview(id) {
     });
     
     // Check if we need to refresh the edit page (when allow_multiple_answers changed)
-    const needsRefresh = isCreator && allowMultipleAnswersChanged;
+    const needsRefresh = allowMultipleAnswersChanged;
     
     // Show success notification
     if (needsRefresh) {

@@ -547,15 +547,19 @@ const AIBooksManager = {
   // ============================================================
   async openBook(bookId) {
     try {
+      console.log(`[openBook] Loading book ${bookId}...`);
       const token = localStorage.getItem('authToken');
       const response = await axios.get(`/api/ai-books/${bookId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (response.data.success) {
+        console.log(`[openBook] Book data received:`, response.data);
         // Merge book data with chapters and sections
         const chapters = response.data.chapters || [];
         const sections = response.data.sections || [];
+        
+        console.log(`[openBook] Found ${chapters.length} chapters and ${sections.length} sections`);
         
         // Assign sections to their respective chapters
         chapters.forEach(chapter => {
@@ -567,10 +571,13 @@ const AIBooksManager = {
           chapters: chapters,
           sections: sections  // Keep global sections array for reference
         };
+        
+        console.log('[openBook] Calling renderBookEditor...');
         this.renderBookEditor();
+        console.log('[openBook] renderBookEditor completed');
       }
     } catch (error) {
-      console.error('Error loading book:', error);
+      console.error('[openBook] Error loading book:', error);
       alert('加载书籍失败: ' + (error.response?.data?.message || error.message));
     }
   },
@@ -580,6 +587,8 @@ const AIBooksManager = {
   // ============================================================
   renderBookEditor() {
     const book = this.currentBook;
+    console.log('[renderBookEditor] Rendering book editor for:', book.title);
+    console.log('[renderBookEditor] Book has', book.chapters?.length || 0, 'chapters');
     
     const content = `
       <div class="max-w-7xl mx-auto">
@@ -654,7 +663,9 @@ const AIBooksManager = {
       </div>
     `;
     
+    console.log('[renderBookEditor] Updating DOM with new content...');
     document.getElementById('app').innerHTML = content;
+    console.log('[renderBookEditor] DOM updated successfully');
   },
   
   // ============================================================
@@ -1609,9 +1620,12 @@ const AIBooksManager = {
       console.log(`[generateSectionContent] Response data:`, response.data);
       
       if (response.data.success) {
+        console.log(`[generateSectionContent] Generation successful! Word count: ${response.data.word_count}`);
         showNotification(`✅ 内容生成成功！实际生成${response.data.word_count}字`, 'success');
-        // Reload book
+        // Reload book to show updated content and action buttons
+        console.log('[generateSectionContent] Reloading book to refresh UI...');
         await this.openBook(this.currentBook.id);
+        console.log('[generateSectionContent] Book reloaded successfully');
       } else {
         throw new Error(response.data.error || '生成失败');
       }
