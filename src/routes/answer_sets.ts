@@ -315,10 +315,9 @@ answerSets.put('/:reviewId/:setNumber', async (c: Context) => {
         // INSERT new answer
         const insertQuery = c.env.DB.prepare(`
           INSERT INTO review_answers 
-          (review_id, answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          (answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
+          VALUES (?, ?, ?, ?, ?, ?)
         `).bind(
-          reviewId,  // Add review_id
           setId,
           parsedQuestionNum,
           data.answer !== undefined ? data.answer : (typeof data === 'string' ? data : null),
