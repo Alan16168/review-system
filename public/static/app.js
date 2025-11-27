@@ -6702,18 +6702,18 @@ async function showEditReview(id) {
               <!-- Answer Set Navigation -->
               <div id="answer-set-navigation" class="mb-4"></div>
               
-              <!-- Action Buttons Row: Create New Answer Set + Delete + Lock/Unlock Current Set -->
-              <div class="flex gap-3 mb-4">
-                ${review.allow_multiple_answers === 'yes' ? `
-                  <!-- Create New Answer Set Button (only shown when allow_multiple_answers is 'yes') -->
-                  <button type="button" 
-                          onclick="createNewAnswerSet(${id})"
-                          class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors">
-                    <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
-                  </button>
-                ` : ''}
-                
-                ${isCreator ? `
+              <!-- Action Buttons Row: Create New Answer Set + Delete + Lock/Unlock Current Set (Only visible to creator) -->
+              ${isCreator ? `
+                <div class="flex gap-3 mb-4">
+                  ${review.allow_multiple_answers === 'yes' ? `
+                    <!-- Create New Answer Set Button (only shown when allow_multiple_answers is 'yes') -->
+                    <button type="button" 
+                            onclick="createNewAnswerSet(${id})"
+                            class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-lg transition-colors">
+                      <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
+                    </button>
+                  ` : ''}
+                  
                   <!-- Delete Current Answer Set Button (only visible to creator) -->
                   <button type="button" 
                           id="delete-answer-set-btn"
@@ -6722,23 +6722,21 @@ async function showEditReview(id) {
                           disabled>
                     <i class="fas fa-trash-alt mr-2"></i>${i18n.t('delete') || '删除'}
                   </button>
-                ` : ''}
-                
-                <!-- Lock/Unlock Current Answer Set Button (Always visible, regardless of allow_multiple_answers) -->
-                <button type="button" 
-                        id="toggle-answer-set-lock-btn"
-                        onclick="toggleCurrentAnswerSetLock(${id})"
-                        class="${!isCreator || review.allow_multiple_answers === 'no' ? 'flex-1' : ''} px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50"
-                        disabled>
-                  <i id="answer-set-lock-icon" class="fas fa-lock mr-2"></i>
-                  <span id="answer-set-lock-text">${i18n.t('lock') || '锁定'}</span>
-                </button>
-              </div>
-              <p class="text-xs text-gray-500 mb-4">
-                <i class="fas fa-info-circle mr-1"></i>${isCreator 
-                  ? (i18n.t('lockAnswerSetHintCreator') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。删除答案组前请先解锁。')
-                  : (i18n.t('lockAnswerSetHint') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。')}
-              </p>
+                  
+                  <!-- Lock/Unlock Current Answer Set Button (only visible to creator) -->
+                  <button type="button" 
+                          id="toggle-answer-set-lock-btn"
+                          onclick="toggleCurrentAnswerSetLock(${id})"
+                          class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors disabled:opacity-50"
+                          disabled>
+                    <i id="answer-set-lock-icon" class="fas fa-lock mr-2"></i>
+                    <span id="answer-set-lock-text">${i18n.t('lock') || '锁定'}</span>
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 mb-4">
+                  <i class="fas fa-info-circle mr-1"></i>${i18n.t('lockAnswerSetHintCreator') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。删除答案组前请先解锁。'}
+                </p>
+              ` : ''}
             </div>
 
             <!-- Dynamic Questions -->
