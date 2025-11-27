@@ -370,6 +370,9 @@ const translations = {
     'draftCreated': '草稿已创建',
     'autoSaveOnBlur': '输入完成后点击其他地方自动保存',
     'answerAutoSaved': '答案已自动保存',
+    'answerSetHint': '所有团队成员可查看所有答案组。只有答案组创建者可以编辑/删除/锁定自己的答案组。锁定后不可编辑。',
+    'onlyOwnerCanLock': '只有答案组创建者可以锁定/解锁',
+    'onlyOwnerCanDelete': '只有答案组创建者可以删除',
     
     // Team Roles
     'memberRole': '成员角色',
@@ -1426,6 +1429,9 @@ const translations = {
     'draftCreated': 'Draft Created',
     'autoSaveOnBlur': 'Click elsewhere after typing to auto-save',
     'answerAutoSaved': 'Answer Auto-Saved',
+    'answerSetHint': 'All team members can view all answer sets. Only the answer set creator can edit/delete/lock their own answer sets. Locked sets cannot be edited.',
+    'onlyOwnerCanLock': 'Only the answer set creator can lock/unlock',
+    'onlyOwnerCanDelete': 'Only the answer set creator can delete',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -2336,6 +2342,9 @@ const translations = {
     'draftCreated': '下書きが作成されました',
     'autoSaveOnBlur': '入力後、他の場所をクリックすると自動保存されます',
     'answerAutoSaved': '回答が自動保存されました',
+    'answerSetHint': 'すべてのチームメンバーがすべての回答セットを表示できます。回答セットの作成者のみが自分の回答セットを編集/削除/ロックできます。ロックされたセットは編集できません。',
+    'onlyOwnerCanLock': '回答セットの作成者のみがロック/ロック解除できます',
+    'onlyOwnerCanDelete': '回答セットの作成者のみが削除できます',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -3246,6 +3255,9 @@ const translations = {
     'draftCreated': 'Borrador Creado',
     'autoSaveOnBlur': 'Haga clic en otro lugar después de escribir para guardar automáticamente',
     'answerAutoSaved': 'Respuesta Guardada Automáticamente',
+    'answerSetHint': 'Todos los miembros del equipo pueden ver todos los conjuntos de respuestas. Solo el creador del conjunto de respuestas puede editar/eliminar/bloquear sus propios conjuntos de respuestas. Los conjuntos bloqueados no se pueden editar.',
+    'onlyOwnerCanLock': 'Solo el creador del conjunto de respuestas puede bloquear/desbloquear',
+    'onlyOwnerCanDelete': 'Solo el creador del conjunto de respuestas puede eliminar',
     
     // Team Roles
     'memberRole': 'Member Role',
@@ -5074,6 +5086,9 @@ const translations = {
     'draftCreated': 'Draft Created',
     'autoSaveOnBlur': 'Click elsewhere after typing to auto-save',
     'answerAutoSaved': 'Answer Auto-Saved',
+    'answerSetHint': 'All team members can view all answer sets. Only the answer set creator can edit/delete/lock their own answer sets. Locked sets cannot be edited.',
+    'onlyOwnerCanLock': 'Only the answer set creator can lock/unlock',
+    'onlyOwnerCanDelete': 'Only the answer set creator can delete',
     
     // Team Roles
     'memberRole': 'Member Role',
