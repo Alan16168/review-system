@@ -14664,13 +14664,16 @@ function renderAnswerSet(reviewId) {
   
   // Update lock button to reflect current answer set's lock status
   const isLocked = currentSet.is_locked === 'yes';
+  const currentUserId = window.currentUser?.id;
+  const isOwnSet = currentSet && currentSet.user_id === currentUserId;
   console.log('[renderAnswerSet] Final lock status check:');
   console.log('  - currentSet.is_locked:', currentSet.is_locked);
   console.log('  - typeof currentSet.is_locked:', typeof currentSet.is_locked);
   console.log('  - isLocked (=== "yes"):', isLocked);
+  console.log('  - isOwnSet:', isOwnSet);
   console.log('  - Full currentSet object:', JSON.stringify(currentSet, null, 2));
   updateAnswerSetLockButton(isLocked);
-  updateAnswerEditability(isLocked);
+  updateAnswerEditability(isLocked, isOwnSet);
   
   // Store current set index for lock function
   window.currentAnswerSetIndex = index;
@@ -14849,6 +14852,16 @@ async function saveInlineAnswer(reviewId, questionNumber) {
     console.log('[saveInlineAnswer] Lock status:', currentSet.is_locked);
     console.log('[saveInlineAnswer] API URL:', `/api/answer-sets/${reviewId}/${setNumber}`);
     
+    // Check if current user owns this answer set
+    const currentUserId = window.currentUser?.id;
+    const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+    
+    if (!isOwnSet) {
+      console.error('[saveInlineAnswer] Not the owner of this answer set');
+      showNotification(i18n.t('onlyOwnerCanEditAnswers') || '只能编辑自己的答案组', 'warning');
+      return;
+    }
+    
     // Check if answer set is locked
     if (currentSet.is_locked === 'yes') {
       console.error('[saveInlineAnswer] Answer set is locked');
@@ -14943,6 +14956,16 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     console.log('[updateAnswerInSet] 组编号:', setNumber, 'Type:', typeof setNumber);
     console.log('[updateAnswerInSet] 锁定状态:', currentSet.is_locked);
     console.log('[updateAnswerInSet] 准备调用 API，值为:', value, '(类型:', typeof value, ')');
+    
+    // Check if current user owns this answer set
+    const currentUserId = window.currentUser?.id;
+    const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+    
+    if (!isOwnSet) {
+      console.error('[updateAnswerInSet] Not the owner of this answer set');
+      showNotification(i18n.t('onlyOwnerCanEditAnswers') || '只能编辑自己的答案组', 'warning');
+      return;
+    }
     
     // Check if answer set is locked
     if (currentSet.is_locked === 'yes') {
@@ -15044,6 +15067,16 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     console.log('[updateMultipleChoiceInSet] 组编号:', setNumber, 'Type:', typeof setNumber);
     console.log('[updateMultipleChoiceInSet] 锁定状态:', currentSet.is_locked);
     console.log('[updateMultipleChoiceInSet] 准备调用 API...');
+    
+    // Check if current user owns this answer set
+    const currentUserId = window.currentUser?.id;
+    const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+    
+    if (!isOwnSet) {
+      console.error('[updateMultipleChoiceInSet] Not the owner of this answer set');
+      showNotification(i18n.t('onlyOwnerCanEditAnswers') || '只能编辑自己的答案组', 'warning');
+      return;
+    }
     
     // Check if answer set is locked
     if (currentSet.is_locked === 'yes') {
@@ -20584,8 +20617,8 @@ async function toggleCurrentAnswerSetLock(reviewId) {
       // Update lock button UI
       updateAnswerSetLockButton(response.data.is_locked === 'yes');
       
-      // Update answer edit UI
-      updateAnswerEditability(response.data.is_locked === 'yes');
+      // Update answer edit UI (this is always own set since only owner can lock/unlock)
+      updateAnswerEditability(response.data.is_locked === 'yes', true);
       
       // Re-render answer set to show/hide edit buttons
       renderAnswerSet(reviewId);
@@ -20766,11 +20799,15 @@ function updateAnswerSetLockButton(isLocked) {
 }
 
 /**
- * Update answer editability based on lock status
+ * Update answer editability based on lock status and ownership
  * @param {boolean} isLocked - Whether current answer set is locked
+ * @param {boolean} isOwnSet - Whether current user owns this answer set
  */
-function updateAnswerEditability(isLocked) {
-  if (isLocked) {
+function updateAnswerEditability(isLocked, isOwnSet = true) {
+  // Disable if locked OR not owned by current user
+  const shouldDisable = isLocked || !isOwnSet;
+  
+  if (shouldDisable) {
     // Disable all answer inputs and edit buttons
     document.querySelectorAll('#edit-review-form input, #edit-review-form textarea, #edit-review-form select').forEach(input => {
       // Don't disable the review-level fields (title, description, etc.)
@@ -20791,7 +20828,11 @@ function updateAnswerEditability(isLocked) {
       const originalOnclick = btn.onclick;
       btn.onclick = (e) => {
         e.preventDefault();
-        showNotification(i18n.t('answerSetIsLocked') || '当前答案组已锁定，无法编辑', 'warning');
+        if (isLocked) {
+          showNotification(i18n.t('answerSetIsLocked') || '当前答案组已锁定，无法编辑', 'warning');
+        } else {
+          showNotification(i18n.t('onlyOwnerCanEditAnswers') || '只能编辑自己的答案组', 'warning');
+        }
       };
     });
   } else {

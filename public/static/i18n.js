@@ -373,6 +373,7 @@ const translations = {
     'answerSetHint': '所有团队成员可查看所有答案组。只有答案组创建者可以编辑/删除/锁定自己的答案组。锁定后不可编辑。',
     'onlyOwnerCanLock': '只有答案组创建者可以锁定/解锁',
     'onlyOwnerCanDelete': '只有答案组创建者可以删除',
+    'onlyOwnerCanEditAnswers': '只能编辑自己的答案组',
     
     // Team Roles
     'memberRole': '成员角色',
@@ -3258,6 +3259,7 @@ const translations = {
     'answerSetHint': 'Todos los miembros del equipo pueden ver todos los conjuntos de respuestas. Solo el creador del conjunto de respuestas puede editar/eliminar/bloquear sus propios conjuntos de respuestas. Los conjuntos bloqueados no se pueden editar.',
     'onlyOwnerCanLock': 'Solo el creador del conjunto de respuestas puede bloquear/desbloquear',
     'onlyOwnerCanDelete': 'Solo el creador del conjunto de respuestas puede eliminar',
+    'onlyOwnerCanEditAnswers': 'Solo puedes editar tus propios conjuntos de respuestas',
     
     // Team Roles
     'memberRole': 'Member Role',
