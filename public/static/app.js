@@ -14665,11 +14665,14 @@ function renderAnswerSet(reviewId) {
   // Update lock button to reflect current answer set's lock status
   const isLocked = currentSet.is_locked === 'yes';
   const currentUserId = window.currentUser?.id;
-  const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+  // Use loose equality to handle string vs number comparison
+  const isOwnSet = currentSet && currentSet.user_id == currentUserId;
   console.log('[renderAnswerSet] Final lock status check:');
   console.log('  - currentSet.is_locked:', currentSet.is_locked);
   console.log('  - typeof currentSet.is_locked:', typeof currentSet.is_locked);
   console.log('  - isLocked (=== "yes"):', isLocked);
+  console.log('  - currentSet.user_id:', currentSet.user_id, 'type:', typeof currentSet.user_id);
+  console.log('  - currentUserId:', currentUserId, 'type:', typeof currentUserId);
   console.log('  - isOwnSet:', isOwnSet);
   console.log('  - Full currentSet object:', JSON.stringify(currentSet, null, 2));
   updateAnswerSetLockButton(isLocked);
@@ -14854,7 +14857,16 @@ async function saveInlineAnswer(reviewId, questionNumber) {
     
     // Check if current user owns this answer set
     const currentUserId = window.currentUser?.id;
-    const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+    // Use loose equality to handle string vs number comparison
+    const isOwnSet = currentSet && currentSet.user_id == currentUserId;
+    
+    console.log('[saveInlineAnswer] Ownership check:', {
+      currentSetUserId: currentSet?.user_id,
+      currentSetUserIdType: typeof currentSet?.user_id,
+      currentUserId: currentUserId,
+      currentUserIdType: typeof currentUserId,
+      isOwnSet: isOwnSet
+    });
     
     if (!isOwnSet) {
       console.error('[saveInlineAnswer] Not the owner of this answer set');
@@ -14959,7 +14971,14 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     
     // Check if current user owns this answer set
     const currentUserId = window.currentUser?.id;
-    const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+    // Use loose equality to handle string vs number comparison
+    const isOwnSet = currentSet && currentSet.user_id == currentUserId;
+    
+    console.log('[updateAnswerInSet] Ownership check:', {
+      currentSetUserId: currentSet?.user_id,
+      currentUserId: currentUserId,
+      isOwnSet: isOwnSet
+    });
     
     if (!isOwnSet) {
       console.error('[updateAnswerInSet] Not the owner of this answer set');
@@ -15070,7 +15089,14 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     
     // Check if current user owns this answer set
     const currentUserId = window.currentUser?.id;
-    const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+    // Use loose equality to handle string vs number comparison
+    const isOwnSet = currentSet && currentSet.user_id == currentUserId;
+    
+    console.log('[updateMultipleChoiceInSet] Ownership check:', {
+      currentSetUserId: currentSet?.user_id,
+      currentUserId: currentUserId,
+      isOwnSet: isOwnSet
+    });
     
     if (!isOwnSet) {
       console.error('[updateMultipleChoiceInSet] Not the owner of this answer set');
@@ -20754,7 +20780,8 @@ function updateAnswerSetLockButton(isLocked) {
   const index = window.currentSetIndex || 0;
   const currentSet = sets[index];
   const currentUserId = window.currentUser?.id;
-  const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+  // Use loose equality to handle string vs number comparison
+  const isOwnSet = currentSet && currentSet.user_id == currentUserId;
   
   // Lock/Unlock button: only enabled for answer set owner
   if (isOwnSet) {
