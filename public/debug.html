@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review System - 诊断工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">
+            🔍 Review System 诊断工具
+        </h1>
+
+        <div class="space-y-6">
+            <!-- Step 1: 检查Token -->
+            <div class="border rounded-lg p-4 bg-blue-50">
+                <h2 class="text-xl font-bold mb-3">步骤 1: 检查认证Token</h2>
+                <button onclick="checkToken()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                    检查Token
+                </button>
+                <div id="token-result" class="mt-4"></div>
+            </div>
+
+            <!-- Step 2: 测试API -->
+            <div class="border rounded-lg p-4 bg-green-50">
+                <h2 class="text-xl font-bold mb-3">步骤 2: 测试API连接</h2>
+                <input type="number" id="review-id" placeholder="输入Review ID (例如: 275)" 
+                       class="border px-4 py-2 rounded-lg mr-2" value="275">
+                <button onclick="testAPI()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                    测试API
+                </button>
+                <div id="api-result" class="mt-4"></div>
+            </div>
+
+            <!-- Step 3: 清除并重置 -->
+            <div class="border rounded-lg p-4 bg-yellow-50">
+                <h2 class="text-xl font-bold mb-3">步骤 3: 清除并重置</h2>
+                <button onclick="clearAll()" class="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700">
+                    清除所有数据
+                </button>
+                <div id="clear-result" class="mt-4"></div>
+            </div>
+
+            <!-- Step 4: 完整日志 -->
+            <div class="border rounded-lg p-4 bg-gray-50">
+                <h2 class="text-xl font-bold mb-3">完整诊断日志</h2>
+                <pre id="full-log" class="bg-gray-800 text-green-400 p-4 rounded-lg overflow-auto max-h-96 text-sm"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logMessages = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            const logLine = `[${timestamp}] ${prefix} ${message}`;
+            logMessages.push(logLine);
+            document.getElementById('full-log').textContent = logMessages.join('\n');
+            console.log(message);
+        }
+
+        function checkToken() {
+            log('开始检查Token...');
+            const resultDiv = document.getElementById('token-result');
+            
+            // Check all possible token storage locations
+            const tokenKeys = ['authToken', 'token', 'jwt', 'auth'];
+            let foundToken = null;
+            let tokenKey = null;
+
+            for (const key of tokenKeys) {
+                const token = localStorage.getItem(key);
+                if (token) {
+                    foundToken = token;
+                    tokenKey = key;
+                    break;
+                }
+            }
+
+            if (!foundToken) {
+                resultDiv.innerHTML = `
+                    <div class="p-4 bg-red-100 border border-red-400 rounded-lg">
+                        <p class="font-bold text-red-800">❌ 未找到认证Token！</p>
+                        <p class="text-red-700 mt-2">请先登录系统获取Token</p>
+                        <a href="/" class="text-blue-600 underline mt-2 inline-block">返回登录页面</a>
+                    </div>
+                `;
+                log('未找到Token，用户需要登录', 'error');
+                return;
+            }
+
+            log(`找到Token (key: ${tokenKey})`);
+            
+            // Parse token payload
+            try {
+                const parts = foundToken.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Token格式无效');
+                }
+
+                const payload = JSON.parse(atob(parts[1]));
+                const now = Math.floor(Date.now() / 1000);
+                const isExpired = payload.exp && payload.exp < now;
+
+                resultDiv.innerHTML = `
+                    <div class="p-4 bg-white border rounded-lg">
+                        <p class="font-bold ${isExpired ? 'text-red-800' : 'text-green-800'}">
+                            ${isExpired ? '❌ Token已过期' : '✅ Token有效'}
+                        </p>
+                        <div class="mt-3 text-sm space-y-1">
+                            <p><strong>存储位置:</strong> localStorage.${tokenKey}</p>
+                            <p><strong>用户ID:</strong> ${payload.id || 'N/A'}</p>
+                            <p><strong>用户名:</strong> ${payload.username || 'N/A'}</p>
+                            <p><strong>邮箱:</strong> ${payload.email || 'N/A'}</p>
+                            <p><strong>角色:</strong> ${payload.role || 'N/A'}</p>
+                            ${payload.exp ? `
+                                <p><strong>过期时间:</strong> ${new Date(payload.exp * 1000).toLocaleString()}</p>
+                                <p><strong>剩余时间:</strong> ${isExpired ? '已过期' : Math.floor((payload.exp - now) / 3600) + '小时'}</p>
+                            ` : ''}
+                        </div>
+                        <details class="mt-3">
+                            <summary class="cursor-pointer text-blue-600">查看完整Token (点击展开)</summary>
+                            <pre class="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">${foundToken}</pre>
+                        </details>
+                    </div>
+                `;
+
+                if (isExpired) {
+                    log('Token已过期，需要重新登录', 'error');
+                } else {
+                    log(`Token有效，用户: ${payload.username} (ID: ${payload.id})`, 'success');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="p-4 bg-red-100 border border-red-400 rounded-lg">
+                        <p class="font-bold text-red-800">❌ Token解析失败</p>
+                        <p class="text-red-700 mt-2">${error.message}</p>
+                        <p class="text-sm text-gray-600 mt-2">Token可能已损坏，建议清除并重新登录</p>
+                    </div>
+                `;
+                log('Token解析失败: ' + error.message, 'error');
+            }
+        }
+
+        async function testAPI() {
+            log('开始测试API连接...');
+            const resultDiv = document.getElementById('api-result');
+            const reviewId = document.getElementById('review-id').value;
+
+            // Get token
+            const tokenKeys = ['authToken', 'token', 'jwt', 'auth'];
+            let token = null;
+            for (const key of tokenKeys) {
+                token = localStorage.getItem(key);
+                if (token) break;
+            }
+
+            if (!token) {
+                resultDiv.innerHTML = `
+                    <div class="p-4 bg-red-100 border border-red-400 rounded-lg">
+                        <p class="font-bold text-red-800">❌ 未找到Token</p>
+                        <p class="text-red-700 mt-2">请先执行"步骤1: 检查认证Token"</p>
+                    </div>
+                `;
+                log('测试API失败: 未找到Token', 'error');
+                return;
+            }
+
+            resultDiv.innerHTML = `
+                <div class="p-4 bg-blue-100 border border-blue-400 rounded-lg">
+                    <p class="font-bold text-blue-800">🔄 正在测试API...</p>
+                    <p class="text-blue-700 mt-2">请求: GET /api/reviews/${reviewId}</p>
+                </div>
+            `;
+
+            log(`发送API请求: GET /api/reviews/${reviewId}`);
+
+            try {
+                const response = await fetch(`/api/reviews/${reviewId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                log(`API响应状态: ${response.status}`);
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="p-4 bg-green-100 border border-green-400 rounded-lg">
+                            <p class="font-bold text-green-800">✅ API连接成功！</p>
+                            <div class="mt-3 text-sm">
+                                <p><strong>状态码:</strong> ${response.status}</p>
+                                <p><strong>Review标题:</strong> ${data.review?.title || 'N/A'}</p>
+                                <p><strong>问题数量:</strong> ${data.questions?.length || 0}</p>
+                                <p><strong>答案集:</strong> ${Object.keys(data.answersByQuestion || {}).length}</p>
+                            </div>
+                            <details class="mt-3">
+                                <summary class="cursor-pointer text-blue-600">查看完整响应</summary>
+                                <pre class="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-64">${JSON.stringify(data, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                    log('API测试成功', 'success');
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="p-4 bg-red-100 border border-red-400 rounded-lg">
+                            <p class="font-bold text-red-800">❌ API返回错误</p>
+                            <div class="mt-3 text-sm">
+                                <p><strong>状态码:</strong> ${response.status}</p>
+                                <p><strong>错误信息:</strong> ${data.error || 'Unknown error'}</p>
+                                ${data.details ? `<p><strong>详细信息:</strong> ${data.details}</p>` : ''}
+                            </div>
+                            <details class="mt-3">
+                                <summary class="cursor-pointer text-blue-600">查看完整响应</summary>
+                                <pre class="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">${JSON.stringify(data, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                    log(`API返回错误 ${response.status}: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="p-4 bg-red-100 border border-red-400 rounded-lg">
+                        <p class="font-bold text-red-800">❌ 请求失败</p>
+                        <p class="text-red-700 mt-2">${error.message}</p>
+                        <p class="text-sm text-gray-600 mt-2">可能是网络问题或服务器无响应</p>
+                    </div>
+                `;
+                log('API请求失败: ' + error.message, 'error');
+            }
+        }
+
+        function clearAll() {
+            log('开始清除所有数据...');
+            const resultDiv = document.getElementById('clear-result');
+            
+            const beforeCount = localStorage.length;
+            localStorage.clear();
+            sessionStorage.clear();
+            const afterCount = localStorage.length;
+
+            resultDiv.innerHTML = `
+                <div class="p-4 bg-green-100 border border-green-400 rounded-lg">
+                    <p class="font-bold text-green-800">✅ 清除完成</p>
+                    <p class="text-green-700 mt-2">已清除 ${beforeCount} 个localStorage项目</p>
+                    <p class="text-green-700">已清除所有sessionStorage数据</p>
+                    <a href="/" class="inline-block mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        返回登录页面
+                    </a>
+                </div>
+            `;
+            log(`清除完成: ${beforeCount}个localStorage项目`, 'success');
+        }
+
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            log('=== Review System 诊断工具启动 ===');
+            log('当前URL: ' + window.location.href);
+            log('User Agent: ' + navigator.userAgent);
+            checkToken();
+        });
+    </script>
+</body>
+</html>
