@@ -444,9 +444,10 @@ answerSets.delete('/:reviewId/:setNumber', async (c: Context) => {
 });
 
 /**
- * Lock an answer set
+ * Lock answer sets by batch (set_number)
  * PUT /api/answer-sets/:reviewId/:setNumber/lock
- * Only the owner of the answer set can lock it
+ * Only the review creator can lock answer sets
+ * Locks ALL answer sets with the same set_number (entire batch for all members)
  */
 answerSets.put('/:reviewId/:setNumber/lock', async (c: Context) => {
   try {
@@ -459,49 +460,67 @@ answerSets.put('/:reviewId/:setNumber/lock', async (c: Context) => {
       return c.json({ error: 'Invalid parameters' }, 400);
     }
 
-    // Check if user owns this answer set
-    const set = await c.env.DB.prepare(`
-      SELECT id, is_locked FROM review_answer_sets
-      WHERE review_id = ? AND user_id = ? AND set_number = ?
-    `).bind(reviewId, userId, setNumber).first();
+    // Check if user is the review creator
+    const review = await c.env.DB.prepare(`
+      SELECT user_id FROM reviews WHERE id = ?
+    `).bind(reviewId).first();
 
-    if (!set) {
-      return c.json({ error: 'Answer set not found or you don\'t have permission' }, 404);
+    if (!review) {
+      return c.json({ error: 'Review not found' }, 404);
     }
 
-    if (set.is_locked === 'yes') {
+    if (review.user_id !== userId) {
       return c.json({ 
-        error: 'Answer set is already locked',
+        error: 'Only the review creator can lock answer sets',
+        permission: 'denied'
+      }, 403);
+    }
+
+    // Check if this batch is already locked
+    const existingSet = await c.env.DB.prepare(`
+      SELECT is_locked FROM review_answer_sets
+      WHERE review_id = ? AND set_number = ?
+      LIMIT 1
+    `).bind(reviewId, setNumber).first();
+
+    if (!existingSet) {
+      return c.json({ error: 'Answer set batch not found' }, 404);
+    }
+
+    if (existingSet.is_locked === 'yes') {
+      return c.json({ 
+        error: 'Answer set batch is already locked',
         is_locked: 'yes'
       }, 400);
     }
 
-    // Lock the answer set
+    // Lock ALL answer sets with this set_number (entire batch)
     await c.env.DB.prepare(`
       UPDATE review_answer_sets
       SET is_locked = 'yes',
           locked_at = CURRENT_TIMESTAMP,
           locked_by = ?
-      WHERE id = ?
-    `).bind(userId, set.id).run();
+      WHERE review_id = ? AND set_number = ?
+    `).bind(userId, reviewId, setNumber).run();
 
     return c.json({ 
       success: true,
-      message: 'Answer set locked successfully',
+      message: 'Answer set batch locked successfully',
       is_locked: 'yes',
       set_number: setNumber
     });
 
   } catch (error: any) {
-    console.error('Error locking answer set:', error);
-    return c.json({ error: 'Failed to lock answer set' }, 500);
+    console.error('Error locking answer set batch:', error);
+    return c.json({ error: 'Failed to lock answer set batch' }, 500);
   }
 });
 
 /**
- * Unlock an answer set
+ * Unlock answer sets by batch (set_number)
  * PUT /api/answer-sets/:reviewId/:setNumber/unlock
- * Only the owner of the answer set can unlock it
+ * Only the review creator can unlock answer sets
+ * Unlocks ALL answer sets with the same set_number (entire batch for all members)
  */
 answerSets.put('/:reviewId/:setNumber/unlock', async (c: Context) => {
   try {
@@ -514,42 +533,59 @@ answerSets.put('/:reviewId/:setNumber/unlock', async (c: Context) => {
       return c.json({ error: 'Invalid parameters' }, 400);
     }
 
-    // Check if user owns this answer set
-    const set = await c.env.DB.prepare(`
-      SELECT id, is_locked FROM review_answer_sets
-      WHERE review_id = ? AND user_id = ? AND set_number = ?
-    `).bind(reviewId, userId, setNumber).first();
+    // Check if user is the review creator
+    const review = await c.env.DB.prepare(`
+      SELECT user_id FROM reviews WHERE id = ?
+    `).bind(reviewId).first();
 
-    if (!set) {
-      return c.json({ error: 'Answer set not found or you don\'t have permission' }, 404);
+    if (!review) {
+      return c.json({ error: 'Review not found' }, 404);
     }
 
-    if (set.is_locked === 'no') {
+    if (review.user_id !== userId) {
       return c.json({ 
-        error: 'Answer set is already unlocked',
+        error: 'Only the review creator can unlock answer sets',
+        permission: 'denied'
+      }, 403);
+    }
+
+    // Check if this batch is already unlocked
+    const existingSet = await c.env.DB.prepare(`
+      SELECT is_locked FROM review_answer_sets
+      WHERE review_id = ? AND set_number = ?
+      LIMIT 1
+    `).bind(reviewId, setNumber).first();
+
+    if (!existingSet) {
+      return c.json({ error: 'Answer set batch not found' }, 404);
+    }
+
+    if (existingSet.is_locked === 'no') {
+      return c.json({ 
+        error: 'Answer set batch is already unlocked',
         is_locked: 'no'
       }, 400);
     }
 
-    // Unlock the answer set
+    // Unlock ALL answer sets with this set_number (entire batch)
     await c.env.DB.prepare(`
       UPDATE review_answer_sets
       SET is_locked = 'no',
           locked_at = NULL,
           locked_by = NULL
-      WHERE id = ?
-    `).bind(set.id).run();
+      WHERE review_id = ? AND set_number = ?
+    `).bind(reviewId, setNumber).run();
 
     return c.json({ 
       success: true,
-      message: 'Answer set unlocked successfully',
+      message: 'Answer set batch unlocked successfully',
       is_locked: 'no',
       set_number: setNumber
     });
 
   } catch (error: any) {
-    console.error('Error unlocking answer set:', error);
-    return c.json({ error: 'Failed to unlock answer set' }, 500);
+    console.error('Error unlocking answer set batch:', error);
+    return c.json({ error: 'Failed to unlock answer set batch' }, 500);
   }
 });
 

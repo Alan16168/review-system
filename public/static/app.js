@@ -20658,10 +20658,10 @@ async function toggleCurrentAnswerSetLock(reviewId) {
       return;
     }
     
-    // Confirm action
+    // Confirm action - NEW: Locking affects entire batch (all users' answer sets with same set_number)
     const confirmMessage = isLocked
-      ? (i18n.t('confirmUnlockAnswerSet') || `确定要解锁答案组 ${setNumber} 吗？解锁后可以编辑。`)
-      : (i18n.t('confirmLockAnswerSet') || `确定要锁定答案组 ${setNumber} 吗？锁定后将无法编辑。`);
+      ? (i18n.t('confirmUnlockBatch') || `确定要解锁答案组批次 ${setNumber} 吗？这将解锁所有成员的第 ${setNumber} 组答案，解锁后可以编辑。`)
+      : (i18n.t('confirmLockBatch') || `确定要锁定答案组批次 ${setNumber} 吗？这将锁定所有成员的第 ${setNumber} 组答案，锁定后将无法编辑。`);
     
     if (!confirm(confirmMessage)) {
       return;
@@ -20823,11 +20823,16 @@ function updateAnswerSetLockButton(isLocked) {
   const index = window.currentSetIndex || 0;
   const currentSet = sets[index];
   const currentUserId = window.currentUser?.id;
-  // Use loose equality to handle string vs number comparison
+  const reviewCreatorId = window.currentEditReview?.user_id;
+  
+  // Check if current user is the review creator (not answer set owner)
+  const isReviewCreator = currentUserId == reviewCreatorId;
+  // Check if current user owns this answer set
   const isOwnSet = currentSet && currentSet.user_id == currentUserId;
   
-  // Lock/Unlock button: only enabled for answer set owner
-  if (isOwnSet) {
+  // Lock/Unlock button: NEW RULE - only enabled for REVIEW CREATOR
+  // Locking affects the entire set_number batch (all users' answer sets with same set_number)
+  if (isReviewCreator) {
     btn.disabled = false;
     
     if (isLocked) {
@@ -20835,35 +20840,42 @@ function updateAnswerSetLockButton(isLocked) {
       btn.className = 'px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg transition-colors';
       icon.className = 'fas fa-lock-open mr-2';
       text.textContent = i18n.t('unlock') || '解锁';
+      btn.title = i18n.t('unlockBatchHint') || '解锁此批次的所有答案组';
     } else {
       // Show lock button (red)
       btn.className = 'px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg transition-colors';
       icon.className = 'fas fa-lock mr-2';
       text.textContent = i18n.t('lock') || '锁定';
+      btn.title = i18n.t('lockBatchHint') || '锁定此批次的所有答案组';
     }
   } else {
-    // Not owner: disable lock/unlock button
+    // Not review creator: disable lock/unlock button
     btn.disabled = true;
     btn.className = 'px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors opacity-50 cursor-not-allowed';
     icon.className = 'fas fa-lock mr-2';
     text.textContent = i18n.t('lock') || '锁定';
-    btn.title = i18n.t('onlyOwnerCanLock') || '只有答案组创建者可以锁定/解锁';
+    btn.title = i18n.t('onlyReviewCreatorCanLock') || '只有复盘创建者可以锁定/解锁';
   }
   
-  // Delete button: only enabled for owner AND when unlocked
+  // Delete button: enabled for answer set owner when unlocked
   if (deleteBtn) {
+    const baseClass = (window.currentEditReview?.allow_multiple_answers === 'yes' ? '' : 'flex-1 ') + 'px-6 py-3 text-white rounded-lg shadow-lg transition-colors';
+    
     if (!isOwnSet) {
+      // Not the owner of this answer set
       deleteBtn.disabled = true;
-      deleteBtn.title = i18n.t('onlyOwnerCanDelete') || '只有答案组创建者可以删除';
-      deleteBtn.className = deleteBtn.className.replace(/bg-red-\d+/g, 'bg-gray-400').replace(/hover:bg-red-\d+/g, '') + ' opacity-50 cursor-not-allowed';
+      deleteBtn.title = i18n.t('onlyOwnerCanDelete') || '只能删除自己的答案组';
+      deleteBtn.className = baseClass + ' bg-gray-400 opacity-50 cursor-not-allowed';
     } else if (isLocked) {
+      // Own answer set but locked
       deleteBtn.disabled = true;
       deleteBtn.title = i18n.t('unlockToDelete') || '请先解锁答案组才能删除';
-      deleteBtn.className = deleteBtn.className.replace(/bg-red-\d+/g, 'bg-gray-400').replace(/hover:bg-red-\d+/g, '') + ' opacity-50 cursor-not-allowed';
+      deleteBtn.className = baseClass + ' bg-gray-400 opacity-50 cursor-not-allowed';
     } else {
+      // Own answer set and unlocked - ENABLE DELETE
       deleteBtn.disabled = false;
-      deleteBtn.title = i18n.t('deleteAnswerSet') || '删除当前答案组';
-      deleteBtn.className = (window.currentEditReview?.allow_multiple_answers === 'yes' ? '' : 'flex-1 ') + 'px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-lg transition-colors';
+      deleteBtn.title = i18n.t('deleteOwnAnswerSet') || '删除自己的答案组';
+      deleteBtn.className = baseClass + ' bg-red-600 hover:bg-red-700';
     }
   }
 }
