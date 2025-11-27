@@ -725,10 +725,14 @@ app.post('/:id/chapters/:chapterId/regenerate-sections', async (c) => {
 
 app.post('/:id/sections/:sectionId/generate-content', async (c) => {
   try {
+    console.log('[generate-content] Starting request...');
     const user = await getUserFromToken(c);
+    console.log('[generate-content] User:', user.id);
     const bookId = c.req.param('id');
     const sectionId = c.req.param('sectionId');
+    console.log('[generate-content] BookId:', bookId, 'SectionId:', sectionId);
     const body = await c.req.json();
+    console.log('[generate-content] Body:', JSON.stringify(body));
 
     // Get all context
     const book: any = await c.env.DB.prepare(`
@@ -816,7 +820,15 @@ app.post('/:id/sections/:sectionId/generate-content', async (c) => {
 请直接输出完整的内容（纯文本+Markdown格式），不要JSON格式，不要前言说明，确保内容从开头到结尾都是完整的。`;
 
     const apiKey = c.env.GEMINI_API_KEY;
-    let content = await callGeminiAPI(apiKey!, prompt, maxTokens, systemTemperature);
+    console.log('[generate-content] API Key exists:', !!apiKey, 'Max tokens:', maxTokens, 'Temperature:', systemTemperature);
+    
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not configured. Please contact administrator.');
+    }
+    
+    console.log('[generate-content] Calling Gemini API...');
+    let content = await callGeminiAPI(apiKey, prompt, maxTokens, systemTemperature);
+    console.log('[generate-content] Content generated, length:', content.length);
 
     // Calculate word count (统计中文字符，不包含空格、标点和markdown符号)
     let wordCount = content.replace(/\s/g, '').replace(/[#*\->`\[\]()]/g, '').length;
@@ -884,6 +896,7 @@ ${content}
       word_count: wordCount
     });
   } catch (error: any) {
+    console.error('POST generate-content - Error:', error.message, error.stack);
     return c.json({ success: false, error: error.message }, 500);
   }
 });
