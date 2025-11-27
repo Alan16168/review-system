@@ -238,17 +238,25 @@ answerSets.put('/:reviewId/:setNumber', async (c: Context) => {
     const setNumber = parseInt(c.req.param('setNumber'));
     const user = c.get('user') as any;
     const userId = user?.id;
+    
+    console.log('[PUT answer-sets] Request params:', { reviewId, setNumber, userId });
+    
     const body = await c.req.json();
+    console.log('[PUT answer-sets] Request body:', JSON.stringify(body, null, 2));
 
     if (isNaN(reviewId) || isNaN(setNumber)) {
+      console.error('[PUT answer-sets] Invalid parameters');
       return c.json({ error: 'Invalid parameters' }, 400);
     }
 
     // Get set ID and check if it's locked
+    console.log('[PUT answer-sets] Fetching answer set...');
     const set = await c.env.DB.prepare(`
       SELECT id, is_locked FROM review_answer_sets
       WHERE review_id = ? AND user_id = ? AND set_number = ?
     `).bind(reviewId, userId, setNumber).first();
+    
+    console.log('[PUT answer-sets] Found set:', set);
 
     if (!set) {
       return c.json({ error: 'Answer set not found' }, 404);
@@ -336,7 +344,17 @@ answerSets.put('/:reviewId/:setNumber', async (c: Context) => {
 
   } catch (error: any) {
     console.error('Error updating answer set:', error);
-    return c.json({ error: 'Failed to update answer set' }, 500);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      reviewId: c.req.param('reviewId'),
+      setNumber: c.req.param('setNumber'),
+      userId: c.get('user')?.id
+    });
+    return c.json({ 
+      error: 'Failed to update answer set',
+      details: error.message 
+    }, 500);
   }
 });
 
