@@ -1,6 +1,6 @@
 {
   "name": "webapp",
-  "version": "9.1.1",
+  "version": "9.30.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
