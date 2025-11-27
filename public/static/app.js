@@ -6702,7 +6702,7 @@ async function showEditReview(id) {
               <!-- Answer Set Navigation -->
               <div id="answer-set-navigation" class="mb-4"></div>
               
-              <!-- Action Buttons Row: Create New Answer Set + Lock/Unlock Current Set -->
+              <!-- Action Buttons Row: Create New Answer Set + Delete + Lock/Unlock Current Set -->
               <div class="flex gap-3 mb-4">
                 ${review.allow_multiple_answers === 'yes' ? `
                   <!-- Create New Answer Set Button (only shown when allow_multiple_answers is 'yes') -->
@@ -6712,6 +6712,15 @@ async function showEditReview(id) {
                     <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet')}
                   </button>
                 ` : ''}
+                
+                <!-- Delete Current Answer Set Button (Always visible) -->
+                <button type="button" 
+                        id="delete-answer-set-btn"
+                        onclick="deleteCurrentAnswerSet(${id})"
+                        class="${review.allow_multiple_answers === 'yes' ? '' : 'flex-1'} px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-lg transition-colors disabled:opacity-50"
+                        disabled>
+                  <i class="fas fa-trash-alt mr-2"></i>${i18n.t('delete') || '删除'}
+                </button>
                 
                 <!-- Lock/Unlock Current Answer Set Button (Always visible, regardless of allow_multiple_answers) -->
                 <button type="button" 
@@ -6724,7 +6733,7 @@ async function showEditReview(id) {
                 </button>
               </div>
               <p class="text-xs text-gray-500 mb-4">
-                <i class="fas fa-info-circle mr-1"></i>${i18n.t('lockAnswerSetHint') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。'}
+                <i class="fas fa-info-circle mr-1"></i>${i18n.t('lockAnswerSetHint') || '锁定/解锁当前显示的答案组。锁定后该答案组不可编辑。删除答案组前请先解锁。'}
               </p>
             </div>
 
@@ -20478,6 +20487,104 @@ async function toggleCurrentAnswerSetLock(reviewId) {
 }
 
 /**
+ * Delete current answer set
+ * @param {number} reviewId - Review ID
+ */
+async function deleteCurrentAnswerSet(reviewId) {
+  try {
+    // Get current answer set info
+    if (!window.currentAnswerSets || window.currentAnswerSets.length === 0) {
+      showNotification(i18n.t('noAnswerSetsToDelete') || '没有答案组可以删除', 'warning');
+      return;
+    }
+    
+    const currentIndex = window.currentAnswerSetIndex || 0;
+    const currentSet = window.currentAnswerSets[currentIndex];
+    
+    if (!currentSet) {
+      showNotification(i18n.t('cannotFindCurrentSet') || '无法找到当前答案组', 'error');
+      return;
+    }
+    
+    // Check if answer set is locked
+    if (currentSet.is_locked === 'yes') {
+      showNotification(i18n.t('unlockBeforeDelete') || '请先解锁答案组才能删除', 'warning');
+      return;
+    }
+    
+    const setNumber = currentSet.set_number;
+    const totalSets = window.currentAnswerSets.length;
+    const isSingleSet = totalSets === 1;
+    const allowMultipleAnswers = window.currentEditReview?.allow_multiple_answers === 'yes';
+    
+    // Prepare confirmation message
+    let confirmMessage;
+    if (isSingleSet && !allowMultipleAnswers) {
+      // Single answer set in single-answer mode
+      confirmMessage = i18n.t('confirmDeleteSingleAnswerSet') || 
+        '这是单一的答案复盘，删除后将清空所有答案内容。是否确定删除？';
+    } else if (isSingleSet) {
+      // Last remaining answer set in multi-answer mode
+      confirmMessage = i18n.t('confirmDeleteLastAnswerSet') || 
+        `这是最后一个答案组，删除后将清空所有答案内容。是否确定删除答案组 ${setNumber}？`;
+    } else {
+      // Multiple answer sets exist
+      confirmMessage = i18n.t('confirmDeleteAnswerSet') || 
+        `确定要删除答案组 ${setNumber} 吗？此操作不可恢复。`;
+    }
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    
+    // Call API to delete
+    const response = await axios.delete(`/api/answer-sets/${reviewId}/${setNumber}`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    if (response.data.success) {
+      showNotification(
+        i18n.t('deleteAnswerSetSuccess') || '答案组删除成功',
+        'success'
+      );
+      
+      // Remove deleted set from local array
+      window.currentAnswerSets.splice(currentIndex, 1);
+      
+      // If no answer sets left, reload the review to show empty state
+      if (window.currentAnswerSets.length === 0) {
+        // Reload review data
+        await loadReviewForEditing(reviewId);
+        return;
+      }
+      
+      // Navigate to previous set if we deleted the last one, otherwise stay on same index
+      const newIndex = currentIndex >= window.currentAnswerSets.length 
+        ? window.currentAnswerSets.length - 1 
+        : currentIndex;
+      
+      window.currentAnswerSetIndex = newIndex;
+      
+      // Re-render with the new current set
+      renderAnswerSet(reviewId);
+      updateAnswerSetNavigation(
+        reviewId, 
+        newIndex + 1, 
+        window.currentAnswerSets.length
+      );
+    }
+  } catch (error) {
+    console.error('Delete answer set error:', error);
+    showNotification(
+      error.response?.data?.error || i18n.t('deleteAnswerSetFailed') || '删除答案组失败',
+      'error'
+    );
+  }
+}
+
+/**
  * Update lock button UI based on lock status
  * @param {boolean} isLocked - Whether current answer set is locked
  */
@@ -20485,6 +20592,7 @@ function updateAnswerSetLockButton(isLocked) {
   const btn = document.getElementById('toggle-answer-set-lock-btn');
   const icon = document.getElementById('answer-set-lock-icon');
   const text = document.getElementById('answer-set-lock-text');
+  const deleteBtn = document.getElementById('delete-answer-set-btn');
   
   if (!btn || !icon || !text) return;
   
@@ -20496,11 +20604,23 @@ function updateAnswerSetLockButton(isLocked) {
     btn.className = 'px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg transition-colors';
     icon.className = 'fas fa-lock-open mr-2';
     text.textContent = i18n.t('unlock') || '解锁';
+    
+    // Disable delete button when locked
+    if (deleteBtn) {
+      deleteBtn.disabled = true;
+      deleteBtn.title = i18n.t('unlockToDelete') || '请先解锁答案组才能删除';
+    }
   } else {
     // Show lock button (red)
     btn.className = 'px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg transition-colors';
     icon.className = 'fas fa-lock mr-2';
     text.textContent = i18n.t('lock') || '锁定';
+    
+    // Enable delete button when unlocked
+    if (deleteBtn) {
+      deleteBtn.disabled = false;
+      deleteBtn.title = i18n.t('deleteAnswerSet') || '删除当前答案组';
+    }
   }
 }
 
