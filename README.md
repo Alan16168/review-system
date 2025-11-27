@@ -9,8 +9,8 @@
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
 **🚀 最新部署**: https://review-system.pages.dev (2025-11-27 已部署) ✅  
-**✅ 当前版本**: V9.2.0 - 答案组团队协作增强 (2025-11-27) 🆕  
-**🎯 新功能**: ✅ 团队成员可查看所有答案组 + 基于所有权的权限控制 + 锁定状态显示  
+**✅ 当前版本**: V9.4.0 - 批次锁定功能 (2025-11-27) 🆕  
+**🎯 新功能**: ✅ 复盘创建者可锁定整批答案组 + 成员可删除自己的未锁定答案 + 批次锁定所有成员  
 **🔗 部署URL**: https://1f92dc01.review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
@@ -25,6 +25,57 @@
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 **📱 移动端专属版**: https://review-system.pages.dev/mobile （触控优化界面）
+
+## 🎯 V9.4.0 更新 - 批次锁定功能 (2025-11-27)
+
+**核心功能**: ✅ 复盘创建者可锁定整批答案组，成员可删除自己的答案
+
+**功能说明**:
+1. **批次锁定机制** ✅
+   - **只有复盘创建者**可以锁定/解锁答案组
+   - 锁定操作针对整个批次（set_number），影响所有成员的答案组
+   - 锁定后，该批次的所有成员都不能编辑答案
+   - 按钮状态：非创建者看到灰色锁定按钮，创建者看到可用按钮
+
+2. **删除权限** ✅
+   - **每个成员**可以删除**自己的**答案组
+   - 前提：答案组必须是**未锁定**状态
+   - 锁定的答案组无法删除（需要创建者先解锁）
+   - 按钮状态：自己的未锁定答案显示红色删除按钮，其他情况显示灰色
+
+3. **权限规则总结** ✅
+   ```
+   - 查看权限：所有团队成员可查看所有答案组
+   - 编辑权限：每个成员只能编辑自己的答案组（未锁定状态）
+   - 删除权限：每个成员只能删除自己的答案组（未锁定状态）
+   - 锁定权限：只有复盘创建者可以锁定/解锁（影响整批）
+   ```
+
+**技术实现**:
+- **后端API改进** (src/routes/answer_sets.ts):
+  - PUT /api/answer-sets/:reviewId/:setNumber/lock: 检查用户是否为复盘创建者，锁定整个 set_number 批次
+  - PUT /api/answer-sets/:reviewId/:setNumber/unlock: 检查用户是否为复盘创建者，解锁整个批次
+  - DELETE /api/answer-sets/:reviewId/:setNumber: 保持原逻辑，只允许答案组所有者删除未锁定的答案组
+
+- **前端函数改进** (public/static/app.js):
+  - updateAnswerSetLockButton: 检查 `window.currentEditReview?.user_id` 判断是否为复盘创建者
+  - 锁定按钮：只对复盘创建者启用，其他人显示灰色禁用状态
+  - 删除按钮：对答案组所有者启用（未锁定时），其他人或锁定状态显示灰色
+
+- **翻译更新** (public/static/i18n.js):
+  - onlyReviewCreatorCanLock: "只有复盘创建者可以锁定/解锁"
+  - lockBatchHint: "锁定此批次的所有答案组（所有成员）"
+  - unlockBatchHint: "解锁此批次的所有答案组（所有成员）"
+  - deleteOwnAnswerSet: "删除自己的答案组"
+  - unlockToDelete: "请先解锁答案组才能删除"
+
+**部署信息**:
+- Git Commit: a260bc1
+- 部署URL: https://af69b15f.review-system.pages.dev
+- 部署时间: 2025-11-27
+- 主域名: https://review-system.pages.dev
+
+---
 
 ## 🐛 V9.3.1 修复 - 答案保存错误修复 (2025-11-27)
 
