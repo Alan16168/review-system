@@ -192,7 +192,7 @@ app.get('/test-api', async (c) => {
     console.log('[test-api] Testing Gemini API with simple prompt...');
     
     try {
-      const content = await callGeminiAPI(apiKey, testPrompt, 100, 0.7);
+      const content = await callGeminiAPI(apiKey, testPrompt, 2000, 0.7);
       console.log('[test-api] API test successful, response length:', content.length);
       
       return c.json({
