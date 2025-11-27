@@ -26,6 +26,26 @@
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 **📱 移动端专属版**: https://review-system.pages.dev/mobile （触控优化界面）
 
+## 🐛 V9.3.1 修复 - 答案保存错误修复 (2025-11-27)
+
+**问题描述**: 用户在编辑复盘答案时，点击"保存"按钮出现"Not the owner of this answer set"错误，无法保存答案。
+
+**问题原因**: 所有权判断使用了严格相等(===)比较user_id，但API返回的user_id可能是字符串类型，而currentUser.id是数字类型，导致类型不匹配而判断失败。
+
+**解决方案**:
+- 将严格相等(===)改为宽松相等(==)，自动处理类型转换
+- 添加详细的调试日志，输出user_id的值和类型
+- 影响的函数：saveInlineAnswer, updateAnswerInSet, updateMultipleChoiceInSet, renderAnswerSet, updateAnswerSetLockButton
+
+**修复效果**: ✅ 答案可以正常保存，不再出现所有权错误
+
+**部署信息**:
+- Git Commit: f128661
+- 部署URL: https://ffb106e2.review-system.pages.dev
+- 部署时间: 2025-11-27
+
+---
+
 ## 🎯 V9.3.0 更新 - 编辑与查看模式权限分离 (2025-11-27)
 
 **核心改进**: ✅ 编辑模式只显示自己的答案组，查看模式显示所有成员答案
