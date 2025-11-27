@@ -13,17 +13,22 @@ answerSets.use('/*', authMiddleware);
 
 /**
  * Get all answer sets for a review
- * GET /api/answer-sets/:reviewId
+ * GET /api/answer-sets/:reviewId?mode=edit|view
  * Returns: { sets: [{ set_number, created_at, user_id, username, answers: [...] }] }
  * 
- * For team reviews, returns all team members' answer sets
- * For personal reviews, returns only current user's answer sets
+ * Query Parameters:
+ * - mode: "edit" (default) or "view"
+ *   - edit mode: Returns only current user's answer sets (for editing)
+ *   - view mode: Returns all team members' answer sets (for viewing)
+ * 
+ * For personal reviews, always returns only current user's answer sets
  */
 answerSets.get('/:reviewId', async (c: Context) => {
   try {
     const reviewId = parseInt(c.req.param('reviewId'));
     const user = c.get('user') as any;
     const userId = user?.id;
+    const mode = c.req.query('mode') || 'edit'; // Default to edit mode
 
     if (isNaN(reviewId)) {
       return c.json({ error: 'Invalid review ID' }, 400);
@@ -38,12 +43,10 @@ answerSets.get('/:reviewId', async (c: Context) => {
       return c.json({ error: 'Review not found' }, 404);
     }
 
-    // Get all answer sets for this review
-    // If it's a team review (team_id != null), get all team members' answer sets
-    // Otherwise, only get current user's answer sets
+    // Get answer sets based on mode and review type
     let setsQuery;
-    if (review.team_id) {
-      // Team review: get all answer sets from all team members
+    if (review.team_id && mode === 'view') {
+      // Team review in view mode: get all answer sets from all team members
       setsQuery = c.env.DB.prepare(`
         SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
                ras.is_locked, ras.locked_at, ras.locked_by, u.username
@@ -53,7 +56,7 @@ answerSets.get('/:reviewId', async (c: Context) => {
         ORDER BY ras.created_at DESC
       `).bind(reviewId);
     } else {
-      // Personal review: only get current user's answer sets
+      // Edit mode OR personal review: only get current user's answer sets
       setsQuery = c.env.DB.prepare(`
         SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
                ras.is_locked, ras.locked_at, ras.locked_by, u.username

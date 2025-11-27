@@ -14366,8 +14366,8 @@ window.currentSetIndex = 0;
 /**
  * Load answer sets for a review
  */
-async function loadAnswerSets(reviewId, keepCurrentIndex = false) {
-  const response = await axios.get(`/api/answer-sets/${reviewId}`);
+async function loadAnswerSets(reviewId, keepCurrentIndex = false, mode = 'edit') {
+  const response = await axios.get(`/api/answer-sets/${reviewId}?mode=${mode}`);
   const oldIndex = window.currentSetIndex || 0;
   
   // Sort answer sets by created_at in descending order (newest first)
