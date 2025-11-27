@@ -115,10 +115,10 @@ async function checkBookCreationLimit(c: any, userId: number, tier: string): Pro
 // ============================================================================
 
 async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number = 8192, temperature: number = 0.7): Promise<string> {
-  // Use gemini-1.5-flash (stable and widely available)
-  // This is the most reliable model for content generation
+  // Use gemini-2.5-flash (latest stable version)
+  // This is the most reliable and fastest model for content generation
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -170,6 +170,56 @@ async function callGeminiAPI(apiKey: string, prompt: string, maxTokens: number =
   
   return text;
 }
+
+// ============================================================================
+// GET /api/ai-books/test-api - Test Gemini API Key
+// ============================================================================
+
+app.get('/test-api', async (c) => {
+  try {
+    const apiKey = c.env.GEMINI_API_KEY;
+    
+    if (!apiKey) {
+      return c.json({ 
+        success: false, 
+        error: 'GEMINI_API_KEY is not configured',
+        configured: false
+      }, 500);
+    }
+    
+    // Test with a simple prompt
+    const testPrompt = '请用一句话介绍什么是人工智能。';
+    console.log('[test-api] Testing Gemini API with simple prompt...');
+    
+    try {
+      const content = await callGeminiAPI(apiKey, testPrompt, 100, 0.7);
+      console.log('[test-api] API test successful, response length:', content.length);
+      
+      return c.json({
+        success: true,
+        configured: true,
+        api_working: true,
+        test_response: content,
+        message: 'Gemini API is working correctly'
+      });
+    } catch (apiError: any) {
+      console.error('[test-api] API call failed:', apiError.message);
+      return c.json({
+        success: false,
+        configured: true,
+        api_working: false,
+        error: apiError.message,
+        message: 'API key is configured but API call failed'
+      }, 500);
+    }
+  } catch (error: any) {
+    console.error('[test-api] Error:', error.message, error.stack);
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500);
+  }
+});
 
 // ============================================================================
 // GET /api/ai-books - List user's books
