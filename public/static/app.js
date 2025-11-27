@@ -14254,6 +14254,13 @@ async function autoSaveTimeValue(reviewId, questionNumber) {
     const setNumber = parseInt(currentSet.set_number);
     const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
     
+    // Check if answer set is locked
+    if (currentSet.is_locked === 'yes') {
+      console.error('[autoSaveDateTimeValue] Answer set is locked');
+      showNotification(i18n.t('answerSetIsLocked') || '当前答案组已锁定，无法编辑。请先解锁。', 'warning');
+      return;
+    }
+    
     if (isNaN(setNumber)) {
       console.error('[autoSaveDateTimeValue] Invalid set number:', currentSet.set_number);
       showNotification('Invalid answer set number', 'error');
@@ -14816,7 +14823,15 @@ async function saveInlineAnswer(reviewId, questionNumber) {
     
     console.log('[saveInlineAnswer] Current set:', currentSet);
     console.log('[saveInlineAnswer] Set number:', setNumber, 'Type:', typeof setNumber);
+    console.log('[saveInlineAnswer] Lock status:', currentSet.is_locked);
     console.log('[saveInlineAnswer] API URL:', `/api/answer-sets/${reviewId}/${setNumber}`);
+    
+    // Check if answer set is locked
+    if (currentSet.is_locked === 'yes') {
+      console.error('[saveInlineAnswer] Answer set is locked');
+      showNotification(i18n.t('answerSetIsLocked') || '当前答案组已锁定，无法编辑。请先解锁。', 'warning');
+      return;
+    }
     
     // Ensure setNumber is a valid integer
     const cleanSetNumber = parseInt(setNumber);
@@ -14903,7 +14918,15 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     
     console.log('[updateAnswerInSet] 当前答案组:', currentSet);
     console.log('[updateAnswerInSet] 组编号:', setNumber, 'Type:', typeof setNumber);
+    console.log('[updateAnswerInSet] 锁定状态:', currentSet.is_locked);
     console.log('[updateAnswerInSet] 准备调用 API，值为:', value, '(类型:', typeof value, ')');
+    
+    // Check if answer set is locked
+    if (currentSet.is_locked === 'yes') {
+      console.error('[updateAnswerInSet] Answer set is locked');
+      showNotification(i18n.t('answerSetIsLocked') || '当前答案组已锁定，无法编辑。请先解锁。', 'warning');
+      return;
+    }
     
     if (isNaN(setNumber)) {
       console.error('[updateAnswerInSet] Invalid set number:', currentSet.set_number);
@@ -14996,7 +15019,15 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     
     console.log('[updateMultipleChoiceInSet] 当前答案组:', currentSet);
     console.log('[updateMultipleChoiceInSet] 组编号:', setNumber, 'Type:', typeof setNumber);
+    console.log('[updateMultipleChoiceInSet] 锁定状态:', currentSet.is_locked);
     console.log('[updateMultipleChoiceInSet] 准备调用 API...');
+    
+    // Check if answer set is locked
+    if (currentSet.is_locked === 'yes') {
+      console.error('[updateMultipleChoiceInSet] Answer set is locked');
+      showNotification(i18n.t('answerSetIsLocked') || '当前答案组已锁定，无法编辑。请先解锁。', 'warning');
+      return;
+    }
     
     if (isNaN(setNumber)) {
       console.error('[updateMultipleChoiceInSet] Invalid set number:', currentSet.set_number);
@@ -15056,6 +15087,13 @@ async function updateTimeValueInSet(reviewId, questionNumber) {
     const currentSet = sets[index];
     const setNumber = parseInt(currentSet.set_number);
     const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
+    
+    // Check if answer set is locked
+    if (currentSet.is_locked === 'yes') {
+      console.error('[autoSaveDateTimeTitleAndAnswer] Answer set is locked');
+      showNotification(i18n.t('answerSetIsLocked') || '当前答案组已锁定，无法编辑。请先解锁。', 'warning');
+      return;
+    }
     
     if (isNaN(setNumber)) {
       console.error('[autoSaveDateTimeTitleAndAnswer] Invalid set number:', currentSet.set_number);
