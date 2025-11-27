@@ -6607,27 +6607,42 @@ async function showEditReview(id) {
             </div>
             ` : ''}
 
-            <!-- Allow Multiple Answers (Read-only Display) -->
+            <!-- Allow Multiple Answers (Editable by Creator) -->
             <div class="border-t pt-4 mt-4">
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                <i class="fas fa-list-check mr-1"></i>${i18n.t('allowMultipleAnswers') || '是否允许多个复盘答案'}
+                <i class="fas fa-list-check mr-1"></i>${i18n.t('allowMultipleAnswers') || '是否允许多个复盘答案'} ${isCreator ? '<span class="text-red-500">*</span>' : ''}
               </label>
-              <div class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
-                <div class="flex items-center">
-                  ${review.allow_multiple_answers === 'yes' ? `
-                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
-                    <span class="text-gray-800 font-medium">${i18n.t('yes') || '是'}</span>
-                    <span class="text-xs text-gray-600 ml-2">(${i18n.t('canCreateMultipleSets') || '可创建多个答案组'})</span>
-                  ` : `
-                    <i class="fas fa-times-circle text-red-600 mr-2"></i>
-                    <span class="text-gray-800 font-medium">${i18n.t('no') || '否'}</span>
-                    <span class="text-xs text-gray-600 ml-2">(${i18n.t('singleSetOnly') || '仅一个答案组'})</span>
-                  `}
-                </div>
+              <div class="flex space-x-4">
+                <label class="flex items-center ${!isCreator ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
+                  <input type="radio" name="allow_multiple_answers" value="yes" 
+                         ${review.allow_multiple_answers === 'yes' ? 'checked' : ''}
+                         ${!isCreator ? 'disabled' : ''}
+                         class="mr-2 text-indigo-600 focus:ring-indigo-500"
+                         onchange="handleAllowMultipleAnswersChange(${id})">
+                  <span class="text-sm text-gray-700">
+                    <i class="fas fa-check-circle text-green-600 mr-1"></i>${i18n.t('yes') || '是'}
+                    <span class="text-xs text-gray-500 ml-1">(${i18n.t('canCreateMultipleSets') || '可创建多个答案组'})</span>
+                  </span>
+                </label>
+                <label class="flex items-center ${!isCreator ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
+                  <input type="radio" name="allow_multiple_answers" value="no" 
+                         ${review.allow_multiple_answers === 'no' || !review.allow_multiple_answers ? 'checked' : ''}
+                         ${!isCreator ? 'disabled' : ''}
+                         class="mr-2 text-indigo-600 focus:ring-indigo-500"
+                         onchange="handleAllowMultipleAnswersChange(${id})">
+                  <span class="text-sm text-gray-700">
+                    <i class="fas fa-times-circle text-red-600 mr-1"></i>${i18n.t('no') || '否'}
+                    <span class="text-xs text-gray-500 ml-1">(${i18n.t('singleSetOnly') || '仅一个答案组'})</span>
+                  </span>
+                </label>
               </div>
-              <p class="mt-1 text-xs text-gray-500">
-                <i class="fas fa-info-circle mr-1"></i>${i18n.t('allowMultipleAnswersCannotChange') || '此设置在创建时确定，不可更改'}
+              <p class="mt-2 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                <span class="text-xs text-gray-700">
+                  ${i18n.t('allowMultipleAnswersChangeWarning') || '修改此设置后将刷新页面以更新答案组管理功能的显示'}
+                </span>
               </p>
+              ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
             </div>
 
             <!-- Status -->
@@ -6662,7 +6677,7 @@ async function showEditReview(id) {
             <!-- End of Section 1: Header -->
 
             <!-- ========== Section 2: Answer Sets & Questions (Collapsible) ========== -->
-            <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <div class="border border-gray-200 rounded-lg overflow-hidden" id="answer-sets-section" style="${review.allow_multiple_answers === 'no' ? 'display: none;' : ''}">
               <button type="button" onclick="toggleSection('answers-section')" 
                       class="w-full flex justify-between items-center p-4 bg-green-50 hover:bg-green-100 transition-colors">
                 <h3 class="text-lg font-semibold text-green-900">
@@ -6674,7 +6689,7 @@ async function showEditReview(id) {
                 <div class="p-6 space-y-4 bg-white">
 
             <!-- Answer Sets Management (Phase 1) -->
-            <div class="border-t pt-6 mb-6">
+            <div class="border-t pt-6 mb-6" id="answer-sets-management" style="${review.allow_multiple_answers === 'no' ? 'display: none;' : ''}">
               <div class="mb-4">
                 <h3 class="text-lg font-medium text-gray-800 mb-2">
                   <i class="fas fa-layer-group mr-2"></i>${i18n.t('answerSetsManagement') || '答案组管理'}
@@ -7023,6 +7038,9 @@ async function showEditReview(id) {
       document.getElementById('edit-scheduled-at')?.addEventListener('change', debouncedSave);
       document.getElementById('edit-location')?.addEventListener('input', debouncedSave);
       document.getElementById('edit-reminder-minutes')?.addEventListener('change', debouncedSave);
+      
+      // Note: allow_multiple_answers has its own handler (handleAllowMultipleAnswersChange)
+      // that saves and refreshes the page, so no need for auto-save here
     }
     
     // ========== FIX: Initialize team selection visibility based on current owner_type ==========
@@ -7588,6 +7606,9 @@ async function handleSaveAndExitReview(id) {
     const location = document.getElementById('edit-location').value || null;
     const reminderMinutes = parseInt(document.getElementById('edit-reminder-minutes').value) || 60;
     
+    // Get allow_multiple_answers field
+    const allowMultipleAnswers = document.querySelector('input[name="allow_multiple_answers"]:checked')?.value || 'yes';
+    
     data = {
       title,
       description: description || null,
@@ -7597,6 +7618,7 @@ async function handleSaveAndExitReview(id) {
       scheduled_at: scheduledAt,
       location: location,
       reminder_minutes: reminderMinutes,
+      allow_multiple_answers: allowMultipleAnswers,
       answers
     };
   } else {
@@ -7668,6 +7690,51 @@ async function handleSaveAndExitReview(id) {
     // Release the save lock on error
     window.isSavingAndExiting = false;
     console.log('[handleSaveAndExitReview] 保存失败，释放保存锁');
+    
+    const errorMessage = error.response?.data?.error || error.message || '未知错误';
+    showNotification(
+      i18n.t('operationFailed') + ': ' + errorMessage,
+      'error'
+    );
+  }
+}
+
+// Handle allow_multiple_answers change - save and refresh
+async function handleAllowMultipleAnswersChange(reviewId) {
+  try {
+    console.log('[handleAllowMultipleAnswersChange] 检测到 allow_multiple_answers 改变');
+    
+    // Get current value
+    const allowMultipleAnswers = document.querySelector('input[name="allow_multiple_answers"]:checked')?.value || 'yes';
+    console.log('[handleAllowMultipleAnswersChange] 新值:', allowMultipleAnswers);
+    
+    // Show loading notification
+    showNotification(
+      i18n.t('savingChanges') || '正在保存更改...',
+      'info'
+    );
+    
+    // Save the change
+    const response = await axios.put(`/api/reviews/${reviewId}`, {
+      allow_multiple_answers: allowMultipleAnswers
+    });
+    
+    console.log('[handleAllowMultipleAnswersChange] 保存成功，准备刷新页面');
+    
+    // Show success notification
+    showNotification(
+      i18n.t('savedSuccessfully') || '保存成功，正在刷新页面...',
+      'success'
+    );
+    
+    // Refresh the page after a short delay
+    setTimeout(() => {
+      console.log('[handleAllowMultipleAnswersChange] 刷新页面');
+      showEditReview(reviewId);
+    }, 800);
+    
+  } catch (error) {
+    console.error('[handleAllowMultipleAnswersChange] 保存失败:', error);
     
     const errorMessage = error.response?.data?.error || error.message || '未知错误';
     showNotification(
