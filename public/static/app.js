@@ -14251,8 +14251,14 @@ async function autoSaveTimeValue(reviewId, questionNumber) {
     
     // Update current answer set's datetime_value
     const currentSet = sets[index];
-    const setNumber = currentSet.set_number;
+    const setNumber = parseInt(currentSet.set_number);
     const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
+    
+    if (isNaN(setNumber)) {
+      console.error('[autoSaveDateTimeValue] Invalid set number:', currentSet.set_number);
+      showNotification('Invalid answer set number', 'error');
+      return;
+    }
     
     // Call API to update the datetime_value in current set
     await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
@@ -14792,6 +14798,14 @@ async function saveInlineAnswer(reviewId, questionNumber) {
     const sets = window.currentAnswerSets || [];
     const index = window.currentSetIndex || 0;
     
+    console.log('[saveInlineAnswer] Debug info:', {
+      reviewId,
+      questionNumber,
+      setsLength: sets.length,
+      currentIndex: index,
+      currentAnswerSets: sets
+    });
+    
     if (sets.length === 0) {
       showNotification('No answer set found', 'error');
       return;
@@ -14800,11 +14814,23 @@ async function saveInlineAnswer(reviewId, questionNumber) {
     const currentSet = sets[index];
     const setNumber = currentSet.set_number;
     
+    console.log('[saveInlineAnswer] Current set:', currentSet);
+    console.log('[saveInlineAnswer] Set number:', setNumber, 'Type:', typeof setNumber);
+    console.log('[saveInlineAnswer] API URL:', `/api/answer-sets/${reviewId}/${setNumber}`);
+    
+    // Ensure setNumber is a valid integer
+    const cleanSetNumber = parseInt(setNumber);
+    if (isNaN(cleanSetNumber)) {
+      console.error('[saveInlineAnswer] Invalid set number:', setNumber);
+      showNotification('Invalid answer set number', 'error');
+      return;
+    }
+    
     // For all question types, just save the answer text
     let answerData = answer;
     
     // Call API to update the answer in current set
-    const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
+    const response = await axios.put(`/api/answer-sets/${reviewId}/${cleanSetNumber}`, {
       answers: {
         [questionNumber]: answerData
       }
@@ -14873,11 +14899,17 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     }
     
     const currentSet = sets[index];
-    const setNumber = currentSet.set_number;
+    const setNumber = parseInt(currentSet.set_number);
     
     console.log('[updateAnswerInSet] 当前答案组:', currentSet);
-    console.log('[updateAnswerInSet] 组编号:', setNumber);
+    console.log('[updateAnswerInSet] 组编号:', setNumber, 'Type:', typeof setNumber);
     console.log('[updateAnswerInSet] 准备调用 API，值为:', value, '(类型:', typeof value, ')');
+    
+    if (isNaN(setNumber)) {
+      console.error('[updateAnswerInSet] Invalid set number:', currentSet.set_number);
+      showNotification('Invalid answer set number', 'error');
+      return;
+    }
     
     // V6.7.0: Allow empty string to be saved (user wants to clear the answer)
     // Call API to update the answer in current set
@@ -14960,11 +14992,17 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     }
     
     const currentSet = sets[index];
-    const setNumber = currentSet.set_number;
+    const setNumber = parseInt(currentSet.set_number);
     
     console.log('[updateMultipleChoiceInSet] 当前答案组:', currentSet);
-    console.log('[updateMultipleChoiceInSet] 组编号:', setNumber);
+    console.log('[updateMultipleChoiceInSet] 组编号:', setNumber, 'Type:', typeof setNumber);
     console.log('[updateMultipleChoiceInSet] 准备调用 API...');
+    
+    if (isNaN(setNumber)) {
+      console.error('[updateMultipleChoiceInSet] Invalid set number:', currentSet.set_number);
+      showNotification('Invalid answer set number', 'error');
+      return;
+    }
     
     // Call API to update the answer in current set
     const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
@@ -15016,8 +15054,14 @@ async function updateTimeValueInSet(reviewId, questionNumber) {
     }
     
     const currentSet = sets[index];
-    const setNumber = currentSet.set_number;
+    const setNumber = parseInt(currentSet.set_number);
     const currentAnswer = currentSet.answers.find(a => a.question_number === questionNumber);
+    
+    if (isNaN(setNumber)) {
+      console.error('[autoSaveDateTimeTitleAndAnswer] Invalid set number:', currentSet.set_number);
+      showNotification('Invalid answer set number', 'error');
+      return;
+    }
     
     // Call API to update the datetime_value in current set
     const response = await axios.put(`/api/answer-sets/${reviewId}/${setNumber}`, {
@@ -20443,7 +20487,13 @@ async function toggleCurrentAnswerSetLock(reviewId) {
     
     const isLocked = currentSet.is_locked === 'yes';
     const action = isLocked ? 'unlock' : 'lock';
-    const setNumber = currentSet.set_number;
+    const setNumber = parseInt(currentSet.set_number);
+    
+    if (isNaN(setNumber)) {
+      console.error('[toggleCurrentAnswerSetLock] Invalid set number:', currentSet.set_number);
+      showNotification('Invalid answer set number', 'error');
+      return;
+    }
     
     // Confirm action
     const confirmMessage = isLocked
@@ -20514,7 +20564,14 @@ async function deleteCurrentAnswerSet(reviewId) {
       return;
     }
     
-    const setNumber = currentSet.set_number;
+    const setNumber = parseInt(currentSet.set_number);
+    
+    if (isNaN(setNumber)) {
+      console.error('[deleteCurrentAnswerSet] Invalid set number:', currentSet.set_number);
+      showNotification('Invalid answer set number', 'error');
+      return;
+    }
+    
     const totalSets = window.currentAnswerSets.length;
     const isSingleSet = totalSets === 1;
     const allowMultipleAnswers = window.currentEditReview?.allow_multiple_answers === 'yes';
