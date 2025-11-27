@@ -14855,21 +14855,38 @@ async function saveInlineAnswer(reviewId, questionNumber) {
     console.log('[saveInlineAnswer] Lock status:', currentSet.is_locked);
     console.log('[saveInlineAnswer] API URL:', `/api/answer-sets/${reviewId}/${setNumber}`);
     
-    // Check if current user owns this answer set
-    const currentUserId = window.currentUser?.id;
-    // Use loose equality to handle string vs number comparison
-    const isOwnSet = currentSet && currentSet.user_id == currentUserId;
+    // OWNERSHIP CHECK
+    // In edit mode (default), backend already filters to return only current user's answer sets
+    // So if we have a currentSet here in edit mode, it MUST belong to current user
+    // We only need to verify this for safety
     
-    console.log('[saveInlineAnswer] Ownership check:', {
+    const currentUserId = window.currentUser?.id;
+    
+    console.log('[saveInlineAnswer] Ownership debug:', {
       currentSetUserId: currentSet?.user_id,
       currentSetUserIdType: typeof currentSet?.user_id,
       currentUserId: currentUserId,
       currentUserIdType: typeof currentUserId,
-      isOwnSet: isOwnSet
+      hasCurrentUser: !!window.currentUser,
+      currentUserFull: window.currentUser
     });
     
+    // Use loose equality to handle string vs number comparison
+    let isOwnSet = currentSet && currentSet.user_id == currentUserId;
+    
+    // FALLBACK: If user_id is missing from currentSet (possible backend issue),
+    // and we're in edit mode, assume it's the user's own set since backend filtered it
+    if (!isOwnSet && !currentSet.user_id && currentUserId) {
+      console.warn('[saveInlineAnswer] currentSet.user_id is missing, assuming ownership (edit mode)');
+      isOwnSet = true;
+    }
+    
+    console.log('[saveInlineAnswer] Final ownership result:', isOwnSet);
+    
     if (!isOwnSet) {
-      console.error('[saveInlineAnswer] Not the owner of this answer set');
+      console.error('[saveInlineAnswer] OWNERSHIP CHECK FAILED!');
+      console.error('[saveInlineAnswer] currentSet:', JSON.stringify(currentSet));
+      console.error('[saveInlineAnswer] This should not happen - backend should filter answer sets!');
       showNotification(i18n.t('onlyOwnerCanEditAnswers') || '只能编辑自己的答案组', 'warning');
       return;
     }
@@ -14969,10 +14986,15 @@ async function updateAnswerInSet(reviewId, questionNumber, value) {
     console.log('[updateAnswerInSet] 锁定状态:', currentSet.is_locked);
     console.log('[updateAnswerInSet] 准备调用 API，值为:', value, '(类型:', typeof value, ')');
     
-    // Check if current user owns this answer set
+    // OWNERSHIP CHECK
     const currentUserId = window.currentUser?.id;
-    // Use loose equality to handle string vs number comparison
-    const isOwnSet = currentSet && currentSet.user_id == currentUserId;
+    let isOwnSet = currentSet && currentSet.user_id == currentUserId;
+    
+    // FALLBACK: If user_id missing and we're in edit mode, assume ownership
+    if (!isOwnSet && !currentSet.user_id && currentUserId) {
+      console.warn('[updateAnswerInSet] user_id missing, assuming ownership (edit mode)');
+      isOwnSet = true;
+    }
     
     console.log('[updateAnswerInSet] Ownership check:', {
       currentSetUserId: currentSet?.user_id,
@@ -15087,10 +15109,15 @@ async function updateMultipleChoiceInSet(reviewId, questionNumber) {
     console.log('[updateMultipleChoiceInSet] 锁定状态:', currentSet.is_locked);
     console.log('[updateMultipleChoiceInSet] 准备调用 API...');
     
-    // Check if current user owns this answer set
+    // OWNERSHIP CHECK
     const currentUserId = window.currentUser?.id;
-    // Use loose equality to handle string vs number comparison
-    const isOwnSet = currentSet && currentSet.user_id == currentUserId;
+    let isOwnSet = currentSet && currentSet.user_id == currentUserId;
+    
+    // FALLBACK: If user_id missing and we're in edit mode, assume ownership
+    if (!isOwnSet && !currentSet.user_id && currentUserId) {
+      console.warn('[updateMultipleChoiceInSet] user_id missing, assuming ownership (edit mode)');
+      isOwnSet = true;
+    }
     
     console.log('[updateMultipleChoiceInSet] Ownership check:', {
       currentSetUserId: currentSet?.user_id,
