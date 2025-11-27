@@ -970,6 +970,13 @@ reviews.get('/:id', async (c) => {
   try {
     const user = c.get('user') as UserPayload;
     const reviewId = c.req.param('id');
+    
+    // Validate user object
+    if (!user || !user.id) {
+      console.error('[GET REVIEW] User object missing or invalid:', user);
+      return c.json({ error: 'Unauthorized - user not authenticated' }, 401);
+    }
+    
     const lang = getLanguage(c);
 
     console.log('[GET REVIEW] Starting request:', { reviewId, userId: user.id, lang });

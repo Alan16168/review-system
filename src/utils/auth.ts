@@ -32,8 +32,12 @@ export function generateToken(user: UserPayload, jwtSecret?: string): string {
 export function verifyToken(token: string, jwtSecret?: string): UserPayload | null {
   try {
     const secret = jwtSecret || getJwtSecret();
-    return jwt.verify(token, secret) as UserPayload;
+    console.log('[VERIFY_TOKEN] Using JWT secret:', secret ? 'Present' : 'Missing');
+    const decoded = jwt.verify(token, secret) as UserPayload;
+    console.log('[VERIFY_TOKEN] Token verified successfully for user:', decoded.id);
+    return decoded;
   } catch (error) {
+    console.error('[VERIFY_TOKEN] Token verification failed:', error instanceof Error ? error.message : String(error));
     return null;
   }
 }
