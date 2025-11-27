@@ -6617,8 +6617,7 @@ async function showEditReview(id) {
                   <input type="radio" name="allow_multiple_answers" value="yes" 
                          ${review.allow_multiple_answers === 'yes' ? 'checked' : ''}
                          ${!isCreator ? 'disabled' : ''}
-                         class="mr-2 text-indigo-600 focus:ring-indigo-500"
-                         onchange="handleAllowMultipleAnswersChange(${id})">
+                         class="mr-2 text-indigo-600 focus:ring-indigo-500">
                   <span class="text-sm text-gray-700">
                     <i class="fas fa-check-circle text-green-600 mr-1"></i>${i18n.t('yes') || '是'}
                     <span class="text-xs text-gray-500 ml-1">(${i18n.t('canCreateMultipleSets') || '可创建多个答案组'})</span>
@@ -6628,18 +6627,17 @@ async function showEditReview(id) {
                   <input type="radio" name="allow_multiple_answers" value="no" 
                          ${review.allow_multiple_answers === 'no' || !review.allow_multiple_answers ? 'checked' : ''}
                          ${!isCreator ? 'disabled' : ''}
-                         class="mr-2 text-indigo-600 focus:ring-indigo-500"
-                         onchange="handleAllowMultipleAnswersChange(${id})">
+                         class="mr-2 text-indigo-600 focus:ring-indigo-500">
                   <span class="text-sm text-gray-700">
                     <i class="fas fa-times-circle text-red-600 mr-1"></i>${i18n.t('no') || '否'}
                     <span class="text-xs text-gray-500 ml-1">(${i18n.t('singleSetOnly') || '仅一个答案组'})</span>
                   </span>
                 </label>
               </div>
-              <p class="mt-2 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg">
-                <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
+              <p class="mt-2 p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                <i class="fas fa-info-circle text-blue-600 mr-2"></i>
                 <span class="text-xs text-gray-700">
-                  ${i18n.t('allowMultipleAnswersChangeWarning') || '修改此设置后将刷新页面以更新答案组管理功能的显示'}
+                  ${i18n.t('allowMultipleAnswersChangeHint') || '修改此设置后，请点击"保存并退出"按钮保存更改。保存后页面将刷新以更新答案组管理功能。'}
                 </span>
               </p>
               ${!isCreator ? `<p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>${i18n.t('onlyCreatorCanEdit') || '仅创建者可编辑'}</p>` : ''}
@@ -7609,6 +7607,16 @@ async function handleSaveAndExitReview(id) {
     // Get allow_multiple_answers field
     const allowMultipleAnswers = document.querySelector('input[name="allow_multiple_answers"]:checked')?.value || 'yes';
     
+    // Check if allow_multiple_answers has changed
+    const originalAllowMultipleAnswers = window.currentEditReview?.allow_multiple_answers || 'yes';
+    const allowMultipleAnswersChanged = allowMultipleAnswers !== originalAllowMultipleAnswers;
+    
+    console.log('[handleSaveAndExitReview] allow_multiple_answers检查:', {
+      original: originalAllowMultipleAnswers,
+      new: allowMultipleAnswers,
+      changed: allowMultipleAnswersChanged
+    });
+    
     data = {
       title,
       description: description || null,
@@ -7646,11 +7654,21 @@ async function handleSaveAndExitReview(id) {
       second: '2-digit'
     });
     
+    // Check if we need to refresh the edit page (when allow_multiple_answers changed)
+    const needsRefresh = isCreator && allowMultipleAnswersChanged;
+    
     // Show success notification
-    showNotification(
-      i18n.t('saveAndExitSuccess') || '保存成功，正在退出编辑...',
-      'success'
-    );
+    if (needsRefresh) {
+      showNotification(
+        i18n.t('saveSuccessRefreshing') || '保存成功！由于修改了答案组设置，正在刷新页面...',
+        'success'
+      );
+    } else {
+      showNotification(
+        i18n.t('saveAndExitSuccess') || '保存成功，正在退出编辑...',
+        'success'
+      );
+    }
     
     // Clear newly created draft flag on successful save
     if (window.newlyCreatedDraftId == id) {
@@ -7658,26 +7676,39 @@ async function handleSaveAndExitReview(id) {
       console.log('[handleSaveAndExitReview] 已清除新建草稿标记');
     }
     
-    console.log('[handleSaveAndExitReview] 准备返回复盘列表...');
+    console.log('[handleSaveAndExitReview] 准备' + (needsRefresh ? '刷新编辑页面' : '返回复盘列表') + '...');
     
     // Navigate immediately after save (shorter delay than original)
     setTimeout(() => {
       try {
-        console.log('[handleSaveAndExitReview] 执行返回复盘列表...');
         // Release the save lock before navigation
         window.isSavingAndExiting = false;
         console.log('[handleSaveAndExitReview] 释放保存锁');
         
-        showReviews(); // Return to My Reviews page
-        window.scrollTo(0, 0); // Scroll to top
-        console.log('[handleSaveAndExitReview] 已返回复盘列表');
+        if (needsRefresh) {
+          // If allow_multiple_answers changed, refresh the edit page
+          console.log('[handleSaveAndExitReview] 执行刷新编辑页面...');
+          showEditReview(id);
+          window.scrollTo(0, 0); // Scroll to top
+          console.log('[handleSaveAndExitReview] 已刷新编辑页面');
+        } else {
+          // Otherwise, return to My Reviews page
+          console.log('[handleSaveAndExitReview] 执行返回复盘列表...');
+          showReviews();
+          window.scrollTo(0, 0); // Scroll to top
+          console.log('[handleSaveAndExitReview] 已返回复盘列表');
+        }
       } catch (navError) {
-        console.error('[handleSaveAndExitReview] 返回列表失败:', navError);
+        console.error('[handleSaveAndExitReview] 导航失败:', navError);
         // Release the save lock even on error
         window.isSavingAndExiting = false;
         // Force navigation even if error
-        window.location.hash = '#reviews';
-        location.reload();
+        if (needsRefresh) {
+          location.reload();
+        } else {
+          window.location.hash = '#reviews';
+          location.reload();
+        }
       }
     }, 500); // Shorter delay for immediate exit
     
@@ -7690,51 +7721,6 @@ async function handleSaveAndExitReview(id) {
     // Release the save lock on error
     window.isSavingAndExiting = false;
     console.log('[handleSaveAndExitReview] 保存失败，释放保存锁');
-    
-    const errorMessage = error.response?.data?.error || error.message || '未知错误';
-    showNotification(
-      i18n.t('operationFailed') + ': ' + errorMessage,
-      'error'
-    );
-  }
-}
-
-// Handle allow_multiple_answers change - save and refresh
-async function handleAllowMultipleAnswersChange(reviewId) {
-  try {
-    console.log('[handleAllowMultipleAnswersChange] 检测到 allow_multiple_answers 改变');
-    
-    // Get current value
-    const allowMultipleAnswers = document.querySelector('input[name="allow_multiple_answers"]:checked')?.value || 'yes';
-    console.log('[handleAllowMultipleAnswersChange] 新值:', allowMultipleAnswers);
-    
-    // Show loading notification
-    showNotification(
-      i18n.t('savingChanges') || '正在保存更改...',
-      'info'
-    );
-    
-    // Save the change
-    const response = await axios.put(`/api/reviews/${reviewId}`, {
-      allow_multiple_answers: allowMultipleAnswers
-    });
-    
-    console.log('[handleAllowMultipleAnswersChange] 保存成功，准备刷新页面');
-    
-    // Show success notification
-    showNotification(
-      i18n.t('savedSuccessfully') || '保存成功，正在刷新页面...',
-      'success'
-    );
-    
-    // Refresh the page after a short delay
-    setTimeout(() => {
-      console.log('[handleAllowMultipleAnswersChange] 刷新页面');
-      showEditReview(reviewId);
-    }, 800);
-    
-  } catch (error) {
-    console.error('[handleAllowMultipleAnswersChange] 保存失败:', error);
     
     const errorMessage = error.response?.data?.error || error.message || '未知错误';
     showNotification(
