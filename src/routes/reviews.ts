@@ -1317,7 +1317,7 @@ reviews.put('/:id', async (c) => {
       return c.json({ error: 'Access denied. You do not have permission to access this review.' }, 403);
     }
 
-    const { title, description, time_type, answers, status, owner_type, scheduled_at, location, reminder_minutes } = body;
+    const { title, description, time_type, answers, status, owner_type, scheduled_at, location, reminder_minutes, allow_multiple_answers } = body;
     
     // Check if user is the creator or admin
     const isCreator = review.user_id === user.id;
@@ -1325,7 +1325,7 @@ reviews.put('/:id', async (c) => {
     const canModifyBasicProperties = isCreator || isAdmin;
 
     // Update basic properties if user is creator or admin
-    if (canModifyBasicProperties && (title || description || time_type || status || owner_type || scheduled_at !== undefined || location !== undefined || reminder_minutes !== undefined)) {
+    if (canModifyBasicProperties && (title || description || time_type || status || owner_type || scheduled_at !== undefined || location !== undefined || reminder_minutes !== undefined || allow_multiple_answers !== undefined)) {
       // Validate and map owner_type if provided
       let validOwnerType = null;
       if (owner_type) {
