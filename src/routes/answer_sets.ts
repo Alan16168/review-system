@@ -177,7 +177,6 @@ answerSets.post('/:reviewId', async (c: Context) => {
       
       // Double check: ensure no undefined values before binding
       const bindParams = [
-        reviewId,          // Add review_id
         setId,
         parsedQuestionNum,
         answerValue,
@@ -198,8 +197,8 @@ answerSets.post('/:reviewId', async (c: Context) => {
       
       const query = c.env.DB.prepare(`
         INSERT INTO review_answers 
-        (review_id, answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        (answer_set_id, question_number, answer, datetime_value, datetime_title, datetime_answer)
+        VALUES (?, ?, ?, ?, ?, ?)
       `).bind(...bindParams);
       
       insertPromises.push(query.run());
