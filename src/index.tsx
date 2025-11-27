@@ -137,6 +137,179 @@ app.get('/mobile', (c) => {
 });
 
 // Diagnostic page - serve directly
+// Debug tool - inline HTML (Cloudflare Workers doesn't support file system)
+// Support both /debug and /debug.html
+const debugTool = (c: any) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review System - 快速诊断</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-2xl w-full bg-white rounded-lg shadow-xl p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+            🔍 快速诊断工具
+        </h1>
+        
+        <div class="space-y-4">
+            <button onclick="quickFix()" class="w-full bg-red-600 text-white px-6 py-4 rounded-lg hover:bg-red-700 text-lg font-bold">
+                🚀 一键修复 (清除缓存并重新登录)
+            </button>
+            
+            <button onclick="checkToken()" class="w-full bg-blue-600 text-white px-6 py-4 rounded-lg hover:bg-blue-700 text-lg font-bold">
+                🔑 检查Token状态
+            </button>
+            
+            <button onclick="testAPI()" class="w-full bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 text-lg font-bold">
+                🧪 测试Review 275
+            </button>
+        </div>
+        
+        <div id="result" class="mt-6"></div>
+    </div>
+    
+    <script>
+        function quickFix() {
+            if (confirm('这将清除所有本地数据并跳转到登录页面。确定继续吗？')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('✅ 已清除所有数据！\\n\\n现在请重新登录。');
+                window.location.href = '/';
+            }
+        }
+        
+        function checkToken() {
+            const result = document.getElementById('result');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            
+            if (!token) {
+                result.innerHTML = \`
+                    <div class="p-4 bg-red-100 border-l-4 border-red-500 rounded">
+                        <p class="font-bold text-red-800">❌ 未找到Token</p>
+                        <p class="text-red-700 mt-2">请先登录系统</p>
+                        <a href="/" class="inline-block mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            前往登录
+                        </a>
+                    </div>
+                \`;
+                return;
+            }
+            
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) throw new Error('Token格式无效');
+                
+                const payload = JSON.parse(atob(parts[1]));
+                const now = Math.floor(Date.now() / 1000);
+                const isExpired = payload.exp && payload.exp < now;
+                
+                result.innerHTML = \`
+                    <div class="p-4 \${isExpired ? 'bg-red-100 border-red-500' : 'bg-green-100 border-green-500'} border-l-4 rounded">
+                        <p class="font-bold \${isExpired ? 'text-red-800' : 'text-green-800'}">
+                            \${isExpired ? '❌ Token已过期' : '✅ Token有效'}
+                        </p>
+                        <div class="mt-2 text-sm">
+                            <p><strong>用户:</strong> \${payload.username} (ID: \${payload.id})</p>
+                            <p><strong>邮箱:</strong> \${payload.email}</p>
+                            \${payload.exp ? \`<p><strong>过期时间:</strong> \${new Date(payload.exp * 1000).toLocaleString()}</p>\` : ''}
+                        </div>
+                        \${isExpired ? \`
+                            <button onclick="quickFix()" class="mt-3 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                                重新登录
+                            </button>
+                        \` : ''}
+                    </div>
+                \`;
+            } catch (error) {
+                result.innerHTML = \`
+                    <div class="p-4 bg-red-100 border-l-4 border-red-500 rounded">
+                        <p class="font-bold text-red-800">❌ Token无效</p>
+                        <p class="text-red-700 mt-2">\${error.message}</p>
+                        <button onclick="quickFix()" class="mt-3 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                            清除并重新登录
+                        </button>
+                    </div>
+                \`;
+            }
+        }
+        
+        async function testAPI() {
+            const result = document.getElementById('result');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            
+            if (!token) {
+                result.innerHTML = \`
+                    <div class="p-4 bg-red-100 border-l-4 border-red-500 rounded">
+                        <p class="font-bold text-red-800">❌ 请先检查Token</p>
+                    </div>
+                \`;
+                return;
+            }
+            
+            result.innerHTML = \`
+                <div class="p-4 bg-blue-100 border-l-4 border-blue-500 rounded">
+                    <p class="font-bold text-blue-800">🔄 正在测试...</p>
+                </div>
+            \`;
+            
+            try {
+                const response = await fetch('/api/reviews/275', {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.innerHTML = \`
+                        <div class="p-4 bg-green-100 border-l-4 border-green-500 rounded">
+                            <p class="font-bold text-green-800">✅ 测试成功！</p>
+                            <div class="mt-2 text-sm">
+                                <p><strong>标题:</strong> \${data.review?.title || 'N/A'}</p>
+                                <p><strong>问题:</strong> \${data.questions?.length || 0}个</p>
+                                <p><strong>状态:</strong> \${data.review?.status || 'N/A'}</p>
+                            </div>
+                            <a href="/" class="inline-block mt-3 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                                返回系统
+                            </a>
+                        </div>
+                    \`;
+                } else {
+                    result.innerHTML = \`
+                        <div class="p-4 bg-red-100 border-l-4 border-red-500 rounded">
+                            <p class="font-bold text-red-800">❌ 测试失败</p>
+                            <p class="text-red-700 mt-2">状态码: \${response.status}</p>
+                            <p class="text-red-700">错误: \${data.error || 'Unknown'}</p>
+                            \${response.status === 401 || response.status === 500 ? \`
+                                <button onclick="quickFix()" class="mt-3 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                                    一键修复
+                                </button>
+                            \` : ''}
+                        </div>
+                    \`;
+                }
+            } catch (error) {
+                result.innerHTML = \`
+                    <div class="p-4 bg-red-100 border-l-4 border-red-500 rounded">
+                        <p class="font-bold text-red-800">❌ 请求失败</p>
+                        <p class="text-red-700 mt-2">\${error.message}</p>
+                    </div>
+                \`;
+            }
+        }
+        
+        // Auto-check on load
+        window.addEventListener('load', checkToken);
+    </script>
+</body>
+</html>`);
+};
+
+// Register debug tool routes
+app.get('/debug', debugTool);
+app.get('/debug.html', debugTool);
+
 app.get('/diagnostic.html', (c) => {
   return c.html(`<!DOCTYPE html>
 <html lang="zh-CN">

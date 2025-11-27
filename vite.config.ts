@@ -5,7 +5,16 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [
-    build(),
+    build({
+      exclude: [
+        '/diagnostic.html',
+        '/debug.html',
+        '/favicon.ico',
+        '/marketplace-admin.html',
+        '/my-documents.html',
+        '/static/*'
+      ]
+    }),
     devServer({
       adapter,
       entry: 'src/index.tsx'
