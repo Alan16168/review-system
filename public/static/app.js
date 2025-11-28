@@ -14472,13 +14472,29 @@ function renderAnswerSet(reviewId) {
   const currentSet = sets[index];
   const questions = window.currentEditQuestions || [];
   
+  // Check if current answer set is from a former team member
+  const isFormerMember = currentSet && currentSet.is_current_team_member === false;
+  
   // Update navigation display
   updateAnswerSetNavigation(reviewId, index + 1, sets.length);
+  
+  // Apply red background styling to all question containers if former member
+  const questionsContainer = document.querySelector('.border-t.pt-6');
+  if (questionsContainer) {
+    if (isFormerMember) {
+      questionsContainer.classList.add('bg-red-50', 'border-red-200', 'rounded-lg', 'p-4');
+      questionsContainer.classList.remove('bg-white');
+    } else {
+      questionsContainer.classList.remove('bg-red-50', 'border-red-200', 'rounded-lg', 'p-4');
+      questionsContainer.classList.add('bg-white');
+    }
+  }
   
   // Set flag to prevent auto-save during rendering
   window.isRenderingAnswerSet = true;
   console.log('[renderAnswerSet] Starting render, flag set to TRUE, set index:', index);
   console.log('[renderAnswerSet] Current set:', currentSet);
+  console.log('[renderAnswerSet] isFormerMember:', isFormerMember);
   console.log('[renderAnswerSet] Questions count:', questions.length);
   console.log('[renderAnswerSet] Questions:', questions);
   
@@ -14508,22 +14524,25 @@ function renderAnswerSet(reviewId) {
           ${options.map((opt, idx) => {
             const letter = String.fromCharCode(65 + idx);
             const isChecked = answerText === letter;
+            const bgColor = isFormerMember ? (isChecked ? 'bg-red-100 border-red-400' : 'bg-red-50 border-red-200') : (isChecked ? 'bg-blue-50 border-blue-400' : 'border-gray-300');
+            const textColor = isFormerMember ? 'text-red-900' : 'text-gray-900';
             return `
-              <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer ${isChecked ? 'bg-blue-50 border-blue-400' : ''}">
+              <label class="flex items-start p-3 border rounded-lg ${isFormerMember ? 'cursor-default' : 'hover:bg-gray-50 cursor-pointer'} ${bgColor}">
                 <input type="radio" 
                        name="set-question${q.question_number}" 
                        value="${letter}" 
                        ${isChecked ? 'checked' : ''}
+                       ${isFormerMember ? 'disabled' : ''}
                        data-question-number="${q.question_number}"
                        data-review-id="${reviewId}"
                        class="mt-1 mr-3 flex-shrink-0 answer-set-radio">
-                <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
+                <span class="text-sm ${textColor}">${escapeHtml(opt)}</span>
               </label>
             `;
           }).join('')}
         </div>
         ${answer ? `
-          <p class="text-xs text-gray-500 mt-2">
+          <p class="text-xs ${isFormerMember ? 'text-red-600' : 'text-gray-500'} mt-2">
             <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
           </p>
         ` : ''}
@@ -14539,22 +14558,25 @@ function renderAnswerSet(reviewId) {
           ${options.map((opt, idx) => {
             const letter = String.fromCharCode(65 + idx);
             const isChecked = selectedLetters.includes(letter);
+            const bgColor = isFormerMember ? (isChecked ? 'bg-red-100 border-red-400' : 'bg-red-50 border-red-200') : (isChecked ? 'bg-blue-50 border-blue-400' : 'border-gray-300');
+            const textColor = isFormerMember ? 'text-red-900' : 'text-gray-900';
             return `
-              <label class="flex items-start p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer ${isChecked ? 'bg-blue-50 border-blue-400' : ''}">
+              <label class="flex items-start p-3 border rounded-lg ${isFormerMember ? 'cursor-default' : 'hover:bg-gray-50 cursor-pointer'} ${bgColor}">
                 <input type="checkbox" 
                        name="set-question${q.question_number}" 
                        value="${letter}" 
                        ${isChecked ? 'checked' : ''}
+                       ${isFormerMember ? 'disabled' : ''}
                        data-question-number="${q.question_number}"
                        data-review-id="${reviewId}"
                        class="mt-1 mr-3 flex-shrink-0 answer-set-checkbox">
-                <span class="text-sm text-gray-900">${escapeHtml(opt)}</span>
+                <span class="text-sm ${textColor}">${escapeHtml(opt)}</span>
               </label>
             `;
           }).join('')}
         </div>
         ${answer ? `
-          <p class="text-xs text-gray-500 mt-2">
+          <p class="text-xs ${isFormerMember ? 'text-red-600' : 'text-gray-500'} mt-2">
             <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
           </p>
         ` : ''}
@@ -14566,25 +14588,30 @@ function renderAnswerSet(reviewId) {
       
       let contentHtml = '';
       if (answerText) {
-        const editButtonHtml = !isLocked ? `
+        const editButtonHtml = !isLocked && !isFormerMember ? `
                 <button type="button" 
                         onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
                         class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
                   <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
                 </button>
               ` : '';
+        const bgColor = isFormerMember ? 'bg-red-100' : 'bg-blue-50';
+        const borderColor = isFormerMember ? 'border-red-500' : 'border-blue-500';
+        const textColor = isFormerMember ? 'text-red-900' : 'text-gray-700';
         contentHtml = `
             <div class="relative">
-              <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg ${isLocked ? '' : 'pr-20'}">
-                <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
+              <div class="p-3 ${bgColor} border-l-4 ${borderColor} rounded-r-lg ${isLocked || isFormerMember ? '' : 'pr-20'}">
+                <p class="text-sm ${textColor} whitespace-pre-wrap">${escapeHtml(answerText)}</p>
               </div>
               ${editButtonHtml}
             </div>
           `;
       } else {
-        if (isLocked) {
+        if (isLocked || isFormerMember) {
+          const noAnswerBg = isFormerMember ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-300';
+          const noAnswerText = isFormerMember ? 'text-red-400' : 'text-gray-400';
           contentHtml = `
-              <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <div class="${noAnswerText} text-sm italic p-3 ${noAnswerBg} rounded-lg border-2 border-dashed">
                 <i class="fas fa-lock mr-1"></i>${i18n.t('noAnswerInThisSet')}
               </div>
             `;
@@ -14599,7 +14626,7 @@ function renderAnswerSet(reviewId) {
       }
       
       const timestampHtml = answer ? `
-            <p class="text-xs text-gray-500">
+            <p class="text-xs ${isFormerMember ? 'text-red-600' : 'text-gray-500'}">
               <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
             </p>
           ` : '';
@@ -14624,18 +14651,22 @@ function renderAnswerSet(reviewId) {
       const isLocked = currentSet.is_locked === 'yes';
       console.log('[renderAnswerSet] default text - Question:', q.question_number, 'isLocked:', isLocked, 'currentSet.is_locked:', currentSet.is_locked, 'answerText:', answerText ? 'exists' : 'empty');
       if (answerText) {
-        const editButtonHtml = !isLocked ? `
+        const editButtonHtml = !isLocked && !isFormerMember ? `
               <button type="button" 
                       onclick="editAnswerInSet(${reviewId}, ${q.question_number})"
                       class="absolute top-2 right-2 px-3 py-1 bg-white border border-indigo-300 rounded text-xs text-indigo-700 hover:bg-indigo-50 hover:border-indigo-500 transition-colors">
                 <i class="fas fa-edit mr-1"></i>${i18n.t('edit')}
               </button>
             ` : '';
+        const bgColor = isFormerMember ? 'bg-red-100' : 'bg-blue-50';
+        const borderColor = isFormerMember ? 'border-red-500' : 'border-blue-500';
+        const textColor = isFormerMember ? 'text-red-900' : 'text-gray-700';
+        const timestampColor = isFormerMember ? 'text-red-600' : 'text-gray-500';
         answerElement.innerHTML = `
           <div class="relative">
-            <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg ${isLocked ? '' : 'pr-20'}">
-              <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(answerText)}</p>
-              <p class="text-xs text-gray-500 mt-2">
+            <div class="p-3 ${bgColor} border-l-4 ${borderColor} rounded-r-lg ${isLocked || isFormerMember ? '' : 'pr-20'}">
+              <p class="text-sm ${textColor} whitespace-pre-wrap">${escapeHtml(answerText)}</p>
+              <p class="text-xs ${timestampColor} mt-2">
                 <i class="fas fa-clock mr-1"></i>${i18n.t('answeredAt')}: ${formatDate(answer.created_at)}
               </p>
             </div>
@@ -14643,9 +14674,11 @@ function renderAnswerSet(reviewId) {
           </div>
         `;
       } else {
-        if (isLocked) {
+        if (isLocked || isFormerMember) {
+          const noAnswerBg = isFormerMember ? 'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-300';
+          const noAnswerText = isFormerMember ? 'text-red-400' : 'text-gray-400';
           answerElement.innerHTML = `
-            <div class="text-gray-400 text-sm italic p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div class="${noAnswerText} text-sm italic p-3 ${noAnswerBg} rounded-lg border-2 border-dashed">
               <i class="fas fa-lock mr-1"></i>${i18n.t('noAnswerInThisSet')}
             </div>
           `;
