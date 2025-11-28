@@ -20804,7 +20804,7 @@ async function deleteCurrentAnswerSet(reviewId) {
     
     // Call API to delete
     const ownerId = currentSet?.user_id != null ? Number(currentSet.user_id) : null;
-    const deleteConfig: any = {
+    const deleteConfig = {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
