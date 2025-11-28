@@ -14377,7 +14377,7 @@ async function loadAnswerSets(reviewId, keepCurrentIndex = false, mode = 'edit')
   }
   if (reviewMeta) {
     if (reviewMeta.user_id !== undefined && reviewMeta.user_id !== null) {
-      window.currentEditReview.user_id = reviewMeta.user_id;
+      window.currentEditReview.user_id = Number(reviewMeta.user_id);
     }
     if (reviewMeta.allow_multiple_answers !== undefined && reviewMeta.allow_multiple_answers !== null) {
       window.currentEditReview.allow_multiple_answers = reviewMeta.allow_multiple_answers;
@@ -14387,14 +14387,21 @@ async function loadAnswerSets(reviewId, keepCurrentIndex = false, mode = 'edit')
     }
   }
   // Store lightweight meta for other components (fallback source)
+  const metaCreatorId = window.currentEditReview?.user_id ?? (reviewMeta.user_id != null ? Number(reviewMeta.user_id) : null) ?? window.answerSetsMeta?.review_creator_id ?? null;
   window.answerSetsMeta = {
-    review_creator_id: window.currentEditReview?.user_id ?? reviewMeta.user_id ?? window.answerSetsMeta?.review_creator_id ?? null,
+    review_creator_id: metaCreatorId,
     allow_multiple_answers: window.currentEditReview?.allow_multiple_answers ?? reviewMeta.allow_multiple_answers ?? window.answerSetsMeta?.allow_multiple_answers ?? 'yes',
     team_id: window.currentEditReview?.team_id ?? reviewMeta.team_id ?? window.answerSetsMeta?.team_id ?? null
   };
   
   // Sort answer sets by created_at in descending order (newest first)
   let sets = response.data.sets || [];
+  sets = sets.map(set => ({
+    ...set,
+    user_id: set.user_id != null ? Number(set.user_id) : set.user_id,
+    set_number: set.set_number != null ? Number(set.set_number) : set.set_number,
+    is_locked: set.is_locked || 'no'
+  }));
   sets.sort((a, b) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();
@@ -20848,21 +20855,25 @@ function updateAnswerSetLockButton(isLocked) {
   const currentUserId = window.currentUser?.id;
   let reviewCreatorId = window.currentEditReview?.user_id;
 
-  if (!reviewCreatorId && window.answerSetsMeta?.review_creator_id) {
+  if (reviewCreatorId == null && window.answerSetsMeta?.review_creator_id != null) {
     reviewCreatorId = window.answerSetsMeta.review_creator_id;
   }
-  if (!reviewCreatorId && window.currentReview?.user_id) {
+  if (reviewCreatorId == null && window.currentReview?.user_id != null) {
     reviewCreatorId = window.currentReview.user_id;
   }
-  if (!reviewCreatorId && window.currentReview?.created_by) {
+  if (reviewCreatorId == null && window.currentReview?.created_by != null) {
     reviewCreatorId = window.currentReview.created_by;
   }
-  if (!reviewCreatorId && window.currentReviewDetail?.user_id) {
+  if (reviewCreatorId == null && window.currentReviewDetail?.user_id != null) {
     reviewCreatorId = window.currentReviewDetail.user_id;
   }
 
+  const currentUserIdNum = currentUserId != null ? Number(currentUserId) : null;
+  const reviewCreatorIdNum = reviewCreatorId != null ? Number(reviewCreatorId) : null;
+  const currentSetOwnerId = currentSet?.user_id != null ? Number(currentSet.user_id) : null;
+
   // Fallback: if still missing, log for debugging
-  if (!reviewCreatorId) {
+  if (reviewCreatorIdNum == null) {
     console.warn('[updateAnswerSetLockButton] Could not determine review creator ID.', {
       currentEditReview: window.currentEditReview,
       answerSetsMeta: window.answerSetsMeta,
@@ -20872,9 +20883,9 @@ function updateAnswerSetLockButton(isLocked) {
   }
   
   // Check if current user is the review creator (not answer set owner)
-  const isReviewCreator = reviewCreatorId != null && currentUserId == reviewCreatorId;
+  const isReviewCreator = reviewCreatorIdNum != null && currentUserIdNum != null && reviewCreatorIdNum === currentUserIdNum;
   // Check if current user owns this answer set
-  const isOwnSet = currentSet && currentSet.user_id == currentUserId;
+  const isOwnSet = currentSetOwnerId != null && currentUserIdNum != null && currentSetOwnerId === currentUserIdNum;
   
   console.log('[updateAnswerSetLockButton] Permission check:', {
     currentUserId,
