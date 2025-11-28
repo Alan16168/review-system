@@ -36,12 +36,17 @@ answerSets.get('/:reviewId', async (c: Context) => {
 
     // First, get the review to check team_id
     const review = await c.env.DB.prepare(`
-      SELECT team_id FROM reviews WHERE id = ?
+      SELECT team_id, user_id, allow_multiple_answers
+      FROM reviews
+      WHERE id = ?
     `).bind(reviewId).first();
 
     if (!review) {
       return c.json({ error: 'Review not found' }, 404);
     }
+
+    const reviewCreatorId = review.user_id;
+    const allowMultipleAnswers = review.allow_multiple_answers || 'yes';
 
     // Get answer sets based on mode and review type
     let setsQuery;
@@ -111,7 +116,14 @@ answerSets.get('/:reviewId', async (c: Context) => {
       answers: answersBySet[set.id] || []
     }));
 
-    return c.json({ sets: result });
+    return c.json({
+      sets: result,
+      review: {
+        user_id: reviewCreatorId,
+        allow_multiple_answers: allowMultipleAnswers,
+        team_id: review.team_id
+      }
+    });
 
   } catch (error: any) {
     console.error('Error fetching answer sets:', error);

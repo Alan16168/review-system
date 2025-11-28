@@ -14369,6 +14369,29 @@ window.currentSetIndex = 0;
 async function loadAnswerSets(reviewId, keepCurrentIndex = false, mode = 'edit') {
   const response = await axios.get(`/api/answer-sets/${reviewId}?mode=${mode}`);
   const oldIndex = window.currentSetIndex || 0;
+
+  // Update review metadata (creator, allow_multiple_answers, team_id) for permission checks
+  const reviewMeta = response.data.review || {};
+  if (!window.currentEditReview) {
+    window.currentEditReview = {};
+  }
+  if (reviewMeta) {
+    if (reviewMeta.user_id !== undefined && reviewMeta.user_id !== null) {
+      window.currentEditReview.user_id = reviewMeta.user_id;
+    }
+    if (reviewMeta.allow_multiple_answers !== undefined && reviewMeta.allow_multiple_answers !== null) {
+      window.currentEditReview.allow_multiple_answers = reviewMeta.allow_multiple_answers;
+    }
+    if (reviewMeta.team_id !== undefined) {
+      window.currentEditReview.team_id = reviewMeta.team_id;
+    }
+  }
+  // Store lightweight meta for other components (fallback source)
+  window.answerSetsMeta = {
+    review_creator_id: window.currentEditReview?.user_id ?? reviewMeta.user_id ?? window.answerSetsMeta?.review_creator_id ?? null,
+    allow_multiple_answers: window.currentEditReview?.allow_multiple_answers ?? reviewMeta.allow_multiple_answers ?? window.answerSetsMeta?.allow_multiple_answers ?? 'yes',
+    team_id: window.currentEditReview?.team_id ?? reviewMeta.team_id ?? window.answerSetsMeta?.team_id ?? null
+  };
   
   // Sort answer sets by created_at in descending order (newest first)
   let sets = response.data.sets || [];
@@ -20823,12 +20846,44 @@ function updateAnswerSetLockButton(isLocked) {
   const index = window.currentSetIndex || 0;
   const currentSet = sets[index];
   const currentUserId = window.currentUser?.id;
-  const reviewCreatorId = window.currentEditReview?.user_id;
+  let reviewCreatorId = window.currentEditReview?.user_id;
+
+  if (!reviewCreatorId && window.answerSetsMeta?.review_creator_id) {
+    reviewCreatorId = window.answerSetsMeta.review_creator_id;
+  }
+  if (!reviewCreatorId && window.currentReview?.user_id) {
+    reviewCreatorId = window.currentReview.user_id;
+  }
+  if (!reviewCreatorId && window.currentReview?.created_by) {
+    reviewCreatorId = window.currentReview.created_by;
+  }
+  if (!reviewCreatorId && window.currentReviewDetail?.user_id) {
+    reviewCreatorId = window.currentReviewDetail.user_id;
+  }
+
+  // Fallback: if still missing, log for debugging
+  if (!reviewCreatorId) {
+    console.warn('[updateAnswerSetLockButton] Could not determine review creator ID.', {
+      currentEditReview: window.currentEditReview,
+      answerSetsMeta: window.answerSetsMeta,
+      currentReview: window.currentReview,
+      currentReviewDetail: window.currentReviewDetail
+    });
+  }
   
   // Check if current user is the review creator (not answer set owner)
-  const isReviewCreator = currentUserId == reviewCreatorId;
+  const isReviewCreator = reviewCreatorId != null && currentUserId == reviewCreatorId;
   // Check if current user owns this answer set
   const isOwnSet = currentSet && currentSet.user_id == currentUserId;
+  
+  console.log('[updateAnswerSetLockButton] Permission check:', {
+    currentUserId,
+    reviewCreatorId,
+    isReviewCreator,
+    currentSetUserId: currentSet?.user_id,
+    isOwnSet,
+    isLocked
+  });
   
   // Lock/Unlock button: NEW RULE - only enabled for REVIEW CREATOR
   // Locking affects the entire set_number batch (all users' answer sets with same set_number)
