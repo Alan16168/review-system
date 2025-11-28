@@ -226,6 +226,7 @@ async function checkAuth() {
   if (token && user) {
     authToken = token;
     currentUser = JSON.parse(user);
+    window.currentUser = currentUser;
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     // If showHomeAfterReload flag is set or on home page, show home page
     if (showHomeAfterReload || currentView === 'home') {
@@ -243,6 +244,7 @@ function logout() {
   localStorage.removeItem('authToken');
   localStorage.removeItem('user');
   currentUser = null;
+  window.currentUser = null;
   authToken = null;
   delete axios.defaults.headers.common['Authorization'];
   showHomePage();
@@ -256,6 +258,7 @@ async function refreshCurrentUser() {
     const response = await axios.get('/api/auth/me');
     if (response.data.user) {
       currentUser = response.data.user;
+      window.currentUser = currentUser;
       localStorage.setItem('user', JSON.stringify(currentUser));
     }
   } catch (error) {
@@ -1410,6 +1413,7 @@ async function handleLogin() {
     const response = await axios.post('/api/auth/login', { email, password });
     authToken = response.data.token;
     currentUser = response.data.user;
+    window.currentUser = currentUser;
     
     localStorage.setItem('authToken', authToken);
     localStorage.setItem('user', JSON.stringify(currentUser));
@@ -1477,6 +1481,7 @@ async function handleRegister() {
     const response = await axios.post('/api/auth/register', { email, password, username });
     authToken = response.data.token;
     currentUser = response.data.user;
+    window.currentUser = currentUser;
     
     localStorage.setItem('authToken', authToken);
     localStorage.setItem('user', JSON.stringify(currentUser));
@@ -7058,7 +7063,13 @@ async function showEditReview(id) {
     handleOwnerTypeChangeInEdit(id, teams);
     
     // Load and render answer sets (Phase 1)
+    console.log('[showEditReview] About to load answer sets. Current user:', {
+      id: window.currentUser?.id,
+      role: window.currentUser?.role,
+      username: window.currentUser?.username
+    });
     loadAnswerSets(id).then(() => {
+      console.log('[showEditReview] Answer sets loaded:', window.currentAnswerSets.length);
       if (window.currentAnswerSets.length > 0) {
         renderAnswerSet(id);
       } else {
@@ -10133,6 +10144,7 @@ async function handleGoogleLogin(response) {
     // Store token and user info (consistent with email login)
     authToken = result.data.token;
     currentUser = result.data.user;
+    window.currentUser = currentUser;
     
     localStorage.setItem('authToken', authToken);
     localStorage.setItem('user', JSON.stringify(currentUser));
@@ -10753,6 +10765,7 @@ async function handleSaveSettings() {
     
     // Update currentUser with new data
     currentUser = response.data.user;
+    window.currentUser = currentUser;
     localStorage.setItem('user', JSON.stringify(currentUser));
     
     showNotification(i18n.t('settingsUpdated'), 'success');
@@ -13529,6 +13542,7 @@ async function proceedToCheckout() {
                 // Update localStorage with new user info
                 localStorage.setItem('currentUser', JSON.stringify(updatedUser));
                 currentUser = updatedUser;
+                window.currentUser = currentUser;
               } catch (err) {
                 console.error('Failed to refresh user info:', err);
               }
@@ -13969,6 +13983,7 @@ async function handleReferralRegister(e) {
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
     currentUser = null;
+    window.currentUser = null;
     authToken = null;
     axios.defaults.headers.common['Authorization'] = '';
     
@@ -14784,6 +14799,11 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
       </button>
     </div>
   `;
+  
+  // Update lock button state after navigation update
+  if (currentSet) {
+    updateAnswerSetLockButton(isLocked);
+  }
 }
 
 /**
@@ -20633,6 +20653,7 @@ function showPayPalPayment(orderId, paypalOrderId, tier) {
             // Reload user data to reflect subscription update
             const userResponse = await axios.get('/api/auth/me');
             currentUser = userResponse.data.user;
+            window.currentUser = currentUser;
             
             // Refresh the page if on dashboard
             if (currentView === 'dashboard') {
