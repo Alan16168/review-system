@@ -20672,6 +20672,7 @@ async function toggleCurrentAnswerSetLock(reviewId) {
     
     const currentIndex = window.currentAnswerSetIndex || 0;
     const currentSet = window.currentAnswerSets[currentIndex];
+    const isAdmin = window.currentUser?.role === 'admin';
     
     if (!currentSet) {
       showNotification(i18n.t('cannotFindCurrentSet') || '无法找到当前答案组', 'error');
@@ -20687,6 +20688,14 @@ async function toggleCurrentAnswerSetLock(reviewId) {
       showNotification('Invalid answer set number', 'error');
       return;
     }
+    
+    console.log('[toggleCurrentAnswerSetLock] Request', {
+      reviewId,
+      setNumber,
+      isLocked,
+      isAdmin,
+      setOwner: currentSet?.user_id
+    });
     
     // Confirm action - NEW: Locking affects entire batch (all users' answer sets with same set_number)
     const confirmMessage = isLocked
@@ -20716,8 +20725,11 @@ async function toggleCurrentAnswerSetLock(reviewId) {
       // Update lock button UI
       updateAnswerSetLockButton(response.data.is_locked === 'yes');
       
-      // Update answer edit UI (this is always own set since only owner can lock/unlock)
-      updateAnswerEditability(response.data.is_locked === 'yes', true);
+      const currentUserIdNum = window.currentUser?.id != null ? Number(window.currentUser.id) : null;
+      const setOwnerIdNum = currentSet?.user_id != null ? Number(currentSet.user_id) : null;
+      const isOwnSet = currentUserIdNum != null && setOwnerIdNum === currentUserIdNum;
+      // Update answer edit UI (only owners can edit; admins maintain read-only fields)
+      updateAnswerEditability(response.data.is_locked === 'yes', isOwnSet);
       
       // Re-render answer set to show/hide edit buttons
       renderAnswerSet(reviewId);
@@ -20745,15 +20757,16 @@ async function deleteCurrentAnswerSet(reviewId) {
     
     const currentIndex = window.currentAnswerSetIndex || 0;
     const currentSet = window.currentAnswerSets[currentIndex];
+    const isAdmin = window.currentUser?.role === 'admin';
     
     if (!currentSet) {
       showNotification(i18n.t('cannotFindCurrentSet') || '无法找到当前答案组', 'error');
       return;
     }
     
-    // Check if answer set is locked
-    if (currentSet.is_locked === 'yes') {
-      showNotification(i18n.t('unlockBeforeDelete') || '请先解锁答案组才能删除', 'warning');
+    // Check if answer set is locked (admins can bypass)
+    if (currentSet.is_locked === 'yes' && !isAdmin) {
+      showNotification(i18n.t('unlockToDelete') || '请先解锁答案组才能删除', 'warning');
       return;
     }
     

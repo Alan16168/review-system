@@ -433,30 +433,45 @@ answerSets.delete('/:reviewId/:setNumber', async (c: Context) => {
       }
     }
 
+    let set: any = null;
+
     if (isAdmin) {
-      if (targetUserId === null) {
-        return c.json({ error: 'ownerId is required for admin delete operations' }, 400);
+      if (targetUserId !== null) {
+        set = await c.env.DB.prepare(`
+          SELECT id, user_id, is_locked
+          FROM review_answer_sets
+          WHERE review_id = ? AND user_id = ? AND set_number = ?
+          LIMIT 1
+        `).bind(reviewId, targetUserId, setNumber).first();
+      } else {
+        set = await c.env.DB.prepare(`
+          SELECT id, user_id, is_locked
+          FROM review_answer_sets
+          WHERE review_id = ? AND set_number = ?
+          LIMIT 1
+        `).bind(reviewId, setNumber).first();
       }
     } else {
-      targetUserId = userId ?? null;
-      if (targetUserId === null) {
-        return c.json({ error: 'Unable to determine answer set owner' }, 400);
+      if (typeof userId !== 'number') {
+        return c.json({ error: 'Invalid user ID' }, 400);
       }
+      set = await c.env.DB.prepare(`
+        SELECT id, user_id, is_locked
+        FROM review_answer_sets
+        WHERE review_id = ? AND user_id = ? AND set_number = ?
+        LIMIT 1
+      `).bind(reviewId, userId, setNumber).first();
     }
-
-    const set = await c.env.DB.prepare(`
-      SELECT id, user_id, is_locked
-      FROM review_answer_sets
-      WHERE review_id = ? AND user_id = ? AND set_number = ?
-    `).bind(reviewId, targetUserId, setNumber).first();
 
     if (!set) {
       return c.json({ error: 'Answer set not found' }, 404);
     }
 
-    const setOwnerId = set.user_id;
+    const setOwnerId = Number(set.user_id);
+    const currentUserIdNum = typeof userId === 'number' ? userId : Number(userId);
+    const isOwner = currentUserIdNum === setOwnerId;
 
-    if (!isAdmin && setOwnerId !== userId) {
+    if (!isOwner && !isAdmin) {
       return c.json({ error: 'You do not have permission to delete this answer set' }, 403);
     }
 
@@ -468,8 +483,8 @@ answerSets.delete('/:reviewId/:setNumber', async (c: Context) => {
 
     const result = await c.env.DB.prepare(`
       DELETE FROM review_answer_sets
-      WHERE review_id = ? AND user_id = ? AND set_number = ?
-    `).bind(reviewId, setOwnerId, setNumber).run();
+      WHERE id = ?
+    `).bind(set.id).run();
 
     if (result.meta.changes === 0) {
       return c.json({ error: 'Answer set not found' }, 404);
@@ -502,6 +517,10 @@ answerSets.put('/:reviewId/:setNumber/lock', async (c: Context) => {
       return c.json({ error: 'Invalid parameters' }, 400);
     }
 
+    if (typeof userId !== 'number') {
+      return c.json({ error: 'Invalid user ID' }, 400);
+    }
+
     // Check if user is the review creator or admin
     const review = await c.env.DB.prepare(`
       SELECT user_id FROM reviews WHERE id = ?
@@ -511,7 +530,10 @@ answerSets.put('/:reviewId/:setNumber/lock', async (c: Context) => {
       return c.json({ error: 'Review not found' }, 404);
     }
 
-    if (review.user_id !== userId && !isAdmin) {
+    const reviewOwnerId = Number(review.user_id);
+    const currentUserId = Number(userId);
+
+    if (reviewOwnerId !== currentUserId && !isAdmin) {
       return c.json({ 
         error: 'Only the review creator or admin can lock answer sets',
         permission: 'denied'
@@ -543,7 +565,7 @@ answerSets.put('/:reviewId/:setNumber/lock', async (c: Context) => {
           locked_at = CURRENT_TIMESTAMP,
           locked_by = ?
       WHERE review_id = ? AND set_number = ?
-    `).bind(userId, reviewId, setNumber).run();
+    `).bind(currentUserId, reviewId, setNumber).run();
 
     return c.json({ 
       success: true,
@@ -577,6 +599,10 @@ answerSets.put('/:reviewId/:setNumber/unlock', async (c: Context) => {
       return c.json({ error: 'Invalid parameters' }, 400);
     }
 
+    if (typeof userId !== 'number') {
+      return c.json({ error: 'Invalid user ID' }, 400);
+    }
+
     // Check if user is the review creator or admin
     const review = await c.env.DB.prepare(`
       SELECT user_id FROM reviews WHERE id = ?
@@ -586,7 +612,10 @@ answerSets.put('/:reviewId/:setNumber/unlock', async (c: Context) => {
       return c.json({ error: 'Review not found' }, 404);
     }
 
-    if (review.user_id !== userId && !isAdmin) {
+    const reviewOwnerId = Number(review.user_id);
+    const currentUserId = Number(userId);
+
+    if (reviewOwnerId !== currentUserId && !isAdmin) {
       return c.json({ 
         error: 'Only the review creator or admin can unlock answer sets',
         permission: 'denied'

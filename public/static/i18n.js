@@ -3273,9 +3273,14 @@ const translations = {
     'draftCreated': 'Borrador Creado',
     'autoSaveOnBlur': 'Haga clic en otro lugar después de escribir para guardar automáticamente',
     'answerAutoSaved': 'Respuesta Guardada Automáticamente',
-    'answerSetHint': 'Todos los miembros del equipo pueden ver todos los conjuntos de respuestas. Solo el creador del conjunto de respuestas puede editar/eliminar/bloquear sus propios conjuntos de respuestas. Los conjuntos bloqueados no se pueden editar.',
-    'onlyOwnerCanLock': 'Solo el creador del conjunto de respuestas puede bloquear/desbloquear',
-    'onlyOwnerCanDelete': 'Solo el creador del conjunto de respuestas puede eliminar',
+    'answerSetHint': 'Todos los miembros del equipo pueden ver todos los conjuntos de respuestas. Cada miembro solo puede editar/eliminar sus propios conjuntos. Solo el creador de la revisión o un administrador puede bloquear/desbloquear lotes completos.',
+    'onlyReviewCreatorOrAdminCanLock': 'Solo el creador de la revisión o un administrador puede bloquear/desbloquear',
+    'lockBatchHint': 'Bloquear este lote de conjuntos de respuestas (todos los miembros)',
+    'unlockBatchHint': 'Desbloquear este lote de conjuntos de respuestas (todos los miembros)',
+    'onlyOwnerCanDelete': 'Solo puedes eliminar tus propios conjuntos de respuestas',
+    'unlockToDelete': 'Desbloquea el conjunto de respuestas antes de eliminarlo',
+    'deleteOwnAnswerSet': 'Eliminar tu propio conjunto de respuestas',
+    'adminDeleteHint': 'El administrador puede eliminar cualquier conjunto de respuestas (incluyendo los bloqueados)',
     'onlyOwnerCanEditAnswers': 'Solo puedes editar tus propios conjuntos de respuestas',
     
     // Team Roles
