@@ -43,38 +43,42 @@
    - 锁定的答案组无法删除（需要创建者先解锁）
    - 按钮状态：自己的未锁定答案显示红色删除按钮，其他情况显示灰色
 
-3. **权限规则总结** ✅
+3. **管理员特权** ✅
+   - 拥有 `admin` 角色的用户可直接锁定/解锁任意批次
+   - 管理员可删除任意成员的答案组（即便当前处于锁定状态）
+   - UI 自动显示红色可用按钮，便于管理员统一处理
+
+4. **权限规则总结** ✅
    ```
    - 查看权限：所有团队成员可查看所有答案组
    - 编辑权限：每个成员只能编辑自己的答案组（未锁定状态）
-   - 删除权限：每个成员只能删除自己的答案组（未锁定状态）
-   - 锁定权限：只有复盘创建者可以锁定/解锁（影响整批）
+   - 删除权限：成员可删除自己的未锁定答案组；管理员可删除任意答案组
+   - 锁定权限：复盘创建者或管理员可以锁定/解锁（影响整批）
    ```
 
 **技术实现**:
 - **后端API改进** (src/routes/answer_sets.ts):
-  - PUT /api/answer-sets/:reviewId/:setNumber/lock: 检查用户是否为复盘创建者，锁定整个 set_number 批次
-  - PUT /api/answer-sets/:reviewId/:setNumber/unlock: 检查用户是否为复盘创建者，解锁整个批次
-  - DELETE /api/answer-sets/:reviewId/:setNumber: 保持原逻辑，只允许答案组所有者删除未锁定的答案组
+  - PUT /api/answer-sets/:reviewId/:setNumber/lock: 验证复盘创建者或管理员身份，批量锁定
+  - PUT /api/answer-sets/:reviewId/:setNumber/unlock: 验证复盘创建者或管理员身份，批量解锁
+  - DELETE /api/answer-sets/:reviewId/:setNumber: 新增 `ownerId` 参数，管理员可删除任意成员答案组（锁定亦可）
 
 - **前端函数改进** (public/static/app.js):
-  - updateAnswerSetLockButton: 检查 `window.currentEditReview?.user_id` 判断是否为复盘创建者
-  - 锁定按钮：只对复盘创建者启用，其他人显示灰色禁用状态
-  - 删除按钮：对答案组所有者启用（未锁定时），其他人或锁定状态显示灰色
+  - updateAnswerSetLockButton: 增加 admin 检测，管理员/创建者均可操作锁定按钮
+  - 删除按钮：管理员始终可用，普通成员仅对自己的未锁定答案可用
+  - deleteCurrentAnswerSet: 向后端传递 `ownerId`，确保管理员删除精准定位
 
 - **翻译更新** (public/static/i18n.js):
-  - onlyReviewCreatorCanLock: "只有复盘创建者可以锁定/解锁"
-  - lockBatchHint: "锁定此批次的所有答案组（所有成员）"
-  - unlockBatchHint: "解锁此批次的所有答案组（所有成员）"
-  - deleteOwnAnswerSet: "删除自己的答案组"
-  - unlockToDelete: "请先解锁答案组才能删除"
+  - answerSetHint: 说明管理员亦可锁定/解锁批次
+  - onlyReviewCreatorOrAdminCanLock: "只有复盘创建者或管理员可以锁定/解锁"
+  - adminDeleteHint: "管理员可删除任何答案组（包含锁定状态）"
+  - lockBatchHint / unlockBatchHint 等多语言同步更新
 
 **部署信息**:
-- Git Commit: a260bc1, e8710e2
-- 部署URL: https://b2170764.review-system.pages.dev
+- Git Commit: 6fbefdf
+- 部署URL: https://1cdc2370.review-system.pages.dev
 - 部署时间: 2025-11-27
 - 主域名: https://review-system.pages.dev
-- Hotfix (2025-11-27 夜间): ✅ 同步复盘创建者信息，确保锁定按钮对创建者自动启用
+- Hotfix (2025-11-27 夜间): ✅ 同步复盘创建者信息 + 管理员锁定/删除权限
 
 ---
 
