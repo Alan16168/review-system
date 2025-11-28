@@ -918,11 +918,11 @@ reviews.get('/', async (c) => {
     const user = c.get('user') as UserPayload;
 
     // Get reviews based on access control:
-    // 1. Reviews created by the user (including public ones)
-    // 2. Non-public reviews where user is CURRENTLY a team member (verified in real-time)
+    // 1. Personal reviews (no team_id) created by the user
+    // 2. Team reviews where user is CURRENTLY a team member (verified in real-time)
     // 3. Non-public reviews where user is a collaborator
     // IMPORTANT: Exclude famous-book and document review types (they have separate lists)
-    // CRITICAL: Only show team reviews if user is CURRENTLY a team member (prevents removed members from seeing reviews)
+    // CRITICAL: Team reviews require CURRENT team membership, even for creators who left the team
     const query = `
       SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
       FROM reviews r
@@ -930,7 +930,7 @@ reviews.get('/', async (c) => {
       LEFT JOIN teams t ON r.team_id = t.id
       LEFT JOIN review_collaborators rc ON r.id = rc.review_id
       WHERE (
-        r.user_id = ?
+        (r.user_id = ? AND r.team_id IS NULL)
         OR (r.owner_type != 'public' AND r.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
         OR (r.owner_type != 'public' AND rc.user_id = ?)
       )

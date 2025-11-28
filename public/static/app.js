@@ -14750,19 +14750,19 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
   // If allow_multiple_answers is 'no', hide navigation buttons
   if (!allowMultipleAnswers) {
     navElement.innerHTML = `
-      <div class="flex items-center justify-center p-4 ${isFormerMember ? 'bg-gray-100' : 'bg-indigo-50'} rounded-lg mb-4">
+      <div class="flex items-center justify-center p-4 ${isFormerMember ? 'bg-red-50 border-2 border-red-200' : 'bg-indigo-50'} rounded-lg mb-4">
         <div class="text-center">
-          <p class="text-sm text-gray-600">${i18n.t('answerSet') || '答案组'}</p>
-          <p class="text-xl font-bold text-indigo-600">${currentNum} / ${totalNum}</p>
+          <p class="text-sm ${isFormerMember ? 'text-red-700' : 'text-gray-600'}">${i18n.t('answerSet') || '答案组'}</p>
+          <p class="text-xl font-bold ${isFormerMember ? 'text-red-600' : 'text-indigo-600'}">${currentNum} / ${totalNum}</p>
           ${currentSet ? `
-            <p class="text-xs text-gray-500 mt-1">
+            <p class="text-xs ${isFormerMember ? 'text-red-600' : 'text-gray-500'} mt-1 ${isFormerMember ? 'bg-red-100 px-3 py-1 rounded-md inline-block' : ''}">
               <i class="fas fa-user mr-1"></i>${escapeHtml(currentSet.username || 'Unknown')}
+              ${isFormerMember ? `<span class="ml-2 px-2 py-0.5 text-xs bg-yellow-400 text-yellow-900 rounded-full"><i class="fas fa-exclamation-triangle mr-1"></i>${i18n.t('formerTeamMember') || '此队员已离开团队'}</span>` : ''}
             </p>
-            <p class="text-xs text-gray-500">
+            <p class="text-xs ${isFormerMember ? 'text-red-600' : 'text-gray-500'}">
               <i class="fas fa-clock mr-1"></i>${currentSet.created_at || ''}
             </p>
             ${isLocked ? `<span class="inline-block px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full mt-1"><i class="fas fa-lock mr-1"></i>${i18n.t('locked') || '已锁定'}</span>` : ''}
-            ${isFormerMember ? `<span class="inline-block px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>${i18n.t('formerTeamMember') || '此队员已离开团队'}</span>` : ''}
           ` : ''}
         </div>
       </div>
@@ -14772,32 +14772,32 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
   
   // If allow_multiple_answers is 'yes', show full navigation with buttons
   navElement.innerHTML = `
-    <div class="flex items-center justify-between p-4 ${isFormerMember ? 'bg-gray-100' : 'bg-indigo-50'} rounded-lg mb-4">
+    <div class="flex items-center justify-between p-4 ${isFormerMember ? 'bg-red-50 border-2 border-red-200' : 'bg-indigo-50'} rounded-lg mb-4">
       <button onclick="navigateToPreviousSet(${reviewId})" 
               ${!hasPrev ? 'disabled' : ''}
-              class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              class="px-4 py-2 bg-white border ${isFormerMember ? 'border-red-300' : 'border-gray-300'} rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
         <i class="fas fa-arrow-left mr-2"></i>${i18n.t('previousSet') || '上一组'}
       </button>
       
       <div class="text-center">
-        <p class="text-sm text-gray-600">${i18n.t('answerSet') || '答案组'}</p>
-        <p class="text-xl font-bold text-indigo-600">${currentNum} / ${totalNum}</p>
+        <p class="text-sm ${isFormerMember ? 'text-red-700' : 'text-gray-600'}">${i18n.t('answerSet') || '答案组'}</p>
+        <p class="text-xl font-bold ${isFormerMember ? 'text-red-600' : 'text-indigo-600'}">${currentNum} / ${totalNum}</p>
         ${currentSet ? `
-          <p class="text-xs text-gray-500 mt-1">
+          <p class="text-xs ${isFormerMember ? 'text-red-600' : 'text-gray-500'} mt-1 ${isFormerMember ? 'bg-red-100 px-3 py-1 rounded-md inline-block' : ''}">
             <i class="fas fa-user mr-1"></i>${escapeHtml(currentSet.username || 'Unknown')}
-            ${isOwnSet ? '<span class="text-green-600 ml-1">(You)</span>' : ''}
+            ${isOwnSet && !isFormerMember ? '<span class="text-green-600 ml-1">(You)</span>' : ''}
+            ${isFormerMember ? `<span class="ml-2 px-2 py-0.5 text-xs bg-yellow-400 text-yellow-900 rounded-full"><i class="fas fa-exclamation-triangle mr-1"></i>${i18n.t('formerTeamMember') || '此队员已离开团队'}</span>` : ''}
           </p>
-          <p class="text-xs text-gray-500">
+          <p class="text-xs ${isFormerMember ? 'text-red-600' : 'text-gray-500'}">
             <i class="fas fa-clock mr-1"></i>${currentSet.created_at || ''}
           </p>
           ${isLocked ? `<span class="inline-block px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full mt-1"><i class="fas fa-lock mr-1"></i>${i18n.t('locked') || '已锁定'}</span>` : ''}
-          ${isFormerMember ? `<span class="inline-block px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>${i18n.t('formerTeamMember') || '此队员已离开团队'}</span>` : ''}
         ` : ''}
       </div>
       
       <button onclick="navigateToNextSet(${reviewId})" 
               ${!hasNext ? 'disabled' : ''}
-              class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+              class="px-4 py-2 bg-white border ${isFormerMember ? 'border-red-300' : 'border-gray-300'} rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
         ${i18n.t('nextSet') || '下一组'}<i class="fas fa-arrow-right ml-2"></i>
       </button>
     </div>
