@@ -919,9 +919,10 @@ reviews.get('/', async (c) => {
 
     // Get reviews based on access control:
     // 1. Reviews created by the user (including public ones)
-    // 2. Non-public reviews where user is a team member (has team_id and user is in that team)
+    // 2. Non-public reviews where user is CURRENTLY a team member (verified in real-time)
     // 3. Non-public reviews where user is a collaborator
     // IMPORTANT: Exclude famous-book and document review types (they have separate lists)
+    // CRITICAL: Only show team reviews if user is CURRENTLY a team member (prevents removed members from seeing reviews)
     const query = `
       SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
       FROM reviews r
@@ -930,7 +931,7 @@ reviews.get('/', async (c) => {
       LEFT JOIN review_collaborators rc ON r.id = rc.review_id
       WHERE (
         r.user_id = ?
-        OR (r.owner_type != 'public' AND r.team_id IS NOT NULL AND r.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?))
+        OR (r.owner_type != 'public' AND r.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
         OR (r.owner_type != 'public' AND rc.user_id = ?)
       )
       AND (r.review_type IS NULL OR r.review_type NOT IN ('famous-book', 'document'))
@@ -1005,6 +1006,24 @@ reviews.get('/:id', async (c) => {
 
     if (!review) {
       return c.json({ error: 'Review not found or access denied' }, 404);
+    }
+
+    // CRITICAL: If review belongs to a team, verify user is STILL a team member
+    // This prevents removed team members from accessing team reviews
+    if (review.team_id && review.owner_type !== 'public') {
+      const isMember = await c.env.DB.prepare(`
+        SELECT 1 FROM team_members 
+        WHERE team_id = ? AND user_id = ?
+      `).bind(review.team_id, user.id).first();
+      
+      // If user is not the review creator and not a team member, deny access
+      if (!isMember && review.user_id !== user.id) {
+        console.log('[GET REVIEW] Access denied: User is no longer a team member');
+        return c.json({ 
+          error: 'Access denied. You are no longer a member of this team.',
+          code: 'NOT_TEAM_MEMBER'
+        }, 403);
+      }
     }
 
     // Get template questions with language-specific text and question type info

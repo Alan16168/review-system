@@ -14745,11 +14745,12 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
   const currentUserId = window.currentUser?.id;
   const isLocked = currentSet?.is_locked === 'yes';
   const isOwnSet = currentSet && currentSet.user_id === currentUserId;
+  const isFormerMember = currentSet && currentSet.is_current_team_member === false;
   
   // If allow_multiple_answers is 'no', hide navigation buttons
   if (!allowMultipleAnswers) {
     navElement.innerHTML = `
-      <div class="flex items-center justify-center p-4 bg-indigo-50 rounded-lg mb-4">
+      <div class="flex items-center justify-center p-4 ${isFormerMember ? 'bg-gray-100' : 'bg-indigo-50'} rounded-lg mb-4">
         <div class="text-center">
           <p class="text-sm text-gray-600">${i18n.t('answerSet') || '答案组'}</p>
           <p class="text-xl font-bold text-indigo-600">${currentNum} / ${totalNum}</p>
@@ -14761,6 +14762,7 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
               <i class="fas fa-clock mr-1"></i>${currentSet.created_at || ''}
             </p>
             ${isLocked ? `<span class="inline-block px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full mt-1"><i class="fas fa-lock mr-1"></i>${i18n.t('locked') || '已锁定'}</span>` : ''}
+            ${isFormerMember ? `<span class="inline-block px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>${i18n.t('formerTeamMember') || '此队员已离开团队'}</span>` : ''}
           ` : ''}
         </div>
       </div>
@@ -14770,7 +14772,7 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
   
   // If allow_multiple_answers is 'yes', show full navigation with buttons
   navElement.innerHTML = `
-    <div class="flex items-center justify-between p-4 bg-indigo-50 rounded-lg mb-4">
+    <div class="flex items-center justify-between p-4 ${isFormerMember ? 'bg-gray-100' : 'bg-indigo-50'} rounded-lg mb-4">
       <button onclick="navigateToPreviousSet(${reviewId})" 
               ${!hasPrev ? 'disabled' : ''}
               class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
@@ -14789,6 +14791,7 @@ function updateAnswerSetNavigation(reviewId, currentNum, totalNum) {
             <i class="fas fa-clock mr-1"></i>${currentSet.created_at || ''}
           </p>
           ${isLocked ? `<span class="inline-block px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full mt-1"><i class="fas fa-lock mr-1"></i>${i18n.t('locked') || '已锁定'}</span>` : ''}
+          ${isFormerMember ? `<span class="inline-block px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full mt-1"><i class="fas fa-exclamation-triangle mr-1"></i>${i18n.t('formerTeamMember') || '此队员已离开团队'}</span>` : ''}
         ` : ''}
       </div>
       

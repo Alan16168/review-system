@@ -52,19 +52,23 @@ answerSets.get('/:reviewId', async (c: Context) => {
     let setsQuery;
     if (review.team_id && mode === 'view') {
       // Team review in view mode: get all answer sets from all team members
+      // Include team membership status to mark former members
       setsQuery = c.env.DB.prepare(`
         SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
-               ras.is_locked, ras.locked_at, ras.locked_by, u.username
+               ras.is_locked, ras.locked_at, ras.locked_by, u.username,
+               CASE WHEN tm.user_id IS NOT NULL THEN 1 ELSE 0 END as is_current_team_member
         FROM review_answer_sets ras
         LEFT JOIN users u ON ras.user_id = u.id
+        LEFT JOIN team_members tm ON tm.team_id = ? AND tm.user_id = ras.user_id
         WHERE ras.review_id = ?
         ORDER BY ras.created_at DESC
-      `).bind(reviewId);
+      `).bind(review.team_id, reviewId);
     } else {
       // Edit mode OR personal review: only get current user's answer sets
       setsQuery = c.env.DB.prepare(`
         SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
-               ras.is_locked, ras.locked_at, ras.locked_by, u.username
+               ras.is_locked, ras.locked_at, ras.locked_by, u.username,
+               1 as is_current_team_member
         FROM review_answer_sets ras
         LEFT JOIN users u ON ras.user_id = u.id
         WHERE ras.review_id = ? AND ras.user_id = ?
@@ -102,7 +106,7 @@ answerSets.get('/:reviewId', async (c: Context) => {
       });
     }
 
-    // Combine sets with their answers (include lock status and user info)
+    // Combine sets with their answers (include lock status, user info, and team membership status)
     const result = sets.results.map((set: any) => ({
       id: set.id,  // Add set ID for frontend reference
       set_number: set.set_number,
@@ -113,6 +117,7 @@ answerSets.get('/:reviewId', async (c: Context) => {
       is_locked: set.is_locked || 'no',
       locked_at: set.locked_at,
       locked_by: set.locked_by,
+      is_current_team_member: set.is_current_team_member === 1,  // Whether user is still in team
       answers: answersBySet[set.id] || []
     }));
 
