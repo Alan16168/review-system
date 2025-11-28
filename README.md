@@ -70,10 +70,11 @@
   - unlockToDelete: "请先解锁答案组才能删除"
 
 **部署信息**:
-- Git Commit: a260bc1
-- 部署URL: https://af69b15f.review-system.pages.dev
+- Git Commit: a260bc1, e8710e2
+- 部署URL: https://b2170764.review-system.pages.dev
 - 部署时间: 2025-11-27
 - 主域名: https://review-system.pages.dev
+- Hotfix (2025-11-27 夜间): ✅ 同步复盘创建者信息，确保锁定按钮对创建者自动启用
 
 ---
 
