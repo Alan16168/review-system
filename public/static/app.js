@@ -20790,11 +20790,17 @@ async function deleteCurrentAnswerSet(reviewId) {
     }
     
     // Call API to delete
-    const response = await axios.delete(`/api/answer-sets/${reviewId}/${setNumber}`, {
+    const ownerId = currentSet?.user_id != null ? Number(currentSet.user_id) : null;
+    const deleteConfig: any = {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
-    });
+    };
+    if (ownerId !== null) {
+      deleteConfig.params = { ownerId };
+    }
+
+    const response = await axios.delete(`/api/answer-sets/${reviewId}/${setNumber}`, deleteConfig);
     
     if (response.data.success) {
       showNotification(
@@ -20871,6 +20877,7 @@ function updateAnswerSetLockButton(isLocked) {
   const currentUserIdNum = currentUserId != null ? Number(currentUserId) : null;
   const reviewCreatorIdNum = reviewCreatorId != null ? Number(reviewCreatorId) : null;
   const currentSetOwnerId = currentSet?.user_id != null ? Number(currentSet.user_id) : null;
+  const isAdmin = window.currentUser?.role === 'admin';
 
   // Fallback: if still missing, log for debugging
   if (reviewCreatorIdNum == null) {
@@ -20891,14 +20898,15 @@ function updateAnswerSetLockButton(isLocked) {
     currentUserId,
     reviewCreatorId,
     isReviewCreator,
+    isAdmin,
     currentSetUserId: currentSet?.user_id,
     isOwnSet,
     isLocked
   });
   
-  // Lock/Unlock button: NEW RULE - only enabled for REVIEW CREATOR
+  // Lock/Unlock button: enabled for REVIEW CREATOR or ADMIN
   // Locking affects the entire set_number batch (all users' answer sets with same set_number)
-  if (isReviewCreator) {
+  if (isReviewCreator || isAdmin) {
     btn.disabled = false;
     
     if (isLocked) {
@@ -20915,19 +20923,23 @@ function updateAnswerSetLockButton(isLocked) {
       btn.title = i18n.t('lockBatchHint') || '锁定此批次的所有答案组';
     }
   } else {
-    // Not review creator: disable lock/unlock button
+    // Not review creator or admin: disable lock/unlock button
     btn.disabled = true;
     btn.className = 'px-6 py-3 bg-gray-400 text-white rounded-lg shadow-lg transition-colors opacity-50 cursor-not-allowed';
     icon.className = 'fas fa-lock mr-2';
     text.textContent = i18n.t('lock') || '锁定';
-    btn.title = i18n.t('onlyReviewCreatorCanLock') || '只有复盘创建者可以锁定/解锁';
+    btn.title = i18n.t('onlyReviewCreatorOrAdminCanLock') || '只有复盘创建者或管理员可以锁定/解锁';
   }
   
-  // Delete button: enabled for answer set owner when unlocked
+  // Delete button logic
   if (deleteBtn) {
     const baseClass = (window.currentEditReview?.allow_multiple_answers === 'yes' ? '' : 'flex-1 ') + 'px-6 py-3 text-white rounded-lg shadow-lg transition-colors';
     
-    if (!isOwnSet) {
+    if (isAdmin) {
+      deleteBtn.disabled = false;
+      deleteBtn.title = i18n.t('adminDeleteHint') || '管理员可删除任何答案组';
+      deleteBtn.className = baseClass + ' bg-red-600 hover:bg-red-700';
+    } else if (!isOwnSet) {
       // Not the owner of this answer set
       deleteBtn.disabled = true;
       deleteBtn.title = i18n.t('onlyOwnerCanDelete') || '只能删除自己的答案组';
