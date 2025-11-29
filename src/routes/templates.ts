@@ -576,8 +576,8 @@ templates.post('/:id/toggle-status', premiumOrAdmin, async (c) => {
   }
 });
 
-// Admin: Add a question to a template
-templates.post('/:id/questions', premiumOrAdmin, async (c) => {
+// Add a question to a template (creator or admin only)
+templates.post('/:id/questions', async (c) => {
   try {
     const user = c.get('user') as any;
     const templateId = c.req.param('id');
@@ -634,9 +634,9 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
       return c.json({ error: 'Template not found' }, 404);
     }
 
-    // Permission check: Premium users can only edit their own templates
-    if (user.role === 'premium' && template.created_by !== user.id) {
-      return c.json({ error: 'You can only edit your own templates' }, 403);
+    // Permission check: Only admins and template creators can add questions
+    if (user.role !== 'admin' && template.created_by !== user.id) {
+      return c.json({ error: 'You can only add questions to your own templates' }, 403);
     }
 
     // Get the next question number if not provided
@@ -687,7 +687,7 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
 });
 
 // Admin: Update a question
-templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) => {
+templates.put('/:templateId/questions/:questionId', async (c) => {
   try {
     const user = c.get('user') as any;
     const templateId = c.req.param('templateId');
@@ -744,8 +744,8 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
       return c.json({ error: 'Template not found' }, 404);
     }
 
-    // Permission check: Premium users can only edit their own templates
-    if (user.role === 'premium' && template.created_by !== user.id) {
+    // Permission check: Only admins and template creators can edit
+    if (user.role !== 'admin' && template.created_by !== user.id) {
       return c.json({ error: 'You can only edit your own templates' }, 403);
     }
 
@@ -791,8 +791,8 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
   }
 });
 
-// Admin: Delete a question
-templates.delete('/:templateId/questions/:questionId', premiumOrAdmin, async (c) => {
+// Delete a question (creator or admin only)
+templates.delete('/:templateId/questions/:questionId', async (c) => {
   try {
     const user = c.get('user') as any;
     const templateId = c.req.param('templateId');
@@ -807,9 +807,9 @@ templates.delete('/:templateId/questions/:questionId', premiumOrAdmin, async (c)
       return c.json({ error: 'Template not found' }, 404);
     }
 
-    // Permission check: Premium users can only edit their own templates
-    if (user.role === 'premium' && template.created_by !== user.id) {
-      return c.json({ error: 'You can only edit your own templates' }, 403);
+    // Permission check: Only admins and template creators can delete
+    if (user.role !== 'admin' && template.created_by !== user.id) {
+      return c.json({ error: 'You can only delete questions from your own templates' }, 403);
     }
 
     // Delete question
@@ -827,13 +827,28 @@ templates.delete('/:templateId/questions/:questionId', premiumOrAdmin, async (c)
 });
 
 // Admin: Reorder questions
-templates.put('/:id/questions/reorder', premiumOrAdmin, async (c) => {
+templates.put('/:id/questions/reorder', async (c) => {
   try {
+    const user = c.get('user') as any;
     const templateId = c.req.param('id');
     const { questions } = await c.req.json(); // Array of { id, question_number }
 
     if (!Array.isArray(questions)) {
       return c.json({ error: 'Questions array is required' }, 400);
+    }
+
+    // Check template ownership
+    const template = await c.env.DB.prepare(`
+      SELECT id, created_by FROM templates WHERE id = ?
+    `).bind(templateId).first<any>();
+
+    if (!template) {
+      return c.json({ error: 'Template not found' }, 404);
+    }
+
+    // Permission check: Only admins and template creators can reorder
+    if (user.role !== 'admin' && template.created_by !== user.id) {
+      return c.json({ error: 'You can only reorder questions in your own templates' }, 403);
     }
 
     // Update each question's number
