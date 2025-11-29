@@ -15583,140 +15583,47 @@ async function createNewAnswerSet(reviewId) {
   try {
     const questions = window.currentEditQuestions || [];
     
-    // Debug: log questions to see what data we have
-    console.log('[createNewAnswerSet] Questions:', questions);
-    questions.forEach(q => {
-      if (q.question_type === 'time_with_text') {
-        console.log(`[createNewAnswerSet] Time question ${q.question_number}:`, {
-          datetime_value: q.datetime_value,
-          datetime_title: q.datetime_title,
-          datetime_answer_max_length: q.datetime_answer_max_length
-        });
-      }
-    });
-    
     if (questions.length === 0) {
-      showNotification('No questions found', 'error');
+      showNotification(i18n.t('noQuestions') || '没有问题', 'error');
       return;
     }
     
-    // Pre-collect current values from the edit page
-    const currentValues = {};
+    // Build initial empty answers object
+    const answers = {};
     questions.forEach(q => {
-      if (q.question_type === 'text') {
-        // Try to get value from new answer input box (if visible)
-        const newAnswerBox = document.getElementById(`new-answer-${q.question_number}`);
-        if (newAnswerBox && newAnswerBox.value.trim()) {
-          currentValues[q.question_number] = newAnswerBox.value.trim();
-        }
-      } else if (q.question_type === 'single_choice') {
-        const selected = document.querySelector(`input[name="question${q.question_number}"]:checked`);
-        if (selected) {
-          currentValues[q.question_number] = selected.value;
-        }
-      } else if (q.question_type === 'multiple_choice') {
-        const checked = document.querySelectorAll(`input[name="question${q.question_number}"]:checked`);
-        if (checked.length > 0) {
-          currentValues[q.question_number] = Array.from(checked).map(cb => cb.value);
-        }
+      if (q.question_type === 'text' || q.question_type === 'multiline_text' || q.question_type === 'number' || 
+          q.question_type === 'markdown' || q.question_type === 'single_choice' || 
+          q.question_type === 'multiple_choice' || q.question_type === 'dropdown') {
+        answers[q.question_number] = {
+          answer: ''
+        };
+      } else if (q.question_type === 'time_with_text') {
+        const datetimeTitle = q.datetime_title || q.question_text_en || q.question_text || '时间';
+        answers[q.question_number] = {
+          answer: '',
+          datetime_value: q.datetime_value || null,
+          datetime_title: datetimeTitle,
+          datetime_answer: ''
+        };
       }
     });
-
-    // Show modal to collect answers for all questions
-    const modalHtml = `
-      <div id="answer-set-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
-          <div class="mt-3">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">
-              <i class="fas fa-plus-circle mr-2"></i>${i18n.t('createNewSet') || '创建新答案组'}
-            </h3>
-            <p class="text-sm text-gray-600 mb-4">
-              ${i18n.t('pleaseAnswerAllQuestions') || '请回答所有问题以创建新的答案组'}
-            </p>
-            <div class="mt-2 space-y-4 max-h-96 overflow-y-auto">
-              ${questions.map(q => {
-                const currentValue = currentValues[q.question_number];
-                return `
-                <div class="border-b pb-4">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
-                    ${q.question_number}. ${escapeHtml(q.question_text)}
-                    ${q.required === 'yes' ? '<span class="text-red-500 ml-1">*</span>' : ''}
-                  </label>
-                  ${q.question_type === 'single_choice' && q.options ? `
-                    <div class="space-y-2">
-                      ${JSON.parse(q.options).map((opt, idx) => {
-                        const letter = String.fromCharCode(65 + idx);
-                        const isChecked = currentValue === letter ? 'checked' : '';
-                        return `
-                          <label class="flex items-center p-2 border rounded hover:bg-gray-50 cursor-pointer">
-                            <input type="radio" name="modal-q${q.question_number}" value="${letter}" ${isChecked} class="mr-2">
-                            <span class="text-sm">${escapeHtml(opt)}</span>
-                          </label>
-                        `;
-                      }).join('')}
-                    </div>
-                  ` : q.question_type === 'multiple_choice' && q.options ? `
-                    <div class="space-y-2">
-                      ${JSON.parse(q.options).map((opt, idx) => {
-                        const letter = String.fromCharCode(65 + idx);
-                        const isChecked = currentValue && currentValue.includes(letter) ? 'checked' : '';
-                        return `
-                          <label class="flex items-center p-2 border rounded hover:bg-gray-50 cursor-pointer">
-                            <input type="checkbox" name="modal-q${q.question_number}" value="${letter}" ${isChecked} class="mr-2">
-                            <span class="text-sm">${escapeHtml(opt)}</span>
-                          </label>
-                        `;
-                      }).join('')}
-                    </div>
-                  ` : q.question_type === 'time_with_text' ? `
-                    <div class="space-y-3">
-                      <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">
-                          <i class="fas fa-clock mr-1"></i>${escapeHtml(q.datetime_title || q.question_text_en || q.question_text || '时间')}
-                        </label>
-                        <input type="datetime-local" id="modal-datetime-${q.question_number}"
-                               value="${q.datetime_value ? q.datetime_value.slice(0, 16) : ''}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                      </div>
-                      <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">
-                          <i class="fas fa-pen mr-1"></i>${i18n.t('answer') || '答案'}
-                        </label>
-                        <textarea id="modal-answer-${q.question_number}" rows="3"
-                                  maxlength="${q.datetime_answer_max_length || 200}"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                                  placeholder="${i18n.t('enterAnswer') || '输入答案...'}">${escapeHtml(currentValue || '')}</textarea>
-                        <p class="text-xs text-gray-500 mt-1">${i18n.t('maxCharacters')}: ${q.datetime_answer_max_length || 200}</p>
-                      </div>
-                    </div>
-                  ` : `
-                    <textarea id="modal-answer-${q.question_number}" rows="3"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                              placeholder="${i18n.t('enterAnswer') || '输入答案...'}">${escapeHtml(currentValue || '')}</textarea>
-                  `}
-                </div>
-              `;
-              }).join('')}
-            </div>
-            <div class="flex justify-end space-x-3 mt-6">
-              <button type="button" onclick="closeAnswerSetModal()" 
-                      class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                ${i18n.t('cancel')}
-              </button>
-              <button type="button" onclick="submitNewAnswerSet(${reviewId})" 
-                      class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                <i class="fas fa-check mr-2"></i>${i18n.t('create')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
     
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    // Create new answer set via API (skip required validation for empty set)
+    const response = await axios.post(`/api/answer-sets/${reviewId}`, { answers });
+    
+    if (response.data.success) {
+      showNotification(i18n.t('answerSetCreated') || '答案组已创建', 'success');
+      
+      // Reload answer sets to get the updated list
+      await loadAnswerSets(reviewId);
+      
+      // Navigate to the new set (last one)
+      window.currentSetIndex = window.currentAnswerSets.length - 1;
+      renderAnswerSet(reviewId);
+    }
   } catch (error) {
-    console.error('Failed to show answer set modal:', error);
-    showNotification(i18n.t('operationFailed') + ': ' + error.message, 'error');
+    console.error('Failed to create answer set:', error);
+    showNotification(i18n.t('operationFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
   }
 }
 
