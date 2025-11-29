@@ -12105,12 +12105,12 @@ function renderOptionsInputs() {
 // Render correct answer options
 function renderCorrectAnswerOptions() {
   const type = document.getElementById('question-type')?.value;
-  if (!type || type === 'text') return;
+  if (!type || type === 'text' || type === 'multiline_text' || type === 'number' || type === 'markdown') return;
   
   const singleChoiceContainer = document.getElementById('single-choice-answer');
   const multipleChoiceContainer = document.getElementById('multiple-choice-answer');
   
-  if (type === 'single_choice' && singleChoiceContainer) {
+  if ((type === 'single_choice' || type === 'dropdown') && singleChoiceContainer) {
     singleChoiceContainer.innerHTML = `
       <p class="text-xs text-gray-600 mb-2">${i18n.t('singleChoiceHint')}</p>
       ${currentEditingOptions.map((opt, index) => {
@@ -12166,7 +12166,8 @@ function collectQuestionFormData() {
     required: required
   };
   
-  if (type === 'text') {
+  // Handle text-based types (text, multiline_text, number, markdown)
+  if (type === 'text' || type === 'multiline_text' || type === 'number' || type === 'markdown') {
     data.answer_length = parseInt(document.getElementById('question-answer-length').value) || 50;
   } else if (type === 'time_with_text') {
     // Collect time type fields
@@ -12183,8 +12184,8 @@ function collectQuestionFormData() {
     data.datetime_value = datetimeValue || null;
     data.datetime_title = datetimeTitle;
     data.datetime_answer_max_length = answerMaxLength;
-  } else {
-    // Collect options for single_choice and multiple_choice
+  } else if (type === 'single_choice' || type === 'multiple_choice' || type === 'dropdown') {
+    // Collect options for choice types (single_choice, multiple_choice, dropdown)
     const options = currentEditingOptions.filter(opt => {
       const text = opt.substring(opt.indexOf('.') + 1).trim();
       return text.length > 0;
@@ -12197,7 +12198,7 @@ function collectQuestionFormData() {
     data.options = JSON.stringify(options);
     
     // Collect correct answer
-    if (type === 'single_choice') {
+    if (type === 'single_choice' || type === 'dropdown') {
       const selected = document.querySelector('input[name="correct-answer-radio"]:checked');
       if (!selected) {
         throw new Error(i18n.t('correctAnswer') + ' is required');
