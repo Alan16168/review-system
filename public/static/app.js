@@ -11634,9 +11634,13 @@ function showAddQuestionForm() {
               <select id="question-type" onchange="handleQuestionTypeChange()" 
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 <option value="text">${i18n.t('questionTypeText')}</option>
+                <option value="multiline_text">${i18n.t('questionTypeMultilineText')}</option>
+                <option value="number">${i18n.t('questionTypeNumber')}</option>
                 <option value="single_choice">${i18n.t('questionTypeSingleChoice')}</option>
                 <option value="multiple_choice">${i18n.t('questionTypeMultipleChoice')}</option>
+                <option value="dropdown">${i18n.t('questionTypeDropdown')}</option>
                 <option value="time_with_text">${i18n.t('questionTypeTimeWithText')}</option>
+                <option value="markdown">${i18n.t('questionTypeMarkdown')}</option>
               </select>
             </div>
             
@@ -11813,9 +11817,13 @@ function showEditQuestionForm(questionId) {
               <select id="question-type" onchange="handleQuestionTypeChange()" 
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                 <option value="text" ${question.question_type === 'text' ? 'selected' : ''}>${i18n.t('questionTypeText')}</option>
+                <option value="multiline_text" ${question.question_type === 'multiline_text' ? 'selected' : ''}>${i18n.t('questionTypeMultilineText')}</option>
+                <option value="number" ${question.question_type === 'number' ? 'selected' : ''}>${i18n.t('questionTypeNumber')}</option>
                 <option value="single_choice" ${question.question_type === 'single_choice' ? 'selected' : ''}>${i18n.t('questionTypeSingleChoice')}</option>
                 <option value="multiple_choice" ${question.question_type === 'multiple_choice' ? 'selected' : ''}>${i18n.t('questionTypeMultipleChoice')}</option>
+                <option value="dropdown" ${question.question_type === 'dropdown' ? 'selected' : ''}>${i18n.t('questionTypeDropdown')}</option>
                 <option value="time_with_text" ${question.question_type === 'time_with_text' ? 'selected' : ''}>${i18n.t('questionTypeTimeWithText')}</option>
+                <option value="markdown" ${question.question_type === 'markdown' ? 'selected' : ''}>${i18n.t('questionTypeMarkdown')}</option>
               </select>
             </div>
             
@@ -12013,21 +12021,21 @@ function handleQuestionTypeChange() {
   // Show question text container for all types
   questionTextContainer.classList.remove('hidden');
   
-  if (type === 'text') {
-    // Text type: Label as "问题"
+  if (type === 'text' || type === 'multiline_text' || type === 'number' || type === 'markdown') {
+    // Text-based types: Show answer length field
     answerLengthContainer.classList.remove('hidden');
     questionTextLabel.textContent = i18n.t('question') + ' *';
   } else if (type === 'time_with_text') {
     // Time type: Label as "标题"
     timeTypeContainer.classList.remove('hidden');
     questionTextLabel.textContent = i18n.t('title') + ' *';
-  } else { // single_choice or multiple_choice
-    // Choice types: Label as "问题文本"
+  } else if (type === 'single_choice' || type === 'multiple_choice' || type === 'dropdown') {
+    // Choice types: Show options and correct answer fields
     optionsContainer.classList.remove('hidden');
     correctAnswerContainer.classList.remove('hidden');
     questionTextLabel.textContent = i18n.t('questionText') + ' *';
     
-    if (type === 'single_choice') {
+    if (type === 'single_choice' || type === 'dropdown') {
       singleChoiceAnswer.classList.remove('hidden');
       multipleChoiceAnswer.classList.add('hidden');
     } else {
