@@ -9,9 +9,9 @@
 **🔗 GitHub 仓库**: https://github.com/Alan16168/review-system  
 **🌐 在线演示**: https://review-system.pages.dev  
 **🚀 最新部署**: https://review-system.pages.dev (2025-11-29 已部署) ✅  
-**✅ 当前版本**: V9.4.7 - 查看模式颜色优化 (2025-11-29) 🆕  
-**🎯 新功能**: ✅ 查看模式下：离队成员红色主题 + 当前成员蓝色主题 + 黄色警告徽章  
-**🔗 部署URL**: https://bf1b3535.review-system.pages.dev  
+**✅ 当前版本**: V9.4.8 - 编辑模式离队成员标识修复 (2025-11-29) 🆕  
+**🎯 新功能**: ✅ 编辑模式下正确显示离队成员（红色背景+黄色警告）  
+**🔗 部署URL**: https://bfd7450c.review-system.pages.dev  
 **💳 订阅系统**: ✅ 完整的PayPal订阅支付功能（年费$20）  
 **🛒 购物车系统**: ✅ 支持多商品结算，一次性支付所有订阅服务  
 **✅ 当前版本**: V1.2.0 - 商城产品详情 + 分层定价 + 团队功能修复 (2025-11-22)  
@@ -25,6 +25,101 @@
 **🌍 多语言**: ✅ 完整的6种语言支持（zh/zh-TW/en/fr/ja/es）  
 **🔧 诊断工具**: https://review-system.pages.dev/diagnostic.html （缓存问题诊断）
 **📱 移动端专属版**: https://review-system.pages.dev/mobile （触控优化界面）
+
+## 🎯 V9.4.8 更新 - 编辑模式离队成员标识修复 (2025-11-29) 🔴
+
+**问题描述**: 
+- **关键漏洞**: 在编辑模式下，用户1和2（已离开团队）的答案没有显示红色背景和黄色警告标识
+- 图片显示：用户1和2的答案显示为正常的绿色背景，而不是红色警告背景
+
+**根本原因**: 
+在 `src/routes/answer_sets.ts` 的第 66-77 行，**编辑模式**下的 API 查询存在致命缺陷：
+
+```typescript
+// 🚨 问题代码（已修复）：
+setsQuery = c.env.DB.prepare(`
+  SELECT ..., 
+         1 as is_current_team_member  // ❌ 硬编码为1，所有人都被当作当前成员
+  FROM review_answer_sets ras
+  WHERE ras.review_id = ? AND ras.user_id = ?
+`).bind(reviewId, userId);
+```
+
+**影响范围**:
+- **编辑模式**: ❌ 离队成员显示为正常背景（问题模式）
+- **查看模式**: ✅ 离队成员正确显示红色背景（正常工作）
+
+**修复方案**: ✅ 在编辑模式下添加团队成员实时验证
+
+**后端修复** (src/routes/answer_sets.ts:66-91):
+
+```typescript
+// ✅ 修复后：区分团队复盘和个人复盘
+if (review.team_id) {
+  // 团队复盘：检查用户是否还是团队成员
+  setsQuery = c.env.DB.prepare(`
+    SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
+           ras.is_locked, ras.locked_at, ras.locked_by, u.username,
+           CASE WHEN tm.user_id IS NOT NULL THEN 1 ELSE 0 END as is_current_team_member
+    FROM review_answer_sets ras
+    LEFT JOIN users u ON ras.user_id = u.id
+    LEFT JOIN team_members tm ON tm.team_id = ? AND tm.user_id = ras.user_id
+    WHERE ras.review_id = ? AND ras.user_id = ?
+    ORDER BY ras.created_at DESC
+  `).bind(review.team_id, reviewId, userId);
+} else {
+  // 个人复盘：用户总是"当前成员"（自己）
+  setsQuery = c.env.DB.prepare(`
+    SELECT ..., 1 as is_current_team_member
+    FROM review_answer_sets ras
+    WHERE ras.review_id = ? AND ras.user_id = ?
+  `).bind(reviewId, userId);
+}
+```
+
+**关键改进**:
+1. **团队复盘**: 添加 `LEFT JOIN team_members` 实时检查成员状态
+2. **个人复盘**: 保持 `is_current_team_member = 1`（正确行为）
+3. **统一行为**: 编辑模式和查看模式现在使用相同的成员验证逻辑
+
+**前端显示效果** (无需修改，已支持):
+- `updateAnswerSetNavigation` 函数（14778行）检测 `is_current_team_member === false`
+- 自动应用红色主题：`bg-red-50`、`border-red-200`
+- 显示黄色警告徽章："⚠️ 此队员已离开团队"
+
+**修复验证**:
+
+| 场景 | 修复前 | 修复后 |
+|------|--------|--------|
+| 编辑模式 - 用户1（离队） | 绿色背景，无警告 ❌ | 红色背景 + 黄色警告 ✅ |
+| 编辑模式 - 用户2（离队） | 绿色背景，无警告 ❌ | 红色背景 + 黄色警告 ✅ |
+| 编辑模式 - 当前成员 | 正常显示 ✅ | 正常显示 ✅ |
+| 查看模式 - 离队成员 | 红色背景 ✅ | 红色背景 ✅ |
+
+**技术细节**:
+- Git Commit: `1bde6e7`
+- 修改文件: `src/routes/answer_sets.ts`
+- 修改行数: 66-91
+- SQL优化: 添加 `LEFT JOIN team_members` 实时验证
+
+**安全性提升**:
+- ✅ 编辑模式和查看模式现在使用一致的成员验证逻辑
+- ✅ 防止硬编码值导致的安全漏洞
+- ✅ 实时查询 `team_members` 表确保数据准确性
+
+---
+
+## 🎯 V9.4.8 更新 - 编辑模式离队成员标识修复 (2025-11-29)
+
+**问题**: 编辑模式下，用户1和2（已离队）没有显示红色背景和警告词
+
+**根本原因**: GET /api/answer-sets/:reviewId 编辑模式将 is_current_team_member 硬编码为 1
+
+**修复**: 团队复盘添加 LEFT JOIN team_members 实时验证成员状态
+
+**结果**: 编辑模式现在正确显示离队成员（红色背景+黄色警告）
+
+---
 
 ## 🎯 V9.4.7 更新 - 查看模式颜色优化 (2025-11-29)
 
@@ -272,71 +367,7 @@ window.currentUser = currentUser;  // 添加此行确保全局可访问
 |------|----------|-----------|---------|
 | **Admin管理员** | ✅ 可锁定/解锁任意批次 | ✅ 可删除任意答案组（包括锁定状态） | ✅ 可编辑自己的答案 |
 | **复盘创建者** | ✅ 可锁定/解锁整个批次 | ✅ 可删除自己的答案组（未锁定） | ✅ 可编辑自己的答案 |
-| **团队成员** | ❌ 按钮灰色禁用 | ✅ 可删除自己的答案组（未锁定） | ✅ 可编辑自己的答案 |
-
-**功能说明**:
-1. **批次锁定机制** ✅
-   - **复盘创建者或Admin**可以锁定/解锁答案组
-   - 锁定操作针对整个批次（set_number），影响所有成员的答案组
-   - 锁定后，该批次的所有成员都不能编辑答案
-   - 按钮状态：普通成员看到灰色锁定按钮，创建者/Admin看到可用按钮
-
-2. **删除权限** ✅
-   - **每个成员**可以删除**自己的**答案组（未锁定状态）
-   - **Admin管理员**可以删除**任意成员**的答案组（包括锁定状态）
-   - 按钮状态：
-     - Admin：始终显示红色可用删除按钮
-     - 成员：自己的未锁定答案显示红色按钮，其他情况灰色
-
-3. **管理员特权** ✅
-   - 拥有 `admin` 角色的用户可直接锁定/解锁任意批次
-   - 管理员可删除任意成员的答案组（即便当前处于锁定状态）
-   - UI 自动显示红色可用按钮，便于管理员统一处理
-   - 管理员权限不受"是否创建者"和"锁定状态"限制
-
-4. **权限规则总结** ✅
-   ```
-   - 查看权限：所有团队成员可查看所有答案组
-   - 编辑权限：每个成员只能编辑自己的答案组（未锁定状态）
-   - 删除权限：成员可删除自己的未锁定答案组；管理员可删除任意答案组
-   - 锁定权限：复盘创建者或管理员可以锁定/解锁（影响整批）
-   ```
-
-**技术实现**:
-- **后端API改进** (src/routes/answer_sets.ts):
-  - PUT /api/answer-sets/:reviewId/:setNumber/lock: 验证复盘创建者或管理员身份，批量锁定
-  - PUT /api/answer-sets/:reviewId/:setNumber/unlock: 验证复盘创建者或管理员身份，批量解锁
-  - DELETE /api/answer-sets/:reviewId/:setNumber: 新增 `ownerId` 参数，管理员可删除任意成员答案组（锁定亦可）
-
-- **前端函数改进** (public/static/app.js):
-  - updateAnswerSetLockButton: 增加 admin 检测，管理员/创建者均可操作锁定按钮
-  - 删除按钮：管理员始终可用，普通成员仅对自己的未锁定答案可用
-  - deleteCurrentAnswerSet: 向后端传递 `ownerId`，确保管理员删除精准定位
-
-- **翻译更新** (public/static/i18n.js):
-  - answerSetHint: 说明管理员亦可锁定/解锁批次
-  - onlyReviewCreatorOrAdminCanLock: "只有复盘创建者或管理员可以锁定/解锁"
-  - adminDeleteHint: "管理员可删除任何答案组（包含锁定状态）"
-  - lockBatchHint / unlockBatchHint 等多语言同步更新
-
-**部署信息**:
-- Git Commit: 3366b71
-- 部署URL: https://3f336672.review-system.pages.dev
-- 部署时间: 2025-11-27
-- 主域名: https://review-system.pages.dev
-- V9.4.1 更新: ✅ Admin完整权限 + 类型安全验证 + 多语言翻译更新
-
----
-
-## 🐛 V9.3.1 修复 - 答案保存错误修复 (2025-11-27)
-
-**问题描述**: 用户在编辑复盘答案时，点击"保存"按钮出现"Not the owner of this answer set"错误，无法保存答案。
-
-**问题原因**: 所有权判断使用了严格相等(===)比较user_id，但API返回的user_id可能是字符串类型，而currentUser.id是数字类型，导致类型不匹配而判断失败。
-
-**解决方案**:
-- 将严格相等(===)改为宽松相等(==)，自动处理类型转换
-- 添加详细的调试日志，输出user_id的值和类型
+| **团队成员** | ❌ 按钮灰色禁用 | ✅ 可刚�值和类型
 - 影响的函数：saveInlineAnswer, updateAnswerInSet, updateMultipleChoiceInSet, renderAnswerSet, updateAnswerSetLockButton
 
 **修复效果**: ✅ 答案可以正常保存，不再出现所有权错误
@@ -778,6 +809,97 @@ window.currentUser = currentUser;  // 添加此行确保全局可访问
 - **前端**:
   - 新增3个模态框函数: `showTerms()`, `showPrivacy()`, `showPricingPlans()`
   - 增强 `populateUISettingsForm()` 加载法律文件内容
+  - 增强 `saveUISettings()` 保存法律文件内容
+  - 新增 `updateCharCount()` 实时更新字符计数
+  - 页脚链接使用 `onclick` 触发模态框
+- **后端**:
+  - 系统设置API自动支持新字段（无需修改）
+  - 订阅配置API提供价格数据
+- **数据库**:
+  - Migration 0064 创建两个新设置项
+  - 使用 TEXT 类型存储多语言JSON
+  - INSERT OR IGNORE 防止重复数据
+
+**用户体验提升**:
+- 🎨 **视觉设计**: 三种渐变色主题（蓝色/紫粉/绿色）区分不同模态框
+- 📱 **响应式布局**: 移动端和桌面端完美适配
+- 🌍 **多语言支持**: 法律文件支持用户当前语言
+- ⚡ **即时反馈**: 实时字符计数和限制提示
+- 🔒 **数据安全**: 字符限制防止数据库溢出
+- 💡 **易于管理**: 管理员可在后台轻松编辑法律文件
+
+---
+
+## 🚀 V8.8.0 部署 - 生产环境发布 (2025-11-24)
+
+**部署信息**:
+- **版本**: V8.8.0 ✅
+- **部署时间**: 2025-11-24 07:30 UTC
+- **部署状态**: ✅ 成功
+- **主域名**: https://review-system.pages.dev
+- **部署ID**: https://91406f64.review-system.pages.dev
+- **Worker Bundle**: 393.90 kB
+- **Git Commit**: 871d604
+
+**本次发布包含的所有更新**:
+
+**V8.7.1 - 保存复盘错误修复** ✅
+- 修复 `TypeError: Cannot set properties of null` 错误
+- 添加全面的null检查到表单处理函数
+- 用户现在可以正常保存复盘数据
+
+**V8.7.0 - 移动端专属应用** ✅  
+- 全新的移动端专属界面（独立路由 `/mobile`）
+- 底部导航栏（首页/审查/团队/我的）
+- 渐变色卡片设计和触控优化
+- 下拉刷新手势支持
+- Toast通知和全屏Loading
+
+**V8.6.1 - 复盘列表分类修复** ✅
+- 修复名著复盘和文档复盘显示在普通列表的问题
+- SQL查询添加 `review_type` 过滤条件
+
+**V8.6.0 - 字幕预览功能** ✅
+- YouTube视频分析前显示字幕预览
+- 用户可以确认字幕准确性后再开始AI分析
+- 显示视频元数据（标题、频道、时长）
+
+**V8.5.1 - YouTube字幕提取修复** ✅
+- 重写字幕提取逻辑，从视频页面HTML解析
+- 支持多语言字幕优先级（中文、英文）
+
+**V8.5.0 - 多层AI服务回退** ✅
+- 实现四层AI服务回退机制
+- Gemini → OpenAI → Claude → Genspark
+- 显示详细的错误信息
+
+**功能总结**:
+- ✅ Web版 + 移动端双界面
+- ✅ 所有核心功能正常运行
+- ✅ 保存复盘功能已修复
+- ✅ YouTube视频分析完整流程
+- ✅ 多层AI服务高可用性
+- ✅ 复盘类型正确分类
+
+---
+
+## 🐛 V8.7.1 修复 - 保存复盘错误修复 (2025-11-24)
+
+**问题描述**:
+- 用户保存复盘时出现 `TypeError: Cannot set properties of null (setting 'textContent')` 错误
+- 错误发生在 `handleQuestionTypeChange()` 函数中
+- 导致无法正常保存复盘数据到数据库
+
+**根本原因**:
+- `handleQuestionTypeChange()` 和 `collectQuestionFormData()` 函数缺少null检查
+- 当DOM元素不存在时，尝试访问或设置属性导致TypeError
+- 在某些情况下，保存复盘时会调用这些函数，但相关表单元素可能不在DOM中
+
+**解决方案** ✅:
+1. **handleQuestionTypeChange()**: 添加全面的null检查
+   ```javascript
+   // 检查所有必需元素是否存在
+   if (!answerLengthContainer || !timeettingsForm()` 加载法律文件内容
   - 增强 `saveUISettings()` 保存法律文件内容
   - 新增 `updateCharCount()` 实时更新字符计数
   - 页脚链接使用 `onclick` 触发模态框
