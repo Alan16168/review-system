@@ -64,16 +64,31 @@ answerSets.get('/:reviewId', async (c: Context) => {
         ORDER BY ras.created_at DESC
       `).bind(review.team_id, reviewId);
     } else {
-      // Edit mode OR personal review: only get current user's answer sets
-      setsQuery = c.env.DB.prepare(`
-        SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
-               ras.is_locked, ras.locked_at, ras.locked_by, u.username,
-               1 as is_current_team_member
-        FROM review_answer_sets ras
-        LEFT JOIN users u ON ras.user_id = u.id
-        WHERE ras.review_id = ? AND ras.user_id = ?
-        ORDER BY ras.created_at DESC
-      `).bind(reviewId, userId);
+      // Edit mode OR personal review: get current user's answer sets
+      // For team reviews in edit mode, also check if user is still a team member
+      if (review.team_id) {
+        setsQuery = c.env.DB.prepare(`
+          SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
+                 ras.is_locked, ras.locked_at, ras.locked_by, u.username,
+                 CASE WHEN tm.user_id IS NOT NULL THEN 1 ELSE 0 END as is_current_team_member
+          FROM review_answer_sets ras
+          LEFT JOIN users u ON ras.user_id = u.id
+          LEFT JOIN team_members tm ON tm.team_id = ? AND tm.user_id = ras.user_id
+          WHERE ras.review_id = ? AND ras.user_id = ?
+          ORDER BY ras.created_at DESC
+        `).bind(review.team_id, reviewId, userId);
+      } else {
+        // Personal review: user is always considered "current member" (self)
+        setsQuery = c.env.DB.prepare(`
+          SELECT ras.id, ras.user_id, ras.set_number, ras.created_at, ras.updated_at, 
+                 ras.is_locked, ras.locked_at, ras.locked_by, u.username,
+                 1 as is_current_team_member
+          FROM review_answer_sets ras
+          LEFT JOIN users u ON ras.user_id = u.id
+          WHERE ras.review_id = ? AND ras.user_id = ?
+          ORDER BY ras.created_at DESC
+        `).bind(reviewId, userId);
+      }
     }
 
     const sets = await setsQuery.all();
