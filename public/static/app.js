@@ -12242,6 +12242,21 @@ async function handleAddQuestion(e) {
   e.preventDefault();
   
   try {
+    // Debug: Log auth state
+    console.log('[DEBUG] authToken:', authToken ? 'Present' : 'Missing');
+    console.log('[DEBUG] currentUser:', currentUser);
+    console.log('[DEBUG] axios Authorization header:', axios.defaults.headers.common['Authorization']);
+    
+    // Ensure token is set
+    if (!authToken) {
+      showNotification(i18n.t('sessionExpired') || 'Please login again', 'warning');
+      showHomePage();
+      return;
+    }
+    
+    // Re-set Authorization header to be absolutely sure
+    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+    
     const data = collectQuestionFormData();
     await axios.post(`/api/templates/${currentEditingTemplate.id}/questions`, data);
     showNotification(i18n.t('questionAdded'), 'success');
@@ -12257,6 +12272,21 @@ async function handleUpdateQuestion(e, questionId) {
   e.preventDefault();
   
   try {
+    // Debug: Log auth state
+    console.log('[DEBUG] authToken:', authToken ? 'Present' : 'Missing');
+    console.log('[DEBUG] currentUser:', currentUser);
+    console.log('[DEBUG] axios Authorization header:', axios.defaults.headers.common['Authorization']);
+    
+    // Ensure token is set
+    if (!authToken) {
+      showNotification(i18n.t('sessionExpired') || 'Please login again', 'warning');
+      showHomePage();
+      return;
+    }
+    
+    // Re-set Authorization header to be absolutely sure
+    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+    
     const question = currentTemplateQuestions.find(q => q.id === questionId);
     const data = collectQuestionFormData();
     data.question_number = question.question_number;
