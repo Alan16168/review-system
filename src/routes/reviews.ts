@@ -923,6 +923,7 @@ reviews.get('/', async (c) => {
     // 3. Non-public reviews where user is a collaborator
     // IMPORTANT: Exclude famous-book and document review types (they have separate lists)
     // CRITICAL: Team reviews require CURRENT team membership, even for creators who left the team
+    // CRITICAL: Line 933 previously had a bug allowing creators to see team reviews after leaving
     const query = `
       SELECT DISTINCT r.*, u.username as creator_name, t.name as team_name
       FROM reviews r
@@ -930,9 +931,9 @@ reviews.get('/', async (c) => {
       LEFT JOIN teams t ON r.team_id = t.id
       LEFT JOIN review_collaborators rc ON r.id = rc.review_id
       WHERE (
-        (r.user_id = ? AND r.team_id IS NULL)
-        OR (r.owner_type != 'public' AND r.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
-        OR (r.owner_type != 'public' AND rc.user_id = ?)
+        (r.team_id IS NULL AND r.user_id = ?)
+        OR (r.team_id IS NOT NULL AND EXISTS (SELECT 1 FROM team_members WHERE team_id = r.team_id AND user_id = ?))
+        OR (rc.user_id = ?)
       )
       AND (r.review_type IS NULL OR r.review_type NOT IN ('famous-book', 'document'))
       ORDER BY r.updated_at DESC
@@ -1010,14 +1011,15 @@ reviews.get('/:id', async (c) => {
 
     // CRITICAL: If review belongs to a team, verify user is STILL a team member
     // This prevents removed team members from accessing team reviews
+    // IMPORTANT: This applies to ALL users, including the review creator
     if (review.team_id && review.owner_type !== 'public') {
       const isMember = await c.env.DB.prepare(`
         SELECT 1 FROM team_members 
         WHERE team_id = ? AND user_id = ?
       `).bind(review.team_id, user.id).first();
       
-      // If user is not the review creator and not a team member, deny access
-      if (!isMember && review.user_id !== user.id) {
+      // If user is not a current team member, deny access (including creators who left)
+      if (!isMember) {
         console.log('[GET REVIEW] Access denied: User is no longer a team member');
         return c.json({ 
           error: 'Access denied. You are no longer a member of this team.',
@@ -1537,8 +1539,19 @@ reviews.get('/:id/all-answers', async (c) => {
     // Get all answers
     const answers = await getReviewAnswers(c.env.DB, reviewId);
     
+    // Get review to check if it's a team review
+    const review: any = await c.env.DB.prepare('SELECT team_id FROM reviews WHERE id = ?').bind(reviewId).first();
+    const teamId = review?.team_id;
+    
     // Get completion status
     const completionStatus = await getAnswerCompletionStatus(c.env.DB, reviewId);
+
+    // If it's a team review, get current team members
+    let currentTeamMembers = new Set<number>();
+    if (teamId) {
+      const members = await c.env.DB.prepare('SELECT user_id FROM team_members WHERE team_id = ?').bind(teamId).all();
+      currentTeamMembers = new Set(members.results?.map((m: any) => m.user_id) || []);
+    }
 
     // Group answers by question
     const answersByQuestion: {[key: number]: any[]} = {};
@@ -1547,6 +1560,9 @@ reviews.get('/:id/all-answers', async (c) => {
     }
 
     answers.forEach(answer => {
+      // Check if user is still a team member (if this is a team review)
+      const isCurrentTeamMember = !teamId || currentTeamMembers.has(answer.user_id);
+      
       answersByQuestion[answer.question_number].push({
         id: answer.id,
         user_id: answer.user_id,
@@ -1555,7 +1571,8 @@ reviews.get('/:id/all-answers', async (c) => {
         answer: answer.answer,
         created_at: answer.created_at,
         updated_at: answer.updated_at,
-        is_mine: answer.user_id === user.id
+        is_mine: answer.user_id === user.id,
+        is_current_team_member: isCurrentTeamMember
       });
     });
 

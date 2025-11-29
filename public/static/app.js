@@ -6245,6 +6245,8 @@ async function showTeamReviewCollaboration(id) {
                             const groupId = 'user-group-' + num + '-' + username.replace(/[^a-zA-Z0-9]/g, '');
                             const answerCount = userAnswers.length;
                             const isCurrentUser = userAnswers.some(a => a.user_id === currentUserId);
+                            // Check if this user is a former team member
+                            const isFormerMember = userAnswers.some(a => a.is_current_team_member === false);
                             
                             // Sort user's answers by created_at (newest first)
                             userAnswers.sort((a, b) => {
@@ -6261,6 +6263,7 @@ async function showTeamReviewCollaboration(id) {
                             
                             // Build user badge
                             const userBadge = isCurrentUser ? ' <span class="text-indigo-600">(' + (i18n.t("myAnswer") || "我") + ')</span>' : '';
+                            const formerMemberBadge = isFormerMember ? ' <span class="ml-2 px-2 py-0.5 text-xs bg-yellow-400 text-yellow-900 rounded-full"><i class="fas fa-exclamation-triangle mr-1"></i>' + (i18n.t('formerTeamMember') || '此队员已离开团队') + '</span>' : '';
                             
                             // Build collapse button HTML
                             const collapseButton = answerCount > 1 ? 
@@ -6269,40 +6272,49 @@ async function showTeamReviewCollaboration(id) {
                                 '<span id="toggle-text-' + groupId + '">' + initialText + '</span>' +
                               '</button>' : '';
                             
-                            // Build answers HTML
+                            // Build answers HTML with red styling for former members
                             const answersHtml = userAnswers.map((answer, idx) => {
                               const isOwner = answer.user_id === currentUserId;
                               const latestBadge = (idx === 0 && answerCount > 1) ? 
-                                '<span class="ml-2 text-xs font-semibold text-blue-600"><i class="fas fa-star mr-1"></i>' + (i18n.t('latest') || '最新') + '</span>' : '';
-                              const deleteButton = isOwner ? 
+                                '<span class="ml-2 text-xs font-semibold ' + (isFormerMember ? 'text-red-600' : 'text-blue-600') + '"><i class="fas fa-star mr-1"></i>' + (i18n.t('latest') || '最新') + '</span>' : '';
+                              const deleteButton = isOwner && !isFormerMember ? 
                                 '<button onclick="handleDeleteMyAnswer(' + id + ', ' + num + ', ' + answer.id + ')" class="text-red-600 hover:text-red-800 text-xs px-2 py-1 hover:bg-red-50 rounded ml-2" title="' + i18n.t('deleteAnswer') + '">' +
                                   '<i class="fas fa-trash"></i>' +
                                 '</button>' : '';
                               
-                              return '<div class="border-l-4 ' + (isOwner ? 'border-indigo-500 bg-indigo-50' : 'border-green-500 bg-white') + ' pl-4 p-3 rounded-r">' +
+                              const borderColor = isFormerMember ? 'border-red-500' : (isOwner ? 'border-indigo-500' : 'border-green-500');
+                              const bgColor = isFormerMember ? 'bg-red-100' : (isOwner ? 'bg-indigo-50' : 'bg-white');
+                              const textColor = isFormerMember ? 'text-red-900' : 'text-gray-800';
+                              const timeColor = isFormerMember ? 'text-red-600' : 'text-gray-500';
+                              
+                              return '<div class="border-l-4 ' + borderColor + ' ' + bgColor + ' pl-4 p-3 rounded-r">' +
                                 '<div class="flex justify-between items-start mb-2">' +
                                   '<div class="flex-1">' +
-                                    '<span class="text-xs text-gray-500">' +
+                                    '<span class="text-xs ' + timeColor + '">' +
                                       '<i class="fas fa-clock mr-1"></i>' + new Date(answer.created_at || answer.updated_at).toLocaleString() +
                                     '</span>' +
                                     latestBadge +
                                   '</div>' +
                                   deleteButton +
                                 '</div>' +
-                                '<p class="text-gray-800 whitespace-pre-wrap">' + escapeHtml(answer.answer) + '</p>' +
+                                '<p class="' + textColor + ' whitespace-pre-wrap">' + escapeHtml(answer.answer) + '</p>' +
                               '</div>';
                             }).join('');
                             
-                            return '<div class="border border-gray-300 rounded-lg overflow-hidden ' + (isCurrentUser ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50') + '">' +
+                            const containerBg = isFormerMember ? 'bg-red-50 border-red-300' : (isCurrentUser ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50');
+                            const headerBg = isFormerMember ? 'bg-red-100 border-b border-red-200' : (isCurrentUser ? 'bg-indigo-100 border-b border-indigo-200' : 'bg-green-50 border-b border-gray-300');
+                            const iconColor = isFormerMember ? 'text-red-600' : (isCurrentUser ? 'text-indigo-600' : 'text-gray-600');
+                            
+                            return '<div class="border rounded-lg overflow-hidden ' + containerBg + '">' +
                               '<!-- Group Header with Collapse/Expand Button -->' +
-                              '<div class="flex justify-between items-center p-3 ' + (isCurrentUser ? 'bg-indigo-100 border-b border-indigo-200' : 'bg-green-50 border-b border-gray-300') + '">' +
-                                '<div class="flex items-center">' +
-                                  '<i class="fas fa-user-circle text-xl ' + (isCurrentUser ? 'text-indigo-600' : 'text-gray-600') + ' mr-2"></i>' +
+                              '<div class="flex justify-between items-center p-3 ' + headerBg + '">' +
+                                '<div class="flex items-center flex-wrap">' +
+                                  '<i class="fas fa-user-circle text-xl ' + iconColor + ' mr-2"></i>' +
                                   '<div>' +
-                                    '<span class="text-sm font-semibold text-gray-800">' +
-                                      escapeHtml(username) + userBadge +
+                                    '<span class="text-sm font-semibold ' + (isFormerMember ? 'text-red-800' : 'text-gray-800') + '">' +
+                                      escapeHtml(username) + userBadge + formerMemberBadge +
                                     '</span>' +
-                                    '<span class="text-xs text-gray-500 ml-2">' +
+                                    '<span class="text-xs ' + (isFormerMember ? 'text-red-600' : 'text-gray-500') + ' ml-2">' +
                                       '(' + answerCount + ' ' + (answerCount === 1 ? i18n.t('answer') || '个答案' : i18n.t('answers') || '个答案') + ')' +
                                     '</span>' +
                                   '</div>' +
