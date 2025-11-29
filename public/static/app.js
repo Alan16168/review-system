@@ -6282,10 +6282,10 @@ async function showTeamReviewCollaboration(id) {
                                   '<i class="fas fa-trash"></i>' +
                                 '</button>' : '';
                               
-                              const borderColor = isFormerMember ? 'border-red-500' : (isOwner ? 'border-indigo-500' : 'border-green-500');
-                              const bgColor = isFormerMember ? 'bg-red-100' : (isOwner ? 'bg-indigo-50' : 'bg-white');
+                              const borderColor = isFormerMember ? 'border-red-500' : (isOwner ? 'border-indigo-500' : 'border-blue-400');
+                              const bgColor = isFormerMember ? 'bg-red-100' : (isOwner ? 'bg-indigo-50' : 'bg-blue-50');
                               const textColor = isFormerMember ? 'text-red-900' : 'text-gray-800';
-                              const timeColor = isFormerMember ? 'text-red-600' : 'text-gray-500';
+                              const timeColor = isFormerMember ? 'text-red-600' : (isOwner ? 'text-gray-500' : 'text-blue-600');
                               
                               return '<div class="border-l-4 ' + borderColor + ' ' + bgColor + ' pl-4 p-3 rounded-r">' +
                                 '<div class="flex justify-between items-start mb-2">' +
@@ -6301,9 +6301,9 @@ async function showTeamReviewCollaboration(id) {
                               '</div>';
                             }).join('');
                             
-                            const containerBg = isFormerMember ? 'bg-red-50 border-red-300' : (isCurrentUser ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50');
-                            const headerBg = isFormerMember ? 'bg-red-100 border-b border-red-200' : (isCurrentUser ? 'bg-indigo-100 border-b border-indigo-200' : 'bg-green-50 border-b border-gray-300');
-                            const iconColor = isFormerMember ? 'text-red-600' : (isCurrentUser ? 'text-indigo-600' : 'text-gray-600');
+                            const containerBg = isFormerMember ? 'bg-red-50 border-red-300' : (isCurrentUser ? 'bg-indigo-50 border-indigo-300' : 'bg-blue-50 border-blue-300');
+                            const headerBg = isFormerMember ? 'bg-red-100 border-b border-red-200' : (isCurrentUser ? 'bg-indigo-100 border-b border-indigo-200' : 'bg-blue-100 border-b border-blue-200');
+                            const iconColor = isFormerMember ? 'text-red-600' : (isCurrentUser ? 'text-indigo-600' : 'text-blue-600');
                             
                             return '<div class="border rounded-lg overflow-hidden ' + containerBg + '">' +
                               '<!-- Group Header with Collapse/Expand Button -->' +
