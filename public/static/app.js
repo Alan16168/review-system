@@ -4,6 +4,27 @@ let authToken = null;
 let currentView = 'home';
 let currentDraftId = null; // Track the draft ID to avoid creating duplicates
 
+// Setup axios response interceptor to handle 401 errors
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      console.warn('[AUTH] Received 401 Unauthorized, clearing auth and redirecting to login');
+      // Clear auth state
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      currentUser = null;
+      window.currentUser = null;
+      authToken = null;
+      delete axios.defaults.headers.common['Authorization'];
+      // Show notification and redirect to home
+      showNotification(i18n.t('sessionExpired') || 'Session expired, please login again', 'warning');
+      showHomePage();
+    }
+    return Promise.reject(error);
+  }
+)
+
 // ============================================================================
 // Global Modal Utilities
 // ============================================================================
