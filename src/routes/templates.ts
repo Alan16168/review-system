@@ -599,13 +599,13 @@ templates.post('/:id/questions', premiumOrAdmin, async (c) => {
       return c.json({ error: 'Question text is required' }, 400);
     }
 
-    // Validate question type
-    if (!['text', 'single_choice', 'multiple_choice', 'time_with_text'].includes(question_type)) {
+    // Validate question type (including new types: multiline_text, number, dropdown, markdown)
+    if (!['text', 'multiline_text', 'number', 'single_choice', 'multiple_choice', 'dropdown', 'time_with_text', 'markdown'].includes(question_type)) {
       return c.json({ error: 'Invalid question type' }, 400);
     }
 
-    // Validate choice questions
-    if (question_type === 'single_choice' || question_type === 'multiple_choice') {
+    // Validate choice questions (single_choice, multiple_choice, dropdown)
+    if (question_type === 'single_choice' || question_type === 'multiple_choice' || question_type === 'dropdown') {
       if (!options) {
         return c.json({ error: 'Options are required for choice questions' }, 400);
       }
@@ -710,13 +710,13 @@ templates.put('/:templateId/questions/:questionId', premiumOrAdmin, async (c) =>
       return c.json({ error: 'Question text is required' }, 400);
     }
 
-    // Validate question type
-    if (!['text', 'single_choice', 'multiple_choice', 'time_with_text'].includes(question_type)) {
+    // Validate question type (including new types: multiline_text, number, dropdown, markdown)
+    if (!['text', 'multiline_text', 'number', 'single_choice', 'multiple_choice', 'dropdown', 'time_with_text', 'markdown'].includes(question_type)) {
       return c.json({ error: 'Invalid question type' }, 400);
     }
 
-    // Validate choice questions
-    if (question_type === 'single_choice' || question_type === 'multiple_choice') {
+    // Validate choice questions (single_choice, multiple_choice, dropdown)
+    if (question_type === 'single_choice' || question_type === 'multiple_choice' || question_type === 'dropdown') {
       if (!options) {
         return c.json({ error: 'Options are required for choice questions' }, 400);
       }
