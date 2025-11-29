@@ -14481,7 +14481,7 @@ async function loadAnswerSets(reviewId, keepCurrentIndex = false, mode = 'edit')
     team_id: window.currentEditReview?.team_id ?? reviewMeta.team_id ?? window.answerSetsMeta?.team_id ?? null
   };
   
-  // Sort answer sets by created_at in descending order (newest first)
+  // Sort answer sets by created_at in ascending order (oldest first)
   let sets = response.data.sets || [];
   sets = sets.map(set => ({
     ...set,
@@ -14492,7 +14492,7 @@ async function loadAnswerSets(reviewId, keepCurrentIndex = false, mode = 'edit')
   sets.sort((a, b) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();
-    return dateB - dateA; // Descending order (newest first)
+    return dateA - dateB; // Ascending order (oldest first)
   });
   
   window.currentAnswerSets = sets;
@@ -15617,7 +15617,7 @@ async function createNewAnswerSet(reviewId) {
       // Reload answer sets to get the updated list
       await loadAnswerSets(reviewId);
       
-      // Navigate to the new set (last one)
+      // Navigate to the new set (last one, since newest is sorted last)
       window.currentSetIndex = window.currentAnswerSets.length - 1;
       renderAnswerSet(reviewId);
     }
