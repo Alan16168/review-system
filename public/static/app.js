@@ -8850,23 +8850,23 @@ async function showAdmin() {
                 <button onclick="showAdminCategory('system')" 
                         class="admin-category-tab active py-4 px-1 border-b-2 font-medium text-base"
                         data-category="system">
-                  <i class="fas fa-cogs mr-2"></i>系统
+                  <i class="fas fa-cogs mr-2"></i>${i18n.t('systemSettings')}
                 </button>
                 <button onclick="showAdminCategory('agents')" 
                         class="admin-category-tab py-4 px-1 border-b-2 font-medium text-base"
                         data-category="agents">
-                  <i class="fas fa-robot mr-2"></i>智能体配置
+                  <i class="fas fa-robot mr-2"></i>${i18n.t('agentConfig')}
                 </button>
                 <button onclick="showAdminCategory('marketplace')" 
                         class="admin-category-tab py-4 px-1 border-b-2 font-medium text-base"
                         data-category="marketplace">
-                  <i class="fas fa-store mr-2"></i>商城管理
+                  <i class="fas fa-store mr-2"></i>${i18n.t('marketplaceManagement')}
                 </button>
               ` : `
                 <button onclick="showAdminCategory('system')" 
                         class="admin-category-tab active py-4 px-1 border-b-2 font-medium text-base"
                         data-category="system">
-                  <i class="fas fa-cogs mr-2"></i>系统
+                  <i class="fas fa-cogs mr-2"></i>${i18n.t('systemSettings')}
                 </button>
               `}
             </nav>
@@ -8967,7 +8967,7 @@ function showAdminCategory(category) {
               <button onclick="showAdminSubTab('publicReviews')" 
                       class="admin-subtab py-3 px-1 border-b-2 font-medium"
                       data-subtab="publicReviews">
-                <i class="fas fa-globe mr-2"></i>公开复盘
+                <i class="fas fa-globe mr-2"></i>${i18n.t('publicReviews')}
               </button>
               <button onclick="showAdminSubTab('keywords')" 
                       class="admin-subtab py-3 px-1 border-b-2 font-medium"
@@ -8993,7 +8993,7 @@ function showAdminCategory(category) {
             <button onclick="showAdminSubTab('aiSettings')" 
                     class="admin-subtab active py-3 px-1 border-b-2 font-medium"
                     data-subtab="aiSettings">
-              <i class="fas fa-robot mr-2"></i>智能写作助手
+              <i class="fas fa-robot mr-2"></i>${i18n.t('aiSettings')}
             </button>
           </nav>
         </div>
@@ -9008,32 +9008,32 @@ function showAdminCategory(category) {
             <button onclick="showAdminSubTab('subscription')" 
                     class="admin-subtab active py-3 px-1 border-b-2 font-medium"
                     data-subtab="subscription">
-              <i class="fas fa-credit-card mr-2"></i>订阅
+              <i class="fas fa-credit-card mr-2"></i>${i18n.t('subscriptionManagement')}
             </button>
             <button onclick="showAdminSubTab('marketplace-agents')" 
                     class="admin-subtab py-3 px-1 border-b-2 font-medium"
                     data-subtab="marketplace-agents">
-              <i class="fas fa-robot mr-2"></i>智能体
+              <i class="fas fa-robot mr-2"></i>${i18n.t('aiAgents')}
             </button>
             <button onclick="showAdminSubTab('writing-templates')" 
                     class="admin-subtab py-3 px-1 border-b-2 font-medium"
                     data-subtab="writing-templates">
-              <i class="fas fa-file-alt mr-2"></i>写作模板
+              <i class="fas fa-file-alt mr-2"></i>${i18n.t('writingTemplates')}
             </button>
             <button onclick="showAdminSubTab('templates')" 
                     class="admin-subtab py-3 px-1 border-b-2 font-medium"
                     data-subtab="templates">
-              <i class="fas fa-clipboard-list mr-2"></i>复盘模板
+              <i class="fas fa-clipboard-list mr-2"></i>${i18n.t('templates')}
             </button>
             <button onclick="showAdminSubTab('marketplace-other')" 
                     class="admin-subtab py-3 px-1 border-b-2 font-medium"
                     data-subtab="marketplace-other">
-              <i class="fas fa-box mr-2"></i>其他产品
+              <i class="fas fa-box mr-2"></i>${i18n.t('otherProducts')}
             </button>
             <button onclick="showAdminSubTab('payment-history')" 
                     class="admin-subtab py-3 px-1 border-b-2 font-medium"
                     data-subtab="payment-history">
-              <i class="fas fa-receipt mr-2"></i>支付历史
+              <i class="fas fa-receipt mr-2"></i>${i18n.t('paymentHistory')}
             </button>
           </nav>
         </div>
