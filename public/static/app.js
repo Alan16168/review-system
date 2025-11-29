@@ -11829,7 +11829,7 @@ function showEditQuestionForm(questionId) {
             
             <!-- Question Text -->
             <div id="question-text-container">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label id="question-text-label" class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('questionText')} *
               </label>
               <textarea id="question-text" required rows="3"
