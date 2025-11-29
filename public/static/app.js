@@ -11836,8 +11836,8 @@ function showEditQuestionForm(questionId) {
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">${escapeHtml(question.question_text)}</textarea>
             </div>
             
-            <!-- Answer Length (for text type only) -->
-            <div id="answer-length-container" class="${question.question_type === 'text' ? '' : 'hidden'}">
+            <!-- Answer Length (for text-based types) -->
+            <div id="answer-length-container" class="${['text', 'multiline_text', 'number', 'markdown'].includes(question.question_type) ? '' : 'hidden'}">
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('answerLength')} *
               </label>
@@ -11916,7 +11916,7 @@ function showEditQuestionForm(questionId) {
             </div>
             
             <!-- Choice Options (for choice types only) -->
-            <div id="options-container" class="${question.question_type === 'single_choice' || question.question_type === 'multiple_choice' ? '' : 'hidden'}">
+            <div id="options-container" class="${['single_choice', 'multiple_choice', 'dropdown'].includes(question.question_type) ? '' : 'hidden'}">
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('choiceOptions')} *
               </label>
@@ -11930,12 +11930,12 @@ function showEditQuestionForm(questionId) {
             </div>
             
             <!-- Correct Answer (for choice types only) -->
-            <div id="correct-answer-container" class="${question.question_type === 'single_choice' || question.question_type === 'multiple_choice' ? '' : 'hidden'}">
+            <div id="correct-answer-container" class="${['single_choice', 'multiple_choice', 'dropdown'].includes(question.question_type) ? '' : 'hidden'}">
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 ${i18n.t('correctAnswer')} *
                 <span class="text-xs text-gray-500">(${i18n.t('correctAnswerHint')})</span>
               </label>
-              <div id="single-choice-answer" class="${question.question_type === 'single_choice' ? '' : 'hidden'} space-y-2">
+              <div id="single-choice-answer" class="${['single_choice', 'dropdown'].includes(question.question_type) ? '' : 'hidden'} space-y-2">
                 <p class="text-xs text-gray-600 mb-2">${i18n.t('singleChoiceHint')}</p>
                 <!-- Radio buttons will be added here -->
               </div>
@@ -11971,7 +11971,7 @@ function showEditQuestionForm(questionId) {
   // Set correct answer
   if (question.correct_answer) {
     setTimeout(() => {
-      if (question.question_type === 'single_choice') {
+      if (question.question_type === 'single_choice' || question.question_type === 'dropdown') {
         const radio = document.querySelector(`input[name="correct-answer-radio"][value="${question.correct_answer}"]`);
         if (radio) radio.checked = true;
       } else if (question.question_type === 'multiple_choice') {
