@@ -17010,12 +17010,12 @@ async function showAISettingsManagement(container) {
       <div class="flex justify-between items-center mb-6">
         <div>
           <h2 class="text-2xl font-bold text-gray-800">
-            <i class="fas fa-robot mr-2"></i>智能写作助手
+            <i class="fas fa-robot mr-2"></i>${i18n.t('aiWritingAssistant')}
           </h2>
         </div>
         <button id="save-settings-btn" onclick="saveCurrentTabSettings(event)" 
                 class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
-          <i class="fas fa-save mr-2"></i>保存设置
+          <i class="fas fa-save mr-2"></i>${i18n.t('saveSettings')}
         </button>
       </div>
 
@@ -17025,12 +17025,12 @@ async function showAISettingsManagement(container) {
           <button onclick="switchAISettingsTab('parameters')" 
                   id="tab-parameters"
                   class="tab-button py-4 px-1 border-b-2 font-medium text-sm transition-colors">
-            <i class="fas fa-cogs mr-2"></i>参数
+            <i class="fas fa-cogs mr-2"></i>${i18n.t('parameters')}
           </button>
           <button onclick="switchAISettingsTab('templates')" 
                   id="tab-templates"
                   class="tab-button py-4 px-1 border-b-2 font-medium text-sm transition-colors">
-            <i class="fas fa-file-alt mr-2"></i>写作模板
+            <i class="fas fa-file-alt mr-2"></i>${i18n.t('writingTemplates')}
           </button>
         </nav>
       </div>
@@ -17039,7 +17039,7 @@ async function showAISettingsManagement(container) {
       <div id="ai-settings-content">
         <div class="text-center py-12">
           <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
-          <p class="text-gray-600">加载中...</p>
+          <p class="text-gray-600">${i18n.t('loading')}</p>
         </div>
       </div>
     </div>
@@ -17100,21 +17100,21 @@ async function loadAISettings() {
             <div class="flex-1">
               <label class="block text-lg font-semibold text-gray-800 mb-2">
                 <i class="fas fa-cogs mr-2 text-indigo-600"></i>
-                最大输出 Token 数量
+                ${i18n.t('maxOutputTokens')}
               </label>
               <p class="text-sm text-gray-600 mb-4">
-                控制 AI 生成内容的最大长度。Token 数量越大，可以生成的内容越长。
+                ${i18n.t('maxOutputTokensHint')}
               </p>
             </div>
             <span class="ml-4 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
-              核心参数
+              ${i18n.t('coreParameter')}
             </span>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                Token 数量
+                ${i18n.t('tokenCount')}
               </label>
               <input 
                 type="number" 
@@ -17128,14 +17128,14 @@ async function loadAISettings() {
               >
               <p class="text-xs text-gray-500 mt-2">
                 <i class="fas fa-info-circle mr-1"></i>
-                范围：1000 - 8192（Gemini API 上限）
+                ${i18n.t('tokenRange')}
               </p>
             </div>
 
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h4 class="text-sm font-medium text-gray-700 mb-3">
                 <i class="fas fa-calculator mr-2 text-green-600"></i>
-                预估生成能力
+                ${i18n.t('estimatedCapacity')}
               </h4>
               <div id="token-preview" class="space-y-2">
                 <!-- Will be populated by JS -->
@@ -17145,13 +17145,13 @@ async function loadAISettings() {
 
           <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h4 class="text-sm font-medium text-blue-800 mb-2">
-              <i class="fas fa-lightbulb mr-2"></i>Token 与字数关系
+              <i class="fas fa-lightbulb mr-2"></i>${i18n.t('tokenWordRelation')}
             </h4>
             <div class="text-sm text-blue-700 space-y-1">
-              <p>• <strong>中文内容</strong>：1 个中文字 ≈ 2-3 tokens</p>
-              <p>• <strong>英文内容</strong>：1 个英文单词 ≈ 1-2 tokens</p>
-              <p>• <strong>2048 tokens</strong>：约 700-1000 中文字</p>
-              <p>• <strong>8192 tokens</strong>：约 2700-4000 中文字</p>
+              <p>• <strong>${i18n.t('chineseContent')}</strong>：${i18n.t('chineseTokenRatio')}</p>
+              <p>• <strong>${i18n.t('englishContent')}</strong>：${i18n.t('englishTokenRatio')}</p>
+              <p>• ${i18n.t('tokensEstimate2048')}</p>
+              <p>• ${i18n.t('tokensEstimate8192')}</p>
             </div>
           </div>
         </div>
@@ -17160,10 +17160,10 @@ async function loadAISettings() {
         <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
           <label class="block text-lg font-semibold text-gray-800 mb-2">
             <i class="fas fa-thermometer-half mr-2 text-orange-600"></i>
-            创意度 (Temperature)
+            ${i18n.t('temperature')}
           </label>
           <p class="text-sm text-gray-600 mb-4">
-            控制 AI 生成内容的随机性和创意性。值越高越有创意，值越低越稳定一致。
+            ${i18n.t('temperatureHint')}
           </p>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -17179,21 +17179,21 @@ async function loadAISettings() {
                 oninput="updateTemperatureDisplay(this.value)"
               >
               <div class="flex justify-between text-xs text-gray-500 mt-2">
-                <span>保守 (0)</span>
+                <span>${i18n.t('conservative')} (0)</span>
                 <span id="temperature-value" class="font-mono text-lg text-indigo-600">${getSettingValue(settings, 'ai_temperature')}</span>
-                <span>创意 (1)</span>
+                <span>${i18n.t('creative')} (1)</span>
               </div>
             </div>
 
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <h4 class="text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-info-circle mr-2 text-blue-600"></i>
-                推荐设置
+                ${i18n.t('recommendedSettings')}
               </h4>
               <div class="text-sm text-gray-600 space-y-1">
-                <p>• <strong>0.3-0.5</strong>：专业文档、技术文章</p>
-                <p>• <strong>0.7</strong>：一般内容（推荐）</p>
-                <p>• <strong>0.8-1.0</strong>：创意写作、营销文案</p>
+                <p>• <strong>0.3-0.5</strong>：${i18n.t('professionalDocs')}</p>
+                <p>• <strong>0.7</strong>：${i18n.t('generalContent')}</p>
+                <p>• <strong>0.8-1.0</strong>：${i18n.t('creativeWriting')}</p>
               </div>
             </div>
           </div>
@@ -17203,10 +17203,10 @@ async function loadAISettings() {
         <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
           <label class="block text-lg font-semibold text-gray-800 mb-2">
             <i class="fas fa-text-width mr-2 text-purple-600"></i>
-            默认目标字数
+            ${i18n.t('defaultWordCount')}
           </label>
           <p class="text-sm text-gray-600 mb-4">
-            创建新小节时的默认字数设置。
+            ${i18n.t('newSectionDefault')}
           </p>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -17222,20 +17222,20 @@ async function loadAISettings() {
               >
               <p class="text-xs text-gray-500 mt-2">
                 <i class="fas fa-info-circle mr-1"></i>
-                范围：100 - 5000 字
+                ${i18n.t('tokenRange').replace('1000 - 8192（Gemini API 上限）', '100 - 5000 ' + i18n.t('words'))}
               </p>
             </div>
 
             <div class="col-span-2 bg-white rounded-lg p-4 border border-gray-200">
               <h4 class="text-sm font-medium text-gray-700 mb-2">
                 <i class="fas fa-book-open mr-2 text-green-600"></i>
-                字数建议
+                ${i18n.t('wordCountSuggestion')}
               </h4>
               <div class="text-sm text-gray-600 space-y-1">
-                <p>• <strong>500-1000 字</strong>：简介、概述性内容</p>
-                <p>• <strong>1000-2000 字</strong>：标准文章长度（推荐）</p>
-                <p>• <strong>2000-3000 字</strong>：深度分析、详细说明</p>
-                <p class="text-orange-600">⚠️ 超过 3000 字可能受 Token 限制影响</p>
+                <p>• <strong>500-1000 ${i18n.t('words')}</strong>：${i18n.t('briefIntro')}</p>
+                <p>• <strong>1000-2000 ${i18n.t('words')}</strong>：${i18n.t('standardArticle')}</p>
+                <p>• <strong>2000-3000 ${i18n.t('words')}</strong>：${i18n.t('deepAnalysis')}</p>
+                <p class="text-orange-600">⚠️ ${i18n.t('tokenLimitWarning')}</p>
               </div>
             </div>
           </div>
@@ -17247,10 +17247,10 @@ async function loadAISettings() {
             <div class="flex-1">
               <label class="block text-lg font-semibold text-gray-800 mb-2">
                 <i class="fas fa-power-off mr-2 text-green-600"></i>
-                启用 AI 写作功能
+                ${i18n.t('enableAIWriting')}
               </label>
               <p class="text-sm text-gray-600">
-                全局开关，关闭后用户将无法使用 AI 写作助手功能。
+                ${i18n.t('globalSwitch')}
               </p>
             </div>
             <label class="relative inline-flex items-center cursor-pointer ml-4">
@@ -17270,11 +17270,11 @@ async function loadAISettings() {
           <div class="flex items-start">
             <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
             <div class="flex-1 text-sm text-yellow-800">
-              <p class="font-medium mb-1">重要提示</p>
+              <p class="font-medium mb-1">${i18n.t('importantNotice')}</p>
               <ul class="list-disc list-inside space-y-1">
-                <li>修改这些设置将影响所有用户的 AI 内容生成</li>
-                <li>建议在非高峰期修改，并提前通知用户</li>
-                <li>修改后立即生效，无需重启服务</li>
+                <li>${i18n.t('settingsAffectAllUsers')}</li>
+                <li>${i18n.t('suggestOffPeakChange')}</li>
+                <li>${i18n.t('changesEffectImmediately')}</li>
               </ul>
             </div>
           </div>
@@ -17289,7 +17289,7 @@ async function loadAISettings() {
     document.getElementById('ai-settings-content').innerHTML = `
       <div class="text-center py-12 text-red-600">
         <i class="fas fa-exclamation-circle text-4xl mb-4"></i>
-        <p class="text-lg font-medium">加载设置失败</p>
+        <p class="text-lg font-medium">${i18n.t('loadSettingsFailed')}</p>
         <p class="text-sm mt-2">${error.response?.data?.error || error.message}</p>
       </div>
     `;
@@ -17308,16 +17308,16 @@ function updateTokenPreview(tokens) {
   
   document.getElementById('token-preview').innerHTML = `
     <div class="flex items-center justify-between py-2 border-b border-gray-200">
-      <span class="text-sm text-gray-600">中文字数范围：</span>
-      <span class="text-sm font-mono font-medium text-gray-800">${minChars} - ${maxChars} 字</span>
+      <span class="text-sm text-gray-600">${i18n.t('chineseWordRange')}：</span>
+      <span class="text-sm font-mono font-medium text-gray-800">${minChars} - ${maxChars} ${i18n.t('words')}</span>
     </div>
     <div class="flex items-center justify-between py-2 border-b border-gray-200">
-      <span class="text-sm text-gray-600">推荐目标字数：</span>
-      <span class="text-sm font-mono font-medium text-indigo-600">${Math.floor((minChars + maxChars) / 2)} 字</span>
+      <span class="text-sm text-gray-600">${i18n.t('recommendedWordCount')}：</span>
+      <span class="text-sm font-mono font-medium text-indigo-600">${Math.floor((minChars + maxChars) / 2)} ${i18n.t('words')}</span>
     </div>
     <div class="flex items-center justify-between py-2">
-      <span class="text-sm text-gray-600">生成速度：</span>
-      <span class="text-sm font-medium text-gray-800">${Math.ceil(tokenNum / 100)} - ${Math.ceil(tokenNum / 50)} 秒</span>
+      <span class="text-sm text-gray-600">${i18n.t('generationSpeed')}：</span>
+      <span class="text-sm font-medium text-gray-800">${Math.ceil(tokenNum / 100)} - ${Math.ceil(tokenNum / 50)} ${i18n.t('seconds')}</span>
     </div>
   `;
 }
@@ -17336,19 +17336,19 @@ async function saveAISettings(event) {
     // Validate
     const tokensNum = parseInt(maxTokens);
     if (tokensNum < 1000 || tokensNum > 8192) {
-      showNotification('Token 数量必须在 1000-8192 之间', 'error');
+      showNotification(i18n.t('tokenValidationError'), 'error');
       return;
     }
 
     const tempNum = parseFloat(temperature);
     if (tempNum < 0 || tempNum > 1) {
-      showNotification('创意度必须在 0-1 之间', 'error');
+      showNotification(i18n.t('temperatureValidationError'), 'error');
       return;
     }
 
     const wordCountNum = parseInt(defaultWordCount);
     if (wordCountNum < 100 || wordCountNum > 5000) {
-      showNotification('默认字数必须在 100-5000 之间', 'error');
+      showNotification(i18n.t('wordCountValidationError'), 'error');
       return;
     }
 
@@ -17356,7 +17356,7 @@ async function saveAISettings(event) {
     const saveBtn = event ? event.target : document.querySelector('.save-ai-settings-btn');
     if (saveBtn) {
       saveBtn.disabled = true;
-      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>保存中...';
+      saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${i18n.t('savingSettings')}`;
     }
 
     // Batch update - use correct endpoint
@@ -17370,21 +17370,21 @@ async function saveAISettings(event) {
     });
 
     if (response.data.success) {
-      showNotification('✅ AI 设置已保存！', 'success');
+      showNotification(i18n.t('settingsSaved'), 'success');
       if (saveBtn) {
         setTimeout(() => {
           saveBtn.disabled = false;
-          saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存设置';
+          saveBtn.innerHTML = `<i class="fas fa-save mr-2"></i>${i18n.t('saveSettings')}`;
         }, 1000);
       }
     }
   } catch (error) {
     console.error('Error saving AI settings:', error);
-    showNotification('保存失败: ' + (error.response?.data?.error || error.message), 'error');
+    showNotification(i18n.t('settingsSaveFailed') + ': ' + (error.response?.data?.error || error.message), 'error');
     const saveBtn = event ? event.target : document.querySelector('.save-ai-settings-btn');
     if (saveBtn) {
       saveBtn.disabled = false;
-      saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存设置';
+      saveBtn.innerHTML = `<i class="fas fa-save mr-2"></i>${i18n.t('saveSettings')}`;
     }
   }
 }
