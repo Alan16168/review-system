@@ -56,7 +56,10 @@
 
 **法文（fr）：**
 ```javascript
-// 继承英文翻译
+'superAnnualPrice': 'Abonnement Super Membre Annuel (USD)',
+'superRenewalPrice': 'Renouvellement Super Membre (USD)',
+'newUserSuperUpgradePrice': 'Prix de Mise à Niveau Super Nouvel Utilisateur',
+'existingSuperRenewalPrice': 'Prix de Renouvellement Super Membre Existant',
 ```
 
 #### 2. 更新app.js中的HTML模板
@@ -130,9 +133,10 @@ curl https://review-platform-manhattan.pages.dev
 ## 📝 相关说明
 
 ### 为什么有些语言使用英文翻译？
-- 日文（ja）、西班牙文（es）、法文（fr）使用了英文的翻译文本
+- 日文（ja）、西班牙文（es）使用了英文的翻译文本
 - 这是因为在实际使用中，这些语言版本通常保留英文的专业术语（如"Super Member"、"Premium"等）
-- 如果需要本地化这些语言，可以后续补充对应的翻译
+- 法文（fr）已经提供了完整的法语翻译，所有Admin Panel和Pricing Settings的文本都已本地化
+- 如果需要本地化其他语言，可以后续补充对应的翻译
 
 ### 翻译键的命名规范
 - 使用camelCase命名法
