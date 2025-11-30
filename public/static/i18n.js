@@ -460,6 +460,10 @@ const translations = {
     'renewalPrice': '高级会员续费费用（美元）',
     'newUserUpgradePrice': '新用户升级价格',
     'existingUserRenewalPrice': '现有用户续费价格',
+    'superAnnualPrice': '超级会员年费（美元）',
+    'superRenewalPrice': '超级会员续费费用（美元）',
+    'newUserSuperUpgradePrice': '新用户升级至超级会员价格',
+    'existingSuperRenewalPrice': '现有超级会员续费价格',
     'duration': '时长（天）',
     'upgradeAccount': '升级账户',
     'upgradeToPremiumDesc': '升级到高级用户可以创建团队、邀请成员、进行团队协作复盘',
@@ -1620,6 +1624,10 @@ const translations = {
     'renewalPrice': 'Premium Renewal Fee (USD)',
     'newUserUpgradePrice': 'New User Upgrade Price',
     'existingUserRenewalPrice': 'Existing User Renewal Price',
+    'superAnnualPrice': 'Super Member Annual Fee (USD)',
+    'superRenewalPrice': 'Super Member Renewal Fee (USD)',
+    'newUserSuperUpgradePrice': 'New User Super Upgrade Price',
+    'existingSuperRenewalPrice': 'Existing Super Member Renewal Price',
     'duration': 'Duration (Days)',
     
     // Admin Panel
@@ -2589,6 +2597,10 @@ const translations = {
     'renewalPrice': 'Premium Renewal Fee (USD)',
     'newUserUpgradePrice': 'New User Upgrade Price',
     'existingUserRenewalPrice': 'Existing User Renewal Price',
+    'superAnnualPrice': 'Super Member Annual Fee (USD)',
+    'superRenewalPrice': 'Super Member Renewal Fee (USD)',
+    'newUserSuperUpgradePrice': 'New User Super Upgrade Price',
+    'existingSuperRenewalPrice': 'Existing Super Member Renewal Price',
     'duration': 'Duration (Days)',
     
     // Admin Panel
@@ -3554,6 +3566,10 @@ const translations = {
     'renewalPrice': 'Premium Renewal Fee (USD)',
     'newUserUpgradePrice': 'New User Upgrade Price',
     'existingUserRenewalPrice': 'Existing User Renewal Price',
+    'superAnnualPrice': 'Super Member Annual Fee (USD)',
+    'superRenewalPrice': 'Super Member Renewal Fee (USD)',
+    'newUserSuperUpgradePrice': 'New User Super Upgrade Price',
+    'existingSuperRenewalPrice': 'Existing Super Member Renewal Price',
     'duration': 'Duration (Days)',
     
     // Admin Panel
@@ -4468,6 +4484,10 @@ const translations = {
     'renewalPrice': '高級使用者續費費用（美元）',
     'newUserUpgradePrice': '新使用者升級價格',
     'existingUserRenewalPrice': '现有使用者續費價格',
+    'superAnnualPrice': '超級使用者年費（美元）',
+    'superRenewalPrice': '超級使用者續費費用（美元）',
+    'newUserSuperUpgradePrice': '新使用者升級至超級使用者價格',
+    'existingSuperRenewalPrice': '现有超級使用者續費價格',
     'duration': '時长（天）',
     'upgradeAccount': '升級账户',
     'upgradeToPremiumDesc': '升級到高級使用者可以创建團隊、邀請成員、进行團隊協作複盘',
@@ -5488,6 +5508,10 @@ const translations = {
     'renewalPrice': 'Premium Renewal Fee (USD)',
     'newUserUpgradePrice': 'New User Upgrade Price',
     'existingUserRenewalPrice': 'Existing User Renewal Price',
+    'superAnnualPrice': 'Super Member Annual Fee (USD)',
+    'superRenewalPrice': 'Super Member Renewal Fee (USD)',
+    'newUserSuperUpgradePrice': 'New User Super Upgrade Price',
+    'existingSuperRenewalPrice': 'Existing Super Member Renewal Price',
     'duration': 'Duration (Days)',
     
     // Admin Panel

@@ -13228,19 +13228,19 @@ async function showSubscriptionManagement(container) {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                超级会员年费（美元）
+                ${i18n.t('superAnnualPrice') || '超级会员年费（美元）'}
               </label>
               <input type="number" step="0.01" id="super-price" value="${premiumConfig?.super_price_usd || 2}" 
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-              <p class="text-xs text-gray-500 mt-1">新用户升级至超级会员价格</p>
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('newUserSuperUpgradePrice') || '新用户升级至超级会员价格'}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
-                超级会员续费费用（美元）
+                ${i18n.t('superRenewalPrice') || '超级会员续费费用（美元）'}
               </label>
               <input type="number" step="0.01" id="super-renewal-price" value="${premiumConfig?.super_renewal_price_usd || 2}" 
                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-              <p class="text-xs text-gray-500 mt-1">现有超级会员续费价格</p>
+              <p class="text-xs text-gray-500 mt-1">${i18n.t('existingSuperRenewalPrice') || '现有超级会员续费价格'}</p>
             </div>
           </div>
           <div>
